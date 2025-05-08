@@ -1,0 +1,12 @@
+.text-highlighter-extension {
+  display: inline;
+  border-radius: 2px;
+  padding: 0 1px;
+  margin: 0 1px;
+  cursor: pointer;
+  position: relative;
+}
+
+.text-highlighter-extension:hover {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
