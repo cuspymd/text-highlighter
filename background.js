@@ -38,23 +38,30 @@ chrome.runtime.onInstalled.addListener(() => {
 // 컨텍스트 메뉴 클릭 처리
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const menuId = info.menuItemId;
+  console.log('Context menu clicked:', menuId);
 
   if (menuId.startsWith('highlight-') && menuId !== 'highlight-text') {
     const colorId = menuId.replace('highlight-', '');
     const color = COLORS.find(c => c.id === colorId);
 
     if (color) {
+      console.log('Sending highlight action to tab:', tab.id);
       chrome.tabs.sendMessage(tab.id, {
         action: 'highlight',
         color: color.color,
         text: info.selectionText
+      }, response => {
+        console.log('Highlight action response:', response);
       });
     }
   }
   else if (menuId === 'remove-highlight') {
+    console.log('Sending remove highlight action to tab:', tab.id);
     chrome.tabs.sendMessage(tab.id, {
       action: 'removeHighlight',
       text: info.selectionText
+    }, response => {
+      console.log('Remove highlight action response:', response);
     });
   }
 });

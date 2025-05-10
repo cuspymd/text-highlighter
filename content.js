@@ -2,12 +2,14 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
-console.log("content.js call!!")
-
 // 페이지 로드 시 저장된 하이라이트 정보 불러오기
-document.addEventListener('DOMContentLoaded', () => {
-  console.log("DOMContentLoaded call!!")
+// DOMContentLoaded 대신 즉시 실행
+console.log('Content script loaded for:', currentUrl);
+loadHighlights();
 
+// 백업으로 DOMContentLoaded 이벤트 리스너도 유지
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOMContentLoaded event fired');
   loadHighlights();
 });
 
@@ -19,18 +21,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if (message.action === 'removeHighlight') {
     removeHighlight();
   }
+  else if (message.action === 'refreshHighlights') {
+    // 팝업에서 하이라이트 정보가 업데이트되었을 때 처리
+    console.log('Refreshing highlights:', message.highlights);
+    highlights = message.highlights || [];
+    clearAllHighlights();
+    applyHighlights();
+    return true;
+  }
 });
 
 // 저장된 하이라이트 불러오기
 function loadHighlights() {
-  console.log("loadHighlights call!!")
-
+  console.log('Loading highlights for URL:', currentUrl);
   chrome.runtime.sendMessage(
     { action: 'getHighlights', url: currentUrl },
     (response) => {
+      console.log('Got highlights response:', response);
       if (response && response.highlights) {
         highlights = response.highlights;
+        console.log('Applying highlights:', highlights.length);
         applyHighlights();
+      } else {
+        console.log('No highlights found or invalid response');
       }
     }
   );
@@ -117,32 +130,110 @@ function removeHighlight() {
   }
 }
 
+// 페이지의 모든 하이라이트 제거
+function clearAllHighlights() {
+  console.log('Clearing all highlights');
+  const highlightElements = document.querySelectorAll('.text-highlighter-extension');
+  highlightElements.forEach(element => {
+    const parent = element.parentNode;
+    while (element.firstChild) {
+      parent.insertBefore(element.firstChild, element);
+    }
+    parent.removeChild(element);
+  });
+}
+
 // 저장된 하이라이트 정보로 페이지에 적용
 function applyHighlights() {
-  console.log("applyHighlights call!!")
-
+  console.log('Applying highlights, count:', highlights.length);
   highlights.forEach(highlight => {
     try {
-      const element = getElementByXPath(highlight.xpath);
-      if (element) {
-        const range = document.createRange();
-        const textNode = findTextNodeByContent(element, highlight.text);
+      // 텍스트 기반 검색 시도
+      console.log('Applying highlight:', highlight.text);
+      const textFound = highlightTextInDocument(
+        document.body,
+        highlight.text,
+        highlight.color,
+        highlight.id
+      );
 
-        if (textNode) {
-          const span = document.createElement('span');
-          span.textContent = highlight.text;
-          span.className = 'text-highlighter-extension';
-          span.style.backgroundColor = highlight.color;
-          span.dataset.highlightId = highlight.id;
+      if (!textFound) {
+        console.log('Text not found by content, trying XPath');
+        // XPath 기반 찾기 시도
+        const element = getElementByXPath(highlight.xpath);
+        if (element) {
+          const textNode = findTextNodeByContent(element, highlight.text);
 
-          // 텍스트 노드를 하이라이트 요소로 대체
-          textNode.parentNode.replaceChild(span, textNode);
+          if (textNode) {
+            const span = document.createElement('span');
+            span.textContent = highlight.text;
+            span.className = 'text-highlighter-extension';
+            span.style.backgroundColor = highlight.color;
+            span.dataset.highlightId = highlight.id;
+
+            // 텍스트 노드를 하이라이트 요소로 대체
+            textNode.parentNode.replaceChild(span, textNode);
+            console.log('Highlight applied via XPath');
+          }
         }
       }
     } catch (error) {
       console.error('Error applying highlight:', error);
     }
   });
+}
+
+// 문서 내에서 텍스트를 찾아 하이라이트 적용
+function highlightTextInDocument(element, text, color, id) {
+  if (!text || text.length < 3) return false; // 너무 짧은 텍스트는 건너뛰기
+
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: function (node) {
+        // 이미 하이라이트된 요소의 자식은 건너뛰기
+        if (node.parentNode.className === 'text-highlighter-extension') {
+          return NodeFilter.FILTER_REJECT;
+        }
+        // script, style 태그 내부는 건너뛰기
+        if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.parentNode.tagName)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    },
+    false
+  );
+
+  let found = false;
+  let node;
+
+  while ((node = walker.nextNode()) && !found) {
+    const content = node.textContent;
+    const index = content.indexOf(text);
+
+    if (index >= 0) {
+      // 텍스트 발견
+      const range = document.createRange();
+      range.setStart(node, index);
+      range.setEnd(node, index + text.length);
+
+      const span = document.createElement('span');
+      span.className = 'text-highlighter-extension';
+      span.style.backgroundColor = color;
+      span.dataset.highlightId = id;
+
+      range.surroundContents(span);
+      found = true;
+      console.log('Text found and highlighted:', text);
+
+      // Walker를 무효화했으므로 루프 종료
+      break;
+    }
+  }
+
+  return found;
 }
 
 // 텍스트 내용으로 텍스트 노드 찾기
