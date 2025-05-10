@@ -38,11 +38,11 @@ chrome.runtime.onInstalled.addListener(() => {
 // 컨텍스트 메뉴 클릭 처리
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const menuId = info.menuItemId;
-  
+
   if (menuId.startsWith('highlight-') && menuId !== 'highlight-text') {
     const colorId = menuId.replace('highlight-', '');
     const color = COLORS.find(c => c.id === colorId);
-    
+
     if (color) {
       chrome.tabs.sendMessage(tab.id, {
         action: 'highlight',
@@ -50,7 +50,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         text: info.selectionText
       });
     }
-  } 
+  }
   else if (menuId === 'remove-highlight') {
     chrome.tabs.sendMessage(tab.id, {
       action: 'removeHighlight',
@@ -68,7 +68,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
-  
+
   if (message.action === 'saveHighlights') {
     // 현재 URL에 대한 하이라이트 정보 저장
     const saveData = {};
