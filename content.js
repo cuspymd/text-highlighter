@@ -2,14 +2,23 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
+// 디버그 모드 설정 - 개발 시 true로 변경
+const DEBUG_MODE = false;
+
+// 디버그용 로그 함수
+function debugLog(...args) {
+  if (DEBUG_MODE) {
+    console.log(...args);
+  }
+}
+
 // 페이지 로드 시 저장된 하이라이트 정보 불러오기
-// DOMContentLoaded 대신 즉시 실행
-console.log('Content script loaded for:', currentUrl);
+debugLog('Content script loaded for:', currentUrl);
 loadHighlights();
 
 // 백업으로 DOMContentLoaded 이벤트 리스너도 유지
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOMContentLoaded event fired');
+  debugLog('DOMContentLoaded event fired');
   loadHighlights();
 });
 
@@ -17,33 +26,36 @@ document.addEventListener('DOMContentLoaded', () => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'highlight') {
     highlightSelectedText(message.color);
+    sendResponse({ success: true });
   }
   else if (message.action === 'removeHighlight') {
     removeHighlight();
+    sendResponse({ success: true });
   }
   else if (message.action === 'refreshHighlights') {
     // 팝업에서 하이라이트 정보가 업데이트되었을 때 처리
-    console.log('Refreshing highlights:', message.highlights);
+    debugLog('Refreshing highlights:', message.highlights);
     highlights = message.highlights || [];
     clearAllHighlights();
     applyHighlights();
+    sendResponse({ success: true });
     return true;
   }
 });
 
 // 저장된 하이라이트 불러오기
 function loadHighlights() {
-  console.log('Loading highlights for URL:', currentUrl);
+  debugLog('Loading highlights for URL:', currentUrl);
   chrome.runtime.sendMessage(
     { action: 'getHighlights', url: currentUrl },
     (response) => {
-      console.log('Got highlights response:', response);
+      debugLog('Got highlights response:', response);
       if (response && response.highlights) {
         highlights = response.highlights;
-        console.log('Applying highlights:', highlights.length);
+        debugLog('Applying highlights:', highlights.length);
         applyHighlights();
       } else {
-        console.log('No highlights found or invalid response');
+        debugLog('No highlights found or invalid response');
       }
     }
   );
@@ -54,7 +66,7 @@ function saveHighlights() {
   chrome.runtime.sendMessage(
     { action: 'saveHighlights', url: currentUrl, highlights: highlights },
     (response) => {
-      console.log('Highlights saved:', response.success);
+      debugLog('Highlights saved:', response?.success);
     }
   );
 }
@@ -132,7 +144,7 @@ function removeHighlight() {
 
 // 페이지의 모든 하이라이트 제거
 function clearAllHighlights() {
-  console.log('Clearing all highlights');
+  debugLog('Clearing all highlights');
   const highlightElements = document.querySelectorAll('.text-highlighter-extension');
   highlightElements.forEach(element => {
     const parent = element.parentNode;
@@ -145,11 +157,11 @@ function clearAllHighlights() {
 
 // 저장된 하이라이트 정보로 페이지에 적용
 function applyHighlights() {
-  console.log('Applying highlights, count:', highlights.length);
+  debugLog('Applying highlights, count:', highlights.length);
   highlights.forEach(highlight => {
     try {
       // 텍스트 기반 검색 시도
-      console.log('Applying highlight:', highlight.text);
+      debugLog('Applying highlight:', highlight.text);
       const textFound = highlightTextInDocument(
         document.body,
         highlight.text,
@@ -158,7 +170,7 @@ function applyHighlights() {
       );
 
       if (!textFound) {
-        console.log('Text not found by content, trying XPath');
+        debugLog('Text not found by content, trying XPath');
         // XPath 기반 찾기 시도
         const element = getElementByXPath(highlight.xpath);
         if (element) {
@@ -173,12 +185,12 @@ function applyHighlights() {
 
             // 텍스트 노드를 하이라이트 요소로 대체
             textNode.parentNode.replaceChild(span, textNode);
-            console.log('Highlight applied via XPath');
+            debugLog('Highlight applied via XPath');
           }
         }
       }
     } catch (error) {
-      console.error('Error applying highlight:', error);
+      debugLog('Error applying highlight:', error);
     }
   });
 }
@@ -226,7 +238,7 @@ function highlightTextInDocument(element, text, color, id) {
 
       range.surroundContents(span);
       found = true;
-      console.log('Text found and highlighted:', text);
+      debugLog('Text found and highlighted:', text);
 
       // Walker를 무효화했으므로 루프 종료
       break;
