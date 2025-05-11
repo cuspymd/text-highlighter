@@ -504,15 +504,50 @@ function createHighlightControls() {
 function showHighlightControls(highlightElement) {
   if (!highlightControlsContainer) createHighlightControls();
 
-  // 하이라이트 요소의 위치 계산
-  const rect = highlightElement.getBoundingClientRect();
+  // 하이라이트의 첫 번째 텍스트 노드 시작 위치 찾기
+  const firstTextPosition = getFirstTextNodePosition(highlightElement);
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
 
-  // 컨트롤러 위치 설정 (하이라이트 요소 위에 위치)
-  highlightControlsContainer.style.top = (rect.top + scrollTop - 30) + 'px';
-  highlightControlsContainer.style.left = (rect.left + scrollLeft) + 'px';
+  // 컨트롤러 위치 설정 (하이라이트 첫 텍스트 노드 위에 위치)
+  highlightControlsContainer.style.top = (firstTextPosition.top + scrollTop - 30) + 'px';
+  highlightControlsContainer.style.left = (firstTextPosition.left + scrollLeft) + 'px';
   highlightControlsContainer.style.display = 'flex';
+}
+
+// 하이라이트 요소의 첫 번째 텍스트 노드 위치 구하기
+function getFirstTextNodePosition(element) {
+  // 첫 번째 텍스트 노드 찾기
+  let firstTextNode = null;
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
+
+  firstTextNode = walker.nextNode();
+
+  if (!firstTextNode && element.childNodes.length > 0) {
+    // 직접적인 텍스트 노드가 없는 경우 첫 번째 자식 요소 사용
+    return element.getBoundingClientRect();
+  }
+
+  if (firstTextNode) {
+    // 첫 번째 텍스트 노드의 첫 글자 위치 계산
+    const range = document.createRange();
+    range.setStart(firstTextNode, 0);
+    range.setEnd(firstTextNode, 1); // 첫 번째 글자만
+
+    const rect = range.getBoundingClientRect();
+    return {
+      top: rect.top,
+      left: rect.left
+    };
+  }
+
+  // 폴백: 요소의 전체 영역 반환
+  return element.getBoundingClientRect();
 }
 
 // 하이라이트 컨트롤러 UI 숨기기
