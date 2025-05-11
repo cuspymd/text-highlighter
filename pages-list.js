@@ -36,6 +36,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
       debugLog('Loaded all highlighted pages:', pages);
 
+      // 최신 업데이트 순으로 페이지 정렬
+      pages.sort((a, b) => {
+        // lastUpdated가 없는 경우 가장 오래된 것으로 취급
+        if (!a.lastUpdated) return 1;
+        if (!b.lastUpdated) return -1;
+
+        // 내림차순 정렬 (최신 날짜가 먼저 오도록)
+        return new Date(b.lastUpdated) - new Date(a.lastUpdated);
+      });
+
       // 페이지 리스트 표시
       displayPages(pages);
     });
