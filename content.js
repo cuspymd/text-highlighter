@@ -35,6 +35,21 @@ addHighlightStyles();
 // 페이지에 하이라이트 컨트롤러 UI 추가
 createHighlightControls();
 
+// 다른 영역 클릭 시 컨트롤러 숨기기 이벤트 리스너 추가
+document.addEventListener('click', function (e) {
+  if (!highlightControlsContainer) return;
+
+  // 클릭한 요소가 하이라이트 요소나 컨트롤러가 아닌 경우에만 숨김
+  const isClickOnHighlight = activeHighlightElement &&
+    (activeHighlightElement.contains(e.target) || activeHighlightElement === e.target);
+  const isClickOnControls = highlightControlsContainer.contains(e.target) ||
+    highlightControlsContainer === e.target;
+
+  if (!isClickOnHighlight && !isClickOnControls) {
+    hideHighlightControls();
+  }
+});
+
 // 백업으로 DOMContentLoaded 이벤트 리스너도 유지
 document.addEventListener('DOMContentLoaded', () => {
   debugLog('DOMContentLoaded event fired');
@@ -367,29 +382,24 @@ function highlightTextInDocument(element, text, color, id, textColor) {
 
 // 하이라이트된 텍스트 요소에 이벤트 리스너 추가
 function addHighlightEventListeners(highlightElement) {
-  // 마우스 오버 이벤트
-  highlightElement.addEventListener('mouseenter', function (e) {
-    activeHighlightElement = highlightElement;
-    showHighlightControls(highlightElement);
-  });
-
-  // 마우스 아웃 이벤트 (컨트롤러 영역으로 이동할 때는 사라지지 않도록)
-  document.addEventListener('mouseover', function (e) {
-    if (!highlightControlsContainer) return;
-
-    // 마우스가 하이라이트 요소나 컨트롤러 위에 있는지 체크
-    const isOverHighlight = highlightElement.contains(e.target) || highlightElement === e.target;
-    const isOverControls = highlightControlsContainer.contains(e.target) || highlightControlsContainer === e.target;
-
-    if (!isOverHighlight && !isOverControls) {
-      hideHighlightControls();
-    }
-  });
-
-  // 클릭 이벤트 (필요한 경우)
+  // 클릭 이벤트 - 하이라이트 컨트롤러 표시를 위한 이벤트
   highlightElement.addEventListener('click', function (e) {
-    // 클릭 시 선택이 일어나지 않도록 함 (필요한 경우)
-    // e.preventDefault();
+    // 이미 활성화된 같은 하이라이트 요소인 경우 토글
+    if (activeHighlightElement === highlightElement &&
+      highlightControlsContainer &&
+      highlightControlsContainer.style.display !== 'none') {
+      hideHighlightControls();
+    } else {
+      // 다른 하이라이트 컨트롤러가 활성화되어 있으면 먼저 숨김
+      hideHighlightControls();
+
+      // 현재 클릭한 하이라이트 활성화 및 컨트롤러 표시
+      activeHighlightElement = highlightElement;
+      showHighlightControls(highlightElement);
+
+      // 이벤트 전파 중지 (문서 전체 클릭 이벤트에 영향을 주지 않도록)
+      e.stopPropagation();
+    }
   });
 }
 
@@ -465,10 +475,12 @@ function createHighlightControls() {
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
   deleteButton.innerHTML = '×'; // 삭제 버튼 (X 표시)
   deleteButton.title = '하이라이트 삭제';
-  deleteButton.addEventListener('click', function () {
+  deleteButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
       removeHighlight(activeHighlightElement);
     }
+    // 이벤트 전파 중지 (문서 전체 클릭 이벤트에 영향을 주지 않도록)
+    e.stopPropagation();
   });
 
   // 색상 버튼들 컨테이너
@@ -483,10 +495,12 @@ function createHighlightControls() {
     colorButton.title = colorInfo.name;
 
     // 색상 버튼 클릭 이벤트
-    colorButton.addEventListener('click', function () {
+    colorButton.addEventListener('click', function (e) {
       if (activeHighlightElement) {
         changeHighlightColor(activeHighlightElement, colorInfo.color);
       }
+      // 이벤트 전파 중지 (문서 전체 클릭 이벤트에 영향을 주지 않도록)
+      e.stopPropagation();
     });
 
     colorButtonsContainer.appendChild(colorButton);
@@ -495,6 +509,11 @@ function createHighlightControls() {
   // 버튼들을 컨테이너에 추가
   highlightControlsContainer.appendChild(deleteButton);
   highlightControlsContainer.appendChild(colorButtonsContainer);
+
+  // 컨트롤러 클릭 이벤트 막기 - 컨트롤러 영역 클릭 시 닫히지 않도록
+  highlightControlsContainer.addEventListener('click', function (e) {
+    e.stopPropagation();
+  });
 
   // 컨테이너를 body에 추가
   document.body.appendChild(highlightControlsContainer);
