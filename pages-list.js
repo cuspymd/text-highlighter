@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function () {
   function loadAllHighlightedPages() {
     chrome.storage.local.get(null, (result) => {
       const pages = [];
-      const metaDataPromises = [];
 
       // storage에서 URL을 키로 가진 항목들만 필터링 (메타데이터는 제외)
       for (const key in result) {

@@ -30,9 +30,6 @@
         padding: 15px;
         border-bottom: 1px solid #ddd;
         position: relative;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
       }
 
       .page-item:last-child {
@@ -43,17 +40,20 @@
         background-color: #f5f5f5;
       }
 
+      .page-info-container {
+        margin-bottom: 10px;
+      }
+
       .page-title {
         font-weight: bold;
         margin-bottom: 5px;
         cursor: pointer;
-        flex-grow: 1;
       }
 
       .page-url {
         color: #666;
         font-size: 14px;
-        max-width: 500px;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -68,6 +68,7 @@
       .page-actions {
         display: flex;
         gap: 10px;
+        margin-bottom: 10px;
       }
 
       .btn {
@@ -115,6 +116,7 @@
         background-color: #f9f9f9;
         border-radius: 4px;
         display: none;
+        width: 100%;
       }
 
       .highlight-item {

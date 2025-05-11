@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
     chrome.windows.create({
       url: chrome.runtime.getURL('pages-list.html'),
       type: 'popup',
-      width: 800,
+      width: 860,
       height: 600
     });
   });
