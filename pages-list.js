@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
   const pagesContainer = document.getElementById('pages-container');
   const noPages = document.getElementById('no-pages');
-  const backBtn = document.getElementById('back-btn');
 
   // 디버그 모드 설정 - 개발 시 true로 변경
   const DEBUG_MODE = false;
@@ -12,11 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
       console.log(...args);
     }
   }
-
-  // 백버튼 처리
-  backBtn.addEventListener('click', function () {
-    window.close();
-  });
 
   // 모든 하이라이트된 페이지 데이터 불러오기
   function loadAllHighlightedPages() {
