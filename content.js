@@ -76,6 +76,49 @@ function saveHighlights() {
   );
 }
 
+// 배경색의 밝기에 따라 적절한 텍스트 색상을 결정하는 함수
+function getContrastTextColor(backgroundColor) {
+  // 16진수 색상 코드를 RGB로 변환
+  const hexToRgb = (hex) => {
+    // 짧은 형식(#RGB)인 경우 전체 형식(#RRGGBB)으로 변환
+    const fullHex = hex.length === 4 ?
+      `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
+
+    const r = parseInt(fullHex.substring(1, 3), 16);
+    const g = parseInt(fullHex.substring(3, 5), 16);
+    const b = parseInt(fullHex.substring(5, 7), 16);
+    return { r, g, b };
+  };
+
+  // RGB 색상의 밝기 계산 (YIQ 공식 사용)
+  const getColorBrightness = (r, g, b) => {
+    return (r * 299 + g * 587 + b * 114) / 1000;
+  };
+
+  let rgb;
+  // RGB 형식 처리 (예: rgb(255, 255, 0))
+  if (backgroundColor.startsWith('rgb')) {
+    const match = backgroundColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (match) {
+      rgb = {
+        r: parseInt(match[1], 10),
+        g: parseInt(match[2], 10),
+        b: parseInt(match[3], 10)
+      };
+    }
+  } else {
+    // 16진수 색상 코드 처리
+    rgb = hexToRgb(backgroundColor);
+  }
+
+  if (!rgb) return '#000000'; // 기본값은 검은색
+
+  const brightness = getColorBrightness(rgb.r, rgb.g, rgb.b);
+
+  // 임계값(128)보다 밝으면 검은색, 어두우면 흰색 반환
+  return brightness > 128 ? '#000000' : '#FFFFFF';
+}
+
 // 선택된 텍스트 하이라이트 처리
 function highlightSelectedText(color) {
   const selection = window.getSelection();
@@ -89,6 +132,10 @@ function highlightSelectedText(color) {
   span.appendChild(selectionContents);
   span.className = 'text-highlighter-extension';
   span.style.backgroundColor = color;
+
+  // 배경색에 따라 적절한 텍스트 색상 설정
+  span.style.color = getContrastTextColor(color);
+
   span.dataset.highlightId = Date.now().toString();
 
   range.insertNode(span);
@@ -98,6 +145,7 @@ function highlightSelectedText(color) {
     id: span.dataset.highlightId,
     text: span.textContent,
     color: color,
+    textColor: span.style.color, // 텍스트 색상도 저장
     xpath: getXPathForElement(span),
     textRange: {
       startOffset: range.startOffset,
@@ -171,7 +219,8 @@ function applyHighlights() {
         document.body,
         highlight.text,
         highlight.color,
-        highlight.id
+        highlight.id,
+        highlight.textColor // 저장된 텍스트 색상 전달
       );
 
       if (!textFound) {
@@ -186,6 +235,10 @@ function applyHighlights() {
             span.textContent = highlight.text;
             span.className = 'text-highlighter-extension';
             span.style.backgroundColor = highlight.color;
+
+            // 저장된 텍스트 색상이 있으면 사용, 없으면 계산
+            span.style.color = highlight.textColor || getContrastTextColor(highlight.color);
+
             span.dataset.highlightId = highlight.id;
 
             // 텍스트 노드를 하이라이트 요소로 대체
@@ -201,7 +254,7 @@ function applyHighlights() {
 }
 
 // 문서 내에서 텍스트를 찾아 하이라이트 적용
-function highlightTextInDocument(element, text, color, id) {
+function highlightTextInDocument(element, text, color, id, textColor) {
   if (!text || text.length < 3) return false; // 너무 짧은 텍스트는 건너뛰기
 
   const walker = document.createTreeWalker(
@@ -239,6 +292,10 @@ function highlightTextInDocument(element, text, color, id) {
       const span = document.createElement('span');
       span.className = 'text-highlighter-extension';
       span.style.backgroundColor = color;
+
+      // 저장된 텍스트 색상이 있으면 사용, 없으면 계산
+      span.style.color = textColor || getContrastTextColor(color);
+
       span.dataset.highlightId = id;
 
       range.surroundContents(span);
