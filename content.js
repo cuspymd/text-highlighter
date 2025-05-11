@@ -64,7 +64,12 @@ function loadHighlights() {
 // 하이라이트 저장하기
 function saveHighlights() {
   chrome.runtime.sendMessage(
-    { action: 'saveHighlights', url: currentUrl, highlights: highlights },
+    {
+      action: 'saveHighlights',
+      url: currentUrl,
+      highlights: highlights,
+      timestamp: new Date().toISOString()
+    },
     (response) => {
       debugLog('Highlights saved:', response?.success);
     }

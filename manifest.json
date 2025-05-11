@@ -3,11 +3,7 @@
   "name": "Text Highlighter",
   "version": "1.0",
   "description": "웹페이지에서 텍스트를 선택하고 색상으로 마킹할 수 있는 확장 프로그램",
-  "permissions": [
-    "storage", 
-    "contextMenus",
-    "activeTab"
-  ],
+  "permissions": ["storage", "contextMenus", "activeTab", "tabs"],
   "background": {
     "service_worker": "background.js"
   },
@@ -30,5 +26,11 @@
     "16": "images/icon16.png",
     "48": "images/icon48.png",
     "128": "images/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["pages-list.html", "pages-list.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

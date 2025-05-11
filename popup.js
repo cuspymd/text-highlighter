@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const noHighlights = document.getElementById('no-highlights');
   const clearAllBtn = document.getElementById('clear-all');
   const exportDataBtn = document.getElementById('export-data');
+  const viewAllPagesBtn = document.getElementById('view-all-pages');
 
   // 디버그 모드 설정 - 개발 시 true로 변경
   const DEBUG_MODE = false;
@@ -142,6 +143,17 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       });
+    });
+  });
+
+  // 하이라이트된 페이지 목록 보기
+  viewAllPagesBtn.addEventListener('click', function () {
+    debugLog('Opening all pages list');
+    chrome.windows.create({
+      url: chrome.runtime.getURL('pages-list.html'),
+      type: 'popup',
+      width: 800,
+      height: 600
     });
   });
 

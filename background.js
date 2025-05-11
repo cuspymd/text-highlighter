@@ -97,11 +97,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === 'saveHighlights') {
     // 현재 URL에 대한 하이라이트 정보 저장
-    const saveData = {};
-    saveData[message.url] = message.highlights;
-    debugLog('Saving highlights for URL:', message.url, message.highlights);
-    chrome.storage.local.set(saveData, () => {
-      sendResponse({ success: true });
+    // 페이지 제목도 함께 저장
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const currentTab = tabs[0];
+      const saveData = {};
+      saveData[message.url] = message.highlights;
+
+      // 메타데이터를 함께 저장
+      if (message.highlights.length > 0) {
+        // 메타데이터가 존재하는지 확인
+        chrome.storage.local.get([`${message.url}_meta`], (result) => {
+          const metaData = result[`${message.url}_meta`] || {};
+          metaData.title = currentTab.title;
+          metaData.lastUpdated = new Date().toISOString();
+
+          const metaSaveData = {};
+          metaSaveData[`${message.url}_meta`] = metaData;
+
+          chrome.storage.local.set(metaSaveData, () => {
+            debugLog('Saved page metadata:', metaData);
+          });
+        });
+      }
+
+      debugLog('Saving highlights for URL:', message.url, message.highlights);
+      chrome.storage.local.set(saveData, () => {
+        sendResponse({ success: true });
+      });
     });
     return true;
   }
