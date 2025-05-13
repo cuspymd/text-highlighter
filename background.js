@@ -1,11 +1,5 @@
-// 콘텍스트 메뉴 아이템 생성
-const COLORS = [
-  { id: 'yellow', name: '노란색', color: '#FFFF00' },
-  { id: 'green', name: '초록색', color: '#AAFFAA' },
-  { id: 'blue', name: '파란색', color: '#AAAAFF' },
-  { id: 'pink', name: '분홍색', color: '#FFAAFF' },
-  { id: 'orange', name: '주황색', color: '#FFAA55' }
-];
+// constants.js 파일에서 COLORS 변수를 임포트합니다.
+import { COLORS } from './constants.js';
 
 // 디버그 모드 설정 - 개발 시 true로 변경
 const DEBUG_MODE = false;
@@ -21,7 +15,7 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ['selection']
   });
 
-  // 색상 하위메뉴 생성
+  // 색상 하위메뉴 생성 (COLORS 변수 사용)
   COLORS.forEach(color => {
     chrome.contextMenus.create({
       id: `highlight-${color.id}`,
@@ -54,10 +48,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
   if (menuId.startsWith('highlight-') && menuId !== 'highlight-text') {
     const colorId = menuId.replace('highlight-', '');
+    // COLORS 변수를 직접 사용
     const color = COLORS.find(c => c.id === colorId);
 
     if (color) {
       debugLog('Sending highlight action to tab:', tab.id);
+      // Content Script에 하이라이트 액션 및 색상 정보 전달
       chrome.tabs.sendMessage(tab.id, {
         action: 'highlight',
         color: color.color,
@@ -69,6 +65,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
   else if (menuId === 'remove-highlight') {
     debugLog('Sending remove highlight action to tab:', tab.id);
+    // Content Script에 하이라이트 제거 액션 전달
     chrome.tabs.sendMessage(tab.id, {
       action: 'removeHighlight',
       text: info.selectionText
@@ -78,23 +75,32 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// 콘텐츠 스크립트와 통신
+// 콘텐츠 스크립트와 통신 (메시지 수신 처리)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // 디버그 모드 상태 요청 처리
   if (message.action === 'getDebugMode') {
     sendResponse({ debugMode: DEBUG_MODE });
-    return true;
+    return true; // 비동기 응답을 위해 true 반환
   }
 
+  // content.js에서 COLORS 정보 요청 시 처리
+  if (message.action === 'getColors') {
+    debugLog('Content script requested COLORS.');
+    sendResponse({ colors: COLORS }); // COLORS 정보 전달
+    return true; // 비동기 응답을 위해 true 반환
+  }
+
+  // content.js에서 하이라이트 정보 요청 시 처리
   if (message.action === 'getHighlights') {
     // 현재 URL에 대한 하이라이트 정보 가져오기
     chrome.storage.local.get([message.url], (result) => {
       debugLog('Sending highlights for URL:', message.url, result[message.url] || []);
       sendResponse({ highlights: result[message.url] || [] });
     });
-    return true;
+    return true; // 비동기 응답을 위해 true 반환
   }
 
+  // content.js에서 하이라이트 정보 저장 요청 시 처리
   if (message.action === 'saveHighlights') {
     // 현재 URL에 대한 하이라이트 정보 저장
     // 페이지 제목도 함께 저장
@@ -103,9 +109,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const saveData = {};
       saveData[message.url] = message.highlights;
 
-      // 메타데이터를 함께 저장
+      // 메타데이터를 함께 저장 (하이라이트가 있을 경우에만)
       if (message.highlights.length > 0) {
-        // 메타데이터가 존재하는지 확인
+        // 기존 메타데이터가 있는지 확인
         chrome.storage.local.get([`${message.url}_meta`], (result) => {
           const metaData = result[`${message.url}_meta`] || {};
           metaData.title = currentTab.title;
@@ -118,13 +124,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             debugLog('Saved page metadata:', metaData);
           });
         });
+      } else {
+        // 하이라이트가 없으면 메타데이터도 제거 (선택 사항)
+        chrome.storage.local.remove([`${message.url}_meta`], () => {
+          debugLog('Removed page metadata as no highlights remain:', message.url);
+        });
       }
+
 
       debugLog('Saving highlights for URL:', message.url, message.highlights);
       chrome.storage.local.set(saveData, () => {
         sendResponse({ success: true });
       });
     });
-    return true;
+    return true; // 비동기 응답을 위해 true 반환
   }
 });
+

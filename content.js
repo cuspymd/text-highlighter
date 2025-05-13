@@ -2,17 +2,11 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
-// 디버그 모드 설정 - 개발 시 true로 변경
+// 디버그 모드 설정 - 개발 시 true로 변경 (background.js와 별개로 관리)
 const DEBUG_MODE = false;
 
-// 색상 정보 (background.js의 COLORS와 일치해야 함)
-const COLORS = [
-  { id: 'yellow', name: '노란색', color: '#FFFF00' },
-  { id: 'green', name: '초록색', color: '#AAFFAA' },
-  { id: 'blue', name: '파란색', color: '#AAAAFF' },
-  { id: 'pink', name: '분홍색', color: '#FFAAFF' },
-  { id: 'orange', name: '주황색', color: '#FFAA55' }
-];
+// 색상 정보 (background.js에서 메시지를 통해 받아옴)
+let COLORS = [];
 
 // 하이라이트 컨트롤러 UI 컨테이너
 let highlightControlsContainer = null;
@@ -25,15 +19,22 @@ function debugLog(...args) {
   }
 }
 
-// 페이지 로드 시 저장된 하이라이트 정보 불러오기
+// 페이지 로드 시 실행
 debugLog('Content script loaded for:', currentUrl);
-loadHighlights();
 
-// 페이지에 스타일 추가
-addHighlightStyles();
+// Background Service Worker로부터 색상 정보를 가져옵니다.
+getColorsFromBackground().then(() => {
+  // 색상 정보를 받은 후에 하이라이트 로드 및 UI 생성
+  loadHighlights();
+  addHighlightStyles();
+  createHighlightControls(); // 색상 정보 로드 후 UI 생성
+}).catch(error => {
+  console.error('Failed to load colors from background:', error);
+  // 색상 정보 로드 실패 시 기본 UI만 생성하거나 오류 처리
+  addHighlightStyles();
+  createHighlightControls(); // 색상 정보 없이 기본 UI만 생성 시도
+});
 
-// 페이지에 하이라이트 컨트롤러 UI 추가
-createHighlightControls();
 
 // 다른 영역 클릭 시 컨트롤러 숨기기 이벤트 리스너 추가
 document.addEventListener('click', function (e) {
@@ -50,19 +51,21 @@ document.addEventListener('click', function (e) {
   }
 });
 
-// 백업으로 DOMContentLoaded 이벤트 리스너도 유지
+// 백업으로 DOMContentLoaded 이벤트 리스너도 유지 (loadHighlights는 이미 getColorsFromBackground 후 호출됨)
 document.addEventListener('DOMContentLoaded', () => {
   debugLog('DOMContentLoaded event fired');
-  loadHighlights();
+  // loadHighlights(); // 이미 getColorsFromBackground 후 호출되므로 중복 호출 방지
 });
 
 // 백그라운드에서 메시지 수신 처리
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'highlight') {
+    // 받은 색상 정보로 하이라이트 처리
     highlightSelectedText(message.color);
     sendResponse({ success: true });
   }
   else if (message.action === 'removeHighlight') {
+    // 하이라이트 제거 처리
     removeHighlight();
     sendResponse({ success: true });
   }
@@ -73,9 +76,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     clearAllHighlights();
     applyHighlights();
     sendResponse({ success: true });
-    return true;
+    return true; // 비동기 응답을 위해 true 반환
   }
 });
+
+// Background Service Worker로부터 색상 정보를 비동기적으로 가져오는 함수
+function getColorsFromBackground() {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ action: 'getColors' }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error getting colors:', chrome.runtime.lastError);
+        return reject(chrome.runtime.lastError);
+      }
+      if (response && response.colors) {
+        COLORS = response.colors;
+        debugLog('Received colors from background:', COLORS);
+        resolve();
+      } else {
+        reject('Invalid response from background for colors.');
+      }
+    });
+  });
+}
+
 
 // 저장된 하이라이트 불러오기
 function loadHighlights() {
@@ -124,6 +147,7 @@ function highlightSelectedText(color) {
   span.className = 'text-highlighter-extension';
   span.style.backgroundColor = color;
 
+  // 고유 ID 생성 (간단하게 타임스탬프 사용)
   span.dataset.highlightId = Date.now().toString();
 
   range.insertNode(span);
@@ -150,7 +174,7 @@ function highlightSelectedText(color) {
 // 하이라이트 제거
 function removeHighlight(highlightElement = null) {
   if (!highlightElement) {
-    // 선택된 텍스트가 있는 경우 (기존 방식)
+    // 선택된 텍스트가 있는 경우 (기존 방식 유지)
     const selection = window.getSelection();
 
     if (!selection.rangeCount) return;
@@ -251,7 +275,6 @@ function applyHighlights() {
             // 텍스트 노드를 하이라이트 요소로 대체
             textNode.parentNode.replaceChild(span, textNode);
 
-            // 이벤트 리스너 추가
             addHighlightEventListeners(span);
 
             debugLog('Highlight applied via XPath');
@@ -428,7 +451,7 @@ function createHighlightControls() {
   const colorButtonsContainer = document.createElement('div');
   colorButtonsContainer.className = 'text-highlighter-color-buttons';
 
-  // 색상 버튼 생성
+  // 색상 버튼 생성 (COLORS 변수 사용)
   COLORS.forEach(colorInfo => {
     const colorButton = document.createElement('div');
     colorButton.className = 'text-highlighter-control-button color-button';
