@@ -1,17 +1,14 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
-// 디버그 모드 설정 - 개발 시 true로 변경 (background.js와 별개로 관리)
 const DEBUG_MODE = false;
 
-// 색상 정보 (background.js에서 메시지를 통해 받아옴)
 let COLORS = [];
 
 // 하이라이트 컨트롤러 UI 컨테이너
 let highlightControlsContainer = null;
 let activeHighlightElement = null;
 
-// 디버그용 로그 함수
 function debugLog(...args) {
   if (DEBUG_MODE) {
     console.log(...args);
