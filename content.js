@@ -16,6 +16,9 @@ let minimapMarkers = [];
 let resizeObserver = null;
 let throttleTimer = null;
 
+let minimapVisible = true;
+let minimapToggleButton = null;
+
 function debugLog(...args) {
   if (DEBUG_MODE) {
     console.log(...args);
@@ -517,6 +520,7 @@ function initMinimap() {
   minimapContainer.style.pointerEvents = 'none';
 
   document.body.appendChild(minimapContainer);
+  createMinimapToggleButton();
 
   // ResizeObserver를 사용하여 페이지 크기 변경 시 미니맵 마커 위치 업데이트
   if ('ResizeObserver' in window) {
@@ -557,11 +561,13 @@ function updateMinimapMarkers() {
   if (highlightElements.length === 0) {
     // 하이라이트가 없으면 미니맵 숨기기
     minimapContainer.style.display = 'none';
+    minimapToggleButton.style.display = 'none';
     return;
   } else {
     // 하이라이트가 있으면 미니맵 표시
     minimapContainer.style.display = 'flex';
     minimapContainer.style.pointerEvents = 'auto'; // 클릭 가능하도록 설정
+    minimapToggleButton.style.display = 'flex';
   }
 
   highlightElements.forEach(element => {
@@ -692,3 +698,39 @@ window.addEventListener('resize', throttle(() => {
     updateMinimapMarkers();
   }
 }, 200));
+
+function createMinimapToggleButton() {
+  if (minimapToggleButton) return;
+
+  // 토글 버튼 생성
+  minimapToggleButton = document.createElement('div');
+  minimapToggleButton.className = 'text-highlighter-minimap-toggle';
+  minimapToggleButton.innerHTML = 'M'; // 'M'은 Minimap의 약자
+  minimapToggleButton.title = '미니맵 표시/숨기기';
+
+  // 토글 기능 추가
+  minimapToggleButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMinimapVisibility();
+  });
+
+  document.body.appendChild(minimapToggleButton);
+}
+
+// 미니맵 토글 함수
+function toggleMinimapVisibility() {
+  minimapVisible = !minimapVisible;
+
+  if (minimapContainer) {
+    if (minimapVisible) {
+      minimapContainer.style.display = 'flex';
+      minimapToggleButton.innerHTML = 'M';
+      minimapToggleButton.title = '미니맵 숨기기';
+    } else {
+      minimapContainer.style.display = 'none';
+      minimapToggleButton.innerHTML = 'M';
+      minimapToggleButton.title = '미니맵 표시하기';
+    }
+  }
+}
+
