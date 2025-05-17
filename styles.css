@@ -84,6 +84,7 @@
   border-radius: 50%;
   left: 1px;
   cursor: pointer;
+  box-sizing: content-box;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
   transition:
     transform 0.2s,
@@ -97,7 +98,7 @@
 
 /* 페이지 로드시 미니맵 초기 상태 - 반투명 */
 .text-highlighter-minimap {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 /* 마우스 근처에 오면 불투명하게 보임 */
