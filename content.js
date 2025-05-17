@@ -17,7 +17,6 @@ let resizeObserver = null;
 let throttleTimer = null;
 
 let minimapVisible = true;
-let minimapToggleButton = null;
 
 function debugLog(...args) {
   if (DEBUG_MODE) {
@@ -67,6 +66,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+  else if (message.action === 'setMinimapVisibility') {
+    minimapVisible = message.visible;
+    updateMinimapVisibility();
+    sendResponse({ success: true });
+    return true;
+  }
 });
 
 // Background Service Worker로부터 색상 정보를 비동기적으로 가져오는 함수
@@ -91,6 +96,14 @@ function getColorsFromBackground() {
 // 저장된 하이라이트 불러오기
 function loadHighlights() {
   debugLog('Loading highlights for URL:', currentUrl);
+
+  // 미니맵 가시성 설정 불러오기
+  chrome.storage.local.get(['minimapVisible'], (result) => {
+    // 기본값은 true (미니맵 표시)
+    minimapVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
+    debugLog('Loaded minimap setting:', minimapVisible);
+  });
+
   chrome.runtime.sendMessage(
     { action: 'getHighlights', url: currentUrl },
     (response) => {
@@ -518,9 +531,7 @@ function initMinimap() {
 
   // 미니맵이 하이라이트 컨트롤러보다 우선순위가 낮도록 설정
   minimapContainer.style.pointerEvents = 'none';
-
   document.body.appendChild(minimapContainer);
-  createMinimapToggleButton();
 
   // ResizeObserver를 사용하여 페이지 크기 변경 시 미니맵 마커 위치 업데이트
   if ('ResizeObserver' in window) {
@@ -561,13 +572,10 @@ function updateMinimapMarkers() {
   if (highlightElements.length === 0) {
     // 하이라이트가 없으면 미니맵 숨기기
     minimapContainer.style.display = 'none';
-    minimapToggleButton.style.display = 'none';
     return;
   } else {
-    // 하이라이트가 있으면 미니맵 표시
-    minimapContainer.style.display = 'flex';
-    minimapContainer.style.pointerEvents = 'auto'; // 클릭 가능하도록 설정
-    minimapToggleButton.style.display = 'flex';
+    // 하이라이트가 있으면 미니맵 설정에 따라 표시
+    updateMinimapVisibility();
   }
 
   highlightElements.forEach(element => {
@@ -699,38 +707,17 @@ window.addEventListener('resize', throttle(() => {
   }
 }, 200));
 
-function createMinimapToggleButton() {
-  if (minimapToggleButton) return;
+function updateMinimapVisibility() {
+  if (!minimapContainer) return;
 
-  // 토글 버튼 생성
-  minimapToggleButton = document.createElement('div');
-  minimapToggleButton.className = 'text-highlighter-minimap-toggle';
-  minimapToggleButton.innerHTML = 'M'; // 'M'은 Minimap의 약자
-  minimapToggleButton.title = '미니맵 표시/숨기기';
+  // 하이라이트가 있을 때만 미니맵 표시 (기존 로직 유지)
+  const highlightElements = document.querySelectorAll('.text-highlighter-extension');
+  const hasHighlights = highlightElements.length > 0;
 
-  // 토글 기능 추가
-  minimapToggleButton.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleMinimapVisibility();
-  });
-
-  document.body.appendChild(minimapToggleButton);
-}
-
-// 미니맵 토글 함수
-function toggleMinimapVisibility() {
-  minimapVisible = !minimapVisible;
-
-  if (minimapContainer) {
-    if (minimapVisible) {
-      minimapContainer.style.display = 'flex';
-      minimapToggleButton.innerHTML = 'M';
-      minimapToggleButton.title = '미니맵 숨기기';
-    } else {
-      minimapContainer.style.display = 'none';
-      minimapToggleButton.innerHTML = 'M';
-      minimapToggleButton.title = '미니맵 표시하기';
-    }
+  if (hasHighlights && minimapVisible) {
+    minimapContainer.style.display = 'flex';
+    minimapContainer.style.pointerEvents = 'auto';
+  } else {
+    minimapContainer.style.display = 'none';
   }
 }
-

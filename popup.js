@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const clearAllBtn = document.getElementById('clear-all');
   const exportDataBtn = document.getElementById('export-data');
   const viewAllPagesBtn = document.getElementById('view-all-pages');
+  const minimapToggle = document.getElementById('minimap-toggle');
 
   // 디버그 모드 설정 - 개발 시 true로 변경
   const DEBUG_MODE = false;
@@ -63,6 +64,34 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   }
+
+  // 미니맵 설정 불러오기
+  function loadMinimapSetting() {
+    chrome.storage.local.get(['minimapVisible'], (result) => {
+      // 기본값은 true (미니맵 표시)
+      const isVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
+      minimapToggle.checked = isVisible;
+      debugLog('Loaded minimap setting:', isVisible);
+    });
+  }
+
+  // 미니맵 설정 저장 및 현재 페이지에 적용
+  minimapToggle.addEventListener('change', function () {
+    const isVisible = minimapToggle.checked;
+
+    // 스토리지에 저장
+    chrome.storage.local.set({ minimapVisible: isVisible }, () => {
+      debugLog('Minimap visibility saved:', isVisible);
+
+      // 현재 페이지에 설정 적용
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          action: 'setMinimapVisibility',
+          visible: isVisible
+        });
+      });
+    });
+  });
 
   // 하이라이트 삭제
   function deleteHighlight(id, url) {
@@ -159,4 +188,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 초기화
   loadHighlights();
+  loadMinimapSetting();
 });
