@@ -11,7 +11,6 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
-/* 아래는 addHighlightStyles 함수에서 옮겨온 스타일 */
 .text-highlighter-controls {
   position: absolute;
   display: flex;
@@ -57,7 +56,6 @@
   transform: scale(1.1);
 }
 
-/* 미니맵 관련 스타일 */
 .text-highlighter-minimap {
   position: fixed;
   right: 5px;
@@ -96,22 +94,18 @@
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
-/* 페이지 로드시 미니맵 초기 상태 - 반투명 */
 .text-highlighter-minimap {
   opacity: 0.6;
 }
 
-/* 마우스 근처에 오면 불투명하게 보임 */
 .text-highlighter-minimap:hover {
   opacity: 1;
 }
 
-/* 미니맵 내 현재 보이는 하이라이트 표시 */
 .text-highlighter-minimap-marker.visible {
   border: 2px solid white;
 }
 
-/* 추가: 미니맵 토글 버튼 */
 .text-highlighter-minimap-toggle {
   position: fixed;
   right: 5px;
@@ -135,7 +129,6 @@
   transform: scale(1.1);
 }
 
-/* 하이라이트 임시 강조 효과 */
 .text-highlighter-extension.highlight-focus {
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.7),
