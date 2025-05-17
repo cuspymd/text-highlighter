@@ -19,11 +19,9 @@ debugLog('Content script loaded for:', currentUrl);
 
 getColorsFromBackground().then(() => {
   loadHighlights();
-  addHighlightStyles();
   createHighlightControls();
 }).catch(error => {
   console.error('Failed to load colors from background:', error);
-  addHighlightStyles();
   createHighlightControls();
 });
 
@@ -489,62 +487,4 @@ function hideHighlightControls() {
     highlightControlsContainer.style.display = 'none';
   }
   activeHighlightElement = null;
-}
-
-// 하이라이트 및 컨트롤러 스타일 추가
-function addHighlightStyles() {
-  const style = document.createElement('style');
-  style.textContent = `
-    .text-highlighter-extension {
-      position: relative;
-      cursor: pointer;
-      border-radius: 2px;
-      padding: 0 1px;
-    }
-    
-    .text-highlighter-controls {
-      position: absolute;
-      display: flex;
-      align-items: center;
-      z-index: 9999;
-      background-color: #fff;
-      border: 1px solid #ccc;
-      border-radius: 15px;
-      padding: 3px 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-    
-    .text-highlighter-control-button {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 2px;
-      cursor: pointer;
-      user-select: none;
-    }
-    
-    .delete-highlight {
-      background-color: #ff4444;
-      color: white;
-      font-weight: bold;
-      font-size: 16px;
-    }
-    
-    .text-highlighter-color-buttons {
-      display: flex;
-      margin-left: 5px;
-    }
-    
-    .color-button {
-      border: 1px solid #ccc;
-    }
-    
-    .color-button:hover, .delete-highlight:hover {
-      transform: scale(1.1);
-    }
-  `;
-  document.head.appendChild(style);
 }
