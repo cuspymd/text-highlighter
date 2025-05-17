@@ -212,6 +212,7 @@ function changeHighlightColor(highlightElement, newColor) {
   if (highlightIndex !== -1) {
     highlights[highlightIndex].color = newColor;
     saveHighlights();
+    updateMinimapMarkers();
   }
 }
 
@@ -511,19 +512,6 @@ function initMinimap() {
   // 미니맵 컨테이너 생성
   minimapContainer = document.createElement('div');
   minimapContainer.className = 'text-highlighter-minimap';
-
-  // 스타일 적용
-  // minimapContainer.style.position = 'fixed';
-  // minimapContainer.style.right = '0';
-  // minimapContainer.style.top = '50%';
-  // minimapContainer.style.transform = 'translateY(-50%)';
-  // minimapContainer.style.width = '12px';
-  // minimapContainer.style.height = '60%';
-  // minimapContainer.style.backgroundColor = 'rgba(0,0,0,0.05)';
-  // minimapContainer.style.borderRadius = '6px';
-  // minimapContainer.style.zIndex = '9998';
-  // minimapContainer.style.display = 'flex';
-  // minimapContainer.style.flexDirection = 'column';
 
   // 미니맵이 하이라이트 컨트롤러보다 우선순위가 낮도록 설정
   minimapContainer.style.pointerEvents = 'none';
