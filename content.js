@@ -149,7 +149,11 @@ function highlightSelectedText(color) {
 
   range.insertNode(span);
 
-  // 하이라이트 정보 저장
+  // 하이라이트 위치 정보 계산
+  const rect = span.getBoundingClientRect();
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  const position = rect.top + scrollTop;
+
   highlights.push({
     id: span.dataset.highlightId,
     text: span.textContent,
@@ -158,7 +162,8 @@ function highlightSelectedText(color) {
     textRange: {
       startOffset: range.startOffset,
       endOffset: range.endOffset
-    }
+    },
+    position: position
   });
 
   addHighlightEventListeners(span);

@@ -51,8 +51,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const currentUrl = tabs[0].url;
 
       chrome.storage.local.get([currentUrl], (result) => {
-        const highlights = result[currentUrl] || [];
-        debugLog('Loaded highlights for popup:', highlights);
+        let highlights = result[currentUrl] || [];
+
+        highlights.sort((a, b) => (a.position || 0) - (b.position || 0));
+
+        debugLog('Loaded highlights for popup (sorted by position):', highlights);
 
         // 하이라이트 목록 표시
         if (highlights.length > 0) {

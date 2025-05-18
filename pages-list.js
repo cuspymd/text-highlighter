@@ -133,6 +133,8 @@ document.addEventListener('DOMContentLoaded', function () {
             highlightsContainer.style.display = 'block';
             this.textContent = getMessage('hideDetails', 'Hide');
 
+            page.highlights.sort((a, b) => (a.position || 0) - (b.position || 0));
+
             page.highlights.forEach(highlight => {
               const highlightItem = document.createElement('div');
               highlightItem.className = 'highlight-item';
