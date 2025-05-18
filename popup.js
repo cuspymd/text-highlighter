@@ -1,4 +1,33 @@
+// Internationalization helper
+function initializeI18n() {
+  // Get all elements with data-i18n attribute
+  const elements = document.querySelectorAll('[data-i18n]');
+
+  elements.forEach(element => {
+    const key = element.getAttribute('data-i18n');
+    const message = chrome.i18n.getMessage(key);
+
+    if (message) {
+      // Set the content based on element type
+      if (element.tagName === 'INPUT' && element.type === 'button') {
+        element.value = message;
+      } else if (element.tagName === 'INPUT' && element.placeholder !== undefined) {
+        element.placeholder = message;
+      } else if (element.tagName === 'META' && element.name === 'description') {
+        element.content = message;
+      } else if (element.tagName === 'TITLE') {
+        element.textContent = message;
+      } else {
+        element.textContent = message;
+      }
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+  // Initialize internationalization first
+  initializeI18n();
+
   const highlightsContainer = document.getElementById('highlights-container');
   const noHighlights = document.getElementById('no-highlights');
   const clearAllBtn = document.getElementById('clear-all');
@@ -119,7 +148,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 모든 하이라이트 삭제
   clearAllBtn.addEventListener('click', function () {
-    if (confirm('정말 현재 페이지의 모든 하이라이트를 삭제하시겠습니까?')) {
+    const confirmMessage = chrome.i18n.getMessage('confirmClearAll');
+    if (confirm(confirmMessage)) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const currentUrl = tabs[0].url;
 

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ko">
+<html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>텍스트 하이라이터</title>
+    <title data-i18n="popupTitle">Text Highlighter</title>
     <style>
       body {
         width: 300px;
@@ -103,30 +103,35 @@
     </style>
   </head>
   <body>
-    <h1>텍스트 하이라이터</h1>
+    <h1 data-i18n="popupTitle">Text Highlighter</h1>
 
     <div class="section">
-      <p>
-        웹 페이지에서 텍스트를 선택한 후 마우스 오른쪽 버튼을 클릭하여
-        하이라이트할 수 있습니다.
+      <p data-i18n="popupDescription">
+        Select text on web pages and right-click to highlight.
       </p>
     </div>
 
     <div class="section">
-      <h2>현재 페이지 하이라이트</h2>
+      <h2 data-i18n="currentPageHighlights">Current Page Highlights</h2>
       <div id="highlights-container" class="highlights-list">
-        <div id="no-highlights">
-          현재 페이지에 하이라이트된 텍스트가 없습니다.
+        <div id="no-highlights" data-i18n="noHighlights">
+          No highlighted text on this page.
         </div>
       </div>
     </div>
 
     <div class="section">
-      <button id="clear-all" class="btn">모든 하이라이트 지우기</button>
-      <button id="view-all-pages" class="btn">하이라이트된 페이지 목록</button>
-      <button id="export-data" class="btn">하이라이트 내보내기</button>
+      <button id="clear-all" class="btn" data-i18n="clearAllHighlights">
+        Clear All Highlights
+      </button>
+      <button id="view-all-pages" class="btn" data-i18n="viewAllPages">
+        Highlighted Pages List
+      </button>
+      <button id="export-data" class="btn" data-i18n="exportHighlights">
+        Export Highlights
+      </button>
       <div class="toggle-container">
-        <label for="minimap-toggle">미니맵 표시</label>
+        <label for="minimap-toggle" data-i18n="showMinimap">Show Minimap</label>
         <input type="checkbox" id="minimap-toggle" checked />
       </div>
     </div>

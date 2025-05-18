@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ko">
+<html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>하이라이트된 페이지 목록</title>
+    <title data-i18n="pagesListTitle">Highlighted Pages List</title>
     <style>
       body {
         font-family:
@@ -135,10 +135,12 @@
     </style>
   </head>
   <body>
-    <h1>하이라이트된 페이지 목록</h1>
+    <h1 data-i18n="pagesListTitle">Highlighted Pages List</h1>
 
     <div id="pages-container" class="pages-list">
-      <div id="no-pages" class="no-pages">하이라이트된 페이지가 없습니다.</div>
+      <div id="no-pages" class="no-pages" data-i18n="noPagesFound">
+        No highlighted pages found.
+      </div>
     </div>
 
     <script src="pages-list.js"></script>

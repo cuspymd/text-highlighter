@@ -40,5 +40,65 @@
   },
   "highlightWithPink": {
     "message": "Highlight with Pink"
+  },
+  "popupTitle": {
+    "message": "Text Highlighter"
+  },
+  "popupDescription": {
+    "message": "Select text on web pages and right-click to highlight."
+  },
+  "currentPageHighlights": {
+    "message": "Current Page Highlights"
+  },
+  "noHighlights": {
+    "message": "No highlighted text on this page."
+  },
+  "clearAllHighlights": {
+    "message": "Clear All Highlights"
+  },
+  "viewAllPages": {
+    "message": "Highlighted Pages List"
+  },
+  "exportHighlights": {
+    "message": "Export Highlights"
+  },
+  "showMinimap": {
+    "message": "Show Minimap"
+  },
+  "confirmClearAll": {
+    "message": "Really delete all highlights on this page?"
+  },
+  "pagesListTitle": {
+    "message": "Highlighted Pages List"
+  },
+  "noPagesFound": {
+    "message": "No highlighted pages found."
+  },
+  "highlightCount": {
+    "message": "Highlights"
+  },
+  "lastUpdated": {
+    "message": "Last Updated"
+  },
+  "showDetails": {
+    "message": "Show Details"
+  },
+  "hideDetails": {
+    "message": "Hide"
+  },
+  "openPage": {
+    "message": "Open Page"
+  },
+  "deletePage": {
+    "message": "Delete"
+  },
+  "confirmDeletePage": {
+    "message": "Delete all highlights for this page?"
+  },
+  "noTitle": {
+    "message": "(No title)"
+  },
+  "unknown": {
+    "message": "Unknown"
   }
 }

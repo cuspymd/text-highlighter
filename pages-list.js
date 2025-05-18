@@ -12,6 +12,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // 다국어 지원을 위한 메시지 가져오기 함수
+  function getMessage(key, defaultValue = '') {
+    if (typeof chrome !== 'undefined' && chrome.i18n) {
+      return chrome.i18n.getMessage(key) || defaultValue;
+    }
+    return defaultValue;
+  }
+
+  // HTML 요소의 텍스트를 다국어로 변경
+  function localizeStaticElements() {
+    const elementsToLocalize = document.querySelectorAll('[data-i18n]');
+    elementsToLocalize.forEach(element => {
+      const key = element.getAttribute('data-i18n');
+      element.textContent = getMessage(key, element.textContent);
+    });
+  }
+
   // 모든 하이라이트된 페이지 데이터 불러오기
   function loadAllHighlightedPages() {
     chrome.storage.local.get(null, (result) => {
@@ -63,8 +80,8 @@ document.addEventListener('DOMContentLoaded', function () {
         pageItem.dataset.url = page.url;
 
         // 저장된 제목 사용 또는 URL에서 제목 추출 시도
-        let pageTitle = page.title || '(제목 없음)';
-        if (!pageTitle || pageTitle === '') {
+        let pageTitle = page.title || getMessage('noTitle', '(No title)');
+        if (!pageTitle || pageTitle === '' || pageTitle === getMessage('noTitle', '(No title)')) {
           try {
             const urlObj = new URL(page.url);
             pageTitle = urlObj.hostname + urlObj.pathname;
@@ -74,11 +91,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // 마지막 업데이트 날짜 형식화
-        let lastUpdated = '알 수 없음';
+        let lastUpdated = getMessage('unknown', 'Unknown');
         if (page.lastUpdated) {
           try {
             const date = new Date(page.lastUpdated);
-            lastUpdated = date.toLocaleString('ko-KR');
+            // 현재 언어에 따라 날짜 형식 결정
+            const locale = chrome.i18n.getUILanguage ? chrome.i18n.getUILanguage() : 'en';
+            lastUpdated = date.toLocaleString(locale);
           } catch (e) {
             lastUpdated = page.lastUpdated;
           }
@@ -88,12 +107,12 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="page-info-container">
             <div class="page-title">${pageTitle}</div>
             <div class="page-url">${page.url}</div>
-            <div class="page-info">하이라이트 수: ${page.highlightCount} | 마지막 업데이트: ${lastUpdated}</div>
+            <div class="page-info">${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount} | ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}</div>
           </div>
           <div class="page-actions">
-            <button class="btn btn-details">상세 보기</button>
-            <button class="btn btn-view">페이지 열기</button>
-            <button class="btn btn-delete">삭제</button>
+            <button class="btn btn-details">${getMessage('showDetails', 'Show Details')}</button>
+            <button class="btn btn-view">${getMessage('openPage', 'Open Page')}</button>
+            <button class="btn btn-delete">${getMessage('deletePage', 'Delete')}</button>
           </div>
           <div class="page-highlights"></div>
         `;
@@ -107,12 +126,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
           if (highlightsContainer.style.display === 'block') {
             highlightsContainer.style.display = 'none';
-            this.textContent = '상세 보기';
+            this.textContent = getMessage('showDetails', 'Show Details');
           } else {
             // 하이라이트 데이터 표시
             highlightsContainer.innerHTML = '';
             highlightsContainer.style.display = 'block';
-            this.textContent = '접기';
+            this.textContent = getMessage('hideDetails', 'Hide');
 
             page.highlights.forEach(highlight => {
               const highlightItem = document.createElement('div');
@@ -138,7 +157,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 페이지 삭제 버튼 이벤트
         pageItem.querySelector('.btn-delete').addEventListener('click', function () {
-          if (confirm('이 페이지의 모든 하이라이트를 삭제하시겠습니까?')) {
+          const confirmMessage = getMessage('confirmDeletePage', 'Delete all highlights for this page?');
+          if (confirm(confirmMessage)) {
             deletePageHighlights(page.url);
           }
         });
@@ -160,5 +180,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // 초기화
+  localizeStaticElements();  // 정적 요소들 다국어 처리
   loadAllHighlightedPages();
 });
