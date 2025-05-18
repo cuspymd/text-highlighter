@@ -16,6 +16,36 @@
       "128": "images/icon128.png"
     }
   },
+  "commands": {
+    "highlight_yellow": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+1",
+        "mac": "Command+Shift+1"
+      },
+      "description": "노란색으로 하이라이트"
+    },
+    "highlight_green": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+2",
+        "mac": "Command+Shift+2"
+      },
+      "description": "초록색으로 하이라이트"
+    },
+    "highlight_blue": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+3",
+        "mac": "Command+Shift+3"
+      },
+      "description": "파란색으로 하이라이트"
+    },
+    "highlight_pink": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+4",
+        "mac": "Command+Shift+4"
+      },
+      "description": "분홍색으로 하이라이트"
+    }
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

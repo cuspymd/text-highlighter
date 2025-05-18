@@ -75,6 +75,43 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
+// 단축키 명령 처리
+chrome.commands.onCommand.addListener((command) => {
+  debugLog('Command received:', command);
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const activeTab = tabs[0];
+    if (activeTab) {
+      let targetColor = null;
+      // 단축키에 따라 색상 결정
+      switch (command) {
+        case 'highlight_yellow':
+          targetColor = COLORS.find(c => c.id === 'yellow')?.color;
+          break;
+        case 'highlight_green':
+          targetColor = COLORS.find(c => c.id === 'green')?.color;
+          break;
+        case 'highlight_blue':
+          targetColor = COLORS.find(c => c.id === 'blue')?.color;
+          break;
+        case 'highlight_pink':
+          targetColor = COLORS.find(c => c.id === 'pink')?.color;
+          break;
+      }
+
+      // 색상 하이라이트 명령 처리
+      if (targetColor) {
+        debugLog('Sending highlight action to tab:', activeTab.id, 'with color:', targetColor);
+        chrome.tabs.sendMessage(activeTab.id, {
+          action: 'highlight',
+          color: targetColor
+        }, response => {
+          debugLog('Highlight action response:', response);
+        });
+      }
+    }
+  });
+});
+
 // 콘텐츠 스크립트와 통신 (메시지 수신 처리)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // 디버그 모드 상태 요청 처리
@@ -140,4 +177,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // 비동기 응답을 위해 true 반환
   }
 });
-

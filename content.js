@@ -129,7 +129,7 @@ function saveHighlights() {
 function highlightSelectedText(color) {
   const selection = window.getSelection();
 
-  if (!selection.rangeCount) return;
+  if (selection.toString().trim() === '') return;
 
   const range = selection.getRangeAt(0);
   const selectionContents = range.extractContents();
