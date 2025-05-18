@@ -462,8 +462,8 @@ function showHighlightControls(highlightElement) {
   if (!highlightControlsContainer) createHighlightControls();
 
   const firstTextPosition = getFirstTextNodePosition(highlightElement);
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
 
   highlightControlsContainer.style.top = (firstTextPosition.top + scrollTop - 30) + 'px';
   highlightControlsContainer.style.left = (firstTextPosition.left + scrollLeft) + 'px';

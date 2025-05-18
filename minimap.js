@@ -80,7 +80,7 @@ class MinimapManager {
   // 개별 마커 생성
   createMarker(highlightElement, documentHeight, minimapHeight) {
     const rect = highlightElement.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const absoluteTop = rect.top + scrollTop;
 
     // 위치 비율 계산
@@ -124,7 +124,7 @@ class MinimapManager {
   updateMarkerVisibility() {
     if (!this.container || this.markers.length === 0) return;
 
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const windowHeight = window.innerHeight;
     const visibleRange = {
       top: scrollTop,
@@ -157,7 +157,7 @@ class MinimapManager {
     if (!highlightElement) return;
 
     const rect = highlightElement.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const absoluteTop = rect.top + scrollTop;
 
     // 스크롤 위치 조정 (약간 위에 위치하도록)
