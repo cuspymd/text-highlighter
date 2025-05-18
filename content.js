@@ -9,14 +9,8 @@ let COLORS = [];
 let highlightControlsContainer = null;
 let activeHighlightElement = null;
 
-
-// 미니맵 관련 변수 선언
-let minimapContainer = null;
-let minimapMarkers = [];
-let resizeObserver = null;
-let throttleTimer = null;
-
-let minimapVisible = true;
+// 미니맵 매니저 인스턴스
+let minimapManager = null;
 
 function debugLog(...args) {
   if (DEBUG_MODE) {
@@ -67,8 +61,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   else if (message.action === 'setMinimapVisibility') {
-    minimapVisible = message.visible;
-    updateMinimapVisibility();
+    if (minimapManager) {
+      minimapManager.setVisibility(message.visible);
+    }
     sendResponse({ success: true });
     return true;
   }
@@ -97,13 +92,6 @@ function getColorsFromBackground() {
 function loadHighlights() {
   debugLog('Loading highlights for URL:', currentUrl);
 
-  // 미니맵 가시성 설정 불러오기
-  chrome.storage.local.get(['minimapVisible'], (result) => {
-    // 기본값은 true (미니맵 표시)
-    minimapVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
-    debugLog('Loaded minimap setting:', minimapVisible);
-  });
-
   chrome.runtime.sendMessage(
     { action: 'getHighlights', url: currentUrl },
     (response) => {
@@ -116,6 +104,7 @@ function loadHighlights() {
         debugLog('No highlights found or invalid response');
       }
 
+      // 미니맵 초기화
       initMinimap();
     }
   );
@@ -520,204 +509,22 @@ function hideHighlightControls() {
   activeHighlightElement = null;
 }
 
-// 미니맵 초기화 함수
 function initMinimap() {
-  // 이미 존재하면 초기화하지 않음
-  if (minimapContainer) return;
+  chrome.storage.local.get(['minimapVisible'], (result) => {
+    const minimapVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
 
-  // 미니맵 컨테이너 생성
-  minimapContainer = document.createElement('div');
-  minimapContainer.className = 'text-highlighter-minimap';
+    minimapManager = new MinimapManager();
+    minimapManager.setVisibility(minimapVisible);
+    minimapManager.init();
 
-  // 미니맵이 하이라이트 컨트롤러보다 우선순위가 낮도록 설정
-  minimapContainer.style.pointerEvents = 'none';
-  document.body.appendChild(minimapContainer);
+    minimapManager.updateMarkers();
 
-  // ResizeObserver를 사용하여 페이지 크기 변경 시 미니맵 마커 위치 업데이트
-  if ('ResizeObserver' in window) {
-    resizeObserver = new ResizeObserver(throttle(() => {
-      updateMinimapMarkers();
-    }, 100));
-
-    resizeObserver.observe(document.body);
-  }
-
-  // 스크롤 이벤트 리스너 추가
-  window.addEventListener('scroll', throttle(() => {
-    updateMinimapMarkerVisibility();
-  }, 100));
+    debugLog('Minimap initialized with visibility:', minimapVisible);
+  });
 }
 
-// 미니맵 마커 업데이트 함수
 function updateMinimapMarkers() {
-  if (!minimapContainer) return;
-
-  // 기존 마커 제거
-  while (minimapContainer.firstChild) {
-    minimapContainer.removeChild(minimapContainer.firstChild);
-  }
-  minimapMarkers = [];
-
-  const highlightElements = document.querySelectorAll('.text-highlighter-extension');
-  const documentHeight = Math.max(
-    document.body.scrollHeight,
-    document.body.offsetHeight,
-    document.documentElement.clientHeight,
-    document.documentElement.scrollHeight,
-    document.documentElement.offsetHeight
-  );
-
-  const minimapHeight = minimapContainer.clientHeight;
-
-  if (highlightElements.length === 0) {
-    // 하이라이트가 없으면 미니맵 숨기기
-    minimapContainer.style.display = 'none';
-    return;
-  } else {
-    // 하이라이트가 있으면 미니맵 설정에 따라 표시
-    updateMinimapVisibility();
-  }
-
-  highlightElements.forEach(element => {
-    const rect = element.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const absoluteTop = rect.top + scrollTop;
-
-    // 위치 비율 계산
-    const relativePosition = absoluteTop / documentHeight;
-    const markerPosition = relativePosition * minimapHeight;
-
-    // 마커 요소 생성
-    const marker = document.createElement('div');
-    marker.className = 'text-highlighter-minimap-marker';
-
-    marker.style.backgroundColor = element.style.backgroundColor;
-    marker.style.top = `${markerPosition}px`;
-
-    // 하이라이트 ID를 마커에 저장
-    marker.dataset.highlightId = element.dataset.highlightId;
-
-    // 마커 클릭 이벤트
-    marker.addEventListener('click', (e) => {
-      e.stopPropagation();
-
-      // 해당 하이라이트로 스크롤
-      scrollToHighlight(element);
-
-      // 해당 하이라이트 잠시 강조 효과
-      highlightTemporarily(element);
-    });
-
-    minimapContainer.appendChild(marker);
-    minimapMarkers.push({
-      element: marker,
-      highlightElement: element,
-      position: absoluteTop
-    });
-  });
-
-  updateMinimapMarkerVisibility();
-}
-
-// 미니맵 마커 가시성 업데이트 (현재 화면에 보이는 하이라이트 표시)
-function updateMinimapMarkerVisibility() {
-  if (!minimapContainer || minimapMarkers.length === 0) return;
-
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  const windowHeight = window.innerHeight;
-  const visibleRange = {
-    top: scrollTop,
-    bottom: scrollTop + windowHeight
-  };
-
-  minimapMarkers.forEach(marker => {
-    const highlightRect = marker.highlightElement.getBoundingClientRect();
-    const highlightAbsoluteTop = highlightRect.top + scrollTop;
-    const highlightAbsoluteBottom = highlightRect.bottom + scrollTop;
-
-    // 현재 화면에 보이는지 확인
-    const isVisible = (
-      (highlightAbsoluteTop >= visibleRange.top && highlightAbsoluteTop <= visibleRange.bottom) ||
-      (highlightAbsoluteBottom >= visibleRange.top && highlightAbsoluteBottom <= visibleRange.bottom) ||
-      (highlightAbsoluteTop <= visibleRange.top && highlightAbsoluteBottom >= visibleRange.bottom)
-    );
-
-    // 현재 화면에 보이는 하이라이트는 마커에 테두리 효과
-    if (isVisible) {
-      marker.element.classList.add('visible');
-    } else {
-      marker.element.classList.remove('visible');
-    }
-  });
-}
-
-// 하이라이트로 스크롤 함수
-function scrollToHighlight(highlightElement) {
-  if (!highlightElement) return;
-
-  const rect = highlightElement.getBoundingClientRect();
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  const absoluteTop = rect.top + scrollTop;
-
-  // 스크롤 위치 조정 (약간 위에 위치하도록)
-  const scrollToPosition = absoluteTop - 100;
-
-  // 부드러운 스크롤
-  window.scrollTo({
-    top: scrollToPosition,
-    behavior: 'smooth'
-  });
-}
-
-// 하이라이트 일시적 강조 효과
-function highlightTemporarily(highlightElement) {
-  if (!highlightElement) return;
-
-  // 원래 스타일 저장
-  const originalBoxShadow = highlightElement.style.boxShadow;
-  const originalTransition = highlightElement.style.transition;
-
-  // 강조 스타일 적용
-  highlightElement.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.7), 0 0 0 6px rgba(0, 0, 0, 0.3)';
-  highlightElement.style.transition = 'box-shadow 0.3s';
-
-  // 일정 시간 후 원래 스타일로 복원
-  setTimeout(() => {
-    highlightElement.style.boxShadow = originalBoxShadow;
-    highlightElement.style.transition = originalTransition;
-  }, 1500);
-}
-
-// 쓰로틀링 헬퍼 함수 (성능 최적화용)
-function throttle(callback, delay) {
-  return function () {
-    if (throttleTimer) return;
-
-    throttleTimer = setTimeout(() => {
-      callback.apply(this, arguments);
-      throttleTimer = null;
-    }, delay);
-  };
-}
-
-// 창 크기 변경 이벤트 리스너 추가 (파일 끝에 추가)
-window.addEventListener('resize', throttle(() => {
-  if (minimapContainer) {
-    updateMinimapMarkers();
-  }
-}, 200));
-
-function updateMinimapVisibility() {
-  if (!minimapContainer) return;
-
-  // 하이라이트가 있을 때만 미니맵 표시 (기존 로직 유지)
-  const highlightElements = document.querySelectorAll('.text-highlighter-extension');
-  const hasHighlights = highlightElements.length > 0;
-
-  if (hasHighlights && minimapVisible) {
-    minimapContainer.style.display = 'flex';
-    minimapContainer.style.pointerEvents = 'auto';
-  } else {
-    minimapContainer.style.display = 'none';
+  if (minimapManager) {
+    minimapManager.updateMarkers();
   }
 }

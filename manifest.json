@@ -6,7 +6,7 @@
   "permissions": ["storage", "contextMenus", "activeTab", "tabs"],
   "background": {
     "service_worker": "background.js",
-    "type": "module" // background.js에서 모듈(import/export)을 사용하기 위해 추가
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html",
@@ -19,7 +19,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"], // content.js는 그대로 유지 (constants.js를 직접 임포트하지 않음)
+      "js": ["minimap.js", "content.js"],
       "css": ["styles.css"]
     }
   ],
