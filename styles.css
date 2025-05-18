@@ -87,6 +87,12 @@
   transition:
     transform 0.2s,
     box-shadow 0.2s;
+    left 0.2s;
+}
+
+.text-highlighter-minimap-marker.visible {
+  border: 2px solid white;
+  left: -1px;
 }
 
 .text-highlighter-minimap-marker:hover {

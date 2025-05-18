@@ -644,9 +644,9 @@ function updateMinimapMarkerVisibility() {
 
     // 현재 화면에 보이는 하이라이트는 마커에 테두리 효과
     if (isVisible) {
-      marker.element.style.border = '2px solid white';
+      marker.element.classList.add('visible');
     } else {
-      marker.element.style.border = 'none';
+      marker.element.classList.remove('visible');
     }
   });
 }
