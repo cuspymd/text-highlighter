@@ -1,0 +1,44 @@
+{
+  "extensionName": {
+    "message": "Text Highlighter"
+  },
+  "extensionDescription": {
+    "message": "Extension to select text on web pages and mark with colors"
+  },
+  "highlightText": {
+    "message": "Highlight Text"
+  },
+  "removeHighlight": {
+    "message": "Remove Highlight"
+  },
+  "yellowColor": {
+    "message": "Yellow"
+  },
+  "greenColor": {
+    "message": "Green"
+  },
+  "blueColor": {
+    "message": "Blue"
+  },
+  "pinkColor": {
+    "message": "Pink"
+  },
+  "orangeColor": {
+    "message": "Orange"
+  },
+  "deleteHighlight": {
+    "message": "Delete Highlight"
+  },
+  "highlightWithYellow": {
+    "message": "Highlight with Yellow"
+  },
+  "highlightWithGreen": {
+    "message": "Highlight with Green"
+  },
+  "highlightWithBlue": {
+    "message": "Highlight with Blue"
+  },
+  "highlightWithPink": {
+    "message": "Highlight with Pink"
+  }
+}

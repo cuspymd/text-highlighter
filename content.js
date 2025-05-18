@@ -18,6 +18,11 @@ function debugLog(...args) {
   }
 }
 
+// i18n 지원 함수
+function getMessage(key, substitutions = null) {
+  return chrome.i18n.getMessage(key, substitutions);
+}
+
 debugLog('Content script loaded for:', currentUrl);
 
 getColorsFromBackground().then(() => {
@@ -418,7 +423,7 @@ function createHighlightControls() {
   const deleteButton = document.createElement('div');
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
   deleteButton.innerHTML = '×';
-  deleteButton.title = '하이라이트 삭제';
+  deleteButton.title = getMessage('deleteHighlight');
   deleteButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
       removeHighlight(activeHighlightElement);
@@ -435,7 +440,7 @@ function createHighlightControls() {
     const colorButton = document.createElement('div');
     colorButton.className = 'text-highlighter-control-button color-button';
     colorButton.style.backgroundColor = colorInfo.color;
-    colorButton.title = colorInfo.name;
+    colorButton.title = getMessage(colorInfo.nameKey);
 
     colorButton.addEventListener('click', function (e) {
       if (activeHighlightElement) {

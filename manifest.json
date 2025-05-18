@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Text Highlighter",
+  "name": "__MSG_extensionName__",
   "version": "1.0",
-  "description": "웹페이지에서 텍스트를 선택하고 색상으로 마킹할 수 있는 확장 프로그램",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
   "permissions": ["storage", "contextMenus", "activeTab", "tabs"],
   "background": {
     "service_worker": "background.js",
@@ -22,28 +23,28 @@
         "default": "Ctrl+Shift+1",
         "mac": "Command+Shift+1"
       },
-      "description": "노란색으로 하이라이트"
+      "description": "__MSG_highlightWithYellow__"
     },
     "highlight_green": {
       "suggested_key": {
         "default": "Ctrl+Shift+2",
         "mac": "Command+Shift+2"
       },
-      "description": "초록색으로 하이라이트"
+      "description": "__MSG_highlightWithGreen__"
     },
     "highlight_blue": {
       "suggested_key": {
         "default": "Ctrl+Shift+3",
         "mac": "Command+Shift+3"
       },
-      "description": "파란색으로 하이라이트"
+      "description": "__MSG_highlightWithBlue__"
     },
     "highlight_pink": {
       "suggested_key": {
         "default": "Ctrl+Shift+4",
         "mac": "Command+Shift+4"
       },
-      "description": "분홍색으로 하이라이트"
+      "description": "__MSG_highlightWithPink__"
     }
   },
   "content_scripts": [

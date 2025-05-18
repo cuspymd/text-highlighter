@@ -1,0 +1,44 @@
+{
+  "extensionName": {
+    "message": "텍스트 하이라이터"
+  },
+  "extensionDescription": {
+    "message": "웹페이지에서 텍스트를 선택하고 색상으로 마킹할 수 있는 확장 프로그램"
+  },
+  "highlightText": {
+    "message": "텍스트 하이라이트"
+  },
+  "removeHighlight": {
+    "message": "하이라이트 제거"
+  },
+  "yellowColor": {
+    "message": "노란색"
+  },
+  "greenColor": {
+    "message": "초록색"
+  },
+  "blueColor": {
+    "message": "파란색"
+  },
+  "pinkColor": {
+    "message": "분홍색"
+  },
+  "orangeColor": {
+    "message": "주황색"
+  },
+  "deleteHighlight": {
+    "message": "하이라이트 삭제"
+  },
+  "highlightWithYellow": {
+    "message": "노란색으로 하이라이트"
+  },
+  "highlightWithGreen": {
+    "message": "초록색으로 하이라이트"
+  },
+  "highlightWithBlue": {
+    "message": "파란색으로 하이라이트"
+  },
+  "highlightWithPink": {
+    "message": "분홍색으로 하이라이트"
+  }
+}

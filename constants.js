@@ -1,7 +1,11 @@
 export const COLORS = [
-  { id: 'yellow', name: '노란색', color: '#FFFF00' },
-  { id: 'green', name: '초록색', color: '#AAFFAA' },
-  { id: 'blue', name: '파란색', color: '#AAAAFF' },
-  { id: 'pink', name: '분홍색', color: '#FFAAFF' },
-  { id: 'orange', name: '주황색', color: '#FFAA55' }
+  { id: 'yellow', nameKey: 'yellowColor', color: '#FFFF00' },
+  { id: 'green', nameKey: 'greenColor', color: '#AAFFAA' },
+  { id: 'blue', nameKey: 'blueColor', color: '#AAAAFF' },
+  { id: 'pink', nameKey: 'pinkColor', color: '#FFAAFF' },
+  { id: 'orange', nameKey: 'orangeColor', color: '#FFAA55' }
 ];
+
+export function getMessage(key, substitutions = null) {
+  return chrome.i18n.getMessage(key, substitutions);
+}

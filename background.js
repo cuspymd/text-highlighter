@@ -1,5 +1,4 @@
-// constants.js 파일에서 COLORS 변수를 임포트합니다.
-import { COLORS } from './constants.js';
+import { COLORS, getMessage } from './constants.js';
 
 // 디버그 모드 설정 - 개발 시 true로 변경
 const DEBUG_MODE = false;
@@ -11,7 +10,7 @@ chrome.runtime.onInstalled.addListener(() => {
   // 상위 메뉴 항목 생성
   chrome.contextMenus.create({
     id: 'highlight-text',
-    title: '텍스트 하이라이트',
+    title: getMessage('highlightText'),
     contexts: ['selection']
   });
 
@@ -32,7 +31,7 @@ chrome.runtime.onInstalled.addListener(() => {
       chrome.contextMenus.create({
         id: `highlight-${color.id}`,
         parentId: 'highlight-text',
-        title: `${color.name}${shortcutDisplay}`, // 색상 이름 뒤에 단축키 정보 추가
+        title: `${getMessage(color.nameKey)}${shortcutDisplay}`,
         contexts: ['selection']
       });
     });
@@ -41,7 +40,7 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
       id: 'remove-highlight',
       parentId: 'highlight-text',
-      title: '하이라이트 제거',
+      title: getMessage('removeHighlight'),
       contexts: ['selection']
     });
   });
