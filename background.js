@@ -15,22 +15,35 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ['selection']
   });
 
-  // 색상 하위메뉴 생성 (COLORS 변수 사용)
-  COLORS.forEach(color => {
+  // 단축키 정보를 가져와서 컨텍스트 메뉴에 표시
+  chrome.commands.getAll((commands) => {
+    const commandShortcuts = {};
+    commands.forEach(command => {
+      if (command.name.startsWith('highlight_') && command.shortcut) {
+        // commands.json에 정의된 command name과 매칭하여 단축키 저장
+        commandShortcuts[command.name] = ` (${command.shortcut})`;
+      }
+    });
+
+    COLORS.forEach(color => {
+      const commandName = `highlight_${color.id}`;
+      const shortcutDisplay = commandShortcuts[commandName] || '';
+
+      chrome.contextMenus.create({
+        id: `highlight-${color.id}`,
+        parentId: 'highlight-text',
+        title: `${color.name}${shortcutDisplay}`, // 색상 이름 뒤에 단축키 정보 추가
+        contexts: ['selection']
+      });
+    });
+
+    // 하이라이트 제거 메뉴 항목 추가
     chrome.contextMenus.create({
-      id: `highlight-${color.id}`,
+      id: 'remove-highlight',
       parentId: 'highlight-text',
-      title: color.name,
+      title: '하이라이트 제거',
       contexts: ['selection']
     });
-  });
-
-  // 하이라이트 제거 메뉴 항목 추가
-  chrome.contextMenus.create({
-    id: 'remove-highlight',
-    parentId: 'highlight-text',
-    title: '하이라이트 제거',
-    contexts: ['selection']
   });
 });
 
@@ -167,7 +180,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           debugLog('Removed page metadata as no highlights remain:', message.url);
         });
       }
-
 
       debugLog('Saving highlights for URL:', message.url, message.highlights);
       chrome.storage.local.set(saveData, () => {
