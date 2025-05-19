@@ -159,10 +159,6 @@ function highlightSelectedText(color) {
     text: span.textContent,
     color: color,
     xpath: getXPathForElement(span),
-    textRange: {
-      startOffset: range.startOffset,
-      endOffset: range.endOffset
-    },
     position: position
   });
 
