@@ -5,6 +5,8 @@ class MinimapManager {
     this.resizeObserver = null;
     this.throttleTimer = null;
     this.visible = true;
+    // 각 하이라이트 요소별 강조 타이머를 저장하는 Map
+    this.highlightTimers = new Map();
   }
 
   // 미니맵 초기화
@@ -174,19 +176,49 @@ class MinimapManager {
   highlightTemporarily(highlightElement) {
     if (!highlightElement) return;
 
-    // 원래 스타일 저장
-    const originalBoxShadow = highlightElement.style.boxShadow;
-    const originalTransition = highlightElement.style.transition;
+    const elementKey = highlightElement;
 
-    // 강조 스타일 적용
+    if (this.highlightTimers.has(elementKey)) {
+      clearTimeout(this.highlightTimers.get(elementKey));
+      this.highlightTimers.delete(elementKey);
+    }
+
+    const isAlreadyHighlighted = highlightElement.hasAttribute('data-highlighted');
+
+    if (!isAlreadyHighlighted) {
+      const originalStyles = {
+        boxShadow: highlightElement.style.boxShadow,
+        transition: highlightElement.style.transition,
+        zIndex: highlightElement.style.zIndex
+      };
+
+      highlightElement.dataset.originalBoxShadow = originalStyles.boxShadow;
+      highlightElement.dataset.originalTransition = originalStyles.transition;
+      highlightElement.dataset.originalZIndex = originalStyles.zIndex;
+
+      highlightElement.setAttribute('data-highlighted', 'true');
+    }
+
     highlightElement.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.7), 0 0 0 6px rgba(0, 0, 0, 0.3)';
     highlightElement.style.transition = 'box-shadow 0.3s';
+    highlightElement.style.zIndex = '10000'; // 다른 요소들 위에 표시
 
-    // 일정 시간 후 원래 스타일로 복원
-    setTimeout(() => {
-      highlightElement.style.boxShadow = originalBoxShadow;
-      highlightElement.style.transition = originalTransition;
+    const timerId = setTimeout(() => {
+      if (highlightElement.hasAttribute('data-highlighted')) {
+        highlightElement.style.boxShadow = highlightElement.dataset.originalBoxShadow || '';
+        highlightElement.style.transition = highlightElement.dataset.originalTransition || '';
+        highlightElement.style.zIndex = highlightElement.dataset.originalZIndex || '';
+
+        highlightElement.removeAttribute('data-highlighted');
+        delete highlightElement.dataset.originalBoxShadow;
+        delete highlightElement.dataset.originalTransition;
+        delete highlightElement.dataset.originalZIndex;
+      }
+
+      this.highlightTimers.delete(elementKey);
     }, 1500);
+
+    this.highlightTimers.set(elementKey, timerId);
   }
 
   // 미니맵 가시성 설정
@@ -225,6 +257,11 @@ class MinimapManager {
 
   // 리소스 정리
   destroy() {
+    this.highlightTimers.forEach(timerId => {
+      clearTimeout(timerId);
+    });
+    this.highlightTimers.clear();
+
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
@@ -241,6 +278,18 @@ class MinimapManager {
       clearTimeout(this.throttleTimer);
       this.throttleTimer = null;
     }
+
+    // 남아있는 강조 효과 정리
+    const highlightedElements = document.querySelectorAll('[data-highlighted="true"]');
+    highlightedElements.forEach(element => {
+      element.style.boxShadow = element.dataset.originalBoxShadow || '';
+      element.style.transition = element.dataset.originalTransition || '';
+      element.style.zIndex = element.dataset.originalZIndex || '';
+      element.removeAttribute('data-highlighted');
+      delete element.dataset.originalBoxShadow;
+      delete element.dataset.originalTransition;
+      delete element.dataset.originalZIndex;
+    });
   }
 }
 
