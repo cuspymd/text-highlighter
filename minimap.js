@@ -7,6 +7,8 @@ class MinimapManager {
     this.visible = true;
     // 각 하이라이트 요소별 강조 타이머를 저장하는 Map
     this.highlightTimers = new Map();
+    // 미니맵의 기본 높이 (컨테이너가 숨겨져 있을 때 사용)
+    this.defaultMinimapHeight = 300;
   }
 
   // 미니맵 초기화
@@ -62,7 +64,30 @@ class MinimapManager {
     this.updateVisibility();
 
     const documentHeight = this.getDocumentHeight();
-    const minimapHeight = this.container.clientHeight;
+    
+    // 미니맵 높이 가져오기 (컨테이너가 숨겨져 있으면 기본값 사용)
+    let minimapHeight = this.container.clientHeight;
+    
+    // 미니맵이 표시되지 않은 상태라면 임시로 표시하여 높이 측정
+    if (minimapHeight === 0 && this.visible) {
+      const originalDisplay = this.container.style.display;
+      const originalVisibility = this.container.style.visibility;
+      
+      // 임시로 표시하되 화면에는 보이지 않게 설정
+      this.container.style.display = 'flex';
+      this.container.style.visibility = 'hidden';
+      this.container.style.pointerEvents = 'none';
+      
+      minimapHeight = this.container.clientHeight;
+      
+      // 원래 상태로 복원
+      this.container.style.display = originalDisplay;
+      this.container.style.visibility = originalVisibility;
+    }
+    
+    if (minimapHeight === 0) {
+      minimapHeight = this.defaultMinimapHeight;
+    }
 
     highlightElements.forEach(element => {
       this.createMarker(element, documentHeight, minimapHeight);
@@ -225,6 +250,12 @@ class MinimapManager {
   setVisibility(visible) {
     this.visible = visible;
     this.updateVisibility();
+    
+    // 가시성이 변경되면 마커 위치도 업데이트
+    if (visible) {
+      // 짧은 지연 후 마커 업데이트 (DOM이 업데이트될 시간 필요)
+      setTimeout(() => this.updateMarkers(), 50);
+    }
   }
 
   // 미니맵 가시성 업데이트
@@ -292,6 +323,3 @@ class MinimapManager {
     });
   }
 }
-
-// 전역으로 내보내기
-window.MinimapManager = MinimapManager;
