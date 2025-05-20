@@ -5,11 +5,11 @@ const DEBUG_MODE = false;
 
 let COLORS = [];
 
-// 하이라이트 컨트롤러 UI 컨테이너
+// Highlight controller UI container
 let highlightControlsContainer = null;
 let activeHighlightElement = null;
 
-// 미니맵 매니저 인스턴스
+// Minimap manager instance
 let minimapManager = null;
 
 function debugLog(...args) {
@@ -18,7 +18,7 @@ function debugLog(...args) {
   }
 }
 
-// i18n 지원 함수
+// i18n support function
 function getMessage(key, substitutions = null) {
   return chrome.i18n.getMessage(key, substitutions);
 }
@@ -33,7 +33,7 @@ getColorsFromBackground().then(() => {
   createHighlightControls();
 });
 
-// 다른 영역 클릭 시 컨트롤러 숨기기 이벤트 리스너 추가
+// Add event listener to hide controller when clicking other areas
 document.addEventListener('click', function (e) {
   if (!highlightControlsContainer) return;
 
@@ -47,7 +47,7 @@ document.addEventListener('click', function (e) {
   }
 });
 
-// 백그라운드에서 메시지 수신 처리
+// Handle messages received from background
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'highlight') {
     highlightSelectedText(message.color);
@@ -74,7 +74,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Background Service Worker로부터 색상 정보를 비동기적으로 가져오는 함수
+// Function to asynchronously get color information from Background Service Worker
 function getColorsFromBackground() {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ action: 'getColors' }, (response) => {
@@ -93,7 +93,7 @@ function getColorsFromBackground() {
   });
 }
 
-// 저장된 하이라이트 불러오기
+// Load saved highlights
 function loadHighlights() {
   debugLog('Loading highlights for URL:', currentUrl);
 
@@ -109,13 +109,13 @@ function loadHighlights() {
         debugLog('No highlights found or invalid response');
       }
 
-      // 미니맵 초기화
+      // Initialize minimap
       initMinimap();
     }
   );
 }
 
-// 하이라이트 저장하기
+// Save highlights
 function saveHighlights() {
   chrome.runtime.sendMessage(
     {
@@ -130,7 +130,7 @@ function saveHighlights() {
   );
 }
 
-// 선택된 텍스트 하이라이트 처리
+// Process highlighting for selected text
 function highlightSelectedText(color) {
   const selection = window.getSelection();
 
@@ -144,12 +144,12 @@ function highlightSelectedText(color) {
   span.className = 'text-highlighter-extension';
   span.style.backgroundColor = color;
 
-  // 고유 ID 생성
+  // Create unique ID
   span.dataset.highlightId = Date.now().toString();
 
   range.insertNode(span);
 
-  // 하이라이트 위치 정보 계산
+  // Calculate highlight position information
   const rect = span.getBoundingClientRect();
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   const position = rect.top + scrollTop;
@@ -170,7 +170,7 @@ function highlightSelectedText(color) {
   selection.removeAllRanges();
 }
 
-// 하이라이트 제거
+// Remove highlight
 function removeHighlight(highlightElement = null) {
   if (!highlightElement) {
     const selection = window.getSelection();
@@ -196,7 +196,7 @@ function removeHighlight(highlightElement = null) {
       parent.insertBefore(highlightElement.firstChild, highlightElement);
     }
 
-    // highlights 배열에서 해당 항목 제거
+    // Remove corresponding item from highlights array
     const highlightId = highlightElement.dataset.highlightId;
     highlights = highlights.filter(h => h.id !== highlightId);
 
@@ -211,7 +211,7 @@ function removeHighlight(highlightElement = null) {
   }
 }
 
-// 하이라이트 색상 변경
+// Change highlight color
 function changeHighlightColor(highlightElement, newColor) {
   if (!highlightElement) return;
 
@@ -227,7 +227,7 @@ function changeHighlightColor(highlightElement, newColor) {
   }
 }
 
-// 페이지의 모든 하이라이트 제거
+// Remove all highlights from the page
 function clearAllHighlights() {
   debugLog('Clearing all highlights');
   const highlightElements = document.querySelectorAll('.text-highlighter-extension');
@@ -240,12 +240,12 @@ function clearAllHighlights() {
   });
 }
 
-// 저장된 하이라이트 정보로 페이지에 적용
+// Apply highlights to the page using saved highlight information
 function applyHighlights() {
   debugLog('Applying highlights, count:', highlights.length);
   highlights.forEach(highlight => {
     try {
-      // 텍스트 기반 검색 시도
+      // Try text-based search
       debugLog('Applying highlight:', highlight.text);
       const textFound = highlightTextInDocument(
         document.body,
@@ -256,7 +256,7 @@ function applyHighlights() {
 
       if (!textFound) {
         debugLog('Text not found by content, trying XPath');
-        // XPath 기반 찾기 시도
+        // Try XPath-based search
         const element = getElementByXPath(highlight.xpath);
         if (element) {
           const textNode = findTextNodeByContent(element, highlight.text);
@@ -284,9 +284,9 @@ function applyHighlights() {
   updateMinimapMarkers();
 }
 
-// 문서 내에서 텍스트를 찾아 하이라이트 적용
+// Find text in document and apply highlight
 function highlightTextInDocument(element, text, color, id) {
-  if (!text || text.length < 3) return false; // 너무 짧은 텍스트는 건너뛰기
+  if (!text || text.length < 3) return false; // Skip too short text
 
   const walker = document.createTreeWalker(
     element,
@@ -336,7 +336,7 @@ function highlightTextInDocument(element, text, color, id) {
   return found;
 }
 
-// 하이라이트된 텍스트 요소에 이벤트 리스너 추가
+// Add event listeners to highlighted text elements
 function addHighlightEventListeners(highlightElement) {
   highlightElement.addEventListener('click', function (e) {
     if (activeHighlightElement === highlightElement &&
@@ -354,7 +354,7 @@ function addHighlightEventListeners(highlightElement) {
   });
 }
 
-// 텍스트 내용으로 텍스트 노드 찾기
+// Find text node by content
 function findTextNodeByContent(element, text) {
   const walker = document.createTreeWalker(
     element,
@@ -373,7 +373,7 @@ function findTextNodeByContent(element, text) {
   return null;
 }
 
-// XPath로 요소 가져오기
+// Get element by XPath
 function getElementByXPath(xpath) {
   return document.evaluate(
     xpath,
@@ -384,7 +384,7 @@ function getElementByXPath(xpath) {
   ).singleNodeValue;
 }
 
-// 요소의 XPath 생성
+// Generate XPath for element
 function getXPathForElement(element) {
   if (element.tagName === 'HTML') {
     return '/HTML[1]';
@@ -412,7 +412,7 @@ function getXPathForElement(element) {
   }
 }
 
-// 하이라이트 컨트롤러 UI 생성
+// Create highlight controller UI
 function createHighlightControls() {
   if (highlightControlsContainer) return;
 
@@ -420,7 +420,7 @@ function createHighlightControls() {
   highlightControlsContainer.className = 'text-highlighter-controls';
   highlightControlsContainer.style.display = 'none';
 
-  // 삭제 버튼 생성
+  // Create delete button
   const deleteButton = document.createElement('div');
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
   deleteButton.innerHTML = '×';
@@ -432,11 +432,11 @@ function createHighlightControls() {
     e.stopPropagation();
   });
 
-  // 색상 버튼들 컨테이너
+  // Color buttons container
   const colorButtonsContainer = document.createElement('div');
   colorButtonsContainer.className = 'text-highlighter-color-buttons';
 
-  // 색상 버튼 생성
+  // Create color buttons
   COLORS.forEach(colorInfo => {
     const colorButton = document.createElement('div');
     colorButton.className = 'text-highlighter-control-button color-button';
@@ -463,7 +463,7 @@ function createHighlightControls() {
   document.body.appendChild(highlightControlsContainer);
 }
 
-// 하이라이트 컨트롤러 UI 표시
+// Display highlight controller UI
 function showHighlightControls(highlightElement) {
   if (!highlightControlsContainer) createHighlightControls();
 
@@ -476,7 +476,7 @@ function showHighlightControls(highlightElement) {
   highlightControlsContainer.style.display = 'flex';
 }
 
-// 하이라이트 요소의 첫 번째 텍스트 노드 위치 구하기
+// Get position of the first text node in highlight element
 function getFirstTextNodePosition(element) {
   let firstTextNode = null;
   const walker = document.createTreeWalker(
@@ -507,7 +507,7 @@ function getFirstTextNodePosition(element) {
   return element.getBoundingClientRect();
 }
 
-// 하이라이트 컨트롤러 UI 숨기기
+// Hide highlight controller UI
 function hideHighlightControls() {
   if (highlightControlsContainer) {
     highlightControlsContainer.style.display = 'none';

@@ -1,25 +1,25 @@
 import { COLORS, getMessage } from './constants.js';
 
-// 디버그 모드 설정 - 개발 시 true로 변경
+// Debug mode setting - change to true during development
 const DEBUG_MODE = false;
 
-// 확장 프로그램이 설치되거나 업데이트될 때 초기 설정
+// Initial setup when extension is installed or updated
 chrome.runtime.onInstalled.addListener(() => {
   if (DEBUG_MODE) console.log('Extension installed/updated. Debug mode:', DEBUG_MODE);
 
-  // 상위 메뉴 항목 생성
+  // Create main menu item
   chrome.contextMenus.create({
     id: 'highlight-text',
     title: getMessage('highlightText'),
     contexts: ['selection']
   });
 
-  // 단축키 정보를 가져와서 컨텍스트 메뉴에 표시
+  // Get shortcut information and display in context menu
   chrome.commands.getAll((commands) => {
     const commandShortcuts = {};
     commands.forEach(command => {
       if (command.name.startsWith('highlight_') && command.shortcut) {
-        // commands.json에 정의된 command name과 매칭하여 단축키 저장
+        // Save shortcut by matching command name defined in commands.json
         commandShortcuts[command.name] = ` (${command.shortcut})`;
       }
     });
@@ -36,7 +36,7 @@ chrome.runtime.onInstalled.addListener(() => {
       });
     });
 
-    // 하이라이트 제거 메뉴 항목 추가
+    // Add remove highlight menu item
     chrome.contextMenus.create({
       id: 'remove-highlight',
       parentId: 'highlight-text',
@@ -46,26 +46,26 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// 디버그용 로그 함수
+// Debug log function
 function debugLog(...args) {
   if (DEBUG_MODE) {
     console.log(...args);
   }
 }
 
-// 컨텍스트 메뉴 클릭 처리
+// Context menu click handler
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const menuId = info.menuItemId;
   debugLog('Context menu clicked:', menuId);
 
   if (menuId.startsWith('highlight-') && menuId !== 'highlight-text') {
     const colorId = menuId.replace('highlight-', '');
-    // COLORS 변수를 직접 사용
+    // Use COLORS variable directly
     const color = COLORS.find(c => c.id === colorId);
 
     if (color) {
       debugLog('Sending highlight action to tab:', tab.id);
-      // Content Script에 하이라이트 액션 및 색상 정보 전달
+      // Send highlight action and color info to Content Script
       chrome.tabs.sendMessage(tab.id, {
         action: 'highlight',
         color: color.color,
@@ -77,7 +77,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
   else if (menuId === 'remove-highlight') {
     debugLog('Sending remove highlight action to tab:', tab.id);
-    // Content Script에 하이라이트 제거 액션 전달
+    // Send remove highlight action to Content Script
     chrome.tabs.sendMessage(tab.id, {
       action: 'removeHighlight',
       text: info.selectionText
@@ -87,14 +87,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// 단축키 명령 처리
+// Shortcut command handler
 chrome.commands.onCommand.addListener((command) => {
   debugLog('Command received:', command);
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const activeTab = tabs[0];
     if (activeTab) {
       let targetColor = null;
-      // 단축키에 따라 색상 결정
+      // Determine color based on shortcut
       switch (command) {
         case 'highlight_yellow':
           targetColor = COLORS.find(c => c.id === 'yellow')?.color;
@@ -110,7 +110,7 @@ chrome.commands.onCommand.addListener((command) => {
           break;
       }
 
-      // 색상 하이라이트 명령 처리
+      // Process color highlight command
       if (targetColor) {
         debugLog('Sending highlight action to tab:', activeTab.id, 'with color:', targetColor);
         chrome.tabs.sendMessage(activeTab.id, {
@@ -124,43 +124,43 @@ chrome.commands.onCommand.addListener((command) => {
   });
 });
 
-// 콘텐츠 스크립트와 통신 (메시지 수신 처리)
+// Communication with content script (message reception handler)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // 디버그 모드 상태 요청 처리
+  // Handle debug mode status request
   if (message.action === 'getDebugMode') {
     sendResponse({ debugMode: DEBUG_MODE });
-    return true; // 비동기 응답을 위해 true 반환
+    return true; // Return true for async response
   }
 
-  // content.js에서 COLORS 정보 요청 시 처리
+  // Handle COLORS info request from content.js
   if (message.action === 'getColors') {
     debugLog('Content script requested COLORS.');
-    sendResponse({ colors: COLORS }); // COLORS 정보 전달
-    return true; // 비동기 응답을 위해 true 반환
+    sendResponse({ colors: COLORS }); // Send COLORS information
+    return true; // Return true for async response
   }
 
-  // content.js에서 하이라이트 정보 요청 시 처리
+  // Handle highlight information request from content.js
   if (message.action === 'getHighlights') {
-    // 현재 URL에 대한 하이라이트 정보 가져오기
+    // Get highlight information for current URL
     chrome.storage.local.get([message.url], (result) => {
       debugLog('Sending highlights for URL:', message.url, result[message.url] || []);
       sendResponse({ highlights: result[message.url] || [] });
     });
-    return true; // 비동기 응답을 위해 true 반환
+    return true; // Return true for async response
   }
 
-  // content.js에서 하이라이트 정보 저장 요청 시 처리
+  // Handle highlight information save request from content.js
   if (message.action === 'saveHighlights') {
-    // 현재 URL에 대한 하이라이트 정보 저장
-    // 페이지 제목도 함께 저장
+    // Save highlight information for current URL
+    // Save page title together
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const currentTab = tabs[0];
       const saveData = {};
       saveData[message.url] = message.highlights;
 
-      // 메타데이터를 함께 저장 (하이라이트가 있을 경우에만)
+      // Save metadata together (only if highlights exist)
       if (message.highlights.length > 0) {
-        // 기존 메타데이터가 있는지 확인
+        // Check if existing metadata exists
         chrome.storage.local.get([`${message.url}_meta`], (result) => {
           const metaData = result[`${message.url}_meta`] || {};
           metaData.title = currentTab.title;
@@ -174,7 +174,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           });
         });
       } else {
-        // 하이라이트가 없으면 메타데이터도 제거 (선택 사항)
+        // If no highlights remain, remove metadata (optional)
         chrome.storage.local.remove([`${message.url}_meta`], () => {
           debugLog('Removed page metadata as no highlights remain:', message.url);
         });
@@ -185,6 +185,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       });
     });
-    return true; // 비동기 응답을 위해 true 반환
+    return true; // Return true for async response
   }
 });

@@ -5,13 +5,13 @@ class MinimapManager {
     this.resizeObserver = null;
     this.throttleTimer = null;
     this.visible = true;
-    // 각 하이라이트 요소별 강조 타이머를 저장하는 Map
+    // Map to store highlight timers for each highlight element
     this.highlightTimers = new Map();
-    // 미니맵의 기본 높이 (컨테이너가 숨겨져 있을 때 사용)
+    // Default minimap height (used when container is hidden)
     this.defaultMinimapHeight = 300;
   }
 
-  // 미니맵 초기화
+  // Initialize minimap
   init() {
     if (this.container) return;
 
@@ -19,7 +19,7 @@ class MinimapManager {
     this.setupObservers();
   }
 
-  // 미니맵 컨테이너 생성
+  // Create minimap container
   createContainer() {
     this.container = document.createElement('div');
     this.container.className = 'text-highlighter-minimap';
@@ -27,9 +27,9 @@ class MinimapManager {
     document.body.appendChild(this.container);
   }
 
-  // 옵저버들 설정
+  // Set up observers
   setupObservers() {
-    // ResizeObserver로 페이지 크기 변경 감지
+    // Detect page size changes with ResizeObserver
     if ('ResizeObserver' in window) {
       this.resizeObserver = new ResizeObserver(this.throttle(() => {
         this.updateMarkers();
@@ -37,18 +37,18 @@ class MinimapManager {
       this.resizeObserver.observe(document.body);
     }
 
-    // 스크롤 이벤트 리스너
+    // Scroll event listener
     window.addEventListener('scroll', this.throttle(() => {
       this.updateMarkerVisibility();
     }, 100));
 
-    // 창 크기 변경 이벤트 리스너
+    // Window resize event listener
     window.addEventListener('resize', this.throttle(() => {
       this.updateMarkers();
     }, 200));
   }
 
-  // 미니맵 마커 업데이트
+  // Update minimap markers
   updateMarkers() {
     if (!this.container) return;
 
@@ -65,22 +65,22 @@ class MinimapManager {
 
     const documentHeight = this.getDocumentHeight();
     
-    // 미니맵 높이 가져오기 (컨테이너가 숨겨져 있으면 기본값 사용)
+    // Get minimap height (use default value if container is hidden)
     let minimapHeight = this.container.clientHeight;
     
-    // 미니맵이 표시되지 않은 상태라면 임시로 표시하여 높이 측정
+    // If minimap is not displayed, temporarily show it to measure height
     if (minimapHeight === 0 && this.visible) {
       const originalDisplay = this.container.style.display;
       const originalVisibility = this.container.style.visibility;
       
-      // 임시로 표시하되 화면에는 보이지 않게 설정
+      // Temporarily display but make invisible on screen
       this.container.style.display = 'flex';
       this.container.style.visibility = 'hidden';
       this.container.style.pointerEvents = 'none';
       
       minimapHeight = this.container.clientHeight;
       
-      // 원래 상태로 복원
+      // Restore original state
       this.container.style.display = originalDisplay;
       this.container.style.visibility = originalVisibility;
     }
@@ -96,7 +96,7 @@ class MinimapManager {
     this.updateMarkerVisibility();
   }
 
-  // 기존 마커들 제거
+  // Remove existing markers
   clearMarkers() {
     while (this.container.firstChild) {
       this.container.removeChild(this.container.firstChild);
@@ -104,24 +104,24 @@ class MinimapManager {
     this.markers = [];
   }
 
-  // 개별 마커 생성
+  // Create individual marker
   createMarker(highlightElement, documentHeight, minimapHeight) {
     const rect = highlightElement.getBoundingClientRect();
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const absoluteTop = rect.top + scrollTop;
 
-    // 위치 비율 계산
+    // Calculate position ratio
     const relativePosition = absoluteTop / documentHeight;
     const markerPosition = relativePosition * minimapHeight;
 
-    // 마커 요소 생성
+    // Create marker element
     const marker = document.createElement('div');
     marker.className = 'text-highlighter-minimap-marker';
     marker.style.backgroundColor = highlightElement.style.backgroundColor;
     marker.style.top = `${markerPosition}px`;
     marker.dataset.highlightId = highlightElement.dataset.highlightId;
 
-    // 마커 클릭 이벤트
+    // Marker click event
     marker.addEventListener('click', (e) => {
       e.stopPropagation();
       this.scrollToHighlight(highlightElement);
@@ -136,7 +136,7 @@ class MinimapManager {
     });
   }
 
-  // 문서 높이 계산
+  // Calculate document height
   getDocumentHeight() {
     return Math.max(
       document.body.scrollHeight,
@@ -147,7 +147,7 @@ class MinimapManager {
     );
   }
 
-  // 마커 가시성 업데이트 (현재 화면에 보이는 하이라이트 표시)
+  // Update marker visibility (indicate highlights currently visible on screen)
   updateMarkerVisibility() {
     if (!this.container || this.markers.length === 0) return;
 
@@ -163,14 +163,14 @@ class MinimapManager {
       const highlightAbsoluteTop = highlightRect.top + scrollTop;
       const highlightAbsoluteBottom = highlightRect.bottom + scrollTop;
 
-      // 현재 화면에 보이는지 확인
+      // Check if visible on current screen
       const isVisible = (
         (highlightAbsoluteTop >= visibleRange.top && highlightAbsoluteTop <= visibleRange.bottom) ||
         (highlightAbsoluteBottom >= visibleRange.top && highlightAbsoluteBottom <= visibleRange.bottom) ||
         (highlightAbsoluteTop <= visibleRange.top && highlightAbsoluteBottom >= visibleRange.bottom)
       );
 
-      // 현재 화면에 보이는 하이라이트는 마커에 테두리 효과
+      // Add border effect to markers for highlights visible on screen
       if (isVisible) {
         marker.element.classList.add('visible');
       } else {
@@ -179,7 +179,7 @@ class MinimapManager {
     });
   }
 
-  // 하이라이트로 스크롤
+  // Scroll to highlight
   scrollToHighlight(highlightElement) {
     if (!highlightElement) return;
 
@@ -187,17 +187,17 @@ class MinimapManager {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const absoluteTop = rect.top + scrollTop;
 
-    // 스크롤 위치 조정 (약간 위에 위치하도록)
+    // Adjust scroll position (to position slightly above)
     const scrollToPosition = absoluteTop - 100;
 
-    // 부드러운 스크롤
+    // Smooth scroll
     window.scrollTo({
       top: scrollToPosition,
       behavior: 'smooth'
     });
   }
 
-  // 하이라이트 일시적 강조 효과
+  // Temporary emphasis effect for highlight
   highlightTemporarily(highlightElement) {
     if (!highlightElement) return;
 
@@ -226,7 +226,7 @@ class MinimapManager {
 
     highlightElement.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.7), 0 0 0 6px rgba(0, 0, 0, 0.3)';
     highlightElement.style.transition = 'box-shadow 0.3s';
-    highlightElement.style.zIndex = '10000'; // 다른 요소들 위에 표시
+    highlightElement.style.zIndex = '10000'; // Display above other elements
 
     const timerId = setTimeout(() => {
       if (highlightElement.hasAttribute('data-highlighted')) {
@@ -246,23 +246,23 @@ class MinimapManager {
     this.highlightTimers.set(elementKey, timerId);
   }
 
-  // 미니맵 가시성 설정
+  // Set minimap visibility
   setVisibility(visible) {
     this.visible = visible;
     this.updateVisibility();
     
-    // 가시성이 변경되면 마커 위치도 업데이트
+    // Update marker positions when visibility changes
     if (visible) {
-      // 짧은 지연 후 마커 업데이트 (DOM이 업데이트될 시간 필요)
+      // Short delay to update markers (time needed for DOM to update)
       setTimeout(() => this.updateMarkers(), 50);
     }
   }
 
-  // 미니맵 가시성 업데이트
+  // Update minimap visibility
   updateVisibility() {
     if (!this.container) return;
 
-    // 하이라이트가 있을 때만 미니맵 표시
+    // Only show minimap when highlights exist
     const highlightElements = document.querySelectorAll('.text-highlighter-extension');
     const hasHighlights = highlightElements.length > 0;
 
@@ -274,7 +274,7 @@ class MinimapManager {
     }
   }
 
-  // 쓰로틀링 헬퍼 함수 (성능 최적화)
+  // Throttling helper function (performance optimization)
   throttle(callback, delay) {
     return (...args) => {
       if (this.throttleTimer) return;
@@ -286,7 +286,7 @@ class MinimapManager {
     };
   }
 
-  // 리소스 정리
+  // Clean up resources
   destroy() {
     this.highlightTimers.forEach(timerId => {
       clearTimeout(timerId);
@@ -310,7 +310,7 @@ class MinimapManager {
       this.throttleTimer = null;
     }
 
-    // 남아있는 강조 효과 정리
+    // Clean up remaining highlight effects
     const highlightedElements = document.querySelectorAll('[data-highlighted="true"]');
     highlightedElements.forEach(element => {
       element.style.boxShadow = element.dataset.originalBoxShadow || '';

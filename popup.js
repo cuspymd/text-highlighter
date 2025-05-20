@@ -35,17 +35,17 @@ document.addEventListener('DOMContentLoaded', function () {
   const viewAllPagesBtn = document.getElementById('view-all-pages');
   const minimapToggle = document.getElementById('minimap-toggle');
 
-  // 디버그 모드 설정 - 개발 시 true로 변경
+  // Set debug mode - change to true during development
   const DEBUG_MODE = false;
 
-  // 디버그용 로그 함수
+  // Debug log function
   function debugLog(...args) {
     if (DEBUG_MODE) {
       console.log(...args);
     }
   }
 
-  // 현재 활성화된 탭에서 하이라이트 정보 불러오기
+  // Load highlight information from current active tab
   function loadHighlights() {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const currentUrl = tabs[0].url;
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         debugLog('Loaded highlights for popup (sorted by position):', highlights);
 
-        // 하이라이트 목록 표시
+        // Display highlight list
         if (highlights.length > 0) {
           noHighlights.style.display = 'none';
           highlightsContainer.innerHTML = '';
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
             highlightItem.style.backgroundColor = highlight.color;
             highlightItem.dataset.id = highlight.id;
 
-            // 텍스트가 너무 길면 자르기
+            // Truncate text if too long
             let displayText = highlight.text;
             if (displayText.length > 50) {
               displayText = displayText.substring(0, 47) + '...';
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             highlightItem.textContent = displayText;
 
-            // 삭제 버튼 추가
+            // Add delete button
             const deleteBtn = document.createElement('span');
             deleteBtn.className = 'delete-btn';
             deleteBtn.textContent = '×';
@@ -97,25 +97,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // 미니맵 설정 불러오기
+  // Load minimap settings
   function loadMinimapSetting() {
     chrome.storage.local.get(['minimapVisible'], (result) => {
-      // 기본값은 true (미니맵 표시)
+      // Default value is true (show minimap)
       const isVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
       minimapToggle.checked = isVisible;
       debugLog('Loaded minimap setting:', isVisible);
     });
   }
 
-  // 미니맵 설정 저장 및 현재 페이지에 적용
+  // Save and apply minimap settings to current page
   minimapToggle.addEventListener('change', function () {
     const isVisible = minimapToggle.checked;
 
-    // 스토리지에 저장
+    // Save to storage
     chrome.storage.local.set({ minimapVisible: isVisible }, () => {
       debugLog('Minimap visibility saved:', isVisible);
 
-      // 현재 페이지에 설정 적용
+      // Apply settings to current page
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.tabs.sendMessage(tabs[0].id, {
           action: 'setMinimapVisibility',
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // 하이라이트 삭제
+  // Delete highlight
   function deleteHighlight(id, url) {
     chrome.storage.local.get([url], (result) => {
       const highlights = result[url] || [];
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       chrome.storage.local.set(saveData, () => {
         debugLog('Highlight deleted:', id);
-        // 현재 페이지의 하이라이트 업데이트
+        // Update highlights on current page
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           chrome.tabs.sendMessage(tabs[0].id, {
             action: 'refreshHighlights',
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // 모든 하이라이트 삭제
+  // Delete all highlights
   clearAllBtn.addEventListener('click', function () {
     const confirmMessage = chrome.i18n.getMessage('confirmClearAll');
     if (confirm(confirmMessage)) {
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         chrome.storage.local.set(saveData, () => {
           debugLog('All highlights cleared');
-          // 현재 페이지의 하이라이트 업데이트
+          // Update highlights on current page
           chrome.tabs.sendMessage(tabs[0].id, {
             action: 'refreshHighlights',
             highlights: []
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // 하이라이트 데이터 내보내기
+  // Export highlight data
   exportDataBtn.addEventListener('click', function () {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const currentUrl = tabs[0].url;
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
       chrome.storage.local.get([currentUrl], (result) => {
         const highlights = result[currentUrl] || [];
 
-        // 내보낼 데이터 생성
+        // Create export data
         const exportData = {
           url: currentUrl,
           title: tabs[0].title,
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         debugLog('Exporting highlights data:', exportData);
 
-        // 파일로 다운로드
+        // Download as file
         const blob = new Blob([JSON.stringify(exportData, null, 2)], {
           type: 'application/json'
         });
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // 하이라이트된 페이지 목록 보기
+  // View list of highlighted pages
   viewAllPagesBtn.addEventListener('click', function () {
     debugLog('Opening all pages list');
     chrome.windows.create({
@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // 초기화
+  // Initialization
   loadHighlights();
   loadMinimapSetting();
 });
