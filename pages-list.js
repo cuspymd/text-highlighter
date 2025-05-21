@@ -174,10 +174,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Delete all highlights for a page
   function deletePageHighlights(url) {
-    // Delete both highlight data and metadata
-    chrome.storage.local.remove([url, `${url}_meta`], () => {
-      debugLog('Deleted highlights and metadata for page:', url);
-      loadAllHighlightedPages();
+    chrome.runtime.sendMessage({
+      action: 'clearAllHighlights',
+      url: url,
+      notifyRefresh: false  // No need to notify as we're not on the page
+    }, (response) => {
+      if (response && response.success) {
+        debugLog('All highlights cleared through background for page:', url);
+        loadAllHighlightedPages();  // Refresh the page list
+      } else {
+        debugLog('Error clearing highlights:', response);
+      }
     });
   }
 

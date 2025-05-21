@@ -187,66 +187,66 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // Return true for async response
   }
-});
 
-// 새로운 핸들러 추가: 하이라이트 삭제를 처리
-/* if (message.action === 'deleteHighlight') {
-  const { url, highlightId } = message;
-  
-  chrome.storage.local.get([url], (result) => {
-    const highlights = result[url] || [];
-    const updatedHighlights = highlights.filter(h => h.id !== highlightId);
+  // 새로운 핸들러 추가: 하이라이트 삭제를 처리
+  if (message.action === 'deleteHighlight') {
+    const { url, highlightId } = message;
+
+    chrome.storage.local.get([url], (result) => {
+      const highlights = result[url] || [];
+      const updatedHighlights = highlights.filter(h => h.id !== highlightId);
+
+      const saveData = {};
+      saveData[url] = updatedHighlights;
+
+      chrome.storage.local.set(saveData, () => {
+        debugLog('Highlight deleted:', highlightId, 'from URL:', url);
+
+        // 하이라이트가 삭제된 후 content script에 알림
+        if (message.notifyRefresh) {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0] && tabs[0].id) {
+              chrome.tabs.sendMessage(tabs[0].id, {
+                action: 'refreshHighlights',
+                highlights: updatedHighlights
+              });
+            }
+          });
+        }
+
+        sendResponse({
+          success: true,
+          highlights: updatedHighlights
+        });
+      });
+    });
+    return true; // Return true for async response
+  }
+
+  // 새로운 핸들러 추가: 모든 하이라이트 삭제
+  if (message.action === 'clearAllHighlights') {
+    const { url } = message;
 
     const saveData = {};
-    saveData[url] = updatedHighlights;
+    saveData[url] = [];
 
     chrome.storage.local.set(saveData, () => {
-      debugLog('Highlight deleted:', highlightId, 'from URL:', url);
-      
-      // 하이라이트가 삭제된 후 content script에 알림
+      debugLog('All highlights cleared for URL:', url);
+
+      // 모든 하이라이트가 삭제된 후 content script에 알림
       if (message.notifyRefresh) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0] && tabs[0].id) {
             chrome.tabs.sendMessage(tabs[0].id, {
               action: 'refreshHighlights',
-              highlights: updatedHighlights
+              highlights: []
             });
           }
         });
       }
-      
-      sendResponse({ 
-        success: true, 
-        highlights: updatedHighlights 
-      });
+
+      sendResponse({ success: true });
     });
-  });
-  return true; // Return true for async response
-}
-
-// 새로운 핸들러 추가: 모든 하이라이트 삭제
-if (message.action === 'clearAllHighlights') {
-  const { url } = message;
-  
-  const saveData = {};
-  saveData[url] = [];
-
-  chrome.storage.local.set(saveData, () => {
-    debugLog('All highlights cleared for URL:', url);
-    
-    // 모든 하이라이트가 삭제된 후 content script에 알림
-    if (message.notifyRefresh) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0] && tabs[0].id) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'refreshHighlights',
-            highlights: []
-          });
-        }
-      });
-    }
-    
-    sendResponse({ success: true });
-  });
-  return true; // Return true for async response
-} */
+    return true; // Return true for async response
+  }
+});
