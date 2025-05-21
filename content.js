@@ -1,7 +1,7 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 let COLORS = [];
 

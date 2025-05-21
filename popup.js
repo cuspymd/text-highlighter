@@ -34,9 +34,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const exportDataBtn = document.getElementById('export-data');
   const viewAllPagesBtn = document.getElementById('view-all-pages');
   const minimapToggle = document.getElementById('minimap-toggle');
-
   // Set debug mode - change to true during development
-  const DEBUG_MODE = true;
+  const DEBUG_MODE = false;
 
   // Debug log function
   function debugLog(...args) {

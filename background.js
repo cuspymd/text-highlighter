@@ -1,7 +1,7 @@
 import { COLORS, getMessage } from './constants.js';
 
 // Debug mode setting - change to true during development
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 // Initial setup when extension is installed or updated
 chrome.runtime.onInstalled.addListener(() => {
