@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const minimapToggle = document.getElementById('minimap-toggle');
 
   // Set debug mode - change to true during development
-  const DEBUG_MODE = false;
+  const DEBUG_MODE = true;
 
   // Debug log function
   function debugLog(...args) {
@@ -127,25 +127,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Delete highlight
   function deleteHighlight(id, url) {
-    chrome.storage.local.get([url], (result) => {
-      const highlights = result[url] || [];
-      const updatedHighlights = highlights.filter(h => h.id !== id);
-
-      const saveData = {};
-      saveData[url] = updatedHighlights;
-
-      chrome.storage.local.set(saveData, () => {
-        debugLog('Highlight deleted:', id);
-        // Update highlights on current page
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'refreshHighlights',
-            highlights: updatedHighlights
-          });
-        });
-
+    chrome.runtime.sendMessage({
+      action: 'deleteHighlight',
+      url: url,
+      highlightId: id,
+      notifyRefresh: true
+    }, (response) => {
+      if (response && response.success) {
+        debugLog('Highlight deleted through background:', id);
         loadHighlights();
-      });
+      }
     });
   }
 
@@ -155,19 +146,16 @@ document.addEventListener('DOMContentLoaded', function () {
     if (confirm(confirmMessage)) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const currentUrl = tabs[0].url;
-
-        const saveData = {};
-        saveData[currentUrl] = [];
-
-        chrome.storage.local.set(saveData, () => {
-          debugLog('All highlights cleared');
-          // Update highlights on current page
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'refreshHighlights',
-            highlights: []
-          });
-
-          loadHighlights();
+        
+        chrome.runtime.sendMessage({
+          action: 'clearAllHighlights',
+          url: currentUrl,
+          notifyRefresh: true
+        }, (response) => {
+          if (response && response.success) {
+            debugLog('All highlights cleared through background');
+            loadHighlights();
+          }
         });
       });
     }
