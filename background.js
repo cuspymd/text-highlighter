@@ -53,6 +53,18 @@ function debugLog(...args) {
   }
 }
 
+// Helper function to notify tab about highlight updates
+function notifyTabHighlightsRefresh(highlights) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0] && tabs[0].id) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        action: 'refreshHighlights',
+        highlights: highlights
+      });
+    }
+  });
+}
+
 // Helper function to remove storage keys when no highlights remain
 function cleanupEmptyHighlightData(url) {
   if (!url) return;
@@ -221,14 +233,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
           // Notify content script to refresh highlights if requested
           if (message.notifyRefresh) {
-            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-              if (tabs[0] && tabs[0].id) {
-                chrome.tabs.sendMessage(tabs[0].id, {
-                  action: 'refreshHighlights',
-                  highlights: updatedHighlights
-                });
-              }
-            });
+            notifyTabHighlightsRefresh(updatedHighlights);
           }
 
           sendResponse({
@@ -242,14 +247,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         
         // Notify content script to refresh highlights if requested
         if (message.notifyRefresh) {
-          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0] && tabs[0].id) {
-              chrome.tabs.sendMessage(tabs[0].id, {
-                action: 'refreshHighlights',
-                highlights: []
-              });
-            }
-          });
+          notifyTabHighlightsRefresh([]);
         }
 
         sendResponse({
@@ -270,14 +268,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     // Notify content script to refresh highlights if requested
     if (message.notifyRefresh) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0] && tabs[0].id) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'refreshHighlights',
-            highlights: []
-          });
-        }
-      });
+      notifyTabHighlightsRefresh([]);
     }
 
     sendResponse({ success: true });
