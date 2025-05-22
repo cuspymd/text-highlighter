@@ -134,6 +134,9 @@ chrome.commands.onCommand.addListener((command) => {
         case 'highlight_pink':
           targetColor = COLORS.find(c => c.id === 'pink')?.color;
           break;
+        case 'highlight_orange':
+          targetColor = COLORS.find(c => c.id === 'orange')?.color;
+          break;
       }
 
       // Process color highlight command

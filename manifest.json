@@ -45,6 +45,9 @@
         "mac": "Command+Shift+4"
       },
       "description": "__MSG_highlightWithPink__"
+    },
+    "highlight_orange": {
+      "description": "__MSG_highlightWithOrange__"
     }
   },
   "content_scripts": [

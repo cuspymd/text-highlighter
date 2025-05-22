@@ -41,6 +41,9 @@
   "highlightWithPink": {
     "message": "분홍색으로 하이라이트"
   },
+  "highlightWithOrange": {
+    "message": "주황색으로 하이라이트"
+  },
   "popupTitle": {
     "message": "텍스트 하이라이터"
   },

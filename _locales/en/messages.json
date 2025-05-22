@@ -41,6 +41,9 @@
   "highlightWithPink": {
     "message": "Highlight with Pink"
   },
+  "highlightWithOrange": {
+    "message": "Highlight with Orange"
+  },
   "popupTitle": {
     "message": "Text Highlighter"
   },
