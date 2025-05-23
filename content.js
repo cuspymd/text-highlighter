@@ -1,7 +1,7 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
-const DEBUG_MODE = false;
+const DEBUG_MODE = true;
 
 let COLORS = [];
 
@@ -286,18 +286,46 @@ function applyHighlights() {
 
 // Find text in document and apply highlight
 function highlightTextInDocument(element, text, color, id) {
-  if (!text || text.length < 3) return false; // Skip too short text
+  if (!text || text.trim().length === 0) {
+    debugLog('Skipping highlight, search text is empty:', text);
+    return false;
+  }
+  const normalizedSearchText = text.trim(); // Normalize search text (e.g. remove leading/trailing whitespace)
+  // More advanced normalization (e.g., collapsing multiple spaces to one) can be done here
+  // if highlight.text was stored with such normalization.
+  // For now, assuming highlight.text (from span.textContent) is reasonably representative.
 
   const walker = document.createTreeWalker(
     element,
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: function (node) {
-        if (node.parentNode.className === 'text-highlighter-extension') {
+        // Filter out only truly empty text nodes. Nodes with only whitespace are kept.
+        if (!node.nodeValue || node.nodeValue === '') {
           return NodeFilter.FILTER_REJECT;
         }
-        if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.parentNode.tagName)) {
+
+        const parent = node.parentNode;
+        if (!parent) return NodeFilter.FILTER_REJECT; // Should not happen in a valid document
+
+        // Reject nodes within existing highlights
+        if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
           return NodeFilter.FILTER_REJECT;
+        }
+
+        // Reject nodes within certain tags
+        const parentTagName = parent.tagName.toUpperCase();
+        if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+
+        // Reject nodes that are not visible (display:none)
+        let el = parent;
+        while (el && el !== document.body && el !== document.documentElement) {
+          if (window.getComputedStyle(el).display === 'none') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          el = el.parentNode;
         }
         return NodeFilter.FILTER_ACCEPT;
       }
@@ -305,35 +333,89 @@ function highlightTextInDocument(element, text, color, id) {
     false
   );
 
-  let found = false;
-  let node;
-
-  while ((node = walker.nextNode()) && !found) {
-    const content = node.textContent;
-    const index = content.indexOf(text);
-
-    if (index >= 0) {
-      const range = document.createRange();
-      range.setStart(node, index);
-      range.setEnd(node, index + text.length);
-
-      const span = document.createElement('span');
-      span.className = 'text-highlighter-extension';
-      span.style.backgroundColor = color;
-      span.dataset.highlightId = id;
-
-      range.surroundContents(span);
-
-      addHighlightEventListeners(span);
-
-      found = true;
-      debugLog('Text found and highlighted:', text);
-
-      break;
-    }
+  const textNodes = [];
+  let currentNode;
+  while (currentNode = walker.nextNode()) {
+    textNodes.push(currentNode);
   }
 
-  return found;
+  if (textNodes.length === 0) {
+    debugLog('No suitable text nodes found for searching:', normalizedSearchText);
+    return false;
+  }
+
+  for (let i = 0; i < textNodes.length; i++) { // Iterate through each node as a potential start
+    const startNodeCandidate = textNodes[i];
+    const startNodeText = startNodeCandidate.textContent;
+
+    for (let j = 0; j < startNodeText.length; j++) { // Iterate through each char in node as potential start
+      let currentSearchIdx = 0; // Pointer in normalizedSearchText
+      let currentDomNodeIdx = i;
+      let currentDomCharIdx = j;
+
+      let possibleMatch = true;
+
+      while (currentSearchIdx < normalizedSearchText.length && currentDomNodeIdx < textNodes.length) {
+        const domNode = textNodes[currentDomNodeIdx];
+        const domText = domNode.textContent;
+
+        if (currentDomCharIdx < domText.length) {
+          // Basic character comparison. More sophisticated whitespace handling could be added here if needed.
+          // E.g., if normalizedSearchText has single spaces for multiple in DOM.
+          if (domText[currentDomCharIdx] === normalizedSearchText[currentSearchIdx]) {
+            currentSearchIdx++;
+            currentDomCharIdx++;
+          } else {
+            possibleMatch = false;
+            break;
+          }
+        } else { // Reached end of current DOM node's text
+          currentDomNodeIdx++;
+          currentDomCharIdx = 0; // Start from beginning of next DOM node
+        }
+      }
+
+      if (possibleMatch && currentSearchIdx === normalizedSearchText.length) {
+        // Match found
+        const range = document.createRange();
+        range.setStart(startNodeCandidate, j);
+
+        // Determine end node and offset
+        // currentDomNodeIdx might be one past the last node if match ended at node boundary
+        // currentDomCharIdx is the offset in the node where matching stopped (or 0 if moved to next node)
+        const endNode = textNodes[currentDomNodeIdx < textNodes.length ? currentDomNodeIdx : currentDomNodeIdx -1];
+        const endOffset = currentDomCharIdx === 0 && currentDomNodeIdx > i ? 
+                          textNodes[currentDomNodeIdx-1].textContent.length : currentDomCharIdx;
+        range.setEnd(endNode, endOffset);
+
+        // Prevent re-highlighting already highlighted content by this function call
+        if (range.commonAncestorContainer.parentElement && range.commonAncestorContainer.parentElement.closest('.text-highlighter-extension')) {
+            debugLog('Skipping highlight, part of range already in a highlight span:', normalizedSearchText);
+            continue; // Try next starting point
+        }
+
+        const span = document.createElement('span');
+        span.className = 'text-highlighter-extension';
+        span.style.backgroundColor = color;
+        span.dataset.highlightId = id;
+
+        try {
+          const contents = range.extractContents(); // Removes content from DOM and returns it in a fragment
+          span.appendChild(contents); // Add the extracted content to the new span
+          range.insertNode(span); // Insert the span at the (now collapsed) range start
+
+          addHighlightEventListeners(span);
+          debugLog('Text found and highlighted (multi-node capable):', normalizedSearchText);
+          return true; // Highlighted one instance
+        } catch (e) {
+          debugLog('Error creating highlight (multi-node extract/insert):', e, "Search:", normalizedSearchText, "Range text before potential modification:", range.toString());
+          // Continue search from next char (j loop)
+        }
+      }
+    }
+  }
+  debugLog('Text not found (multi-node capable):', normalizedSearchText);
+  return false;
 }
 
 // Add event listeners to highlighted text elements
