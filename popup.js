@@ -69,8 +69,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Truncate text if too long
             let displayText = highlight.text;
-            if (displayText.length > 50) {
-              displayText = displayText.substring(0, 47) + '...';
+            if (displayText.length > 48) {
+              displayText = displayText.substring(0, 45) + '...';
             }
 
             highlightItem.textContent = displayText;
