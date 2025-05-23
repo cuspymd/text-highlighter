@@ -24,7 +24,7 @@ function initializeI18n() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
   // Initialize internationalization first
   initializeI18n();
 
@@ -45,154 +45,146 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Load highlight information from current active tab
-  function loadHighlights() {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const currentUrl = tabs[0].url;
+  async function loadHighlights() {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentUrl = tabs[0].url;
 
-      chrome.storage.local.get([currentUrl], (result) => {
-        let highlights = result[currentUrl] || [];
+    const result = await chrome.storage.local.get([currentUrl]);
+    let highlights = result[currentUrl] || [];
 
-        highlights.sort((a, b) => (a.position || 0) - (b.position || 0));
+    highlights.sort((a, b) => (a.position || 0) - (b.position || 0));
 
-        debugLog('Loaded highlights for popup (sorted by position):', highlights);
+    debugLog('Loaded highlights for popup (sorted by position):', highlights);
 
-        // Display highlight list
-        if (highlights.length > 0) {
-          noHighlights.style.display = 'none';
-          highlightsContainer.innerHTML = '';
+    // Display highlight list
+    if (highlights.length > 0) {
+      noHighlights.style.display = 'none';
+      highlightsContainer.innerHTML = '';
 
-          highlights.forEach(highlight => {
-            const highlightItem = document.createElement('div');
-            highlightItem.className = 'highlight-item';
-            highlightItem.style.backgroundColor = highlight.color;
-            highlightItem.dataset.id = highlight.id;
+      highlights.forEach(highlight => {
+        const highlightItem = document.createElement('div');
+        highlightItem.className = 'highlight-item';
+        highlightItem.style.backgroundColor = highlight.color;
+        highlightItem.dataset.id = highlight.id;
 
-            // Truncate text if too long
-            let displayText = highlight.text;
-            if (displayText.length > 48) {
-              displayText = displayText.substring(0, 45) + '...';
-            }
-
-            highlightItem.textContent = displayText;
-
-            // Add delete button
-            const deleteBtn = document.createElement('span');
-            deleteBtn.className = 'delete-btn';
-            deleteBtn.textContent = '×';
-            deleteBtn.addEventListener('click', function (e) {
-              e.stopPropagation();
-              deleteHighlight(highlight.id, currentUrl);
-            });
-
-            highlightItem.appendChild(deleteBtn);
-            highlightsContainer.appendChild(highlightItem);
-          });
-        } else {
-          noHighlights.style.display = 'block';
-          highlightsContainer.innerHTML = '';
-          highlightsContainer.appendChild(noHighlights);
+        // Truncate text if too long
+        let displayText = highlight.text;
+        if (displayText.length > 48) {
+          displayText = displayText.substring(0, 45) + '...';
         }
+
+        highlightItem.textContent = displayText;
+
+        // Add delete button
+        const deleteBtn = document.createElement('span');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '×';
+        deleteBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          deleteHighlight(highlight.id, currentUrl);
+        });
+
+        highlightItem.appendChild(deleteBtn);
+        highlightsContainer.appendChild(highlightItem);
       });
-    });
+    } else {
+      noHighlights.style.display = 'block';
+      highlightsContainer.innerHTML = '';
+      highlightsContainer.appendChild(noHighlights);
+    }
   }
 
   // Load minimap settings
-  function loadMinimapSetting() {
-    chrome.storage.local.get(['minimapVisible'], (result) => {
-      // Default value is true (show minimap)
-      const isVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
-      minimapToggle.checked = isVisible;
-      debugLog('Loaded minimap setting:', isVisible);
-    });
+  async function loadMinimapSetting() {
+    const result = await chrome.storage.local.get(['minimapVisible']);
+    // Default value is true (show minimap)
+    const isVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
+    minimapToggle.checked = isVisible;
+    debugLog('Loaded minimap setting:', isVisible);
   }
 
   // Save and apply minimap settings to current page
-  minimapToggle.addEventListener('change', function () {
+  minimapToggle.addEventListener('change', async function () {
     const isVisible = minimapToggle.checked;
 
     // Save to storage
-    chrome.storage.local.set({ minimapVisible: isVisible }, () => {
-      debugLog('Minimap visibility saved:', isVisible);
+    await chrome.storage.local.set({ minimapVisible: isVisible });
+    debugLog('Minimap visibility saved:', isVisible);
 
-      // Apply settings to current page
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'setMinimapVisibility',
-          visible: isVisible
-        });
-      });
+    // Apply settings to current page
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    await chrome.tabs.sendMessage(tabs[0].id, {
+      action: 'setMinimapVisibility',
+      visible: isVisible
     });
   });
 
   // Delete highlight
-  function deleteHighlight(id, url) {
-    chrome.runtime.sendMessage({
+  async function deleteHighlight(id, url) {
+    const response = await chrome.runtime.sendMessage({
       action: 'deleteHighlight',
       url: url,
       highlightId: id,
       notifyRefresh: true
-    }, (response) => {
-      if (response && response.success) {
-        debugLog('Highlight deleted through background:', id);
-        loadHighlights();
-      }
     });
+    
+    if (response && response.success) {
+      debugLog('Highlight deleted through background:', id);
+      await loadHighlights();
+    }
   }
 
   // Delete all highlights
-  clearAllBtn.addEventListener('click', function () {
+  clearAllBtn.addEventListener('click', async function () {
     const confirmMessage = chrome.i18n.getMessage('confirmClearAll');
     if (confirm(confirmMessage)) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const currentUrl = tabs[0].url;
-        
-        chrome.runtime.sendMessage({
-          action: 'clearAllHighlights',
-          url: currentUrl,
-          notifyRefresh: true
-        }, (response) => {
-          if (response && response.success) {
-            debugLog('All highlights cleared through background');
-            loadHighlights();
-          }
-        });
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const currentUrl = tabs[0].url;
+      
+      const response = await chrome.runtime.sendMessage({
+        action: 'clearAllHighlights',
+        url: currentUrl,
+        notifyRefresh: true
       });
+      
+      if (response && response.success) {
+        debugLog('All highlights cleared through background');
+        await loadHighlights();
+      }
     }
   });
 
   // Export highlight data
-  exportDataBtn.addEventListener('click', function () {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const currentUrl = tabs[0].url;
+  exportDataBtn.addEventListener('click', async function () {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentUrl = tabs[0].url;
 
-      chrome.storage.local.get([currentUrl], (result) => {
-        const highlights = result[currentUrl] || [];
+    const result = await chrome.storage.local.get([currentUrl]);
+    const highlights = result[currentUrl] || [];
 
-        // Create export data
-        const exportData = {
-          url: currentUrl,
-          title: tabs[0].title,
-          date: new Date().toISOString(),
-          highlights: highlights
-        };
+    // Create export data
+    const exportData = {
+      url: currentUrl,
+      title: tabs[0].title,
+      date: new Date().toISOString(),
+      highlights: highlights
+    };
 
-        debugLog('Exporting highlights data:', exportData);
+    debugLog('Exporting highlights data:', exportData);
 
-        // Download as file
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-          type: 'application/json'
-        });
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'highlights-' + new Date().getTime() + '.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
+    // Download as file
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json'
     });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'highlights-' + new Date().getTime() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   });
 
   // View list of highlighted pages
@@ -207,6 +199,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Initialization
-  loadHighlights();
-  loadMinimapSetting();
+  await loadHighlights();
+  await loadMinimapSetting();
 });
