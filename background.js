@@ -210,14 +210,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Handle debug mode status request
   if (message.action === 'getDebugMode') {
     sendResponse({ debugMode: DEBUG_MODE });
-    return true; // Return true for async response
+    return true;
   }
 
   // Handle COLORS info request from content.js
   if (message.action === 'getColors') {
     debugLog('Content script requested COLORS.');
     sendResponse({ colors: COLORS }); // Send COLORS information
-    return true; // Return true for async response
+    return true;
   }
 
   // Handle highlight information request from content.js
@@ -227,7 +227,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       debugLog('Sending highlights for URL:', message.url, result[message.url] || []);
       sendResponse({ highlights: result[message.url] || [] });
     });
-    return true; // Return true for async response
+    return true;
   }
 
   // Handle highlight information save request from content.js
@@ -267,7 +267,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       }
     });
-    return true; // Return true for async response
+    return true;
   }
 
   // Handler for single highlight deletion
@@ -311,7 +311,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       }
     });
-    return true; // Return true for async response
+    return true;
   }
 
   // Handler for clearing all highlights
@@ -327,6 +327,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     sendResponse({ success: true });
-    return true; // Return true for async response
+    return true;
   }
 });
