@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A Chrome extension for text highlighting",
   "main": "background.js",  "scripts": {
-    "test": "jest",
+    "test": "jest --runInBand --cacheDirectory=./.jest_cache",
     "deploy": "node ./scripts/deploy.js"
   },  "author": "",
   "license": "MIT",  "devDependencies": {
