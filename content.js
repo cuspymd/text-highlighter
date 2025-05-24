@@ -136,6 +136,63 @@ function highlightSelectedText(color) {
   if (selection.toString().trim() === '') return;
 
   const range = selection.getRangeAt(0);
+  // If selection spans multiple paragraphs, highlight each part without splitting <p> tags
+  const startContainer = range.startContainer;
+  const endContainer = range.endContainer;
+  const startOffset = range.startOffset;
+  const endOffset = range.endOffset;
+  const getParentP = node => (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement)?.closest('p');
+  const startP = getParentP(startContainer);
+  const endP = getParentP(endContainer);
+  if (startP && endP && startP !== endP) {
+    // Helper to highlight a given Range segment
+    const highlightSegment = (segRange, segId) => {
+      const segFrag = segRange.extractContents();
+      const segSpan = document.createElement('span');
+      segSpan.className = 'text-highlighter-extension';
+      segSpan.style.backgroundColor = color;
+      segSpan.dataset.highlightId = segId;
+      segSpan.appendChild(segFrag);
+      segRange.insertNode(segSpan);
+      addHighlightEventListeners(segSpan);
+      const rect = segSpan.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      highlights.push({
+        id: segId,
+        text: segSpan.textContent,
+        color: color,
+        xpath: getXPathForElement(segSpan),
+        position: rect.top + scrollTop
+      });
+    };
+    const baseId = Date.now().toString();
+    let idx = 0;
+    // End paragraph: from its start to selection end
+    const endRange = document.createRange();
+    endRange.setStart(endP, 0);
+    endRange.setEnd(endContainer, endOffset);
+    highlightSegment(endRange, `${baseId}_${idx++}`);
+    // Middle full paragraphs
+    let node = endP.previousSibling;
+    while (node && node !== startP) {
+      if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toUpperCase() === 'P') {
+        const fullRange = document.createRange();
+        fullRange.selectNodeContents(node);
+        highlightSegment(fullRange, `${baseId}_${idx++}`);
+      }
+      node = node.previousSibling;
+    }
+    // Start paragraph: from selection start to its end
+    const startRange = document.createRange();
+    startRange.setStart(startContainer, startOffset);
+    startRange.setEnd(startP, startP.childNodes.length);
+    highlightSegment(startRange, `${baseId}_${idx++}`);
+    saveHighlights();
+    updateMinimapMarkers();
+    selection.removeAllRanges();
+    return;
+  }
+  // Single-paragraph or inline selection
   const fragment = range.extractContents();
   const highlightId = Date.now().toString();
   const highlightColor = color;
