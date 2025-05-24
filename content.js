@@ -1,7 +1,7 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 let COLORS = [];
 
@@ -615,4 +615,17 @@ function updateMinimapMarkers() {
   if (minimapManager) {
     minimapManager.updateMarkers();
   }
+}
+
+// Add module exports for testing
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    highlightSelectedText,
+    highlights,
+    getXPathForElement,
+    addHighlightEventListeners,
+    updateMinimapMarkers,
+    saveHighlights,
+    COLORS
+  };
 }
