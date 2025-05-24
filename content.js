@@ -133,40 +133,61 @@ function saveHighlights() {
 // Process highlighting for selected text
 function highlightSelectedText(color) {
   const selection = window.getSelection();
-
   if (selection.toString().trim() === '') return;
 
   const range = selection.getRangeAt(0);
-  const selectionContents = range.extractContents();
-  const span = document.createElement('span');
+  const fragment = range.extractContents();
+  const highlightId = Date.now().toString();
+  const highlightColor = color;
 
-  span.appendChild(selectionContents);
-  span.className = 'text-highlighter-extension';
-  span.style.backgroundColor = color;
+  const containsParagraph = Array.from(fragment.childNodes).some(node =>
+    node.nodeType === Node.ELEMENT_NODE && node.tagName.toUpperCase() === 'P'
+  );
 
-  // Create unique ID
-  span.dataset.highlightId = Date.now().toString();
+  let firstSpan = null;
+  if (containsParagraph) {
+    fragment.querySelectorAll('p').forEach(p => {
+      if (p.textContent.trim() === '') {
+        p.remove();
+        return;
+      }
+      const span = document.createElement('span');
+      span.className = 'text-highlighter-extension';
+      span.style.backgroundColor = highlightColor;
+      span.dataset.highlightId = highlightId;
+      while (p.firstChild) {
+        span.appendChild(p.firstChild);
+      }
+      p.appendChild(span);
+      addHighlightEventListeners(span);
+      if (!firstSpan) firstSpan = span;
+    });
+    range.insertNode(fragment);
+  } else {
+    const span = document.createElement('span');
+    span.className = 'text-highlighter-extension';
+    span.style.backgroundColor = highlightColor;
+    span.dataset.highlightId = highlightId;
+    span.appendChild(fragment);
+    range.insertNode(span);
+    addHighlightEventListeners(span);
+    firstSpan = span;
+  }
 
-  range.insertNode(span);
-
-  // Calculate highlight position information
-  const rect = span.getBoundingClientRect();
+  const rect = firstSpan.getBoundingClientRect();
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   const position = rect.top + scrollTop;
 
   highlights.push({
-    id: span.dataset.highlightId,
-    text: span.textContent,
-    color: color,
-    xpath: getXPathForElement(span),
+    id: highlightId,
+    text: firstSpan.textContent,
+    color: highlightColor,
+    xpath: getXPathForElement(firstSpan),
     position: position
   });
 
-  addHighlightEventListeners(span);
-
   saveHighlights();
   updateMinimapMarkers();
-
   selection.removeAllRanges();
 }
 

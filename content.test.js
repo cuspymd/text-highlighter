@@ -345,4 +345,56 @@ describe('highlightSelectedText', () => {
     expect(highlights[0].text).toBe('text end');
     expect(removeAllRanges).toHaveBeenCalled();
   });
+
+  test('should highlight a full single paragraph without extra placeholders', () => {
+    // Setup test DOM with one paragraph
+    document.body.innerHTML = '<p id="p1">A complete paragraph.</p>';
+    const p1 = document.getElementById('p1');
+
+    // Create range for selection (entire paragraph content)
+    const range = document.createRange();
+    range.selectNodeContents(p1);
+
+    const removeAllRanges = jest.fn();
+    window.getSelection = jest.fn(() => ({
+      toString: jest.fn(() => 'A complete paragraph.'),
+      getRangeAt: jest.fn(() => ({
+        ...range,
+        surroundContents: node => {
+          const content = range.extractContents();
+          node.appendChild(content);
+          range.insertNode(node);
+        },
+      })),
+      removeAllRanges,
+      rangeCount: 1
+    }));
+
+    // Execute highlight
+    highlightSelectedText('yellow');
+
+    // Assertions
+    const spans = document.querySelectorAll('.text-highlighter-extension');
+    expect(spans.length).toBe(1);
+    const span = spans[0];
+    expect(span.textContent).toBe('A complete paragraph.');
+    expect(span.style.backgroundColor).toBe('yellow');
+    expect(span.dataset.highlightId).toBeDefined();
+
+    // Ensure no extra paragraphs were created
+    const paras = document.querySelectorAll('p');
+    expect(paras.length).toBe(1);
+
+    // Global state
+    expect(highlights.length).toBe(1);
+    expect(highlights[0].text).toBe('A complete paragraph.');
+
+    // Mocks should have been called
+    expect(mockGetXPathForElement).toHaveBeenCalled();
+    expect(mockAddHighlightEventListeners).toHaveBeenCalled();
+    expect(mockUpdateMinimapMarkers).toHaveBeenCalled();
+    expect(mockSaveHighlights).toHaveBeenCalled();
+    expect(removeAllRanges).toHaveBeenCalled();
+  });
+
 });
