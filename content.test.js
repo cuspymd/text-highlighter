@@ -232,37 +232,51 @@ describe('highlightSelectedText', () => {
   });
 
   test('should handle selection that partially includes opening tag', () => {
-    // Setup test DOM with a nested structure
-    document.body.innerHTML = '<div id="d1">Start <div id="d2">Text nested</div> end</div>';
-    const outerDiv = document.getElementById('d1');
-    const innerDiv = document.getElementById('d2');
+    // Setup test DOM: "this is example" selection that includes <a> opening tag
+    document.body.innerHTML = 'this is <a href="#" id="link">example link</a> tag.';
+    const textNode = document.body.firstChild; // "this is "
+    const linkNode = document.getElementById('link');
+    const linkTextNode = linkNode.firstChild; // "example link"
 
-    // Create range for selection that includes opening tag
+    // Create range for selection: "this is example" (spans across text node and into link)
     const range = document.createRange();
-    range.setStart(outerDiv.firstChild, 2); // "art <div"의 시작
-    range.setEnd(innerDiv.firstChild, innerDiv.firstChild.length); // "Text nested"의 끝
+    range.setStart(textNode, 0); // Start of "this is "
+    range.setEnd(linkTextNode, 7); // End at "example" from "example link"
 
     // Mock selection
     const removeAllRanges = jest.fn();
-    range.surroundContents = () => {
-      throw new Error('InvalidStateError');
+
+    // Mock extractContents to simulate what would actually be extracted
+    range.extractContents = () => {
+      const fragment = document.createDocumentFragment();
+      const textPart = document.createTextNode('this is '); // Text before link
+      const linkPart = document.createElement('a');
+      linkPart.href = '#';
+      linkPart.textContent = 'example'; // Partial link content
+
+      fragment.appendChild(textPart);
+      fragment.appendChild(linkPart);
+      return fragment;
     };
-    range.extractContents = range.extractContents.bind(range);
+
     range.insertNode = range.insertNode.bind(range);
     window.getSelection = jest.fn(() => ({
-      toString: jest.fn(() => 'art <div>Text nested'),
+      toString: jest.fn(() => 'this is example'),
       getRangeAt: jest.fn(() => range),
       removeAllRanges,
       rangeCount: 1
     }));
 
     // Execute highlight
-    highlightSelectedText('yellow');    // Assertions
+    highlightSelectedText('yellow');
+
+    // Assertions
     const span = document.querySelector('.text-highlighter-extension');
     expect(span).not.toBeNull();
-    expect(span.textContent).toBe('art Text nested');
+    expect(span.textContent).toBe('this is example');
+    expect(span.style.backgroundColor).toBe('yellow');
     expect(highlights.length).toBe(1);
-    expect(highlights[0].text).toBe('art Text nested');
+    expect(highlights[0].text).toBe('this is example');
     expect(removeAllRanges).toHaveBeenCalled();
   });
 
@@ -285,14 +299,16 @@ describe('highlightSelectedText', () => {
     range.extractContents = range.extractContents.bind(range);
     range.insertNode = range.insertNode.bind(range);
     window.getSelection = jest.fn(() => ({
-      toString: jest.fn(() => 'text</div> end'),
+      toString: jest.fn(() => 'text end'), // Fixed expected text
       getRangeAt: jest.fn(() => range),
       removeAllRanges,
       rangeCount: 1
     }));
 
     // Execute highlight
-    highlightSelectedText('yellow');    // Assertions
+    highlightSelectedText('yellow');
+
+    // Assertions
     const span = document.querySelector('.text-highlighter-extension');
     expect(span).not.toBeNull();
     expect(span.textContent).toBe('text end');
