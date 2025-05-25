@@ -130,124 +130,6 @@ function saveHighlights() {
   );
 }
 
-// Process highlighting for selected text
-function highlightSelectedText(color) {
-  const selection = window.getSelection();
-  if (selection.toString().trim() === '') return;
-
-  const range = selection.getRangeAt(0);
-  // If selection spans multiple paragraphs, highlight each part without splitting <p> tags
-  const startContainer = range.startContainer;
-  const endContainer = range.endContainer;
-  const startOffset = range.startOffset;
-  const endOffset = range.endOffset;
-  const getParentP = node => (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement)?.closest('p');
-  const startP = getParentP(startContainer);
-  const endP = getParentP(endContainer);
-  if (startP && endP && startP !== endP) {
-    // Helper to highlight a given Range segment
-    const highlightSegment = (segRange, segId) => {
-      const segFrag = segRange.extractContents();
-      const segSpan = document.createElement('span');
-      segSpan.className = 'text-highlighter-extension';
-      segSpan.style.backgroundColor = color;
-      segSpan.dataset.highlightId = segId;
-      segSpan.appendChild(segFrag);
-      segRange.insertNode(segSpan);
-      addHighlightEventListeners(segSpan);
-      const rect = segSpan.getBoundingClientRect();
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      highlights.push({
-        id: segId,
-        text: segSpan.textContent,
-        color: color,
-        xpath: getXPathForElement(segSpan),
-        position: rect.top + scrollTop
-      });
-    };
-    const baseId = Date.now().toString();
-    let idx = 0;
-    // End paragraph: from its start to selection end
-    const endRange = document.createRange();
-    endRange.setStart(endP, 0);
-    endRange.setEnd(endContainer, endOffset);
-    highlightSegment(endRange, `${baseId}_${idx++}`);
-    // Middle full paragraphs
-    let node = endP.previousSibling;
-    while (node && node !== startP) {
-      if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toUpperCase() === 'P') {
-        const fullRange = document.createRange();
-        fullRange.selectNodeContents(node);
-        highlightSegment(fullRange, `${baseId}_${idx++}`);
-      }
-      node = node.previousSibling;
-    }
-    // Start paragraph: from selection start to its end
-    const startRange = document.createRange();
-    startRange.setStart(startContainer, startOffset);
-    startRange.setEnd(startP, startP.childNodes.length);
-    highlightSegment(startRange, `${baseId}_${idx++}`);
-    saveHighlights();
-    updateMinimapMarkers();
-    selection.removeAllRanges();
-    return;
-  }
-  // Single-paragraph or inline selection
-  const fragment = range.extractContents();
-  const highlightId = Date.now().toString();
-  const highlightColor = color;
-
-  const containsParagraph = Array.from(fragment.childNodes).some(node =>
-    node.nodeType === Node.ELEMENT_NODE && node.tagName.toUpperCase() === 'P'
-  );
-
-  let firstSpan = null;
-  if (containsParagraph) {
-    fragment.querySelectorAll('p').forEach(p => {
-      if (p.textContent.trim() === '') {
-        p.remove();
-        return;
-      }
-      const span = document.createElement('span');
-      span.className = 'text-highlighter-extension';
-      span.style.backgroundColor = highlightColor;
-      span.dataset.highlightId = highlightId;
-      while (p.firstChild) {
-        span.appendChild(p.firstChild);
-      }
-      p.appendChild(span);
-      addHighlightEventListeners(span);
-      if (!firstSpan) firstSpan = span;
-    });
-    range.insertNode(fragment);
-  } else {
-    const span = document.createElement('span');
-    span.className = 'text-highlighter-extension';
-    span.style.backgroundColor = highlightColor;
-    span.dataset.highlightId = highlightId;
-    span.appendChild(fragment);
-    range.insertNode(span);
-    addHighlightEventListeners(span);
-    firstSpan = span;
-  }
-
-  const rect = firstSpan.getBoundingClientRect();
-  const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  const position = rect.top + scrollTop;
-
-  highlights.push({
-    id: highlightId,
-    text: firstSpan.textContent,
-    color: highlightColor,
-    xpath: getXPathForElement(firstSpan),
-    position: position
-  });
-
-  saveHighlights();
-  updateMinimapMarkers();
-  selection.removeAllRanges();
-}
-
 // Remove highlight
 function removeHighlight(highlightElement = null) {
   if (!highlightElement) {
@@ -461,15 +343,15 @@ function highlightTextInDocument(element, text, color, id) {
         // Determine end node and offset
         // currentDomNodeIdx might be one past the last node if match ended at node boundary
         // currentDomCharIdx is the offset in the node where matching stopped (or 0 if moved to next node)
-        const endNode = textNodes[currentDomNodeIdx < textNodes.length ? currentDomNodeIdx : currentDomNodeIdx -1];
-        const endOffset = currentDomCharIdx === 0 && currentDomNodeIdx > i ? 
-                          textNodes[currentDomNodeIdx-1].textContent.length : currentDomCharIdx;
+        const endNode = textNodes[currentDomNodeIdx < textNodes.length ? currentDomNodeIdx : currentDomNodeIdx - 1];
+        const endOffset = currentDomCharIdx === 0 && currentDomNodeIdx > i ?
+          textNodes[currentDomNodeIdx - 1].textContent.length : currentDomCharIdx;
         range.setEnd(endNode, endOffset);
 
         // Prevent re-highlighting already highlighted content by this function call
         if (range.commonAncestorContainer.parentElement && range.commonAncestorContainer.parentElement.closest('.text-highlighter-extension')) {
-            debugLog('Skipping highlight, part of range already in a highlight span:', normalizedSearchText);
-            continue; // Try next starting point
+          debugLog('Skipping highlight, part of range already in a highlight span:', normalizedSearchText);
+          continue; // Try next starting point
         }
 
         const span = document.createElement('span');
@@ -693,6 +575,215 @@ function updateMinimapMarkers() {
   if (minimapManager) {
     minimapManager.updateMarkers();
   }
+}
+
+// Refactored highlightSelectedText function with cleaner paragraph handling
+function highlightSelectedText(color) {
+  const selection = window.getSelection();
+  if (selection.toString().trim() === '') return;
+
+  const range = selection.getRangeAt(0);
+  const selectedText = selection.toString();
+
+  // Get all paragraph elements that intersect with the selection
+  const paragraphRanges = getParagraphRangesFromSelection(range);
+
+  if (paragraphRanges.length === 0) {
+    // Fallback: treat as single highlight if no paragraphs found
+    createSingleHighlight(range, color);
+  } else if (paragraphRanges.length === 1) {
+    // Single paragraph selection
+    createSingleHighlight(paragraphRanges[0], color);
+  } else {
+    // Multiple paragraphs - create separate highlights
+    createMultiParagraphHighlights(paragraphRanges, color);
+  }
+
+  saveHighlights();
+  updateMinimapMarkers();
+  selection.removeAllRanges();
+}
+
+/**
+ * Extract paragraph-based ranges from a selection
+ * Returns array of ranges, each constrained to a single paragraph
+ */
+function getParagraphRangesFromSelection(originalRange) {
+  const ranges = [];
+  const startContainer = originalRange.startContainer;
+  const endContainer = originalRange.endContainer;
+
+  // Helper to find the paragraph element containing a node
+  const findParagraph = (node) => {
+    let current = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    return current?.closest('p, div, article, section, li, td, th, blockquote') || null;
+  };
+
+  const startParagraph = findParagraph(startContainer);
+  const endParagraph = findParagraph(endContainer);
+
+  // If no paragraphs found, return empty array for fallback handling
+  if (!startParagraph && !endParagraph) {
+    return [];
+  }
+
+  // Single paragraph case
+  if (startParagraph === endParagraph) {
+    ranges.push(originalRange.cloneRange());
+    return ranges;
+  }
+
+  // Multiple paragraphs case
+  const paragraphsInSelection = getParagraphsBetween(startParagraph, endParagraph);
+
+  paragraphsInSelection.forEach((paragraph, index) => {
+    const range = document.createRange();
+
+    if (index === 0) {
+      // First paragraph: from selection start to paragraph end
+      range.setStart(originalRange.startContainer, originalRange.startOffset);
+      range.setEnd(paragraph, paragraph.childNodes.length);
+    } else if (index === paragraphsInSelection.length - 1) {
+      // Last paragraph: from paragraph start to selection end
+      range.setStart(paragraph, 0);
+      range.setEnd(originalRange.endContainer, originalRange.endOffset);
+    } else {
+      // Middle paragraphs: select entire content
+      range.selectNodeContents(paragraph);
+    }
+
+    // Only add range if it contains actual text
+    if (range.toString().trim() !== '') {
+      ranges.push(range);
+    }
+  });
+
+  return ranges;
+}
+
+/**
+ * Get all paragraphs between start and end paragraphs (inclusive)
+ */
+function getParagraphsBetween(startParagraph, endParagraph) {
+  const paragraphs = [];
+  const allParagraphs = Array.from(document.querySelectorAll('p, div, article, section, li, td, th, blockquote'));
+
+  const startIndex = allParagraphs.indexOf(startParagraph);
+  const endIndex = allParagraphs.indexOf(endParagraph);
+
+  if (startIndex === -1 || endIndex === -1) {
+    return startParagraph === endParagraph ? [startParagraph] : [startParagraph, endParagraph].filter(Boolean);
+  }
+
+  const minIndex = Math.min(startIndex, endIndex);
+  const maxIndex = Math.max(startIndex, endIndex);
+
+  for (let i = minIndex; i <= maxIndex; i++) {
+    paragraphs.push(allParagraphs[i]);
+  }
+
+  return paragraphs;
+}
+
+/**
+ * Create a single highlight from a range
+ */
+function createSingleHighlight(range, color) {
+  const highlightId = Date.now().toString();
+  const fragment = range.extractContents();
+
+  // Check if the extracted content contains paragraph elements
+  const containsParagraph = Array.from(fragment.childNodes).some(node =>
+    node.nodeType === Node.ELEMENT_NODE &&
+    ['P', 'DIV', 'ARTICLE', 'SECTION', 'LI', 'TD', 'TH', 'BLOCKQUOTE'].includes(node.tagName)
+  );
+
+  let highlightSpan;
+
+  if (containsParagraph) {
+    // Wrap content within paragraph elements
+    fragment.querySelectorAll('p, div, article, section, li, td, th, blockquote').forEach(element => {
+      if (element.textContent.trim() === '') {
+        element.remove();
+        return;
+      }
+
+      const span = document.createElement('span');
+      span.className = 'text-highlighter-extension';
+      span.style.backgroundColor = color;
+      span.dataset.highlightId = highlightId;
+
+      // Move all child nodes to the span
+      while (element.firstChild) {
+        span.appendChild(element.firstChild);
+      }
+      element.appendChild(span);
+
+      if (!highlightSpan) highlightSpan = span;
+      addHighlightEventListeners(span);
+    });
+
+    range.insertNode(fragment);
+  } else {
+    // Simple inline content
+    highlightSpan = document.createElement('span');
+    highlightSpan.className = 'text-highlighter-extension';
+    highlightSpan.style.backgroundColor = color;
+    highlightSpan.dataset.highlightId = highlightId;
+    highlightSpan.appendChild(fragment);
+
+    range.insertNode(highlightSpan);
+    addHighlightEventListeners(highlightSpan);
+  }
+
+  // Store highlight data
+  if (highlightSpan) {
+    const rect = highlightSpan.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+    highlights.push({
+      id: highlightId,
+      text: highlightSpan.textContent,
+      color: color,
+      xpath: getXPathForElement(highlightSpan),
+      position: rect.top + scrollTop
+    });
+  }
+}
+
+/**
+ * Create multiple highlights for multi-paragraph selection
+ */
+function createMultiParagraphHighlights(ranges, color) {
+  const baseId = Date.now().toString();
+
+  ranges.forEach((range, index) => {
+    const highlightId = `${baseId}_${index}`;
+    const fragment = range.extractContents();
+
+    if (fragment.textContent.trim() === '') return;
+
+    const span = document.createElement('span');
+    span.className = 'text-highlighter-extension';
+    span.style.backgroundColor = color;
+    span.dataset.highlightId = highlightId;
+    span.appendChild(fragment);
+
+    range.insertNode(span);
+    addHighlightEventListeners(span);
+
+    // Store highlight data
+    const rect = span.getBoundingClientRect();
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+    highlights.push({
+      id: highlightId,
+      text: span.textContent,
+      color: color,
+      xpath: getXPathForElement(span),
+      position: rect.top + scrollTop
+    });
+  });
 }
 
 // Add module exports for testing
