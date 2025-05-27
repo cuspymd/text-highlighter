@@ -1,7 +1,7 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
-const DEBUG_MODE = false;
+const DEBUG_MODE = true;
 
 let COLORS = [];
 
@@ -577,213 +577,266 @@ function updateMinimapMarkers() {
   }
 }
 
-// Refactored highlightSelectedText function with cleaner paragraph handling
+// Refactored highlightSelectedText function with tree traversal algorithm
 function highlightSelectedText(color) {
   const selection = window.getSelection();
   if (selection.toString().trim() === '') return;
 
   const range = selection.getRangeAt(0);
-  const selectedText = selection.toString();
-
-  // Get all paragraph elements that intersect with the selection
-  const paragraphRanges = getParagraphRangesFromSelection(range);
-
-  if (paragraphRanges.length === 0) {
-    // Fallback: treat as single highlight if no paragraphs found
-    createSingleHighlight(range, color);
-  } else if (paragraphRanges.length === 1) {
-    // Single paragraph selection
-    createSingleHighlight(paragraphRanges[0], color);
-  } else {
-    // Multiple paragraphs - create separate highlights
-    createMultiParagraphHighlights(paragraphRanges, color);
+  
+  try {
+    const highlightId = Date.now().toString();
+    const highlightSpans = processSelectionRange(range, color, highlightId);
+    
+    if (highlightSpans.length > 0) {
+      // Store highlight data for each created span
+      highlightSpans.forEach((span, index) => {
+        const rect = span.getBoundingClientRect();
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        
+        highlights.push({
+          id: `${highlightId}_${index}`,
+          text: span.textContent,
+          color: color,
+          xpath: getXPathForElement(span),
+          position: rect.top + scrollTop
+        });
+        
+        addHighlightEventListeners(span);
+      });
+      
+      saveHighlights();
+      updateMinimapMarkers();
+    }
+  } catch (error) {
+    debugLog('Error highlighting selected text:', error);
   }
-
-  saveHighlights();
-  updateMinimapMarkers();
+  
   selection.removeAllRanges();
 }
 
 /**
- * Extract paragraph-based ranges from a selection
- * Returns array of ranges, each constrained to a single paragraph
+ * Process selection range using tree traversal algorithm
+ * @param {Range} range - The selection range
+ * @param {string} color - Highlight color
+ * @param {string} highlightId - Base highlight ID
+ * @returns {Array} Array of created highlight spans
  */
-function getParagraphRangesFromSelection(originalRange) {
-  const ranges = [];
-  const startContainer = originalRange.startContainer;
-  const endContainer = originalRange.endContainer;
-
-  // Helper to find the paragraph element containing a node
-  const findParagraph = (node) => {
-    let current = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-    return current?.closest('p, div, article, section, li, td, th, blockquote') || null;
-  };
-
-  const startParagraph = findParagraph(startContainer);
-  const endParagraph = findParagraph(endContainer);
-
-  // If no paragraphs found, return empty array for fallback handling
-  if (!startParagraph && !endParagraph) {
-    return [];
-  }
-
-  // Single paragraph case
-  if (startParagraph === endParagraph) {
-    ranges.push(originalRange.cloneRange());
-    return ranges;
-  }
-
-  // Multiple paragraphs case
-  const paragraphsInSelection = getParagraphsBetween(startParagraph, endParagraph);
-
-  paragraphsInSelection.forEach((paragraph, index) => {
-    const range = document.createRange();
-
-    if (index === 0) {
-      // First paragraph: from selection start to paragraph end
-      range.setStart(originalRange.startContainer, originalRange.startOffset);
-      range.setEnd(paragraph, paragraph.childNodes.length);
-    } else if (index === paragraphsInSelection.length - 1) {
-      // Last paragraph: from paragraph start to selection end
-      range.setStart(paragraph, 0);
-      range.setEnd(originalRange.endContainer, originalRange.endOffset);
-    } else {
-      // Middle paragraphs: select entire content
-      range.selectNodeContents(paragraph);
-    }
-
-    // Only add range if it contains actual text
-    if (range.toString().trim() !== '') {
-      ranges.push(range);
-    }
-  });
-
-  return ranges;
-}
-
-/**
- * Get all paragraphs between start and end paragraphs (inclusive)
- */
-function getParagraphsBetween(startParagraph, endParagraph) {
-  const paragraphs = [];
-  const allParagraphs = Array.from(document.querySelectorAll('p, div, article, section, li, td, th, blockquote'));
-
-  const startIndex = allParagraphs.indexOf(startParagraph);
-  const endIndex = allParagraphs.indexOf(endParagraph);
-
-  if (startIndex === -1 || endIndex === -1) {
-    return startParagraph === endParagraph ? [startParagraph] : [startParagraph, endParagraph].filter(Boolean);
-  }
-
-  const minIndex = Math.min(startIndex, endIndex);
-  const maxIndex = Math.max(startIndex, endIndex);
-
-  for (let i = minIndex; i <= maxIndex; i++) {
-    paragraphs.push(allParagraphs[i]);
-  }
-
-  return paragraphs;
-}
-
-/**
- * Create a single highlight from a range
- */
-function createSingleHighlight(range, color) {
-  const highlightId = Date.now().toString();
-  const fragment = range.extractContents();
-
-  // Check if the extracted content contains paragraph elements
-  const containsParagraph = Array.from(fragment.childNodes).some(node =>
-    node.nodeType === Node.ELEMENT_NODE &&
-    ['P', 'DIV', 'ARTICLE', 'SECTION', 'LI', 'TD', 'TH', 'BLOCKQUOTE'].includes(node.tagName)
-  );
-
-  let highlightSpan;
-
-  if (containsParagraph) {
-    // Wrap content within paragraph elements
-    fragment.querySelectorAll('p, div, article, section, li, td, th, blockquote').forEach(element => {
-      if (element.textContent.trim() === '') {
-        element.remove();
-        return;
-      }
-
-      const span = document.createElement('span');
-      span.className = 'text-highlighter-extension';
-      span.style.backgroundColor = color;
-      span.dataset.highlightId = highlightId;
-
-      // Move all child nodes to the span
-      while (element.firstChild) {
-        span.appendChild(element.firstChild);
-      }
-      element.appendChild(span);
-
-      if (!highlightSpan) highlightSpan = span;
-      addHighlightEventListeners(span);
-    });
-
-    range.insertNode(fragment);
-  } else {
-    // Simple inline content
-    highlightSpan = document.createElement('span');
-    highlightSpan.className = 'text-highlighter-extension';
-    highlightSpan.style.backgroundColor = color;
-    highlightSpan.dataset.highlightId = highlightId;
-    highlightSpan.appendChild(fragment);
-
-    range.insertNode(highlightSpan);
-    addHighlightEventListeners(highlightSpan);
-  }
-
-  // Store highlight data
-  if (highlightSpan) {
-    const rect = highlightSpan.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-
-    highlights.push({
-      id: highlightId,
-      text: highlightSpan.textContent,
-      color: color,
-      xpath: getXPathForElement(highlightSpan),
-      position: rect.top + scrollTop
-    });
-  }
-}
-
-/**
- * Create multiple highlights for multi-paragraph selection
- */
-function createMultiParagraphHighlights(ranges, color) {
-  const baseId = Date.now().toString();
-
-  ranges.forEach((range, index) => {
-    const highlightId = `${baseId}_${index}`;
-    const fragment = range.extractContents();
-
-    if (fragment.textContent.trim() === '') return;
-
+function processSelectionRange(range, color, highlightId) {
+  const commonAncestor = range.commonAncestorContainer;
+  const startContainer = range.startContainer;
+  const endContainer = range.endContainer;
+  const startOffset = range.startOffset;
+  const endOffset = range.endOffset;
+  
+  const highlightSpans = [];
+  let currentSpan = null;
+  let processingStarted = false;
+  let spanCounter = 0;
+  
+  // Helper function to create a new span
+  function createNewSpan() {
     const span = document.createElement('span');
     span.className = 'text-highlighter-extension';
     span.style.backgroundColor = color;
-    span.dataset.highlightId = highlightId;
-    span.appendChild(fragment);
-
-    range.insertNode(span);
-    addHighlightEventListeners(span);
-
-    // Store highlight data
-    const rect = span.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-
-    highlights.push({
-      id: highlightId,
-      text: span.textContent,
-      color: color,
-      xpath: getXPathForElement(span),
-      position: rect.top + scrollTop
-    });
-  });
+    span.dataset.highlightId = `${highlightId}_${spanCounter++}`;
+    return span;
+  }
+  
+  // Helper function to finalize current span
+  function finalizeCurrentSpan() {
+    if (currentSpan && currentSpan.textContent.trim() !== '') {
+      highlightSpans.push(currentSpan);
+    }
+    currentSpan = null;
+  }
+  
+  // Helper function to check if node is a block element
+  function isBlockElement(node) {
+    if (node.nodeType !== Node.ELEMENT_NODE) return false;
+    
+    const blockTags = ['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 
+                      'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'NAV', 
+                      'ASIDE', 'MAIN', 'BLOCKQUOTE', 'PRE', 'UL', 'OL', 
+                      'LI', 'TABLE', 'TR', 'TD', 'TH', 'TBODY', 'THEAD', 
+                      'TFOOT', 'FORM', 'FIELDSET', 'ADDRESS'];
+    
+    return blockTags.includes(node.tagName);
+  }
+  
+  // Helper function to check if we should skip this node
+  function shouldSkipNode(node) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const skipTags = ['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'];
+      if (skipTags.includes(node.tagName)) return true;
+      
+      // Skip if already highlighted
+      if (node.classList && node.classList.contains('text-highlighter-extension')) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  // Tree traversal function
+  function traverseNode(node) {
+    // Check if we've reached the end
+    if (processingStarted && node === endContainer) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        // Handle end text node
+        if (!currentSpan) {
+          currentSpan = createNewSpan();
+        }
+        
+        const textContent = node.textContent;
+        const selectedText = textContent.substring(0, endOffset);
+        
+        if (selectedText.trim() !== '') {
+          const newTextNode = document.createTextNode(selectedText);
+          currentSpan.appendChild(newTextNode);
+          
+          // Split the text node properly
+          const remainingText = textContent.substring(endOffset);
+          const parent = node.parentNode;
+          
+          if (remainingText) {
+            const remainingTextNode = document.createTextNode(remainingText);
+            parent.insertBefore(currentSpan, node);
+            parent.insertBefore(remainingTextNode, node);
+            parent.removeChild(node); // Remove the original node
+          } else {
+            parent.replaceChild(currentSpan, node);
+          }
+          
+          finalizeCurrentSpan();
+        } else {
+          // If no valid text to highlight, just finalize current span
+          finalizeCurrentSpan();
+        }
+      }
+      return true; // Signal to stop processing
+    }
+    
+    // Check if we've reached the start
+    if (!processingStarted && node === startContainer) {
+      processingStarted = true;
+      
+      if (node.nodeType === Node.TEXT_NODE) {
+        // Handle start text node
+        const textContent = node.textContent;
+        
+        if (startContainer === endContainer) {
+          // Same text node case
+          const selectedText = textContent.substring(startOffset, endOffset);
+          
+          if (selectedText.trim() !== '') {
+            currentSpan = createNewSpan();
+            const newTextNode = document.createTextNode(selectedText);
+            currentSpan.appendChild(newTextNode);
+            
+            // Split the text node
+            const beforeText = textContent.substring(0, startOffset);
+            const afterText = textContent.substring(endOffset);
+            
+            const parent = node.parentNode;
+            if (beforeText) {
+              const beforeTextNode = document.createTextNode(beforeText);
+              parent.insertBefore(beforeTextNode, node);
+            }
+            
+            parent.insertBefore(currentSpan, node);
+            
+            if (afterText) {
+              const afterTextNode = document.createTextNode(afterText);
+              parent.insertBefore(afterTextNode, node);
+            }
+            
+            parent.removeChild(node);
+            finalizeCurrentSpan();
+          }
+          return true; // Signal to stop processing
+        } else {
+          // Multi-node selection start
+          const selectedText = textContent.substring(startOffset);
+          
+          if (selectedText.trim() !== '') {
+            currentSpan = createNewSpan();
+            const newTextNode = document.createTextNode(selectedText);
+            currentSpan.appendChild(newTextNode);
+            
+            // Split the text node
+            const beforeText = textContent.substring(0, startOffset);
+            const parent = node.parentNode;
+            
+            if (beforeText) {
+              const beforeTextNode = document.createTextNode(beforeText);
+              parent.insertBefore(beforeTextNode, node);
+            }
+            
+            parent.replaceChild(currentSpan, node);
+            finalizeCurrentSpan();
+            currentSpan = createNewSpan();
+          }
+        }
+      }
+      return false; // Continue processing
+    }
+    
+    // Process nodes between start and end
+    if (processingStarted) {
+      if (shouldSkipNode(node)) {
+        return false; // Skip but continue
+      }
+      
+      if (node.nodeType === Node.TEXT_NODE) {
+        const textContent = node.textContent;
+        if (textContent.trim() !== '') {
+          if (!currentSpan) {
+            currentSpan = createNewSpan();
+          }
+          
+          const newTextNode = document.createTextNode(textContent);
+          currentSpan.appendChild(newTextNode);
+          
+          // Replace the original text node
+          node.parentNode.replaceChild(currentSpan, node);
+          finalizeCurrentSpan();
+          currentSpan = createNewSpan();
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE && isBlockElement(node)) {
+        // Block element encountered - finalize current span
+        finalizeCurrentSpan();
+        currentSpan = null;
+      }
+    }
+    
+    return false; // Continue processing
+  }
+  
+  // Perform depth-first traversal
+  function depthFirstTraversal(node) {
+    if (traverseNode(node)) {
+      return true; // Stop signal received
+    }
+    
+    // Process child nodes
+    const children = Array.from(node.childNodes);
+    for (const child of children) {
+      if (depthFirstTraversal(child)) {
+        return true; // Stop signal received
+      }
+    }
+    
+    return false;
+  }
+  
+  // Start traversal from common ancestor
+  depthFirstTraversal(commonAncestor);
+  
+  // Finalize any remaining span
+  finalizeCurrentSpan();
+  
+  return highlightSpans;
 }
 
 // Add module exports for testing
