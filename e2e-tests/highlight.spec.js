@@ -30,7 +30,7 @@ test.describe('Chrome Extension Tests', () => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
     const paragraph = page.locator('p:has-text("This is a sample paragraph")');
-    const textToSelect = "a portion of this text";
+    const textToSelect = "This is a sample paragraph";
 
     // p 태그 내에서 textToSelect 문자열을 찾아 선택합니다.
     await paragraph.evaluate((element, textToSelect) => {
@@ -67,5 +67,40 @@ test.describe('Chrome Extension Tests', () => {
     await expect(highlightedSpan).toHaveText(textToSelect);
   });
 
+  test('첫 번째 단락 전체를 트리플 클릭하여 초록색으로 하이라이트', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const firstParagraph = page.locator('p').first();
+    const expectedText = "This is a sample paragraph with some text that can be highlighted.";
+
+    // 1. Triple click the first paragraph to select its content
+    await firstParagraph.click({ clickCount: 3 });
+
+    // 2. Verify the selection (optional, but good for ensuring the click worked as expected)
+    const selectedText = await page.evaluate(() => {
+      const selection = window.getSelection();
+      return selection ? selection.toString().trim() : '';
+    });
+    expect(selectedText).toBe(expectedText);
+
+    // 3. Trigger highlight action from the background script with green color
+    await background.evaluate(async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.id) {
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'highlight',
+          color: '#AAFFAA' // Green color hex from constants.js
+        });
+      } else {
+        console.error('Active tab not found to send highlight message.');
+      }
+    });
+
+    // 4. Assert that the highlight span is visible, has the correct color, and contains the expected text
+    const highlightedSpan = firstParagraph.locator('span.text-highlighter-extension');
+    await expect(highlightedSpan).toBeVisible();
+    await expect(highlightedSpan).toHaveCSS('background-color', 'rgb(170, 255, 170)'); // #AAFFAA in RGB
+    await expect(highlightedSpan).toHaveText(expectedText);
+  });
 
 });
