@@ -3,22 +3,21 @@
 
 <head>
   <title>Test Page for Text Highlighter</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 20px;
-    }
-
-    p {
-      margin-bottom: 10px;
-    }
-  </style>
 </head>
 
 <body>
   <h1>Welcome to the Test Page</h1>
   <p>This is a sample paragraph with some text that can be highlighted.</p>
   <p>Another paragraph to ensure multiple elements are handled correctly.</p>
+  <p id="dynamic-multi-text"></p>
+  
+  <script>
+    // JavaScript로 멀티 텍스트 노드 동적 생성
+    const container = document.getElementById('dynamic-multi-text');
+    container.appendChild(document.createTextNode('first '));
+    container.appendChild(document.createTextNode('second '));
+    container.appendChild(document.createTextNode('third'));
+  </script>
 </body>
 
 </html>

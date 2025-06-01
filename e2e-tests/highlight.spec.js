@@ -103,4 +103,64 @@ test.describe('Chrome Extension Tests', () => {
     await expect(highlightedSpan).toHaveText(expectedText);
   });
 
+  test('동적으로 생성된 멀티 텍스트 노드 단락을 트리플 클릭하여 하이라이트 - 전체 텍스트 하이라이트 및 단일 하이라이트 생성 확인', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    // JavaScript로 생성된 멀티 텍스트 노드 단락 선택
+    const multiTextParagraph = page.locator('#dynamic-multi-text');
+    const expectedText = "first second third";
+
+    // 1. 먼저 페이지가 로드되고 JavaScript가 실행될 때까지 대기
+    await page.waitForFunction(() => {
+      const elem = document.getElementById('dynamic-multi-text');
+      return elem && elem.childNodes.length > 1; // 멀티 텍스트 노드가 생성되었는지 확인
+    });
+
+    // 2. 멀티 텍스트 노드가 올바르게 생성되었는지 확인
+    const textNodeCount = await multiTextParagraph.evaluate((element) => {
+      return Array.from(element.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).length;
+    });
+    expect(textNodeCount).toBeGreaterThan(1); // 멀티 텍스트 노드 확인
+
+    // 3. Triple click the paragraph to select its content
+    await multiTextParagraph.click({ clickCount: 3 });
+
+    // 4. Verify the selection includes all text nodes
+    const selectedText = await page.evaluate(() => {
+      const selection = window.getSelection();
+      return selection ? selection.toString().trim() : '';
+    });
+    expect(selectedText).toBe(expectedText);
+
+    // 5. Trigger highlight action with purple color
+    await background.evaluate(async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.id) {
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'highlight',
+          color: '#FFAAFF' // Purple color
+        });
+      } else {
+        console.error('Active tab not found to send highlight message.');
+      }
+    });
+
+    // 6. Assert that all text in the paragraph is highlighted
+    const highlightedSpans = multiTextParagraph.locator('span.text-highlighter-extension');
+    
+    // 7. Verify only one highlight span is created (all text nodes merged into single highlight)
+    await expect(highlightedSpans).toHaveCount(1);
+    
+    // 8. Verify the highlight is visible and has correct color
+    await expect(highlightedSpans.first()).toBeVisible();
+    await expect(highlightedSpans.first()).toHaveCSS('background-color', 'rgb(255, 170, 255)'); // #FFAAFF in RGB
+    
+    // 9. Verify all text content is captured in the single highlight
+    const highlightedText = await highlightedSpans.first().textContent();
+    expect(highlightedText.trim()).toBe(expectedText);  
+    
+    // All text should be highlighted, so no unhighlighted text should remain
+    expect(unhighlightedText).toBe('');
+  });
+
 });
