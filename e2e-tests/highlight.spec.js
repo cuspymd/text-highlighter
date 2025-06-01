@@ -153,4 +153,79 @@ test.describe('Chrome Extension Tests', () => {
     await expect(pSpan).toHaveText(pText.trim());
   });
 
+  test('id가 "inline-element"인 단락에서 "This has <strong>inline" 텍스트를 선택 후 하이라이트 동작 검증', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const inlineParagraph = page.locator('#inline-element');
+    // "This has "는 텍스트 노드, "inline"은 strong 태그 내부
+    // strong 태그의 첫 번째 자식 노드가 "inline element" 텍스트임
+    await page.evaluate(() => {
+      const p = document.getElementById('inline-element');
+      if (!p) throw new Error('Could not find the paragraph with id "inline-element".');
+      const textNode = Array.from(p.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.textContent.includes('This has'));
+      const strong = p.querySelector('strong');
+      if (!textNode || !strong) throw new Error('Could not find the text node or <strong> element.');
+      const strongTextNode = strong.firstChild;
+      // "This has " 길이: 9, strong 내부 "inline" 길이: 6
+      const range = document.createRange();
+      range.setStart(textNode, 0); // "This has "의 처음
+      range.setEnd(strongTextNode, 6); // strong 내부 "inline"까지
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+
+    // 선택된 텍스트가 "This has inline"인지 확인
+    const selected = await page.evaluate(() => window.getSelection().toString());
+    expect(selected).toBe('This has inline');
+
+    await sendHighlightMessage(background, '#FFFF99'); // 연노랑
+
+    // 하이라이트된 span이 두 개(텍스트 노드, strong 내부)로 나뉘어 생성될 수 있음
+    const highlightedSpans = inlineParagraph.locator('span.text-highlighter-extension');
+    await expect(highlightedSpans).toHaveCount(2);
+    // 첫 번째 span: "This has ", 두 번째 span: "inline"
+    await expect(highlightedSpans.nth(0)).toHaveText('This has ');
+    await expect(highlightedSpans.nth(1)).toHaveText('inline');
+    await expect(highlightedSpans.nth(0)).toHaveCSS('background-color', 'rgb(255, 255, 153)');
+    await expect(highlightedSpans.nth(1)).toHaveCSS('background-color', 'rgb(255, 255, 153)');
+  });
+
+  test('id가 "inline-element"인 단락에서 "element</strong> in text." 텍스트를 선택 후 하이라이트 동작 검증', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const inlineParagraph = page.locator('#inline-element');
+    // strong 태그 내부 "element"와 strong 태그 뒤 텍스트 노드 " in text."를 선택
+    await page.evaluate(() => {
+      const p = document.getElementById('inline-element');
+      const strong = p.querySelector('strong');
+      const strongTextNode = strong.firstChild;
+      const afterStrongNode = strong.nextSibling;
+      const text = strongTextNode.textContent;
+      const startIdx = text.indexOf('element');
+      if (startIdx === -1) throw new Error('"element" not found in strongTextNode.');
+      const range = document.createRange();
+      range.setStart(strongTextNode, startIdx); // strong 내부 "element"의 시작
+      range.setEnd(afterStrongNode, afterStrongNode.textContent.length); // " in text."의 끝
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+
+    // 선택된 텍스트가 "element in text."인지 확인
+    const selected = await page.evaluate(() => window.getSelection().toString());
+    expect(selected).toBe('element in text.');
+
+    await sendHighlightMessage(background, '#99FFCC'); // 연녹색
+
+    // 하이라이트된 span이 두 개(강조, 일반 텍스트)로 나뉘어 생성될 수 있음
+    const highlightedSpans = inlineParagraph.locator('span.text-highlighter-extension');
+    await expect(highlightedSpans).toHaveCount(2);
+    // 첫 번째 span: "element", 두 번째 span: " in text."
+    await expect(highlightedSpans.nth(0)).toHaveText('element');
+    await expect(highlightedSpans.nth(1)).toHaveText(' in text.');
+    await expect(highlightedSpans.nth(0)).toHaveCSS('background-color', 'rgb(153, 255, 204)');
+    await expect(highlightedSpans.nth(1)).toHaveCSS('background-color', 'rgb(153, 255, 204)');
+  });
+
 });
