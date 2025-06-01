@@ -1,6 +1,20 @@
 const path = require('path');
 import { test, expect } from './fixtures';
 
+// 공통 하이라이트 메시지 전송 함수
+async function sendHighlightMessage(background, color) {
+  await background.evaluate(async (color) => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.id) {
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'highlight',
+        color
+      });
+    } else {
+      console.error('Active tab not found to send highlight message.');
+    }
+  }, color);
+}
 
 test.describe('Chrome Extension Tests', () => {
   test('텍스트 선택 후 컨텍스트 메뉴로 노란색 하이라이트 적용', async ({page, background}) => {
@@ -28,13 +42,7 @@ test.describe('Chrome Extension Tests', () => {
     const selected = await page.evaluate(() => window.getSelection().toString());
     expect(selected).toBe(textToSelect);
 
-    await background.evaluate(async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      chrome.tabs.sendMessage(tab.id, {
-        action: 'highlight',
-        color: 'yellow' 
-      });
-    });
+    await sendHighlightMessage(background, 'yellow');
 
     const highlightedSpan = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
     
@@ -61,17 +69,7 @@ test.describe('Chrome Extension Tests', () => {
     expect(selectedText).toBe(expectedText);
 
     // 3. Trigger highlight action from the background script with green color
-    await background.evaluate(async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.id) {
-        chrome.tabs.sendMessage(tab.id, {
-          action: 'highlight',
-          color: '#AAFFAA' // Green color hex from constants.js
-        });
-      } else {
-        console.error('Active tab not found to send highlight message.');
-      }
-    });
+    await sendHighlightMessage(background, '#AAFFAA'); // Green color hex from constants.js
 
     // 4. Assert that the highlight span is visible, has the correct color, and contains the expected text
     const highlightedSpan = firstParagraph.locator('span.text-highlighter-extension');
@@ -104,17 +102,7 @@ test.describe('Chrome Extension Tests', () => {
     });
     expect(selectedText).toBe(expectedText);
 
-    await background.evaluate(async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.id) {
-        chrome.tabs.sendMessage(tab.id, {
-          action: 'highlight',
-          color: '#FFAAFF' // Purple color
-        });
-      } else {
-        console.error('Active tab not found to send highlight message.');
-      }
-    });
+    await sendHighlightMessage(background, '#FFAAFF'); // Purple color
 
     // Assert that all text in the paragraph is highlighted
     const highlightedSpans = multiTextParagraph.locator('span.text-highlighter-extension');
@@ -161,13 +149,7 @@ test.describe('Chrome Extension Tests', () => {
     expect(selected).toBe(totalText);
 
     // 하이라이트 메시지 전송 (노란색)
-    await background.evaluate(async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      chrome.tabs.sendMessage(tab.id, {
-        action: 'highlight',
-        color: 'yellow'
-      });
-    });
+    await sendHighlightMessage(background, 'yellow');
 
     // 각각의 하이라이트 span이 올바르게 생성되었는지 확인
     const h1Span = h1.locator('span.text-highlighter-extension');
