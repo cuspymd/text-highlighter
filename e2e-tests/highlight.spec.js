@@ -131,4 +131,53 @@ test.describe('Chrome Extension Tests', () => {
     // expect(highlightedText.trim()).toBe(expectedText);  
   });
 
+  test('h1과 첫 번째 p 태그의 텍스트를 모두 선택 후 하이라이트 적용', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    const firstParagraph = page.locator('p').first();
+    const h1Text = await h1.textContent();
+    const pText = await firstParagraph.textContent();
+    const totalText = (h1Text + '\n' + pText).trim();
+
+    // h1의 첫 텍스트 노드와 첫 번째 p의 첫 텍스트 노드를 찾아 전체 범위 선택
+    await page.evaluate(() => {
+      const h1 = document.querySelector('h1');
+      const p = document.querySelector('p');
+      if (!h1 || !p) throw new Error('h1 또는 p 태그를 찾을 수 없습니다.');
+      const h1TextNode = Array.from(h1.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+      const pTextNode = Array.from(p.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+      if (!h1TextNode || !pTextNode) throw new Error('텍스트 노드를 찾을 수 없습니다.');
+      const range = document.createRange();
+      range.setStart(h1TextNode, 0);
+      range.setEnd(pTextNode, pTextNode.textContent.length);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+
+    // 선택된 텍스트가 두 요소의 텍스트를 모두 포함하는지 확인
+    const selected = await page.evaluate(() => window.getSelection().toString().replace(/\r?\n/g, '\n').trim());
+    expect(selected).toBe(totalText);
+
+    // 하이라이트 메시지 전송 (노란색)
+    await background.evaluate(async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'highlight',
+        color: 'yellow'
+      });
+    });
+
+    // 각각의 하이라이트 span이 올바르게 생성되었는지 확인
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    const pSpan = firstParagraph.locator('span.text-highlighter-extension');
+    await expect(h1Span).toBeVisible();
+    await expect(h1Span).toHaveCSS('background-color', 'rgb(255, 255, 0)');
+    await expect(h1Span).toHaveText(h1Text.trim());
+    await expect(pSpan).toBeVisible();
+    await expect(pSpan).toHaveCSS('background-color', 'rgb(255, 255, 0)');
+    await expect(pSpan).toHaveText(pText.trim());
+  });
+
 });
