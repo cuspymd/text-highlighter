@@ -1,7 +1,6 @@
 const path = require('path');
 import { test, expect } from './fixtures';
 
-// 공통 하이라이트 메시지 전송 함수
 async function sendHighlightMessage(background, color) {
   await background.evaluate(async (color) => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -58,20 +57,16 @@ test.describe('Chrome Extension Tests', () => {
     const firstParagraph = page.locator('p').first();
     const expectedText = "This is a sample paragraph with some text that can be highlighted.";
 
-    // 1. Triple click the first paragraph to select its content
     await firstParagraph.click({ clickCount: 3 });
 
-    // 2. Verify the selection (optional, but good for ensuring the click worked as expected)
     const selectedText = await page.evaluate(() => {
       const selection = window.getSelection();
       return selection ? selection.toString().trim() : '';
     });
     expect(selectedText).toBe(expectedText);
 
-    // 3. Trigger highlight action from the background script with green color
-    await sendHighlightMessage(background, '#AAFFAA'); // Green color hex from constants.js
+    await sendHighlightMessage(background, '#AAFFAA'); // Green color 
 
-    // 4. Assert that the highlight span is visible, has the correct color, and contains the expected text
     const highlightedSpan = firstParagraph.locator('span.text-highlighter-extension');
     await expect(highlightedSpan).toBeVisible();
     await expect(highlightedSpan).toHaveCSS('background-color', 'rgb(170, 255, 170)'); // #AAFFAA in RGB
@@ -128,7 +123,6 @@ test.describe('Chrome Extension Tests', () => {
     const pText = await firstParagraph.textContent();
     const totalText = (h1Text + '\n' + pText).trim();
 
-    // h1의 첫 텍스트 노드와 첫 번째 p의 첫 텍스트 노드를 찾아 전체 범위 선택
     await page.evaluate(() => {
       const h1 = document.querySelector('h1');
       const p = document.querySelector('p');
@@ -144,14 +138,11 @@ test.describe('Chrome Extension Tests', () => {
       sel.addRange(range);
     });
 
-    // 선택된 텍스트가 두 요소의 텍스트를 모두 포함하는지 확인
     const selected = await page.evaluate(() => window.getSelection().toString().replace(/\r?\n/g, '\n').trim());
     expect(selected).toBe(totalText);
 
-    // 하이라이트 메시지 전송 (노란색)
     await sendHighlightMessage(background, 'yellow');
 
-    // 각각의 하이라이트 span이 올바르게 생성되었는지 확인
     const h1Span = h1.locator('span.text-highlighter-extension');
     const pSpan = firstParagraph.locator('span.text-highlighter-extension');
     await expect(h1Span).toBeVisible();
