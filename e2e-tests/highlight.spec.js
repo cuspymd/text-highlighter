@@ -228,4 +228,63 @@ test.describe('Chrome Extension Tests', () => {
     await expect(highlightedSpans.nth(1)).toHaveCSS('background-color', 'rgb(153, 255, 204)');
   });
 
+  test('h1 태그 tripple click 하이라이트 및 삭제', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    const h1Text = await h1.textContent();
+
+    await h1.click({ clickCount: 3 });
+    const selected = await page.evaluate(() => window.getSelection().toString().trim());
+    expect(selected).toBe(h1Text.trim());
+
+    await sendHighlightMessage(background, 'yellow');
+
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expect(h1Span).toBeVisible();
+    await expect(h1Span).toHaveCSS('background-color', 'rgb(255, 255, 0)');
+    await expect(h1Span).toHaveText(h1Text.trim());
+
+    await h1Span.click();
+    const controls = page.locator('.text-highlighter-controls');
+    await expect(controls).toBeVisible();
+    await expect(controls).toHaveCSS('display', /flex|block/);
+
+    const deleteBtn = controls.locator('.delete-highlight');
+    await deleteBtn.click();
+
+    await expect(h1Span).toHaveCount(0);
+  });
+
+  test('h1 태그 tripple click 하이라이트 후 highlight control UI에서 색상 변경', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    const h1Text = await h1.textContent();
+
+    await h1.click({ clickCount: 3 });
+    const selected = await page.evaluate(() => window.getSelection().toString().trim());
+    expect(selected).toBe(h1Text.trim());
+
+    await sendHighlightMessage(background, 'yellow');
+
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expect(h1Span).toBeVisible();
+    await expect(h1Span).toHaveCSS('background-color', 'rgb(255, 255, 0)');
+    await expect(h1Span).toHaveText(h1Text.trim());
+
+    // 하이라이트된 텍스트 클릭 → highlight control UI 표시
+    await h1Span.click();
+    const controls = page.locator('.text-highlighter-controls');
+    await expect(controls).toBeVisible();
+    await expect(controls).toHaveCSS('display', /flex|block/);
+
+    // highlight control UI의 green 색상 버튼 클릭
+    // green 색상 버튼은 두 번째 버튼에 위치함
+    const greenBtn = controls.locator('.text-highlighter-color-buttons > .text-highlighter-control-button').nth(1);
+    await greenBtn.click();
+
+    await expect(h1Span).toHaveCSS('background-color', 'rgb(170, 255, 170)');
+  });
+
 });
