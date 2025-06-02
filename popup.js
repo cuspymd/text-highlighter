@@ -1,3 +1,20 @@
+const URL_PARAMS  = new URLSearchParams(window.location.search);
+
+async function getActiveTab() {
+  // Open popup.html?tab=5 to use tab ID 5, etc.
+  if (URL_PARAMS.has("tab")) {
+    const tabId = parseInt(URL_PARAMS.get("tab"));
+    return await chrome.tabs.get(tabId);
+  }
+
+  const tabs = await chrome.tabs.query({
+    active: true,
+    currentWindow: true
+  });
+
+  return tabs[0];
+}
+
 // Internationalization helper
 function initializeI18n() {
   // Get all elements with data-i18n attribute
@@ -46,8 +63,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Load highlight information from current active tab
   async function loadHighlights() {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    const currentUrl = tabs[0].url;
+    const tab = await getActiveTab();
+    const currentUrl = tab.url;
+    if (!currentUrl) return;
 
     const result = await chrome.storage.local.get([currentUrl]);
     let highlights = result[currentUrl] || [];
@@ -112,8 +130,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     debugLog('Minimap visibility saved:', isVisible);
 
     // Apply settings to current page
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    await chrome.tabs.sendMessage(tabs[0].id, {
+    const tab = await getActiveTab();
+    await chrome.tabs.sendMessage(tab.id, {
       action: 'setMinimapVisibility',
       visible: isVisible
     });
@@ -136,10 +154,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Delete all highlights
   clearAllBtn.addEventListener('click', async function () {
+    debugLog('Clearing all highlights');
     const confirmMessage = chrome.i18n.getMessage('confirmClearAll');
     if (confirm(confirmMessage)) {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      const currentUrl = tabs[0].url;
+      const tab = await getActiveTab();
+      const currentUrl = tab.url;
+      if (!currentUrl) return;
       
       const response = await chrome.runtime.sendMessage({
         action: 'clearAllHighlights',
@@ -156,8 +176,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Export highlight data
   exportDataBtn.addEventListener('click', async function () {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    const currentUrl = tabs[0].url;
+    const tab = await getActiveTab();
+    const currentUrl = tab.url;
+    if (!currentUrl) return;
 
     const result = await chrome.storage.local.get([currentUrl]);
     const highlights = result[currentUrl] || [];
@@ -165,7 +186,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Create export data
     const exportData = {
       url: currentUrl,
-      title: tabs[0].title,
+      title: tab.title,
       date: new Date().toISOString(),
       highlights: highlights
     };

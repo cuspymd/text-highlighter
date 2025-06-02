@@ -1,28 +1,5 @@
 const path = require('path');
-import { test, expect } from './fixtures';
-
-async function sendHighlightMessage(background, color) {
-  await background.evaluate(async (color) => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab && tab.id) {
-      chrome.tabs.sendMessage(tab.id, {
-        action: 'highlight',
-        color
-      });
-    } else {
-      console.error('Active tab not found to send highlight message.');
-    }
-  }, color);
-}
-
-// 하이라이트 span 검증 헬퍼 함수
-async function expectHighlightSpan(spanLocator, { color, text }) {
-  await expect(spanLocator).toBeVisible();
-  await expect(spanLocator).toHaveCSS('background-color', color);
-  if (typeof text === 'string') {
-    await expect(spanLocator).toHaveText(text.trim());
-  }
-}
+import { test, expect, sendHighlightMessage, expectHighlightSpan } from './fixtures';
 
 test.describe('Chrome Extension Tests', () => {
   test('텍스트 선택 후 컨텍스트 메뉴로 노란색 하이라이트 적용', async ({page, background}) => {

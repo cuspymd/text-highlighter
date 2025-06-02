@@ -105,8 +105,8 @@ chrome.tabs.onActivated.addListener(async () => {
 });
 
 // Helper function to notify tab about highlight updates
-async function notifyTabHighlightsRefresh(highlights) {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+async function notifyTabHighlightsRefresh(highlights, url) {
+  const tabs = await chrome.tabs.query({ url: url });
   if (tabs[0] && tabs[0].id) {
     chrome.tabs.sendMessage(tabs[0].id, {
       action: 'refreshHighlights',
@@ -280,7 +280,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
           // Notify content script to refresh highlights if requested
           if (message.notifyRefresh) {
-            await notifyTabHighlightsRefresh(updatedHighlights);
+            await notifyTabHighlightsRefresh(updatedHighlights, url);
           }
 
           sendResponse({
@@ -293,7 +293,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
           // Notify content script to refresh highlights if requested
           if (message.notifyRefresh) {
-            await notifyTabHighlightsRefresh([]);
+            await notifyTabHighlightsRefresh([], url);
           }
 
           sendResponse({
@@ -313,7 +313,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // Notify content script to refresh highlights if requested
         if (message.notifyRefresh) {
-          await notifyTabHighlightsRefresh([]);
+          await notifyTabHighlightsRefresh([], url);
         }
 
         sendResponse({ success: true });
