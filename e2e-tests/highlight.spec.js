@@ -15,6 +15,15 @@ async function sendHighlightMessage(background, color) {
   }, color);
 }
 
+// 하이라이트 span 검증 헬퍼 함수
+async function expectHighlightSpan(spanLocator, { color, text }) {
+  await expect(spanLocator).toBeVisible();
+  await expect(spanLocator).toHaveCSS('background-color', color);
+  if (typeof text === 'string') {
+    await expect(spanLocator).toHaveText(text.trim());
+  }
+}
+
 test.describe('Chrome Extension Tests', () => {
   test('텍스트 선택 후 컨텍스트 메뉴로 노란색 하이라이트 적용', async ({page, background}) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
@@ -45,10 +54,7 @@ test.describe('Chrome Extension Tests', () => {
 
     const highlightedSpan = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
     
-    await expect(highlightedSpan).toBeVisible();
-    // CSS에서 'yellow'는 rgb(255, 255, 0)입니다.
-    await expect(highlightedSpan).toHaveCSS('background-color', 'rgb(255, 255, 0)'); 
-    await expect(highlightedSpan).toHaveText(textToSelect);
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: textToSelect });
   });
 
   test('첫 번째 단락 전체를 트리플 클릭하여 초록색으로 하이라이트', async ({ page, background }) => {
@@ -68,9 +74,7 @@ test.describe('Chrome Extension Tests', () => {
     await sendHighlightMessage(background, '#AAFFAA'); // Green color 
 
     const highlightedSpan = firstParagraph.locator('span.text-highlighter-extension');
-    await expect(highlightedSpan).toBeVisible();
-    await expect(highlightedSpan).toHaveCSS('background-color', 'rgb(170, 255, 170)'); // #AAFFAA in RGB
-    await expect(highlightedSpan).toHaveText(expectedText);
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(170, 255, 170)', text: expectedText });
   });
 
   test('동적으로 생성된 멀티 텍스트 노드 단락을 트리플 클릭하여 하이라이트 - 전체 텍스트 하이라이트 및 단일 하이라이트 생성 확인', async ({ page, background }) => {
@@ -104,11 +108,8 @@ test.describe('Chrome Extension Tests', () => {
     
     await expect(highlightedSpans).toHaveCount(3); // TODO: check later
     // await expect(highlightedSpans).toHaveCount(1);
-    
     // // Verify the highlight is visible and has correct color
-    // await expect(highlightedSpans.first()).toBeVisible();
-    // await expect(highlightedSpans.first()).toHaveCSS('background-color', 'rgb(255, 170, 255)'); // #FFAAFF in RGB
-    
+    // await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 170, 255)', text: expectedText });
     // // Verify all text content is captured in the single highlight
     // const highlightedText = await highlightedSpans.first().textContent();
     // expect(highlightedText.trim()).toBe(expectedText);  
@@ -145,12 +146,8 @@ test.describe('Chrome Extension Tests', () => {
 
     const h1Span = h1.locator('span.text-highlighter-extension');
     const pSpan = firstParagraph.locator('span.text-highlighter-extension');
-    await expect(h1Span).toBeVisible();
-    await expect(h1Span).toHaveCSS('background-color', 'rgb(255, 255, 0)');
-    await expect(h1Span).toHaveText(h1Text.trim());
-    await expect(pSpan).toBeVisible();
-    await expect(pSpan).toHaveCSS('background-color', 'rgb(255, 255, 0)');
-    await expect(pSpan).toHaveText(pText.trim());
+    await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
+    await expectHighlightSpan(pSpan, { color: 'rgb(255, 255, 0)', text: pText });
   });
 
   test('id가 "inline-element"인 단락에서 "This has <strong>inline" 텍스트를 선택 후 하이라이트 동작 검증', async ({ page, background }) => {
@@ -185,10 +182,8 @@ test.describe('Chrome Extension Tests', () => {
     const highlightedSpans = inlineParagraph.locator('span.text-highlighter-extension');
     await expect(highlightedSpans).toHaveCount(2);
     // 첫 번째 span: "This has ", 두 번째 span: "inline"
-    await expect(highlightedSpans.nth(0)).toHaveText('This has ');
-    await expect(highlightedSpans.nth(1)).toHaveText('inline');
-    await expect(highlightedSpans.nth(0)).toHaveCSS('background-color', 'rgb(255, 255, 153)');
-    await expect(highlightedSpans.nth(1)).toHaveCSS('background-color', 'rgb(255, 255, 153)');
+    await expectHighlightSpan(highlightedSpans.nth(0), { color: 'rgb(255, 255, 153)', text: 'This has ' });
+    await expectHighlightSpan(highlightedSpans.nth(1), { color: 'rgb(255, 255, 153)', text: 'inline' });
   });
 
   test('id가 "inline-element"인 단락에서 "element</strong> in text." 텍스트를 선택 후 하이라이트 동작 검증', async ({ page, background }) => {
@@ -222,10 +217,8 @@ test.describe('Chrome Extension Tests', () => {
     const highlightedSpans = inlineParagraph.locator('span.text-highlighter-extension');
     await expect(highlightedSpans).toHaveCount(2);
     // 첫 번째 span: "element", 두 번째 span: " in text."
-    await expect(highlightedSpans.nth(0)).toHaveText('element');
-    await expect(highlightedSpans.nth(1)).toHaveText(' in text.');
-    await expect(highlightedSpans.nth(0)).toHaveCSS('background-color', 'rgb(153, 255, 204)');
-    await expect(highlightedSpans.nth(1)).toHaveCSS('background-color', 'rgb(153, 255, 204)');
+    await expectHighlightSpan(highlightedSpans.nth(0), { color: 'rgb(153, 255, 204)', text: 'element' });
+    await expectHighlightSpan(highlightedSpans.nth(1), { color: 'rgb(153, 255, 204)', text: ' in text.' });
   });
 
   test('h1 태그 tripple click 하이라이트 및 삭제', async ({ page, background }) => {
@@ -241,9 +234,7 @@ test.describe('Chrome Extension Tests', () => {
     await sendHighlightMessage(background, 'yellow');
 
     const h1Span = h1.locator('span.text-highlighter-extension');
-    await expect(h1Span).toBeVisible();
-    await expect(h1Span).toHaveCSS('background-color', 'rgb(255, 255, 0)');
-    await expect(h1Span).toHaveText(h1Text.trim());
+    await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
 
     await h1Span.click();
     const controls = page.locator('.text-highlighter-controls');
@@ -269,9 +260,7 @@ test.describe('Chrome Extension Tests', () => {
     await sendHighlightMessage(background, 'yellow');
 
     const h1Span = h1.locator('span.text-highlighter-extension');
-    await expect(h1Span).toBeVisible();
-    await expect(h1Span).toHaveCSS('background-color', 'rgb(255, 255, 0)');
-    await expect(h1Span).toHaveText(h1Text.trim());
+    await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
 
     // 하이라이트된 텍스트 클릭 → highlight control UI 표시
     await h1Span.click();
@@ -284,7 +273,7 @@ test.describe('Chrome Extension Tests', () => {
     const greenBtn = controls.locator('.text-highlighter-color-buttons > .text-highlighter-control-button').nth(1);
     await greenBtn.click();
 
-    await expect(h1Span).toHaveCSS('background-color', 'rgb(170, 255, 170)');
+    await expectHighlightSpan(h1Span, { color: 'rgb(170, 255, 170)', text: h1Text });
   });
 
 });
