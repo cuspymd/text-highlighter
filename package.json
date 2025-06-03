@@ -19,6 +19,9 @@
     "testEnvironment": "jsdom",
     "moduleNameMapper": {
       "^chrome$": "<rootDir>/mocks/chrome.js"
-    }
+    },
+    "testPathIgnorePatterns": [
+      "<rootDir>/e2e-tests/"
+    ]
   }
 }
