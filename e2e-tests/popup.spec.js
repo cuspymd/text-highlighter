@@ -91,4 +91,39 @@ test.describe('Popup Tests', () => {
     await expect(h1Span).toHaveCount(0);
     await expect(pSpan).toHaveCount(0);
   });
+
+  test('h1 선택, 노란색 하이라이트 후 팝업에서 삭제', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    const h1Text = await h1.textContent();
+
+    // 1. h1 tripple click
+    await h1.click({ clickCount: 3 });
+
+    // 2. 노란색 하이라이트 명령 실행
+    await sendHighlightMessage(background, 'yellow');
+
+    // 3. popup.html 띄움
+    const tabId = await getCurrentTabId(background);
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+
+    // 4. popup에 하이라이트 표시되고 있는지 검증
+    const highlightItems = popupPage.locator('.highlight-item');
+    await expect(highlightItems).toHaveCount(1);
+    const highlight0 = await highlightItems.nth(0).textContent();
+    expect(highlight0.startsWith(h1Text.substring(0, 45))).toBe(true);
+
+    // 5. popup 하이라이트의 delete 버튼 클릭
+    const deleteBtn = highlightItems.nth(0).locator('.delete-btn');
+    await deleteBtn.click();
+
+    // 6. popup에 하이라이트 표시되지 않음을 검증
+    await expect(highlightItems).toHaveCount(0);
+
+    // 7. test-page.html에 하이라이트 표시되지 않음을 검증
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expect(h1Span).toHaveCount(0);
+  });
 });
