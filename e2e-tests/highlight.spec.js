@@ -253,4 +253,37 @@ test.describe('Chrome Extension Tests', () => {
     await expectHighlightSpan(h1Span, { color: 'rgb(170, 255, 170)', text: h1Text });
   });
 
+  test('test-page2.html: selection range를 직접 설정하여 "First line"만 선택 후 노란색 하이라이트 적용', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page2.html')}`);
+
+    const paragraph = page.locator('p');
+    const firstLine = 'First line';
+    // selection range를 직접 설정
+    await paragraph.evaluate((p) => {
+      // 첫 번째 텍스트 노드 찾기
+      const firstTextNode = Array.from(p.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+      if (!firstTextNode) throw new Error('첫 번째 텍스트 노드를 찾을 수 없습니다.');
+      const range = document.createRange();
+      range.setStart(firstTextNode, 0);
+      range.setEnd(p, 2); // <br> 태그 2개 전까지
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+
+    // 선택된 텍스트가 "First line"인지 확인
+    const selected = await page.evaluate(() => window.getSelection().toString().trim());
+    expect(selected).toBe(firstLine);
+
+    await sendHighlightMessage(background, 'yellow');
+
+    // 하이라이트된 span이 1개만 생성됐는지 확인
+    const highlightedSpans = paragraph.locator('span.text-highlighter-extension');
+    await expect(highlightedSpans).toHaveCount(1);
+    // 해당 span의 텍스트가 정확히 'First line'인지 확인
+    const highlightedText = await highlightedSpans.first().textContent();
+    expect(highlightedText.trim()).toBe(firstLine);
+    await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 255, 0)', text: firstLine });
+  });
+
 });

@@ -583,7 +583,15 @@ function highlightSelectedText(color) {
   if (selection.toString().trim() === '') return;
 
   const range = selection.getRangeAt(0);
-  
+  debugLog('Highlight Range:', {
+    commonAncestorContainer: range.commonAncestorContainer,
+    startContainer: range.startContainer,
+    endContainer: range.endContainer,
+    startOffset: range.startOffset,
+    endOffset: range.endOffset
+  });
+  //return;
+   
   try {
     const highlightId = Date.now().toString();
     const highlightSpans = processSelectionRange(range, color, highlightId);
