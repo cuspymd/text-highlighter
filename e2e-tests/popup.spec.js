@@ -71,6 +71,14 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
 
+    // 팝업에 2개의 하이라이트가 표시되는지 검증
+    const highlightItems = popupPage.locator('.highlight-item');
+    await expect(highlightItems).toHaveCount(2);
+    const highlight0 = await highlightItems.nth(0).textContent();
+    const highlight1 = await highlightItems.nth(1).textContent();
+    expect(highlight0.startsWith(h1Text.substring(0, 45))).toBe(true);
+    expect(highlight1.startsWith(pText.substring(0, 45))).toBe(true);
+
     // confirm 다이얼로그 자동 수락
     popupPage.on('dialog', async dialog => {
       await dialog.accept();
