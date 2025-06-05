@@ -253,12 +253,12 @@ test.describe('Chrome Extension Tests', () => {
     await expectHighlightSpan(h1Span, { color: 'rgb(170, 255, 170)', text: h1Text });
   });
 
-  test('test-page2.html: selection range를 직접 설정하여 "First line"만 선택 후 노란색 하이라이트 적용', async ({ page, background }) => {
+  test('selection range의 common ancestor와 end container 가 같은 경우', async ({ page, background }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page2.html')}`);
 
     const paragraph = page.locator('p');
     const firstLine = 'First line';
-    // selection range를 직접 설정
+    // selection range의 common ancestor와 end container 가 같은 경우 시뮬레이션
     await paragraph.evaluate((p) => {
       // 첫 번째 텍스트 노드 찾기
       const firstTextNode = Array.from(p.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
@@ -284,6 +284,38 @@ test.describe('Chrome Extension Tests', () => {
     const highlightedText = await highlightedSpans.first().textContent();
     expect(highlightedText.trim()).toBe(firstLine);
     await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 255, 0)', text: firstLine });
+  });
+
+  test('selection range의 common ancestor와 end container 가 같은 경우 2', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page3.html')}`);
+
+    // selection range의 common ancestor와 end container 가 같은 경우 시뮬레이션
+    await page.evaluate(() => {
+      const container = document.querySelector('div.section-content.blog-article.card');
+      const p = container.querySelector('p');
+      const textNode = Array.from(p.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+      if (!textNode) throw new Error('텍스트 노드를 찾을 수 없습니다.');
+      const range = document.createRange();
+      range.setStart(textNode, 0);
+      range.setEnd(container, 13); // endOffset: 13
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+
+    // 선택된 텍스트가 "I wrote."인지 확인
+    const selected = await page.evaluate(() => window.getSelection().toString().trim());
+    expect(selected).toBe('I wrote.');
+
+    await sendHighlightMessage(background, 'yellow');
+
+    // 하이라이트된 span이 1개만 생성됐는지 확인
+    const highlightedSpans = page.locator('p span.text-highlighter-extension');
+    await expect(highlightedSpans).toHaveCount(1);
+    // 해당 span의 텍스트가 정확히 'I wrote.'인지 확인
+    const highlightedText = await highlightedSpans.first().textContent();
+    expect(highlightedText.trim()).toBe('I wrote.');
+    await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 255, 0)', text: 'I wrote.' });
   });
 
 });
