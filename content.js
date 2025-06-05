@@ -795,6 +795,11 @@ function processSelectionRange(range, color, highlightId) {
       if (shouldSkipNode(node)) {
         return false; // Skip but continue
       }
+
+      if (range.comparePoint(node, 0) === 1) {
+        debugLog('Stop traversing over range', node);
+        return true;
+      }
       
       if (node.nodeType === Node.TEXT_NODE) {
         const textContent = node.textContent;
