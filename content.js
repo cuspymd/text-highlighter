@@ -533,7 +533,8 @@ function updateMinimapMarkers() {
 // Refactored highlightSelectedText function with tree traversal algorithm
 function highlightSelectedText(color) {
   const selection = window.getSelection();
-  if (selection.toString().trim() === '') return;
+  const selectedText = selection.toString();
+  if (selectedText.trim() === '') return;
 
   const range = selection.getRangeAt(0);
   debugLog('Highlight Range:', {
@@ -552,7 +553,7 @@ function highlightSelectedText(color) {
       const group = {
         groupId,
         color,
-        text: selection.toString(),
+        text: selectedText,
         spans: []
       };
       highlightSpans.forEach((span, index) => {

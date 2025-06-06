@@ -124,4 +124,47 @@ test.describe('Popup Tests', () => {
     const h1Span = h1.locator('span.text-highlighter-extension');
     await expect(h1Span).toHaveCount(0);
   });
+
+  test('텍스트 선택 후 하이라이트, popup에 해당 하이라이트가 표시되는지 검증', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const firstParagraph = page.locator('p').first();
+    const textToSelect = 'sample paragraph';
+
+    // 첫 번째 p 태그 내에서 'sample paragraph'만 선택
+    await firstParagraph.evaluate((element, textToSelect) => {
+      const textNode = Array.from(element.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.includes(textToSelect));
+      if (textNode) {
+        const range = document.createRange();
+        const startIndex = textNode.textContent.indexOf(textToSelect);
+        range.setStart(textNode, startIndex);
+        range.setEnd(textNode, startIndex + textToSelect.length);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+      } else {
+        throw new Error(`Text "${textToSelect}" not found in element for selection.`);
+      }
+    }, textToSelect);
+
+    // 선택된 텍스트가 정확히 'sample paragraph'인지 확인
+    const selected = await page.evaluate(() => window.getSelection().toString());
+    expect(selected).toBe(textToSelect);
+
+    // 하이라이트 명령 실행
+    await sendHighlightMessage(background, 'yellow');
+
+    // 하이라이트 span이 생성되었는지 확인
+    const highlightedSpan = firstParagraph.locator('span.text-highlighter-extension:has-text("sample paragraph")');
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: textToSelect });
+
+    // popup.html에서 하이라이트가 표시되는지 확인
+    const tabId = await getCurrentTabId(background);
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+
+    const highlightItems = popupPage.locator('.highlight-item');
+    await expect(highlightItems).toHaveCount(1);
+    const highlightText = await highlightItems.nth(0).textContent();
+    expect(highlightText).toContain(textToSelect);
+  });
 });
