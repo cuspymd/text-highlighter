@@ -318,4 +318,38 @@ test.describe('Chrome Extension Tests', () => {
     await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 255, 0)', text: 'I wrote.' });
   });
 
+  test('p 태그 트리플 클릭 후 노란색 하이라이트, 새로고침 후 p 태그 안의 "in"만 하이라이트 유지, h1의 "in"은 하이라이트되지 않아야 함 (test-page4.html)', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page4.html')}`);
+
+    const paragraph = page.locator('p');
+    const h1 = page.locator('h1');
+    const expectedText = 'test text in paragraph';
+
+    // 트리플 클릭으로 전체 단락 선택
+    await paragraph.click({ clickCount: 3 });
+
+    // 선택된 텍스트가 전체 단락인지 확인
+    const selectedText = await page.evaluate(() => {
+      const selection = window.getSelection();
+      return selection ? selection.toString().replace(/\s+/g, ' ').trim() : '';
+    });
+    expect(selectedText).toBe(expectedText);
+
+    // 노란색 하이라이트 명령 실행
+    await sendHighlightMessage(background, 'yellow');
+
+    // 페이지 리프레시
+    await page.reload();
+
+    // p 태그 안의 "in"만 하이라이트되어 있는지 확인
+    // 1. p 태그 내에서 하이라이트된 span 중 "in" 텍스트를 찾음
+    const inSpanInP = paragraph.locator('span.text-highlighter-extension', { hasText: 'in' });
+    await expect(inSpanInP).toHaveCount(1);
+    await expectHighlightSpan(inSpanInP, { color: 'rgb(255, 255, 0)', text: ' in ' });
+
+    // 2. h1 태그 내 "in" 텍스트는 span.text-highlighter-extension이 없어야 함
+    const inSpanInH1 = h1.locator('span.text-highlighter-extension', { hasText: 'in' });
+    await expect(inSpanInH1).toHaveCount(0);
+  });
+
 });
