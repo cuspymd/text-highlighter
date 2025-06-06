@@ -51,48 +51,40 @@ class MinimapManager {
   // Update minimap markers
   updateMarkers() {
     if (!this.container) return;
-
     this.clearMarkers();
-
+    // 그룹별로 대표 span만 마커로 표시
     const highlightElements = document.querySelectorAll('.text-highlighter-extension');
-
     if (highlightElements.length === 0) {
       this.container.style.display = 'none';
       return;
     }
-
     this.updateVisibility();
-
     const documentHeight = this.getDocumentHeight();
-    
-    // Get minimap height (use default value if container is hidden)
     let minimapHeight = this.container.clientHeight;
-    
-    // If minimap is not displayed, temporarily show it to measure height
     if (minimapHeight === 0 && this.visible) {
       const originalDisplay = this.container.style.display;
       const originalVisibility = this.container.style.visibility;
-      
-      // Temporarily display but make invisible on screen
       this.container.style.display = 'flex';
       this.container.style.visibility = 'hidden';
       this.container.style.pointerEvents = 'none';
-      
       minimapHeight = this.container.clientHeight;
-      
-      // Restore original state
       this.container.style.display = originalDisplay;
       this.container.style.visibility = originalVisibility;
     }
-    
     if (minimapHeight === 0) {
       minimapHeight = this.defaultMinimapHeight;
     }
-
+    // groupId별로 대표 span만 마커로 표시
+    const groupMap = new Map();
     highlightElements.forEach(element => {
+      const groupId = element.dataset.groupId;
+      if (!groupMap.has(groupId)) {
+        groupMap.set(groupId, element);
+      }
+    });
+    groupMap.forEach(element => {
       this.createMarker(element, documentHeight, minimapHeight);
     });
-
     this.updateMarkerVisibility();
   }
 

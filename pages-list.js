@@ -133,19 +133,22 @@ document.addEventListener('DOMContentLoaded', function () {
             highlightsContainer.style.display = 'block';
             this.textContent = getMessage('hideDetails', 'Hide');
 
-            page.highlights.sort((a, b) => (a.position || 0) - (b.position || 0));
+            // 그룹 구조이므로 대표 span의 position 기준 정렬
+            page.highlights.sort((a, b) => {
+              const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
+              const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
+              return posA - posB;
+            });
 
-            page.highlights.forEach(highlight => {
+            page.highlights.forEach(group => {
               const highlightItem = document.createElement('div');
               highlightItem.className = 'highlight-item';
-              highlightItem.style.backgroundColor = highlight.color;
-
+              highlightItem.style.backgroundColor = group.color;
               // Truncate text if too long
-              let displayText = highlight.text;
+              let displayText = group.text;
               if (displayText.length > 100) {
                 displayText = displayText.substring(0, 97) + '...';
               }
-
               highlightItem.innerHTML = `<span class="highlight-text">${displayText}</span>`;
               highlightsContainer.appendChild(highlightItem);
             });

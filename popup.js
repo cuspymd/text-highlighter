@@ -70,27 +70,31 @@ document.addEventListener('DOMContentLoaded', async function () {
     const result = await chrome.storage.local.get([currentUrl]);
     let highlights = result[currentUrl] || [];
 
-    highlights.sort((a, b) => (a.position || 0) - (b.position || 0));
+    // 그룹 구조이므로 position은 대표 span의 position 사용
+    highlights.sort((a, b) => {
+      const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
+      const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
+      return posA - posB;
+    });
 
     debugLog('Loaded highlights for popup (sorted by position):', highlights);
 
-    // Display highlight list
+    // Display highlight list (그룹 단위)
     if (highlights.length > 0) {
       noHighlights.style.display = 'none';
       highlightsContainer.innerHTML = '';
 
-      highlights.forEach(highlight => {
+      highlights.forEach(group => {
         const highlightItem = document.createElement('div');
         highlightItem.className = 'highlight-item';
-        highlightItem.style.backgroundColor = highlight.color;
-        highlightItem.dataset.id = highlight.id;
+        highlightItem.style.backgroundColor = group.color;
+        highlightItem.dataset.groupId = group.groupId;
 
         // Truncate text if too long
-        let displayText = highlight.text;
+        let displayText = group.text;
         if (displayText.length > 48) {
           displayText = displayText.substring(0, 45) + '...';
         }
-
         highlightItem.textContent = displayText;
 
         // Add delete button
@@ -99,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         deleteBtn.textContent = '×';
         deleteBtn.addEventListener('click', function (e) {
           e.stopPropagation();
-          deleteHighlight(highlight.id, currentUrl);
+          deleteHighlight(group.groupId, currentUrl);
         });
 
         highlightItem.appendChild(deleteBtn);
@@ -137,17 +141,16 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   });
 
-  // Delete highlight
-  async function deleteHighlight(id, url) {
+  // Delete highlight (그룹 단위)
+  async function deleteHighlight(groupId, url) {
     const response = await chrome.runtime.sendMessage({
       action: 'deleteHighlight',
       url: url,
-      highlightId: id,
+      groupId: groupId, // groupId로 삭제
       notifyRefresh: true
     });
-    
     if (response && response.success) {
-      debugLog('Highlight deleted through background:', id);
+      debugLog('Highlight group deleted through background:', groupId);
       await loadHighlights();
     }
   }

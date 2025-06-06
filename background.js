@@ -264,38 +264,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       // Handler for single highlight deletion
       if (message.action === 'deleteHighlight') {
-        const { url, highlightId } = message;
-
+        const { url, groupId } = message;
         const result = await chrome.storage.local.get([url]);
         const highlights = result[url] || [];
-        const updatedHighlights = highlights.filter(h => h.id !== highlightId);
-
+        // groupId로 그룹 삭제
+        const updatedHighlights = highlights.filter(g => g.groupId !== groupId);
         if (updatedHighlights.length > 0) {
-          // If highlights remain, update the storage
           const saveData = {};
           saveData[url] = updatedHighlights;
-
           await chrome.storage.local.set(saveData);
-          debugLog('Highlight deleted:', highlightId, 'from URL:', url);
-
-          // Notify content script to refresh highlights if requested
+          debugLog('Highlight group deleted:', groupId, 'from URL:', url);
           if (message.notifyRefresh) {
             await notifyTabHighlightsRefresh(updatedHighlights, url);
           }
-
           sendResponse({
             success: true,
             highlights: updatedHighlights
           });
         } else {
-          // If no highlights remain, remove both data and metadata
           await cleanupEmptyHighlightData(url);
-
-          // Notify content script to refresh highlights if requested
           if (message.notifyRefresh) {
             await notifyTabHighlightsRefresh([], url);
           }
-
           sendResponse({
             success: true,
             highlights: []

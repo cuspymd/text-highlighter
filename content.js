@@ -134,37 +134,33 @@ function saveHighlights() {
 function removeHighlight(highlightElement = null) {
   if (!highlightElement) {
     const selection = window.getSelection();
-
     if (!selection.rangeCount) return;
-
     const range = selection.getRangeAt(0);
     let node = range.commonAncestorContainer;
-
     while (node) {
-      if (node.nodeType === Node.ELEMENT_NODE &&
-        node.classList.contains('text-highlighter-extension')) {
+      if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('text-highlighter-extension')) {
         highlightElement = node;
         break;
       }
       node = node.parentNode;
     }
   }
-
   if (highlightElement) {
-    const parent = highlightElement.parentNode;
-    while (highlightElement.firstChild) {
-      parent.insertBefore(highlightElement.firstChild, highlightElement);
-    }
-
-    // Remove corresponding item from highlights array
-    const highlightId = highlightElement.dataset.highlightId;
-    highlights = highlights.filter(h => h.id !== highlightId);
-
-    parent.removeChild(highlightElement);
+    const groupId = highlightElement.dataset.groupId;
+    // 그룹 내 모든 span 삭제
+    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    groupSpans.forEach(span => {
+      const parent = span.parentNode;
+      while (span.firstChild) {
+        parent.insertBefore(span.firstChild, span);
+      }
+      parent.removeChild(span);
+    });
+    // highlights 배열에서 그룹 삭제
+    highlights = highlights.filter(g => g.groupId !== groupId);
     saveHighlights();
     updateMinimapMarkers();
-
-    if (activeHighlightElement === highlightElement) {
+    if (activeHighlightElement && activeHighlightElement.dataset.groupId === groupId) {
       activeHighlightElement = null;
       hideHighlightControls();
     }
@@ -174,14 +170,16 @@ function removeHighlight(highlightElement = null) {
 // Change highlight color
 function changeHighlightColor(highlightElement, newColor) {
   if (!highlightElement) return;
-
-  highlightElement.style.backgroundColor = newColor;
-
-  const highlightId = highlightElement.dataset.highlightId;
-  const highlightIndex = highlights.findIndex(h => h.id === highlightId);
-
-  if (highlightIndex !== -1) {
-    highlights[highlightIndex].color = newColor;
+  const groupId = highlightElement.dataset.groupId;
+  // DOM의 모든 span 색상 변경
+  const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+  groupSpans.forEach(span => {
+    span.style.backgroundColor = newColor;
+  });
+  // highlights 배열에서 색상 변경
+  const group = highlights.find(g => g.groupId === groupId);
+  if (group) {
+    group.color = newColor;
     saveHighlights();
     updateMinimapMarkers();
   }
@@ -203,83 +201,70 @@ function clearAllHighlights() {
 // Apply highlights to the page using saved highlight information
 function applyHighlights() {
   debugLog('Applying highlights, count:', highlights.length);
-  highlights.forEach(highlight => {
-    try {
-      // Try text-based search
-      debugLog('Applying highlight:', highlight.text);
-      const textFound = highlightTextInDocument(
-        document.body,
-        highlight.text,
-        highlight.color,
-        highlight.id
-      );
-
-      if (!textFound) {
-        debugLog('Text not found by content, trying XPath');
-        // Try XPath-based search
-        const element = getElementByXPath(highlight.xpath);
-        if (element) {
-          const textNode = findTextNodeByContent(element, highlight.text);
-
-          if (textNode) {
-            const span = document.createElement('span');
-            span.textContent = highlight.text;
-            span.className = 'text-highlighter-extension';
-            span.style.backgroundColor = highlight.color;
-            span.dataset.highlightId = highlight.id;
-
-            textNode.parentNode.replaceChild(span, textNode);
-
-            addHighlightEventListeners(span);
-
-            debugLog('Highlight applied via XPath');
+  highlights.forEach(group => {
+    group.spans.forEach(spanInfo => {
+      try {
+        // Try text-based search
+        debugLog('Applying highlight:', spanInfo.text);
+        const textFound = highlightTextInDocument(
+          document.body,
+          spanInfo.text,
+          group.color,
+          group.groupId,
+          spanInfo.spanId
+        );
+        if (!textFound) {
+          debugLog('Text not found by content, trying XPath');
+          const element = getElementByXPath(spanInfo.xpath);
+          if (element) {
+            const textNode = findTextNodeByContent(element, spanInfo.text);
+            if (textNode) {
+              const span = document.createElement('span');
+              span.textContent = spanInfo.text;
+              span.className = 'text-highlighter-extension';
+              span.style.backgroundColor = group.color;
+              span.dataset.groupId = group.groupId;
+              span.dataset.spanId = spanInfo.spanId;
+              textNode.parentNode.replaceChild(span, textNode);
+              addHighlightEventListeners(span);
+              debugLog('Highlight applied via XPath');
+            }
           }
         }
+      } catch (error) {
+        debugLog('Error applying highlight:', error);
       }
-    } catch (error) {
-      debugLog('Error applying highlight:', error);
-    }
+    });
   });
-
   updateMinimapMarkers();
 }
 
 // Find text in document and apply highlight
-function highlightTextInDocument(element, text, color, id) {
+function highlightTextInDocument(element, text, color, groupId, spanId) {
   if (!text || text.trim().length === 0) {
     debugLog('Skipping highlight, search text is empty:', text);
     return false;
   }
-  const normalizedSearchText = text.trim(); // Normalize search text (e.g. remove leading/trailing whitespace)
-  // More advanced normalization (e.g., collapsing multiple spaces to one) can be done here
-  // if highlight.text was stored with such normalization.
-  // For now, assuming highlight.text (from span.textContent) is reasonably representative.
-
+  const normalizedSearchText = text.trim();
   const walker = document.createTreeWalker(
     element,
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: function (node) {
-        // Filter out only truly empty text nodes. Nodes with only whitespace are kept.
         if (!node.nodeValue || node.nodeValue === '') {
           return NodeFilter.FILTER_REJECT;
         }
-
         const parent = node.parentNode;
-        if (!parent) return NodeFilter.FILTER_REJECT; // Should not happen in a valid document
-
-        // Reject nodes within existing highlights
+        if (!parent) return NodeFilter.FILTER_REJECT;
         if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
           return NodeFilter.FILTER_REJECT;
         }
-
-        // Reject nodes within certain tags
         const parentTagName = parent.tagName.toUpperCase();
-        if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
+        if ([
+          'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'
+        ].includes(parentTagName)) {
           return NodeFilter.FILTER_REJECT;
         }
-
-        // Reject nodes that are not visible (display:none)
         let el = parent;
         while (el && el !== document.body && el !== document.documentElement) {
           if (window.getComputedStyle(el).display === 'none') {
@@ -292,36 +277,27 @@ function highlightTextInDocument(element, text, color, id) {
     },
     false
   );
-
   const textNodes = [];
   let currentNode;
   while (currentNode = walker.nextNode()) {
     textNodes.push(currentNode);
   }
-
   if (textNodes.length === 0) {
     debugLog('No suitable text nodes found for searching:', normalizedSearchText);
     return false;
   }
-
-  for (let i = 0; i < textNodes.length; i++) { // Iterate through each node as a potential start
+  for (let i = 0; i < textNodes.length; i++) {
     const startNodeCandidate = textNodes[i];
     const startNodeText = startNodeCandidate.textContent;
-
-    for (let j = 0; j < startNodeText.length; j++) { // Iterate through each char in node as potential start
-      let currentSearchIdx = 0; // Pointer in normalizedSearchText
+    for (let j = 0; j < startNodeText.length; j++) {
+      let currentSearchIdx = 0;
       let currentDomNodeIdx = i;
       let currentDomCharIdx = j;
-
       let possibleMatch = true;
-
       while (currentSearchIdx < normalizedSearchText.length && currentDomNodeIdx < textNodes.length) {
         const domNode = textNodes[currentDomNodeIdx];
         const domText = domNode.textContent;
-
         if (currentDomCharIdx < domText.length) {
-          // Basic character comparison. More sophisticated whitespace handling could be added here if needed.
-          // E.g., if normalizedSearchText has single spaces for multiple in DOM.
           if (domText[currentDomCharIdx] === normalizedSearchText[currentSearchIdx]) {
             currentSearchIdx++;
             currentDomCharIdx++;
@@ -329,47 +305,36 @@ function highlightTextInDocument(element, text, color, id) {
             possibleMatch = false;
             break;
           }
-        } else { // Reached end of current DOM node's text
+        } else {
           currentDomNodeIdx++;
-          currentDomCharIdx = 0; // Start from beginning of next DOM node
+          currentDomCharIdx = 0;
         }
       }
-
       if (possibleMatch && currentSearchIdx === normalizedSearchText.length) {
-        // Match found
         const range = document.createRange();
         range.setStart(startNodeCandidate, j);
-
-        // Determine end node and offset
-        // currentDomNodeIdx might be one past the last node if match ended at node boundary
-        // currentDomCharIdx is the offset in the node where matching stopped (or 0 if moved to next node)
         const endNode = textNodes[currentDomNodeIdx < textNodes.length ? currentDomNodeIdx : currentDomNodeIdx - 1];
         const endOffset = currentDomCharIdx === 0 && currentDomNodeIdx > i ?
           textNodes[currentDomNodeIdx - 1].textContent.length : currentDomCharIdx;
         range.setEnd(endNode, endOffset);
-
-        // Prevent re-highlighting already highlighted content by this function call
         if (range.commonAncestorContainer.parentElement && range.commonAncestorContainer.parentElement.closest('.text-highlighter-extension')) {
           debugLog('Skipping highlight, part of range already in a highlight span:', normalizedSearchText);
-          continue; // Try next starting point
+          continue;
         }
-
         const span = document.createElement('span');
         span.className = 'text-highlighter-extension';
         span.style.backgroundColor = color;
-        span.dataset.highlightId = id;
-
+        if (groupId) span.dataset.groupId = groupId;
+        if (spanId) span.dataset.spanId = spanId;
         try {
-          const contents = range.extractContents(); // Removes content from DOM and returns it in a fragment
-          span.appendChild(contents); // Add the extracted content to the new span
-          range.insertNode(span); // Insert the span at the (now collapsed) range start
-
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
           addHighlightEventListeners(span);
           debugLog('Text found and highlighted (multi-node capable):', normalizedSearchText);
-          return true; // Highlighted one instance
+          return true;
         } catch (e) {
           debugLog('Error creating highlight (multi-node extract/insert):', e, "Search:", normalizedSearchText, "Range text before potential modification:", range.toString());
-          // Continue search from next char (j loop)
         }
       }
     }
@@ -457,12 +422,9 @@ function getXPathForElement(element) {
 // Create highlight controller UI
 function createHighlightControls() {
   if (highlightControlsContainer) return;
-
   highlightControlsContainer = document.createElement('div');
   highlightControlsContainer.className = 'text-highlighter-controls';
   highlightControlsContainer.style.display = 'none';
-
-  // Create delete button
   const deleteButton = document.createElement('div');
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
   deleteButton.innerHTML = '×';
@@ -473,35 +435,26 @@ function createHighlightControls() {
     }
     e.stopPropagation();
   });
-
-  // Color buttons container
   const colorButtonsContainer = document.createElement('div');
   colorButtonsContainer.className = 'text-highlighter-color-buttons';
-
-  // Create color buttons
   COLORS.forEach(colorInfo => {
     const colorButton = document.createElement('div');
     colorButton.className = 'text-highlighter-control-button color-button';
     colorButton.style.backgroundColor = colorInfo.color;
     colorButton.title = getMessage(colorInfo.nameKey);
-
     colorButton.addEventListener('click', function (e) {
       if (activeHighlightElement) {
         changeHighlightColor(activeHighlightElement, colorInfo.color);
       }
       e.stopPropagation();
     });
-
     colorButtonsContainer.appendChild(colorButton);
   });
-
   highlightControlsContainer.appendChild(deleteButton);
   highlightControlsContainer.appendChild(colorButtonsContainer);
-
   highlightControlsContainer.addEventListener('click', function (e) {
     e.stopPropagation();
   });
-
   document.body.appendChild(highlightControlsContainer);
 }
 
@@ -590,36 +543,39 @@ function highlightSelectedText(color) {
     startOffset: range.startOffset,
     endOffset: range.endOffset
   });
-  //return;
-   
+
   try {
-    const highlightId = Date.now().toString();
-    const highlightSpans = processSelectionRange(range, color, highlightId);
-    
+    const groupId = Date.now().toString();
+    const highlightSpans = processSelectionRange(range, color, groupId);
     if (highlightSpans.length > 0) {
-      // Store highlight data for each created span
+      // 그룹 정보 생성
+      const group = {
+        groupId,
+        color,
+        text: selection.toString(),
+        spans: []
+      };
       highlightSpans.forEach((span, index) => {
         const rect = span.getBoundingClientRect();
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        
-        highlights.push({
-          id: `${highlightId}_${index}`,
-          text: span.textContent,
-          color: color,
+        const spanId = `${groupId}_${index}`;
+        span.dataset.groupId = groupId;
+        span.dataset.spanId = spanId;
+        group.spans.push({
+          spanId,
           xpath: getXPathForElement(span),
+          text: span.textContent,
           position: rect.top + scrollTop
         });
-        
         addHighlightEventListeners(span);
       });
-      
+      highlights.push(group);
       saveHighlights();
       updateMinimapMarkers();
     }
   } catch (error) {
     debugLog('Error highlighting selected text:', error);
   }
-  
   selection.removeAllRanges();
 }
 
@@ -627,10 +583,10 @@ function highlightSelectedText(color) {
  * Process selection range using tree traversal algorithm
  * @param {Range} range - The selection range
  * @param {string} color - Highlight color
- * @param {string} highlightId - Base highlight ID
+ * @param {string} groupId - Base group ID
  * @returns {Array} Array of created highlight spans
  */
-function processSelectionRange(range, color, highlightId) {
+function processSelectionRange(range, color, groupId) {
   const commonAncestor = range.commonAncestorContainer;
   const startContainer = range.startContainer;
   const endContainer = range.endContainer;
@@ -647,7 +603,8 @@ function processSelectionRange(range, color, highlightId) {
     const span = document.createElement('span');
     span.className = 'text-highlighter-extension';
     span.style.backgroundColor = color;
-    span.dataset.highlightId = `${highlightId}_${spanCounter++}`;
+    span.dataset.groupId = groupId;
+    span.dataset.spanId = `${groupId}_${spanCounter++}`;
     return span;
   }
   
