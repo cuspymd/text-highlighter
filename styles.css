@@ -84,10 +84,7 @@
   cursor: pointer;
   box-sizing: content-box;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-    left 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, left 0.2s;
 }
 
 .text-highlighter-minimap-marker.visible {
