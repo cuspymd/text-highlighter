@@ -29,9 +29,14 @@ test.describe('Chrome Extension Tests', () => {
 
     await sendHighlightMessage(background, 'yellow');
 
-    const highlightedSpan = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
-    
-    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: textToSelect });
+    // 검증 함수 정의
+    const verifyHighlight = async () => {
+      const highlightedSpan = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
+      await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: textToSelect });
+    };
+    await verifyHighlight(); // 하이라이트 직후
+    await page.reload();
+    await verifyHighlight(); // 리프레시 후
   });
 
   test('첫 번째 단락 전체를 트리플 클릭하여 초록색으로 하이라이트', async ({ page, background }) => {
@@ -50,8 +55,14 @@ test.describe('Chrome Extension Tests', () => {
 
     await sendHighlightMessage(background, '#AAFFAA'); // Green color 
 
-    const highlightedSpan = firstParagraph.locator('span.text-highlighter-extension');
-    await expectHighlightSpan(highlightedSpan, { color: 'rgb(170, 255, 170)', text: expectedText });
+    // 검증 함수 정의
+    const verifyHighlight = async () => {
+      const highlightedSpan = firstParagraph.locator('span.text-highlighter-extension');
+      await expectHighlightSpan(highlightedSpan, { color: 'rgb(170, 255, 170)', text: expectedText });
+    };
+    await verifyHighlight();
+    await page.reload();
+    await verifyHighlight();
   });
 
   test('동적으로 생성된 멀티 텍스트 노드 단락을 트리플 클릭하여 하이라이트 - 전체 텍스트 하이라이트 및 단일 하이라이트 생성 확인', async ({ page, background }) => {
@@ -81,15 +92,14 @@ test.describe('Chrome Extension Tests', () => {
     await sendHighlightMessage(background, '#FFAAFF'); // Purple color
 
     // Assert that all text in the paragraph is highlighted
-    const highlightedSpans = multiTextParagraph.locator('span.text-highlighter-extension');
-    
-    await expect(highlightedSpans).toHaveCount(3); // TODO: check later
-    // await expect(highlightedSpans).toHaveCount(1);
-    // // Verify the highlight is visible and has correct color
-    // await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 170, 255)', text: expectedText });
-    // // Verify all text content is captured in the single highlight
-    // const highlightedText = await highlightedSpans.first().textContent();
-    // expect(highlightedText.trim()).toBe(expectedText);  
+    // 검증 함수 정의
+    const verifyHighlight = async () => {
+      const highlightedSpans = multiTextParagraph.locator('span.text-highlighter-extension');
+      await expect(highlightedSpans).toHaveCount(3);
+    };
+    await verifyHighlight();
+    await page.reload();
+    await verifyHighlight();
   });
 
   test('h1과 첫 번째 p 태그의 텍스트를 모두 선택 후 하이라이트 적용', async ({ page, background }) => {
@@ -121,10 +131,16 @@ test.describe('Chrome Extension Tests', () => {
 
     await sendHighlightMessage(background, 'yellow');
 
-    const h1Span = h1.locator('span.text-highlighter-extension');
-    const pSpan = firstParagraph.locator('span.text-highlighter-extension');
-    await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
-    await expectHighlightSpan(pSpan, { color: 'rgb(255, 255, 0)', text: pText });
+    // 검증 함수 정의
+    const verifyHighlight = async () => {
+      const h1Span = h1.locator('span.text-highlighter-extension');
+      const pSpan = firstParagraph.locator('span.text-highlighter-extension');
+      await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
+      await expectHighlightSpan(pSpan, { color: 'rgb(255, 255, 0)', text: pText });
+    };
+    await verifyHighlight();
+    await page.reload();
+    await verifyHighlight();
   });
 
   test('id가 "inline-element"인 단락에서 "This has <strong>inline" 텍스트를 선택 후 하이라이트 동작 검증', async ({ page, background }) => {
@@ -155,12 +171,16 @@ test.describe('Chrome Extension Tests', () => {
 
     await sendHighlightMessage(background, '#FFFF99'); // 연노랑
 
-    // 하이라이트된 span이 두 개(텍스트 노드, strong 내부)로 나뉘어 생성될 수 있음
-    const highlightedSpans = inlineParagraph.locator('span.text-highlighter-extension');
-    await expect(highlightedSpans).toHaveCount(2);
-    // 첫 번째 span: "This has ", 두 번째 span: "inline"
-    await expectHighlightSpan(highlightedSpans.nth(0), { color: 'rgb(255, 255, 153)', text: 'This has ' });
-    await expectHighlightSpan(highlightedSpans.nth(1), { color: 'rgb(255, 255, 153)', text: 'inline' });
+    // 검증 함수 정의
+    const verifyHighlight = async () => {
+      const highlightedSpans = inlineParagraph.locator('span.text-highlighter-extension');
+      await expect(highlightedSpans).toHaveCount(2);
+      await expectHighlightSpan(highlightedSpans.nth(0), { color: 'rgb(255, 255, 153)', text: 'This has ' });
+      await expectHighlightSpan(highlightedSpans.nth(1), { color: 'rgb(255, 255, 153)', text: 'inline' });
+    };
+    await verifyHighlight();
+    await page.reload();
+    await verifyHighlight();
   });
 
   test('id가 "inline-element"인 단락에서 "element</strong> in text." 텍스트를 선택 후 하이라이트 동작 검증', async ({ page, background }) => {
@@ -190,12 +210,16 @@ test.describe('Chrome Extension Tests', () => {
 
     await sendHighlightMessage(background, '#99FFCC'); // 연녹색
 
-    // 하이라이트된 span이 두 개(강조, 일반 텍스트)로 나뉘어 생성될 수 있음
-    const highlightedSpans = inlineParagraph.locator('span.text-highlighter-extension');
-    await expect(highlightedSpans).toHaveCount(2);
-    // 첫 번째 span: "element", 두 번째 span: " in text."
-    await expectHighlightSpan(highlightedSpans.nth(0), { color: 'rgb(153, 255, 204)', text: 'element' });
-    await expectHighlightSpan(highlightedSpans.nth(1), { color: 'rgb(153, 255, 204)', text: ' in text.' });
+    // 검증 함수 정의
+    const verifyHighlight = async () => {
+      const highlightedSpans = inlineParagraph.locator('span.text-highlighter-extension');
+      await expect(highlightedSpans).toHaveCount(2);
+      await expectHighlightSpan(highlightedSpans.nth(0), { color: 'rgb(153, 255, 204)', text: 'element' });
+      await expectHighlightSpan(highlightedSpans.nth(1), { color: 'rgb(153, 255, 204)', text: ' in text.' });
+    };
+    await verifyHighlight();
+    await page.reload();
+    await verifyHighlight();
   });
 
   test('h1 태그 tripple click 하이라이트 및 삭제', async ({ page, background }) => {
@@ -222,6 +246,11 @@ test.describe('Chrome Extension Tests', () => {
     await deleteBtn.click();
 
     await expect(h1Span).toHaveCount(0);
+
+    // 페이지 리프레시 후 하이라이트가 삭제된 상태 유지 검증
+    await page.reload();
+    const h1SpanAfterReload = h1.locator('span.text-highlighter-extension');
+    await expect(h1SpanAfterReload).toHaveCount(0);
   });
 
   test('h1 태그 tripple click 하이라이트 후 highlight control UI에서 색상 변경', async ({ page, background }) => {
@@ -251,6 +280,11 @@ test.describe('Chrome Extension Tests', () => {
     await greenBtn.click();
 
     await expectHighlightSpan(h1Span, { color: 'rgb(170, 255, 170)', text: h1Text });
+
+    // 페이지 리프레시 후 하이라이트 유지 검증
+    await page.reload();
+    const h1SpanAfterReload = h1.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(h1SpanAfterReload, { color: 'rgb(170, 255, 170)', text: h1Text });
   });
 
   test('selection range의 common ancestor와 end container 가 같은 경우', async ({ page, background }) => {
@@ -277,13 +311,20 @@ test.describe('Chrome Extension Tests', () => {
 
     await sendHighlightMessage(background, 'yellow');
 
-    // 하이라이트된 span이 1개만 생성됐는지 확인
-    const highlightedSpans = paragraph.locator('span.text-highlighter-extension');
-    await expect(highlightedSpans).toHaveCount(1);
-    // 해당 span의 텍스트가 정확히 'First line'인지 확인
-    const highlightedText = await highlightedSpans.first().textContent();
-    expect(highlightedText.trim()).toBe(firstLine);
-    await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 255, 0)', text: firstLine });
+    // 검증 함수 정의
+    const verifyHighlight = async () => {
+      const highlightedSpans = paragraph.locator('span.text-highlighter-extension');
+      await expect(highlightedSpans).toHaveCount(1);
+      const highlightedText = await highlightedSpans.first().textContent();
+      expect(highlightedText.trim()).toBe(firstLine);
+      await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 255, 0)', text: firstLine });
+    };
+    await verifyHighlight();
+
+    // 페이지 리프레시 후 하이라이트 유지 검증
+    await page.reload();
+    const highlightedSpansAfterReload = paragraph.locator('span.text-highlighter-extension');
+    await verifyHighlight();
   });
 
   test('selection range의 common ancestor와 end container 가 같은 경우 2', async ({ page, background }) => {
@@ -309,13 +350,20 @@ test.describe('Chrome Extension Tests', () => {
 
     await sendHighlightMessage(background, 'yellow');
 
-    // 하이라이트된 span이 1개만 생성됐는지 확인
-    const highlightedSpans = page.locator('p span.text-highlighter-extension');
-    await expect(highlightedSpans).toHaveCount(1);
-    // 해당 span의 텍스트가 정확히 'I wrote.'인지 확인
-    const highlightedText = await highlightedSpans.first().textContent();
-    expect(highlightedText.trim()).toBe('I wrote.');
-    await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 255, 0)', text: 'I wrote.' });
+    // 검증 함수 정의
+    const verifyHighlight = async () => {
+      const highlightedSpans = page.locator('p span.text-highlighter-extension');
+      await expect(highlightedSpans).toHaveCount(1);
+      const highlightedText = await highlightedSpans.first().textContent();
+      expect(highlightedText.trim()).toBe('I wrote.');
+      await expectHighlightSpan(highlightedSpans.first(), { color: 'rgb(255, 255, 0)', text: 'I wrote.' });
+    };
+    await verifyHighlight();
+
+    // 페이지 리프레시 후 하이라이트 유지 검증
+    await page.reload();
+    const highlightedSpansAfterReload = page.locator('p span.text-highlighter-extension');
+    await verifyHighlight();
   });
 
   test('p 태그 트리플 클릭 후 노란색 하이라이트, 새로고침 후 p 태그 안의 "in"만 하이라이트 유지, h1의 "in"은 하이라이트되지 않아야 함 (test-page4.html)', async ({ page, background }) => {
