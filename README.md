@@ -32,10 +32,10 @@ npm install
 
 ### Testing
 
-Run unit tests using Jest:
+Run E2E tests using Playwright:
 
 ```bash
-npm test
+npx playwright test
 ```
 
 ### Deployment
