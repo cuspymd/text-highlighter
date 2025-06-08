@@ -103,5 +103,11 @@
   },
   "unknown": {
     "message": "Unknown"
+  },
+  "deleteAllPages": {
+    "message": "Delete All Pages"
+  },
+  "confirmDeleteAllPages": {
+    "message": "Delete ALL highlighted pages?"
   }
 }

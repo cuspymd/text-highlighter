@@ -191,7 +191,41 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Function to delete all highlighted pages
+  function deleteAllPages() {
+    chrome.storage.local.get(null, (result) => {
+      const keysToDelete = [];
+      for (const key in result) {
+        if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
+          keysToDelete.push(key, `${key}_meta`);
+        }
+      }
+      if (keysToDelete.length > 0) {
+        chrome.storage.local.remove(keysToDelete, () => {
+          debugLog('All pages deleted:', keysToDelete);
+          loadAllHighlightedPages();
+        });
+      } else {
+        loadAllHighlightedPages();
+      }
+    });
+  }
+
   // Initialization
   localizeStaticElements();  // Localize static elements
+
+  // Add delete all button
+  const deleteAllBtn = document.createElement('button');
+  deleteAllBtn.className = 'btn btn-delete-all';
+  deleteAllBtn.textContent = getMessage('deleteAllPages', 'Delete All Pages');
+  deleteAllBtn.style.marginBottom = '15px';
+  deleteAllBtn.addEventListener('click', function () {
+    const confirmMessage = getMessage('confirmDeleteAllPages', 'Delete ALL highlighted pages?');
+    if (confirm(confirmMessage)) {
+      deleteAllPages();
+    }
+  });
+  pagesContainer.parentNode.insertBefore(deleteAllBtn, pagesContainer);
+
   loadAllHighlightedPages();
 });
