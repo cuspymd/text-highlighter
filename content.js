@@ -206,31 +206,13 @@ function applyHighlights() {
       try {
         // Try text-based search
         debugLog('Applying highlight:', spanInfo.text);
-        const textFound = highlightTextInDocument(
+        highlightTextInDocument(
           document.body,
           spanInfo.text,
           group.color,
           group.groupId,
           spanInfo.spanId
         );
-        if (!textFound) {
-          debugLog('Text not found by content, trying XPath');
-          const element = getElementByXPath(spanInfo.xpath);
-          if (element) {
-            const textNode = findTextNodeByContent(element, spanInfo.text);
-            if (textNode) {
-              const span = document.createElement('span');
-              span.textContent = spanInfo.text;
-              span.className = 'text-highlighter-extension';
-              span.style.backgroundColor = group.color;
-              span.dataset.groupId = group.groupId;
-              span.dataset.spanId = spanInfo.spanId;
-              textNode.parentNode.replaceChild(span, textNode);
-              addHighlightEventListeners(span);
-              debugLog('Highlight applied via XPath');
-            }
-          }
-        }
       } catch (error) {
         debugLog('Error applying highlight:', error);
       }
@@ -380,45 +362,6 @@ function findTextNodeByContent(element, text) {
   return null;
 }
 
-// Get element by XPath
-function getElementByXPath(xpath) {
-  return document.evaluate(
-    xpath,
-    document,
-    null,
-    XPathResult.FIRST_ORDERED_NODE_TYPE,
-    null
-  ).singleNodeValue;
-}
-
-// Generate XPath for element
-function getXPathForElement(element) {
-  if (element.tagName === 'HTML') {
-    return '/HTML[1]';
-  }
-  if (element === document.body) {
-    return '/HTML[1]/BODY[1]';
-  }
-
-  let ix = 0;
-  const siblings = element.parentNode.childNodes;
-
-  for (let i = 0; i < siblings.length; i++) {
-    const sibling = siblings[i];
-
-    if (sibling === element) {
-      const pathIndex = ix + 1;
-      const path = getXPathForElement(element.parentNode) +
-        '/' + element.tagName + '[' + pathIndex + ']';
-      return path;
-    }
-
-    if (sibling.nodeType === 1 && sibling.tagName === element.tagName) {
-      ix++;
-    }
-  }
-}
-
 // Create highlight controller UI
 function createHighlightControls() {
   if (highlightControlsContainer) return;
@@ -564,7 +507,6 @@ function highlightSelectedText(color) {
         span.dataset.spanId = spanId;
         group.spans.push({
           spanId,
-          xpath: getXPathForElement(span),
           text: span.textContent,
           position: rect.top + scrollTop
         });
@@ -808,17 +750,4 @@ function processSelectionRange(range, color, groupId) {
   finalizeCurrentSpan();
   
   return highlightSpans;
-}
-
-// Add module exports for testing
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    highlightSelectedText,
-    highlights,
-    getXPathForElement,
-    addHighlightEventListeners,
-    updateMinimapMarkers,
-    saveHighlights,
-    COLORS
-  };
 }
