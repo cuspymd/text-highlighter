@@ -5,6 +5,7 @@
   margin: 0 1px;
   cursor: pointer;
   position: relative;
+  color: #000;
 }
 
 .text-highlighter-extension:hover {
