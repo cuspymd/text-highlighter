@@ -211,7 +211,8 @@ function applyHighlights() {
           spanInfo.text,
           group.color,
           group.groupId,
-          spanInfo.spanId
+          spanInfo.spanId,
+          spanInfo.position
         );
       } catch (error) {
         debugLog('Error applying highlight:', error);
@@ -222,7 +223,7 @@ function applyHighlights() {
 }
 
 // Find text in document and apply highlight
-function highlightTextInDocument(element, text, color, groupId, spanId) {
+function highlightTextInDocument(element, text, color, groupId, spanId, position) {
   if (!text || text.trim().length === 0) {
     debugLog('Skipping highlight, search text is empty:', text);
     return false;
@@ -268,6 +269,8 @@ function highlightTextInDocument(element, text, color, groupId, spanId) {
     debugLog('No suitable text nodes found for searching:', normalizedSearchText);
     return false;
   }
+  // 모든 매치 후보를 저장
+  const candidates = [];
   for (let i = 0; i < textNodes.length; i++) {
     const startNodeCandidate = textNodes[i];
     const startNodeText = startNodeCandidate.textContent;
@@ -293,35 +296,57 @@ function highlightTextInDocument(element, text, color, groupId, spanId) {
         }
       }
       if (possibleMatch && currentSearchIdx === normalizedSearchText.length) {
+        // 매치된 range 정보 저장
         const range = document.createRange();
         range.setStart(startNodeCandidate, j);
         const endNode = textNodes[currentDomNodeIdx < textNodes.length ? currentDomNodeIdx : currentDomNodeIdx - 1];
         const endOffset = currentDomCharIdx === 0 && currentDomNodeIdx > i ?
           textNodes[currentDomNodeIdx - 1].textContent.length : currentDomCharIdx;
         range.setEnd(endNode, endOffset);
+        // 이미 하이라이트된 영역은 제외
         if (range.commonAncestorContainer.parentElement && range.commonAncestorContainer.parentElement.closest('.text-highlighter-extension')) {
-          debugLog('Skipping highlight, part of range already in a highlight span:', normalizedSearchText);
           continue;
         }
-        const span = document.createElement('span');
-        span.className = 'text-highlighter-extension';
-        span.style.backgroundColor = color;
-        if (groupId) span.dataset.groupId = groupId;
-        if (spanId) span.dataset.spanId = spanId;
-        try {
-          const contents = range.extractContents();
-          span.appendChild(contents);
-          range.insertNode(span);
-          addHighlightEventListeners(span);
-          debugLog('Text found and highlighted (multi-node capable):', normalizedSearchText);
-          return true;
-        } catch (e) {
-          debugLog('Error creating highlight (multi-node extract/insert):', e, "Search:", normalizedSearchText, "Range text before potential modification:", range.toString());
-        }
+        // 위치 정보 계산
+        const rect = range.getBoundingClientRect();
+        const top = rect.top + (window.scrollY || document.documentElement.scrollTop);
+        candidates.push({ range, top });
       }
     }
   }
-  debugLog('Text not found (multi-node capable):', normalizedSearchText);
+  if (candidates.length === 0) {
+    debugLog('Text not found (multi-node capable):', normalizedSearchText);
+    return false;
+  }
+  // position과 가장 가까운 후보 선택
+  let bestCandidate = candidates[0];
+  if (typeof position === 'number') {
+    let minDiff = Math.abs(candidates[0].top - position);
+    for (let i = 1; i < candidates.length; i++) {
+      const diff = Math.abs(candidates[i].top - position);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestCandidate = candidates[i];
+      }
+    }
+  }
+  // 하이라이트 적용
+  const { range } = bestCandidate;
+  const span = document.createElement('span');
+  span.className = 'text-highlighter-extension';
+  span.style.backgroundColor = color;
+  if (groupId) span.dataset.groupId = groupId;
+  if (spanId) span.dataset.spanId = spanId;
+  try {
+    const contents = range.extractContents();
+    span.appendChild(contents);
+    range.insertNode(span);
+    addHighlightEventListeners(span);
+    debugLog('Text found and highlighted (multi-node capable):', normalizedSearchText);
+    return true;
+  } catch (e) {
+    debugLog('Error creating highlight (multi-node extract/insert):', e, "Search:", normalizedSearchText, "Range text before potential modification:", range.toString());
+  }
   return false;
 }
 
