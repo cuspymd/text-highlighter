@@ -235,7 +235,7 @@ function highlightTextInDocument(element, text, color, groupId, spanId, position
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: function (node) {
-        if (!node.nodeValue || node.nodeValue === '') {
+        if (!node.nodeValue || node.nodeValue.trim() === '') {
           return NodeFilter.FILTER_REJECT;
         }
         const parent = node.parentNode;
@@ -266,6 +266,7 @@ function highlightTextInDocument(element, text, color, groupId, spanId, position
   while (currentNode = walker.nextNode()) {
     textNodes.push(currentNode);
   }
+
   if (textNodes.length === 0) {
     debugLog('No suitable text nodes found for searching:', normalizedSearchText);
     return false;
