@@ -203,33 +203,26 @@ function clearAllHighlights() {
 function applyHighlights() {
   debugLog('Applying highlights, count:', highlights.length);
   highlights.forEach(group => {
-    group.spans.forEach(spanInfo => {
-      try {
-        // Try text-based search
-        debugLog('Applying highlight:', spanInfo.text);
-        highlightTextInDocument(
-          document.body,
-          spanInfo.text,
-          group.color,
-          group.groupId,
-          spanInfo.spanId,
-          spanInfo.position
-        );
-      } catch (error) {
-        debugLog('Error applying highlight:', error);
-      }
-    });
+    try {
+      debugLog('Applying highlight group:', group);
+      highlightTextInDocument(
+        document.body,
+        group.spans,
+        group.color,
+        group.groupId
+      );
+    } catch (error) {
+      debugLog('Error applying highlight group:', error);
+    }
   });
   updateMinimapMarkers();
 }
 
-// Find text in document and apply highlight
-function highlightTextInDocument(element, text, color, groupId, spanId, position) {
-  if (!text || text.trim().length === 0) {
-    debugLog('Skipping highlight, search text is empty:', text);
-    return false;
-  }
-  const normalizedSearchText = text.trim();
+// Find text in document and apply highlight for a group of spans
+function highlightTextInDocument(element, spanInfos, color, groupId) {
+  if (!spanInfos || spanInfos.length === 0) return false;
+
+  // 1. 텍스트 노드 수집
   const walker = document.createTreeWalker(
     element,
     NodeFilter.SHOW_TEXT,
@@ -243,7 +236,7 @@ function highlightTextInDocument(element, text, color, groupId, spanId, position
         if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
           return NodeFilter.FILTER_REJECT;
         }
-        const parentTagName = parent.tagName.toUpperCase();
+        const parentTagName = parent.tagName && parent.tagName.toUpperCase();
         if ([
           'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'
         ].includes(parentTagName)) {
@@ -266,90 +259,93 @@ function highlightTextInDocument(element, text, color, groupId, spanId, position
   while (currentNode = walker.nextNode()) {
     textNodes.push(currentNode);
   }
-
   if (textNodes.length === 0) {
-    debugLog('No suitable text nodes found for searching:', normalizedSearchText);
+    debugLog('No suitable text nodes found for group:', groupId);
     return false;
   }
-  // 모든 매치 후보를 저장
+
+  // 2. 첫 span: position 기준으로 후보 중 가장 가까운 것 선택
+  const firstSpan = spanInfos[0];
+  const firstText = firstSpan.text;
+  const firstPosition = firstSpan.position;
   const candidates = [];
   for (let i = 0; i < textNodes.length; i++) {
-    const startNodeCandidate = textNodes[i];
-    const startNodeText = startNodeCandidate.textContent;
-    for (let j = 0; j < startNodeText.length; j++) {
-      let currentSearchIdx = 0;
-      let currentDomNodeIdx = i;
-      let currentDomCharIdx = j;
-      let possibleMatch = true;
-      while (currentSearchIdx < normalizedSearchText.length && currentDomNodeIdx < textNodes.length) {
-        const domNode = textNodes[currentDomNodeIdx];
-        const domText = domNode.textContent;
-        if (currentDomCharIdx < domText.length) {
-          if (domText[currentDomCharIdx] === normalizedSearchText[currentSearchIdx]) {
-            currentSearchIdx++;
-            currentDomCharIdx++;
-          } else {
-            possibleMatch = false;
-            break;
-          }
-        } else {
-          currentDomNodeIdx++;
-          currentDomCharIdx = 0;
-        }
-      }
-      if (possibleMatch && currentSearchIdx === normalizedSearchText.length) {
-        // 매치된 range 정보 저장
-        const range = document.createRange();
-        range.setStart(startNodeCandidate, j);
-        const endNode = textNodes[currentDomNodeIdx < textNodes.length ? currentDomNodeIdx : currentDomNodeIdx - 1];
-        const endOffset = currentDomCharIdx === 0 && currentDomNodeIdx > i ?
-          textNodes[currentDomNodeIdx - 1].textContent.length : currentDomCharIdx;
-        range.setEnd(endNode, endOffset);
-        // 이미 하이라이트된 영역은 제외
-        if (range.commonAncestorContainer.parentElement && range.commonAncestorContainer.parentElement.closest('.text-highlighter-extension')) {
-          continue;
-        }
-        // 위치 정보 계산
-        const rect = range.getBoundingClientRect();
-        const top = rect.top + (window.scrollY || document.documentElement.scrollTop);
-        candidates.push({ range, top });
-      }
+    const node = textNodes[i];
+    const nodeText = node.textContent;
+    const searchText = firstText;
+    const idx = nodeText.indexOf(searchText);
+    if (idx !== -1) {
+      let range = document.createRange();
+      range.setStart(node, idx);
+      range.setEnd(node, idx + searchText.length);
+      const rect = range.getBoundingClientRect();
+      const top = rect.top + (window.scrollY || document.documentElement.scrollTop);
+      candidates.push({ node, idx, top });
     }
   }
   if (candidates.length === 0) {
-    debugLog('Text not found (multi-node capable):', normalizedSearchText);
+    debugLog('First span text not found:', firstText);
     return false;
   }
   // position과 가장 가까운 후보 선택
   let bestCandidate = candidates[0];
-  if (typeof position === 'number') {
-    let minDiff = Math.abs(candidates[0].top - position);
+  if (typeof firstPosition === 'number') {
+    let minDiff = Math.abs(candidates[0].top - firstPosition);
     for (let i = 1; i < candidates.length; i++) {
-      const diff = Math.abs(candidates[i].top - position);
+      const diff = Math.abs(candidates[i].top - firstPosition);
       if (diff < minDiff) {
         minDiff = diff;
         bestCandidate = candidates[i];
       }
     }
   }
-  // 하이라이트 적용
-  const { range } = bestCandidate;
-  const span = document.createElement('span');
-  span.className = 'text-highlighter-extension';
-  span.style.backgroundColor = color;
-  if (groupId) span.dataset.groupId = groupId;
-  if (spanId) span.dataset.spanId = spanId;
-  try {
-    const contents = range.extractContents();
-    span.appendChild(contents);
-    range.insertNode(span);
-    addHighlightEventListeners(span);
-    debugLog('Text found and highlighted (multi-node capable):', normalizedSearchText);
-    return true;
-  } catch (e) {
-    debugLog('Error creating highlight (multi-node extract/insert):', e, "Search:", normalizedSearchText, "Range text before potential modification:", range.toString());
+  // 3. 첫 span 하이라이트 적용
+  let currentNodeIdx = textNodes.indexOf(bestCandidate.node);
+  let currentCharIdx = bestCandidate.idx;
+  let highlightSpans = [];
+  for (let s = 0; s < spanInfos.length; s++) {
+    const spanInfo = spanInfos[s];
+    const spanText = spanInfo.text;
+    let found = false;
+    // 이후 span은 순차적으로 텍스트 노드에서만 매칭
+    for (; currentNodeIdx < textNodes.length; currentNodeIdx++) {
+      const node = textNodes[currentNodeIdx];
+      const nodeText = node.textContent;
+      let searchStart = (s === 0) ? currentCharIdx : 0;
+      const idx = nodeText.indexOf(spanText, searchStart);
+      if (idx !== -1) {
+        let range = document.createRange();
+        range.setStart(node, idx);
+        range.setEnd(node, idx + spanText.length);
+        // 하이라이트 적용
+        const span = document.createElement('span');
+        span.className = 'text-highlighter-extension';
+        span.style.backgroundColor = color;
+        if (groupId) span.dataset.groupId = groupId;
+        if (spanInfo.spanId) span.dataset.spanId = spanInfo.spanId;
+        try {
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
+          addHighlightEventListeners(span);
+          highlightSpans.push(span);
+        } catch (e) {
+          debugLog('Error creating highlight (single node):', e, 'Search:', spanText, 'Range text:', range.toString());
+        }
+        // 다음 span은 이 노드 이후부터 검색
+        currentCharIdx = idx + spanText.length;
+        found = true;
+        break;
+      } else {
+        currentCharIdx = 0;
+      }
+    }
+    if (!found) {
+      debugLog('Span text not found in sequence:', spanText);
+      return false;
+    }
   }
-  return false;
+  return highlightSpans;
 }
 
 // Add event listeners to highlighted text elements
