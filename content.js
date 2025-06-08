@@ -26,8 +26,10 @@ function getMessage(key, substitutions = null) {
 debugLog('Content script loaded for:', currentUrl);
 
 getColorsFromBackground().then(() => {
-  loadHighlights();
-  createHighlightControls();
+  setTimeout(() => {
+    loadHighlights();
+    createHighlightControls();
+  }, 500);
 }).catch(error => {
   console.error('Failed to load colors from background:', error);
   createHighlightControls();
@@ -103,7 +105,6 @@ function loadHighlights() {
       debugLog('Got highlights response:', response);
       if (response && response.highlights) {
         highlights = response.highlights;
-        debugLog('Applying highlights:', highlights.length);
         applyHighlights();
       } else {
         debugLog('No highlights found or invalid response');
