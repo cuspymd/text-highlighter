@@ -8,7 +8,8 @@
   color: #000;
 }
 
-.text-highlighter-extension:hover {
+.text-highlighter-extension:hover,
+.text-highlighter-extension.group-hover {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 

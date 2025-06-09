@@ -364,6 +364,24 @@ function addHighlightEventListeners(highlightElement) {
       e.stopPropagation();
     }
   });
+
+  // 그룹 전체에 hover 효과
+  highlightElement.addEventListener('mouseenter', function () {
+    const groupId = highlightElement.dataset.groupId;
+    if (!groupId) return;
+    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    groupSpans.forEach(span => {
+      span.classList.add('group-hover');
+    });
+  });
+  highlightElement.addEventListener('mouseleave', function () {
+    const groupId = highlightElement.dataset.groupId;
+    if (!groupId) return;
+    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    groupSpans.forEach(span => {
+      span.classList.remove('group-hover');
+    });
+  });
 }
 
 // Find text node by content
