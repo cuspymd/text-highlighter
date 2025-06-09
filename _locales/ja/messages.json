@@ -1,0 +1,117 @@
+{
+  "extensionName": {
+    "message": "テキストハイライター"
+  },
+  "extensionDescription": {
+    "message": "ウェブページのテキストを選択して色付きでマークできる拡張機能"
+  },
+  "highlightText": {
+    "message": "テキストをハイライト"
+  },
+  "removeHighlight": {
+    "message": "ハイライトを削除"
+  },
+  "yellowColor": {
+    "message": "黄色"
+  },
+  "greenColor": {
+    "message": "緑色"
+  },
+  "blueColor": {
+    "message": "青色"
+  },
+  "pinkColor": {
+    "message": "ピンク色"
+  },
+  "orangeColor": {
+    "message": "オレンジ色"
+  },
+  "deleteHighlight": {
+    "message": "ハイライトを削除"
+  },
+  "highlightWithYellow": {
+    "message": "黄色でハイライト"
+  },
+  "highlightWithGreen": {
+    "message": "緑色でハイライト"
+  },
+  "highlightWithBlue": {
+    "message": "青色でハイライト"
+  },
+  "highlightWithPink": {
+    "message": "ピンク色でハイライト"
+  },
+  "highlightWithOrange": {
+    "message": "オレンジ色でハイライト"
+  },
+  "popupTitle": {
+    "message": "テキストハイライター"
+  },
+  "popupDescription": {
+    "message": "ウェブページでテキストを選択し、右クリックでハイライトできます。"
+  },
+  "currentPageHighlights": {
+    "message": "現在のページのハイライト"
+  },
+  "noHighlights": {
+    "message": "このページにはハイライトされたテキストがありません。"
+  },
+  "clearAllHighlights": {
+    "message": "すべてのハイライトを削除"
+  },
+  "viewAllPages": {
+    "message": "ハイライトしたページ一覧"
+  },
+  "exportHighlights": {
+    "message": "ハイライトをエクスポート"
+  },
+  "showMinimap": {
+    "message": "ミニマップを表示"
+  },
+  "confirmClearAll": {
+    "message": "現在のページのすべてのハイライトを削除してよろしいですか？"
+  },
+  "pagesListTitle": {
+    "message": "ハイライトしたページ一覧"
+  },
+  "noPagesFound": {
+    "message": "ハイライトしたページはありません。"
+  },
+  "highlightCount": {
+    "message": "ハイライト数"
+  },
+  "lastUpdated": {
+    "message": "最終更新"
+  },
+  "showDetails": {
+    "message": "詳細を表示"
+  },
+  "hideDetails": {
+    "message": "詳細を隠す"
+  },
+  "openPage": {
+    "message": "ページを開く"
+  },
+  "deletePage": {
+    "message": "削除"
+  },
+  "confirmDeletePage": {
+    "message": "このページのすべてのハイライトを削除してよろしいですか？"
+  },
+  "noTitle": {
+    "message": "（タイトルなし）"
+  },
+  "unknown": {
+    "message": "不明"
+  },
+  "deleteAllPages": {
+    "message": "すべてのページを削除"
+  },
+  "confirmDeleteAllPages": {
+    "message": "すべてのハイライトしたページを削除してよろしいですか？"
+  },
+  "refresh": {
+    "message": "更新",
+    "description": "ハイライトしたページ一覧の更新ボタンのテキスト"
+  }
+}

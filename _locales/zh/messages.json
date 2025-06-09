@@ -1,0 +1,117 @@
+{
+  "extensionName": {
+    "message": "文本高亮器"
+  },
+  "extensionDescription": {
+    "message": "一个可以在网页上选择文本并用颜色标记的扩展程序"
+  },
+  "highlightText": {
+    "message": "高亮文本"
+  },
+  "removeHighlight": {
+    "message": "移除高亮"
+  },
+  "yellowColor": {
+    "message": "黄色"
+  },
+  "greenColor": {
+    "message": "绿色"
+  },
+  "blueColor": {
+    "message": "蓝色"
+  },
+  "pinkColor": {
+    "message": "粉色"
+  },
+  "orangeColor": {
+    "message": "橙色"
+  },
+  "deleteHighlight": {
+    "message": "删除高亮"
+  },
+  "highlightWithYellow": {
+    "message": "用黄色高亮"
+  },
+  "highlightWithGreen": {
+    "message": "用绿色高亮"
+  },
+  "highlightWithBlue": {
+    "message": "用蓝色高亮"
+  },
+  "highlightWithPink": {
+    "message": "用粉色高亮"
+  },
+  "highlightWithOrange": {
+    "message": "用橙色高亮"
+  },
+  "popupTitle": {
+    "message": "文本高亮器"
+  },
+  "popupDescription": {
+    "message": "在网页上选择文本后，点击鼠标右键即可高亮显示。"
+  },
+  "currentPageHighlights": {
+    "message": "当前页面高亮"
+  },
+  "noHighlights": {
+    "message": "当前页面没有高亮的文本。"
+  },
+  "clearAllHighlights": {
+    "message": "清除所有高亮"
+  },
+  "viewAllPages": {
+    "message": "已高亮页面列表"
+  },
+  "exportHighlights": {
+    "message": "导出高亮"
+  },
+  "showMinimap": {
+    "message": "显示小地图"
+  },
+  "confirmClearAll": {
+    "message": "确定要删除当前页面的所有高亮吗？"
+  },
+  "pagesListTitle": {
+    "message": "已高亮页面列表"
+  },
+  "noPagesFound": {
+    "message": "没有找到已高亮的页面。"
+  },
+  "highlightCount": {
+    "message": "高亮数量"
+  },
+  "lastUpdated": {
+    "message": "最后更新"
+  },
+  "showDetails": {
+    "message": "显示详情"
+  },
+  "hideDetails": {
+    "message": "隐藏详情"
+  },
+  "openPage": {
+    "message": "打开页面"
+  },
+  "deletePage": {
+    "message": "删除"
+  },
+  "confirmDeletePage": {
+    "message": "确定要删除此页面的所有高亮吗？"
+  },
+  "noTitle": {
+    "message": "（无标题）"
+  },
+  "unknown": {
+    "message": "未知"
+  },
+  "deleteAllPages": {
+    "message": "删除所有页面"
+  },
+  "confirmDeleteAllPages": {
+    "message": "确定要删除所有已高亮的页面吗？"
+  },
+  "refresh": {
+    "message": "刷新",
+    "description": "高亮页面列表刷新按钮文本"
+  }
+}
