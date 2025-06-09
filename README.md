@@ -1,4 +1,4 @@
-# Text Highlighter
+# Marks: Text Highlighter
 
 A Chrome extension that allows you to highlight and manage text on web pages.
 
