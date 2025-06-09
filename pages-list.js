@@ -214,18 +214,30 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initialization
   localizeStaticElements();  // Localize static elements
 
-  // Add delete all button
-  const deleteAllBtn = document.createElement('button');
-  deleteAllBtn.className = 'btn btn-delete-all';
-  deleteAllBtn.textContent = getMessage('deleteAllPages', 'Delete All Pages');
-  deleteAllBtn.style.marginBottom = '15px';
-  deleteAllBtn.addEventListener('click', function () {
-    const confirmMessage = getMessage('confirmDeleteAllPages', 'Delete ALL highlighted pages?');
-    if (confirm(confirmMessage)) {
-      deleteAllPages();
-    }
-  });
-  pagesContainer.parentNode.insertBefore(deleteAllBtn, pagesContainer);
+  // 버튼 DOM 요소 가져오기 (이제 HTML에서 직접 생성)
+  const deleteAllBtn = document.getElementById('delete-all-btn');
+  const refreshBtn = document.getElementById('refresh-btn');
+
+  // Delete All 버튼 이벤트 연결
+  if (deleteAllBtn) {
+    deleteAllBtn.addEventListener('click', function () {
+      const confirmMessage = getMessage('confirmDeleteAllPages', 'Delete ALL highlighted pages?');
+      if (confirm(confirmMessage)) {
+        deleteAllPages();
+      }
+    });
+    // 다국어 적용
+    deleteAllBtn.textContent = getMessage('deleteAllPages', 'Delete All Pages');
+  }
+
+  // Refresh 버튼 이벤트 연결
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function () {
+      loadAllHighlightedPages();
+    });
+    // 다국어 적용
+    refreshBtn.textContent = getMessage('refresh', 'Refresh');
+  }
 
   loadAllHighlightedPages();
 });

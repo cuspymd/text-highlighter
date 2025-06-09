@@ -72,12 +72,17 @@
       }
 
       .btn {
-        padding: 5px 10px;
+        padding: 6px 16px;
         background-color: #f0f0f0;
         border: 1px solid #ccc;
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
+        height: 36px; /* 기존 40px에서 4px 줄임 */
+        min-width: 120px;
+        box-sizing: border-box;
+        vertical-align: middle;
+        transition: background 0.15s;
       }
 
       .btn:hover {
@@ -108,11 +113,20 @@
         background-color: #d93025;
         color: #fff;
         border-color: #d93025;
-        margin-bottom: 15px;
       }
 
       .btn-delete-all:hover {
         background-color: #b71c1c;
+      }
+
+      .btn-refresh {
+        background-color: #1a73e8;
+        color: #fff;
+        border-color: #1a73e8;
+      }
+
+      .btn-refresh:hover {
+        background-color: #1558b0;
       }
 
       .no-pages {
@@ -143,10 +157,20 @@
       .back-btn {
         margin-bottom: 20px;
       }
+
+      .top-btns {
+        margin-bottom: 18px;
+        text-align: left;
+      }
     </style>
   </head>
   <body>
     <h1 data-i18n="pagesListTitle">Highlighted Pages List</h1>
+
+    <div class="top-btns">
+      <button id="delete-all-btn" class="btn btn-delete-all" data-i18n="deleteAllPages" style="margin-bottom: 0;">Delete All Pages</button>
+      <button id="refresh-btn" class="btn btn-refresh" data-i18n="refresh" style="margin-left: 6px; margin-bottom: 0;">Refresh</button>
+    </div>
 
     <div id="pages-container" class="pages-list">
       <div id="no-pages" class="no-pages" data-i18n="noPagesFound">

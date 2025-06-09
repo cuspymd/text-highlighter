@@ -109,5 +109,9 @@
   },
   "confirmDeleteAllPages": {
     "message": "정말 모든 하이라이트된 페이지를 삭제하시겠습니까?"
+  },
+  "refresh": {
+    "message": "새로고침",
+    "description": "하이라이트 페이지 목록 새로고침 버튼 텍스트"
   }
 }

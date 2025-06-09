@@ -109,5 +109,9 @@
   },
   "confirmDeleteAllPages": {
     "message": "Delete ALL highlighted pages?"
+  },
+  "refresh": {
+    "message": "Refresh",
+    "description": "Button text for refreshing the highlighted pages list"
   }
 }
