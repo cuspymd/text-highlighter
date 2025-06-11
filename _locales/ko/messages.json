@@ -1,6 +1,5 @@
-{
-  "extensionName": {
-    "message": "텍스트 하이라이터"
+{  "extensionName": {
+    "message": "Marks: 텍스트 하이라이터"
   },
   "extensionDescription": {
     "message": "웹페이지에서 텍스트를 선택하고 색상으로 마킹할 수 있는 확장 프로그램"

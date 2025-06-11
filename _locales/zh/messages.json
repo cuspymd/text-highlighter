@@ -1,6 +1,5 @@
-{
-  "extensionName": {
-    "message": "文本高亮器"
+{  "extensionName": {
+    "message": "Marks: 文本高亮器"
   },
   "extensionDescription": {
     "message": "一个可以在网页上选择文本并用颜色标记的扩展程序"

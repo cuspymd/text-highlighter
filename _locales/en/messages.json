@@ -1,6 +1,5 @@
-{
-  "extensionName": {
-    "message": "Text Highlighter"
+{  "extensionName": {
+    "message": "Marks: Text Highlighter"
   },
   "extensionDescription": {
     "message": "Extension to select text on web pages and mark with colors"

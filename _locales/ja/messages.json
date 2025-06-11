@@ -1,6 +1,5 @@
-{
-  "extensionName": {
-    "message": "テキストハイライター"
+{  "extensionName": {
+    "message": "Marks: テキストハイライター"
   },
   "extensionDescription": {
     "message": "ウェブページのテキストを選択して色付きでマークできる拡張機能"
