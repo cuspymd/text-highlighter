@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marks: Text Highlighter - 웹페이지 텍스트 하이라이트 확장 프로그램</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .logo::before {
+            content: "📝";
+            margin-right: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #667eea;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            background-image: url('image.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background: linear-gradient(
+                to bottom,
+                rgba(102,126,234,0.0) 0%,
+                rgba(102,126,234,0.4) 40%,
+                rgba(102,126,234,0.3) 60%,
+                rgba(102,126,234,0.0) 100%
+            );
+        }
+
+        .hero-content {
+            z-index: 2;
+            max-width: 800px;
+            animation: fadeInUp 1s ease-out;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 1rem 2.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-primary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 0;
+            background: white;
+            position: relative;
+        }
+
+        .features::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            clip-path: polygon(0 0, 100% 0, 100% 70%, 0 100%);
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #333;
+            position: relative;
+            z-index: 2;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Demo Section */
+        .demo {
+            padding: 6rem 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .demo-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .demo-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .demo-content p {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .demo-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .demo-features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            color: #333;
+        }
+
+        .demo-features li::before {
+            content: "✅";
+            margin-right: 1rem;
+        }
+
+        .demo-visual {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .highlight-demo {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .highlight-yellow {
+            background-color: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+            animation: pulse 2s infinite;
+        }
+
+        .highlight-green {
+            background-color: #4caf50;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            animation: pulse 2s infinite 0.5s;
+        }
+
+        .highlight-blue {
+            background-color: #2196f3;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            animation: pulse 2s infinite 1s;
+        }
+
+        /* Install Section */
+        .install {
+            padding: 6rem 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .install h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .install p {
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+        }
+
+        .install-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .install-step {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .install-step h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .install-step p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        footer {
+            background: #333;
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .footer-section p, .footer-section a {
+            color: #ccc;
+            text-decoration: none;
+            line-height: 1.6;
+        }
+
+        .footer-section a:hover {
+            color: #667eea;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #555;
+            padding-top: 2rem;
+            color: #999;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .demo-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- nav removed -->
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>웹페이지 텍스트를<br>스마트하게 하이라이트하세요</h1>
+                    <p>Marks는 웹페이지의 중요한 텍스트를 색상별로 하이라이트하고 효율적으로 관리할 수 있는 Chrome 확장 프로그램입니다.</p>
+                    <div class="hero-buttons">
+                        <a href="#install" class="btn-primary">설치하기</a>
+                        <a href="#demo" class="btn-secondary">데모 보기</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features" id="features">
+            <div class="container">
+                <h2 class="section-title">지원하는 기능들</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <span class="feature-icon">🎨</span>
+                        <h3>다중 색상 하이라이트</h3>
+                        <p>5가지 색상(노란색, 초록색, 파란색, 분홍색, 주황색)으로 텍스트를 분류하여 하이라이트할 수 있습니다.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">⚡</span>
+                        <h3>키보드 단축키</h3>
+                        <p>Ctrl+Shift+숫자 키를 사용하여 빠르게 하이라이트를 적용할 수 있습니다.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">🗺️</span>
+                        <h3>미니맵 기능</h3>
+                        <p>페이지 우측에 미니맵을 표시하여 하이라이트된 위치를 한눈에 파악할 수 있습니다.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">💾</span>
+                        <h3>자동 저장</h3>
+                        <p>하이라이트한 내용이 자동으로 저장되어 다음 방문 시에도 그대로 유지됩니다.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">🌍</span>
+                        <h3>다국어 지원</h3>
+                        <p>다양한 언어를 지원하여 더 많은 사용자가 편리하게 이용할 수 있습니다.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon">✨</span>
+                        <h3>쉬운 관리</h3>
+                        <p>우클릭 컨텍스트 메뉴와 하이라이트 컨트롤러로 쉽게 하이라이트를 편집하고 삭제할 수 있습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="demo" id="demo">
+            <div class="container">
+                <div class="demo-container">
+                    <div class="demo-content">
+                        <h2>실제 사용 예시</h2>
+                        <p>텍스트를 선택하고 우클릭하거나 키보드 단축키를 사용하여 원하는 색상으로 하이라이트할 수 있습니다.</p>
+                        <ul class="demo-features">
+                            <li>텍스트 선택 후 우클릭으로 색상 선택</li>
+                            <li>Ctrl+Shift+1~4 키보드 단축키 지원</li>
+                            <li>하이라이트 클릭으로 색상 변경 및 삭제</li>
+                            <li>페이지별 하이라이트 자동 저장</li>
+                            <li>미니맵으로 하이라이트 위치 확인</li>
+                        </ul>
+                        <a href="#install" class="btn-secondary">지금 사용해보기</a>
+                    </div>
+                    <div class="demo-visual">
+                        <div class="highlight-demo">
+                            <p>이것은 <span class="highlight-yellow">중요한 정보</span>입니다. 웹페이지에서 <span class="highlight-green">핵심 내용</span>을 쉽게 구분할 수 있습니다.</p>
+                            <p>연구 자료나 <span class="highlight-blue">학습 내용</span>을 정리할 때 매우 유용하며, 나중에 <span class="highlight-yellow">다시 방문</span>해도 하이라이트가 그대로 유지됩니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="install" id="install">
+            <div class="container">
+                <h2>간단한 설치 과정</h2>
+                <p>3단계만으로 Marks를 설치하고 바로 사용할 수 있습니다.</p>
+                <a href="#" class="btn-secondary">Chrome 웹스토어에서 설치</a>
+                <div class="install-steps">
+                    <div class="install-step">
+                        <h3>1단계</h3>
+                        <p>Chrome 웹스토어에서 "Marks: Text Highlighter"를 검색하세요.</p>
+                    </div>
+                    <div class="install-step">
+                        <h3>2단계</h3>
+                        <p>"Chrome에 추가" 버튼을 클릭하여 확장 프로그램을 설치하세요.</p>
+                    </div>
+                    <div class="install-step">
+                        <h3>3단계</h3>
+                        <p>웹페이지에서 텍스트를 선택하고 바로 하이라이트를 시작하세요!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Marks: Text Highlighter</h3>
+                    <p>웹페이지 텍스트 하이라이트의 새로운 기준을 제시합니다. 학습, 연구, 업무 효율성을 높여보세요.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>주요 기능</h3>
+                    <p><a href="#features">다중 색상 하이라이트</a></p>
+                    <p><a href="#features">키보드 단축키</a></p>
+                    <p><a href="#features">미니맵 기능</a></p>
+                    <p><a href="#features">자동 저장</a></p>
+                </div>
+                <div class="footer-section">
+                    <h3>지원</h3>
+                    <p><a href="#">사용자 가이드</a></p>
+                    <p><a href="#">FAQ</a></p>
+                    <p><a href="https://github.com/cuspymd/text-highlighter" target="_blank">Github</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Marks: Text Highlighter. MIT License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(255, 255, 255, 0.98)';
+            } else {
+                header.style.background = 'rgba(255, 255, 255, 0.95)';
+            }
+        });
+
+        // Floating particles
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.width = particle.style.height = Math.random() * 10 + 5 + 'px';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            document.querySelector('.hero').appendChild(particle);
+            
+            setTimeout(() => {
+                particle.remove();
+            }, 15000);
+        }
+
+        // Create particles periodically
+        setInterval(createParticle, 3000);
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe feature cards
+        document.querySelectorAll('.feature-card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = `all 0.6s ease ${index * 0.1}s`;
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marks: Text Highlighter - 웹페이지 텍스트 하이라이트 확장 프로그램</title>
+    <title>Marks: Text Highlighter - 网页文本高亮扩展程序</title>
     <style>
         * {
             margin: 0;
@@ -102,12 +102,34 @@
             color: white;
             position: relative;
             overflow: hidden;
+            background-image: url('image.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background: linear-gradient(
+                to bottom,
+                rgba(102,126,234,0.0) 0%,
+                rgba(102,126,234,0.3) 40%,
+                rgba(102,126,234,0.3) 60%,
+                rgba(102,126,234,0.0) 100%
+            );
         }
 
         .hero-content {
             z-index: 2;
             max-width: 800px;
             animation: fadeInUp 1s ease-out;
+            position: relative;
         }
 
         .hero h1 {
@@ -474,27 +496,18 @@
 </head>
 <body>
     <header>
-        <nav class="container">
-            <div class="logo">Marks</div>
-            <ul class="nav-links">
-                <li><a href="#features">기능</a></li>
-                <li><a href="#demo">데모</a></li>
-                <li><a href="#install">설치</a></li>
-                <li><a href="#contact">문의</a></li>
-            </ul>
-            <a href="#install" class="cta-button">지금 설치하기</a>
-        </nav>
+        <!-- nav removed -->
     </header>
 
     <main>
         <section class="hero">
             <div class="container">
                 <div class="hero-content">
-                    <h1>웹페이지 텍스트를<br>스마트하게 하이라이트하세요</h1>
-                    <p>Marks는 웹페이지의 중요한 텍스트를 색상별로 하이라이트하고 효율적으로 관리할 수 있는 Chrome 확장 프로그램입니다.</p>
+                    <h1>智能高亮网页文本</h1>
+                    <p>Marks是一款Chrome扩展程序，让您能够高效地高亮和管理网页上的重要文本。</p>
                     <div class="hero-buttons">
-                        <a href="#install" class="btn-primary">무료로 설치하기</a>
-                        <a href="#demo" class="btn-secondary">데모 보기</a>
+                        <a href="#install" class="btn-primary">安装</a>
+                        <a href="#demo" class="btn-secondary">查看演示</a>
                     </div>
                 </div>
             </div>
@@ -502,37 +515,37 @@
 
         <section class="features" id="features">
             <div class="container">
-                <h2 class="section-title">강력한 기능들</h2>
+                <h2 class="section-title">支持的功能</h2>
                 <div class="features-grid">
                     <div class="feature-card">
                         <span class="feature-icon">🎨</span>
-                        <h3>다중 색상 하이라이트</h3>
-                        <p>5가지 색상(노란색, 초록색, 파란색, 분홍색, 주황색)으로 텍스트를 분류하여 하이라이트할 수 있습니다.</p>
+                        <h3>多色高亮</h3>
+                        <p>使用5种颜色（黄色、绿色、蓝色、粉色、橙色）对文本进行分类高亮。</p>
                     </div>
                     <div class="feature-card">
                         <span class="feature-icon">⚡</span>
-                        <h3>키보드 단축키</h3>
-                        <p>Ctrl+Shift+숫자 키를 사용하여 빠르게 하이라이트를 적용할 수 있습니다.</p>
+                        <h3>键盘快捷键</h3>
+                        <p>使用Ctrl+Shift+数字键快速应用高亮。</p>
                     </div>
                     <div class="feature-card">
                         <span class="feature-icon">🗺️</span>
-                        <h3>미니맵 기능</h3>
-                        <p>페이지 우측에 미니맵을 표시하여 하이라이트된 위치를 한눈에 파악할 수 있습니다.</p>
+                        <h3>小地图功能</h3>
+                        <p>在页面右侧显示小地图，轻松定位高亮区域。</p>
                     </div>
                     <div class="feature-card">
                         <span class="feature-icon">💾</span>
-                        <h3>자동 저장</h3>
-                        <p>하이라이트한 내용이 자동으로 저장되어 다음 방문 시에도 그대로 유지됩니다.</p>
+                        <h3>自动保存</h3>
+                        <p>高亮内容自动保存，下次访问时保持不变。</p>
                     </div>
                     <div class="feature-card">
                         <span class="feature-icon">🌍</span>
-                        <h3>다국어 지원</h3>
-                        <p>한국어와 영어를 지원하여 더 많은 사용자가 편리하게 이용할 수 있습니다.</p>
+                        <h3>多语言支持</h3>
+                        <p>支持多种语言，让更多用户方便使用。</p>
                     </div>
                     <div class="feature-card">
                         <span class="feature-icon">✨</span>
-                        <h3>쉬운 관리</h3>
-                        <p>우클릭 컨텍스트 메뉴와 하이라이트 컨트롤러로 쉽게 하이라이트를 편집하고 삭제할 수 있습니다.</p>
+                        <h3>轻松管理</h3>
+                        <p>通过右键菜单和高亮控制器轻松编辑和删除高亮。</p>
                     </div>
                 </div>
             </div>
@@ -542,21 +555,21 @@
             <div class="container">
                 <div class="demo-container">
                     <div class="demo-content">
-                        <h2>실제 사용 예시</h2>
-                        <p>텍스트를 선택하고 우클릭하거나 키보드 단축키를 사용하여 원하는 색상으로 하이라이트할 수 있습니다.</p>
+                        <h2>实际使用示例</h2>
+                        <p>选择文本后右键点击或使用键盘快捷键，即可用您喜欢的颜色进行高亮。</p>
                         <ul class="demo-features">
-                            <li>텍스트 선택 후 우클릭으로 색상 선택</li>
-                            <li>Ctrl+Shift+1~4 키보드 단축키 지원</li>
-                            <li>하이라이트 클릭으로 색상 변경 및 삭제</li>
-                            <li>페이지별 하이라이트 자동 저장</li>
-                            <li>미니맵으로 하이라이트 위치 확인</li>
+                            <li>选择文本后右键点击选择颜色</li>
+                            <li>使用Ctrl+Shift+1~4键盘快捷键</li>
+                            <li>点击高亮可更改颜色或删除</li>
+                            <li>每页高亮自动保存</li>
+                            <li>通过小地图查看高亮位置</li>
                         </ul>
-                        <a href="#install" class="btn-secondary">지금 사용해보기</a>
+                        <a href="#install" class="btn-secondary">立即试用</a>
                     </div>
                     <div class="demo-visual">
                         <div class="highlight-demo">
-                            <p>이것은 <span class="highlight-yellow">중요한 정보</span>입니다. 웹페이지에서 <span class="highlight-green">핵심 내용</span>을 쉽게 구분할 수 있습니다.</p>
-                            <p>연구 자료나 <span class="highlight-blue">학습 내용</span>을 정리할 때 매우 유용하며, 나중에 <span class="highlight-yellow">다시 방문</span>해도 하이라이트가 그대로 유지됩니다.</p>
+                            <p>这是<span class="highlight-yellow">重要信息</span>。您可以轻松区分网页上的<span class="highlight-green">核心内容</span>。</p>
+                            <p>非常适合整理研究或<span class="highlight-blue">学习材料</span>，当您<span class="highlight-yellow">再次访问</span>时，高亮内容保持不变。</p>
                         </div>
                     </div>
                 </div>
@@ -565,21 +578,21 @@
 
         <section class="install" id="install">
             <div class="container">
-                <h2>간단한 설치 과정</h2>
-                <p>3단계만으로 Marks를 설치하고 바로 사용할 수 있습니다.</p>
-                <a href="#" class="btn-secondary">Chrome 웹스토어에서 설치</a>
+                <h2>简单的安装步骤</h2>
+                <p>只需3步即可安装Marks并立即使用。</p>
+                <a href="#" class="btn-secondary">从Chrome网上应用店安装</a>
                 <div class="install-steps">
                     <div class="install-step">
-                        <h3>1단계</h3>
-                        <p>Chrome 웹스토어에서 "Marks: Text Highlighter"를 검색하세요.</p>
+                        <h3>步骤1</h3>
+                        <p>在Chrome网上应用店搜索"Marks: Text Highlighter"。</p>
                     </div>
                     <div class="install-step">
-                        <h3>2단계</h3>
-                        <p>"Chrome에 추가" 버튼을 클릭하여 확장 프로그램을 설치하세요.</p>
+                        <h3>步骤2</h3>
+                        <p>点击"添加到Chrome"安装扩展程序。</p>
                     </div>
                     <div class="install-step">
-                        <h3>3단계</h3>
-                        <p>웹페이지에서 텍스트를 선택하고 바로 하이라이트를 시작하세요!</p>
+                        <h3>步骤3</h3>
+                        <p>在任何网页上选择文本并开始高亮！</p>
                     </div>
                 </div>
             </div>
@@ -591,25 +604,24 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>Marks: Text Highlighter</h3>
-                    <p>웹페이지 텍스트 하이라이트의 새로운 기준을 제시합니다. 학습, 연구, 업무 효율성을 높여보세요.</p>
+                    <p>为网页文本高亮设定新标准。提升您的学习、研究和工作效率。</p>
                 </div>
                 <div class="footer-section">
-                    <h3>주요 기능</h3>
-                    <p><a href="#features">다중 색상 하이라이트</a></p>
-                    <p><a href="#features">키보드 단축키</a></p>
-                    <p><a href="#features">미니맵 기능</a></p>
-                    <p><a href="#features">자동 저장</a></p>
+                    <h3>主要功能</h3>
+                    <p><a href="#features">多色高亮</a></p>
+                    <p><a href="#features">键盘快捷键</a></p>
+                    <p><a href="#features">小地图功能</a></p>
+                    <p><a href="#features">自动保存</a></p>
                 </div>
                 <div class="footer-section">
-                    <h3>지원</h3>
-                    <p><a href="#">사용자 가이드</a></p>
-                    <p><a href="#">FAQ</a></p>
-                    <p><a href="#">문의하기</a></p>
-                    <p><a href="#">피드백</a></p>
+                    <h3>支持</h3>
+                    <p><a href="#">用户指南</a></p>
+                    <p><a href="#">常见问题</a></p>
+                    <p><a href="https://github.com/your-github-repo" target="_blank">Github</a></p>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 Marks: Text Highlighter. MIT License. 모든 권리 보유.</p>
+                <p>&copy; 2024 Marks: Text Highlighter. MIT License.</p>
             </div>
         </div>
     </footer>
@@ -680,4 +692,4 @@
         });
     </script>
 </body>
-</html>
+</html> 
