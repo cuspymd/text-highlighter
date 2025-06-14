@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marks: Text Highlighter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --text-color: #1f2937;
+            --bg-color: #ffffff;
+            --secondary-bg: #f9fafb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 200px;
+            background-image: url('image.png');
+            background-size: cover;
+            background-position: center 30%;
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.2) 100%);
+        }
+
+        .content-wrapper {
+            padding: 0 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        article {
+            margin-bottom: 3rem;
+        }
+
+        h2 {
+            color: var(--text-color);
+            font-size: 1.8rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            color: #4b5563;
+        }
+
+        .meta {
+            color: #6b7280;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .meta span {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .meta span::before {
+            content: "•";
+            margin: 0 0.5rem;
+        }
+
+        .meta span:first-child::before {
+            content: none;
+        }
+
+        .tags {
+            margin-top: 2rem;
+            padding: 2rem 0;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .tag {
+            background: var(--secondary-bg);
+            color: var(--primary-color);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .tag:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+
+        .feature-list li {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-image">
+        <div class="hero-overlay"></div>
+    </div>
+    
+    <div class="content-wrapper">
+        <header>
+            <h1>Marks: Text Highlighter</h1>
+            <div class="meta">
+                <span>March 15, 2024</span>
+                <span>By cuspymd</span>
+                <span>5 min read</span>
+            </div>
+        </header>
+
+        <article>
+            <h2>What is Text Highlighter?</h2>
+            <p>
+                Have you ever wished you could mark important passages while reading web pages, 
+                just like you would with a physical highlighter pen? Text Highlighter is a Chrome 
+                extension that brings this familiar study habit to your digital reading experience, 
+                allowing you to highlight and save important text across any webpage.
+            </p>
+
+            <h2>Key Features</h2>
+            <p>
+                The core functionality is beautifully simple yet powerful. Select any text on a webpage, 
+                and with either a keyboard shortcut or the context menu, you can highlight it instantly. 
+                These highlights persist across browsing sessions, ensuring your important marks stay 
+                exactly where you left them.
+            </p>
+
+            <h2>Customizable Colors</h2>
+            <p>
+                Express yourself with a variety of highlighting colors. Whether you prefer classic yellow 
+                for general notes, green for important points, blue for definitions, or pink for questions, 
+                Text Highlighter lets you create your own color-coding system. Each color can represent 
+                different levels of importance or categories of information.
+            </p>
+
+            <h2>Highlight Management</h2>
+            <p>
+                All your highlights are automatically saved and can be managed through the extension's 
+                dashboard. You can easily review, organize, or remove highlights as needed. The extension 
+                also allows you to manage highlights on a per-site basis, giving you complete control 
+                over your digital annotations.
+            </p>
+
+            <h2>Perfect For</h2>
+            <ul class="feature-list">
+                <li>Students reviewing online study materials</li>
+                <li>Researchers collecting information from multiple sources</li>
+                <li>Professionals reviewing technical documentation</li>
+                <li>Writers and editors during the revision process</li>
+                <li>Anyone who wants to remember important information from web pages</li>
+            </ul>
+
+            <div class="tags">
+                <span class="tag">#ChromeExtension</span>
+                <span class="tag">#TextHighlighter</span>
+                <span class="tag">#ProductivityTools</span>
+                <span class="tag">#StudyAids</span>
+            </div>
+        </article>
+    </div>
+</body>
+</html> 
