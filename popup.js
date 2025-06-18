@@ -214,11 +214,30 @@ document.addEventListener('DOMContentLoaded', async function () {
   // View list of highlighted pages
   viewAllPagesBtn.addEventListener('click', function () {
     debugLog('Opening all pages list');
-    chrome.windows.create({
-      url: chrome.runtime.getURL('pages-list.html'),
-      type: 'popup',
-      width: 860,
-      height: 600
+    const targetUrl = chrome.runtime.getURL('pages-list.html');
+    chrome.windows.getAll({populate: true}, function(windows) {
+      let found = false;
+      for (const win of windows) {
+        for (const tab of win.tabs) {
+          if (tab.url && tab.url.startsWith(targetUrl)) {
+            chrome.windows.update(win.id, {focused: true});
+            chrome.tabs.update(tab.id, {active: true});
+            // 페이지 목록 갱신 메시지 전송
+            chrome.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (!found) {
+        chrome.windows.create({
+          url: targetUrl,
+          type: 'popup',
+          width: 860,
+          height: 600
+        });
+      }
     });
   });
 

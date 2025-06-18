@@ -239,5 +239,12 @@ document.addEventListener('DOMContentLoaded', function () {
     refreshBtn.textContent = getMessage('refresh', 'Refresh');
   }
 
+  // 메시지로 페이지 목록 새로고침
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.action === 'refreshPagesList') {
+      loadAllHighlightedPages();
+    }
+  });
+
   loadAllHighlightedPages();
 });
