@@ -58,10 +58,31 @@
   border-radius: 50%;
   display: flex;
   align-items: center;
+  transition: transform 0.18s cubic-bezier(.4,1.4,.6,1), box-shadow 0.18s cubic-bezier(.4,1.4,.6,1);
   justify-content: center;
   margin: 0 2px;
   cursor: pointer;
   user-select: none;
+}
+
+@keyframes jelly-bounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.22, 0.89); }
+  45%  { transform: scale(0.97, 1.13); }
+  60%  { transform: scale(1.13, 0.97); }
+  75%  { transform: scale(0.98, 1.07); }
+  100% { transform: scale(1.18, 1.18); }
+}
+
+.text-highlighter-control-button:hover, .text-highlighter-control-button:focus {
+  transform: scale(1.18);
+  z-index: 1;
+}
+
+.text-highlighter-control-button.jelly-animate {
+  animation: jelly-bounce 0.45s cubic-bezier(.22,1.6,.42,1.01);
+  transform: scale(1.18);
+  z-index: 1;
 }
 
 .delete-highlight {
