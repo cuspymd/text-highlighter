@@ -449,7 +449,14 @@ function showControlUi(highlightElement, e) {
   highlightControlsContainer.style.top = `${window.scrollY + e.clientY - 40}px`;
   highlightControlsContainer.style.left = `${window.scrollX + e.clientX - 40}px`;
   highlightControlsContainer.style.display = 'flex';
+  // pop 애니메이션이 항상 재생되도록 visible 클래스를 remove/add
+  highlightControlsContainer.classList.remove('visible');
+  void highlightControlsContainer.offsetWidth; // reflow로 강제 초기화
+  setTimeout(() => {
+    highlightControlsContainer.classList.add('visible');
+  }, 10);
 }
+
 
 // Get position of the first text node in highlight element
 function getFirstTextNodePosition(element) {
@@ -485,7 +492,13 @@ function getFirstTextNodePosition(element) {
 // Hide highlight controller UI
 function hideHighlightControls() {
   if (highlightControlsContainer) {
-    highlightControlsContainer.style.display = 'none';
+    highlightControlsContainer.classList.remove('visible');
+    // 트랜지션이 끝난 뒤 display를 none으로 변경
+    setTimeout(() => {
+      if (!highlightControlsContainer.classList.contains('visible')) {
+        highlightControlsContainer.style.display = 'none';
+      }
+    }, 350); // CSS 트랜지션과 동일하게 맞춤
   }
   activeHighlightElement = null;
 }

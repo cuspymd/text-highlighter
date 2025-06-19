@@ -23,7 +23,34 @@
   border-radius: 15px;
   padding: 3px 6px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(.4,1.4,.6,1), transform 0.35s cubic-bezier(.4,1.4,.6,1);
 }
+
+.text-highlighter-controls.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+  animation: pop-in-highlight 0.38s cubic-bezier(.22,1.6,.42,1.01) both;
+}
+
+@keyframes pop-in-highlight {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 
 .text-highlighter-control-button {
   width: 20px;
