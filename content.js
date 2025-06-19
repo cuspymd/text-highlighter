@@ -411,7 +411,7 @@ function createHighlightControls() {
   highlightControlsContainer.style.display = 'none';
   const deleteButton = document.createElement('div');
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
-  deleteButton.innerHTML = '×';
+  deleteButton.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="4" y1="4" x2="12" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
   deleteButton.title = getMessage('deleteHighlight');
   deleteButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
