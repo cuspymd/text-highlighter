@@ -359,7 +359,7 @@ function addHighlightEventListeners(highlightElement) {
       hideHighlightControls();
 
       activeHighlightElement = highlightElement;
-      showHighlightControls(highlightElement);
+      showControlUi(highlightElement, e);
 
       e.stopPropagation();
     }
@@ -443,15 +443,11 @@ function createHighlightControls() {
 }
 
 // Display highlight controller UI
-function showHighlightControls(highlightElement) {
+function showControlUi(highlightElement, e) {
   if (!highlightControlsContainer) createHighlightControls();
 
-  const firstTextPosition = getFirstTextNodePosition(highlightElement);
-  const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-
-  highlightControlsContainer.style.top = (firstTextPosition.top + scrollTop - 30) + 'px';
-  highlightControlsContainer.style.left = (firstTextPosition.left + scrollLeft) + 'px';
+  highlightControlsContainer.style.top = `${window.scrollY + e.clientY - 40}px`;
+  highlightControlsContainer.style.left = `${window.scrollX + e.clientX - 40}px`;
   highlightControlsContainer.style.display = 'flex';
 }
 
