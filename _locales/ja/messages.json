@@ -49,6 +49,9 @@
   "popupDescription": {
     "message": "ウェブページでテキストを選択し、右クリックでハイライトできます。"
   },
+  "exportAll": {
+    "message": "エクスポート"
+  },
   "currentPageHighlights": {
     "message": "現在のページのハイライト"
   },
@@ -60,9 +63,6 @@
   },
   "viewAllPages": {
     "message": "ハイライトしたページ一覧"
-  },
-  "exportHighlights": {
-    "message": "ハイライトをエクスポート"
   },
   "showMinimap": {
     "message": "ミニマップを表示"

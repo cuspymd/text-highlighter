@@ -49,6 +49,9 @@
   "popupDescription": {
     "message": "Select text on web pages and right-click to highlight."
   },
+  "exportAll": {
+    "message": "Export"
+  },
   "currentPageHighlights": {
     "message": "Current Page Highlights"
   },
@@ -60,9 +63,6 @@
   },
   "viewAllPages": {
     "message": "Highlighted Pages List"
-  },
-  "exportHighlights": {
-    "message": "Export Highlights"
   },
   "showMinimap": {
     "message": "Show Minimap"

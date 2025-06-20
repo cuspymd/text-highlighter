@@ -49,6 +49,9 @@
   "popupDescription": {
     "message": "웹 페이지에서 텍스트를 선택한 후 마우스 오른쪽 버튼을 클릭하여 하이라이트할 수 있습니다."
   },
+  "exportAll": {
+    "message": "내보내기"
+  },
   "currentPageHighlights": {
     "message": "현재 페이지 하이라이트"
   },
@@ -60,9 +63,6 @@
   },
   "viewAllPages": {
     "message": "하이라이트된 페이지 목록"
-  },
-  "exportHighlights": {
-    "message": "하이라이트 내보내기"
   },
   "showMinimap": {
     "message": "미니맵 표시"

@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   const highlightsContainer = document.getElementById('highlights-container');
   const noHighlights = document.getElementById('no-highlights');
   const clearAllBtn = document.getElementById('clear-all');
-  const exportDataBtn = document.getElementById('export-data');
   const viewAllPagesBtn = document.getElementById('view-all-pages');
   const minimapToggle = document.getElementById('minimap-toggle');
   // Set debug mode - change to true during development
@@ -175,40 +174,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         await loadHighlights();
       }
     }
-  });
-
-  // Export highlight data
-  exportDataBtn.addEventListener('click', async function () {
-    const tab = await getActiveTab();
-    const currentUrl = tab.url;
-    if (!currentUrl) return;
-
-    const result = await chrome.storage.local.get([currentUrl]);
-    const highlights = result[currentUrl] || [];
-
-    // Create export data
-    const exportData = {
-      url: currentUrl,
-      title: tab.title,
-      date: new Date().toISOString(),
-      highlights: highlights
-    };
-
-    debugLog('Exporting highlights data:', exportData);
-
-    // Download as file
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json'
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'highlights-' + new Date().getTime() + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   });
 
   // View list of highlighted pages

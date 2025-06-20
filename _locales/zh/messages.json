@@ -49,6 +49,9 @@
   "popupDescription": {
     "message": "在网页上选择文本后，点击鼠标右键即可高亮显示。"
   },
+  "exportAll": {
+    "message": "导出"
+  },
   "currentPageHighlights": {
     "message": "当前页面高亮"
   },
@@ -60,9 +63,6 @@
   },
   "viewAllPages": {
     "message": "已高亮页面列表"
-  },
-  "exportHighlights": {
-    "message": "导出高亮"
   },
   "showMinimap": {
     "message": "显示小地图"

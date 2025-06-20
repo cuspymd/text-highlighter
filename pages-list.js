@@ -217,6 +217,41 @@ document.addEventListener('DOMContentLoaded', function () {
   // 버튼 DOM 요소 가져오기 (이제 HTML에서 직접 생성)
   const deleteAllBtn = document.getElementById('delete-all-btn');
   const refreshBtn = document.getElementById('refresh-btn');
+  const exportAllBtn = document.getElementById('export-all-btn');
+
+  // Export all highlights event
+  if (exportAllBtn) {
+    exportAllBtn.addEventListener('click', function () {
+      chrome.storage.local.get(null, (result) => {
+        const exportData = [];
+        for (const key in result) {
+          if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
+            const metaKey = `${key}_meta`;
+            const metadata = result[metaKey] || {};
+            exportData.push({
+              url: key,
+              title: metadata.title || '',
+              lastUpdated: metadata.lastUpdated || '',
+              highlights: result[key]
+            });
+          }
+        }
+        if (exportData.length === 0) {
+          alert(getMessage('noHighlightsToExport', 'No highlights to export.'));
+          return;
+        }
+        const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), pages: exportData }, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'all-highlights-' + new Date().getTime() + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    });
+  }
 
   // Delete All 버튼 이벤트 연결
   if (deleteAllBtn) {
