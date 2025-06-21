@@ -41,7 +41,6 @@ getColorsFromBackground().then(() => {
 document.addEventListener('click', function (e) {
   if (!highlightControlsContainer) return;
   // While native color picker is open, keep the control UI visible
-  debugLog('colorPickerOpen:', colorPickerOpen); // debug
   if (colorPickerOpen) {
     colorPickerOpen = false;
     return; 
