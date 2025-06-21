@@ -400,4 +400,58 @@ test.describe('Chrome Extension Tests', () => {
     await expect(inSpanInH1).toHaveCount(0);
   });
 
+  test('h1 태그 하이라이트 후 highlight control UI에서 커스텀 색상 추가 및 변경', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    const h1Text = await h1.textContent();
+
+    // 하이라이트 적용을 위해 h1 전체 선택
+    await h1.click({ clickCount: 3 });
+
+    const selectedText = await page.evaluate(() => window.getSelection().toString().trim());
+    expect(selectedText).toBe(h1Text.trim());
+
+    // 기본 노란색 하이라이트 적용
+    await sendHighlightMessage(background, 'yellow');
+
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
+
+    // 하이라이트 클릭 → 컨트롤 UI 표시
+    await h1Span.click();
+    const controls = page.locator('.text-highlighter-controls');
+    await expect(controls).toBeVisible();
+
+    // '+' 버튼의 숨겨진 input[type="color"]에 값 설정 후 change 이벤트 트리거
+    const addColorBtn = controls.locator('.add-color-button');
+    const newColorHex = '#00FFFF'; // cyan
+    await addColorBtn.locator('input[type="color"]').evaluate((input, color) => {
+      input.value = color;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, newColorHex);
+
+    // 컨트롤 UI가 새 색상 버튼을 생성할 때까지 대기
+    const newColorRgb = 'rgb(0, 255, 255)';
+    await page.waitForFunction((rgb) => {
+      const controls = document.querySelector('.text-highlighter-controls');
+      return Array.from(controls.querySelectorAll('.color-button')).some(b => getComputedStyle(b).backgroundColor === rgb);
+    }, newColorRgb);
+
+    // 새 색상 버튼 클릭
+    await page.evaluate((rgb) => {
+      const controls = document.querySelector('.text-highlighter-controls');
+      const btn = Array.from(controls.querySelectorAll('.color-button')).find(b => getComputedStyle(b).backgroundColor === rgb);
+      if (btn) btn.click();
+    }, newColorRgb);
+
+    // 색상 변경 확인
+    await expectHighlightSpan(h1Span, { color: newColorRgb, text: h1Text });
+
+    // 새로고침 후에도 색상 유지되는지 확인
+    await page.reload();
+    const h1SpanAfterReload = page.locator('h1 span.text-highlighter-extension');
+    await expectHighlightSpan(h1SpanAfterReload, { color: newColorRgb, text: h1Text });
+  });
+
 });

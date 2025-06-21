@@ -169,5 +169,61 @@ test.describe('Popup Tests', () => {
   });
 
 
+  test('control UI에서 커스텀 색상 추가 후 popup에서 Delete Custom Colors 로 제거', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    const h1Text = await h1.textContent();
+
+    // 하이라이트 적용
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
+
+    // 컨트롤 UI 열기
+    await h1Span.click();
+    const controls = page.locator('.text-highlighter-controls');
+    await expect(controls).toBeVisible();
+
+    // + 버튼으로 새 색상 추가
+    const addColorBtn = controls.locator('.add-color-button');
+    const newColorHex = '#00FFFF';
+    await addColorBtn.locator('input[type="color"]').evaluate((input, color) => {
+      input.value = color;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, newColorHex);
+
+    const newColorRgb = 'rgb(0, 255, 255)';
+    // 새 버튼이 나타날 때까지 대기
+    await page.waitForFunction((rgb) => {
+      const controls = document.querySelector('.text-highlighter-controls');
+      return Array.from(controls.querySelectorAll('.color-button')).some(b => getComputedStyle(b).backgroundColor === rgb);
+    }, newColorRgb);
+
+    // popup.html 열기
+    const tabId = await getCurrentTabId(background);
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+
+    // confirm 자동 수락
+    popupPage.on('dialog', async dialog => { await dialog.accept(); });
+    await popupPage.click('#delete-custom-colors');
+
+    // 컨트롤 UI에 새 색상 버튼이 사라졌는지 확인
+    await page.waitForFunction((rgb) => {
+      const controls = document.querySelector('.text-highlighter-controls');
+      return !Array.from(controls.querySelectorAll('.color-button')).some(b => getComputedStyle(b).backgroundColor === rgb);
+    }, newColorRgb);
+
+    // 기본 색상 5개만 존재하는지 확인
+    const colorButtons = controls.locator('.color-button');
+    await expect(colorButtons).toHaveCount(5);
+
+    await popupPage.close();
+  });
+
+
 
 });
