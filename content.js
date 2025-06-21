@@ -8,6 +8,8 @@ let currentColors = [];
 // Highlight controller UI container
 let highlightControlsContainer = null;
 let activeHighlightElement = null;
+// Flag to know when the native <input type="color"> picker is open
+let colorPickerOpen = false;
 
 // Minimap manager instance
 let minimapManager = null;
@@ -38,6 +40,14 @@ getColorsFromBackground().then(() => {
 // Add event listener to hide controller when clicking other areas
 document.addEventListener('click', function (e) {
   if (!highlightControlsContainer) return;
+  // While native color picker is open, keep the control UI visible
+  debugLog('colorPickerOpen:', colorPickerOpen); // debug
+  if (colorPickerOpen) {
+    colorPickerOpen = false;
+    return; 
+  } else {
+    colorPickerOpen = false;
+  }
 
   const isClickOnHighlight = activeHighlightElement &&
     (activeHighlightElement.contains(e.target) || activeHighlightElement === e.target);
@@ -69,11 +79,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   else if (message.action === 'colorsUpdated') {
     currentColors = message.colors || currentColors;
-    if (highlightControlsContainer) {
-      highlightControlsContainer.remove();
-      highlightControlsContainer = null;
-    }
-    createHighlightControls();
+    refreshHighlightControlsColors();
     sendResponse({ success: true });
     return true;
   }
@@ -480,6 +486,11 @@ function createHighlightControls() {
   hiddenColorInput.style.width = '100%';
   hiddenColorInput.style.height = '100%';
 
+  // --- manage color picker open/close state ---
+  hiddenColorInput.addEventListener('click', () => {
+    colorPickerOpen = true;
+  });
+
   // change 이벤트에서 실제 색상 추가 처리
   hiddenColorInput.addEventListener('change', (e) => {
     const newColor = e.target.value;
@@ -487,11 +498,7 @@ function createHighlightControls() {
     chrome.runtime.sendMessage({ action: 'addColor', color: newColor }, (response) => {
       if (response && response.colors) {
         currentColors = response.colors;
-        if (highlightControlsContainer) {
-          highlightControlsContainer.remove();
-          highlightControlsContainer = null;
-        }
-        createHighlightControls();
+        refreshHighlightControlsColors();
       }
     });
   });
@@ -502,6 +509,77 @@ function createHighlightControls() {
 
   colorButtonsContainer.appendChild(addColorBtn);
   document.body.appendChild(highlightControlsContainer);
+}
+
+// -------- Refresh only color buttons inside existing control UI --------
+function refreshHighlightControlsColors() {
+  if (!highlightControlsContainer) return;
+  const colorButtonsContainer = highlightControlsContainer.querySelector('.text-highlighter-color-buttons');
+  if (!colorButtonsContainer) return;
+
+  // Clear existing buttons
+  colorButtonsContainer.innerHTML = '';
+
+  // Helper to add jelly animation
+  const addJellyAnimation = (btn) => {
+    btn.addEventListener('click', function () {
+      btn.classList.remove('jelly-animate');
+      void btn.offsetWidth;
+      btn.classList.add('jelly-animate');
+    });
+    btn.addEventListener('animationend', function (e) {
+      if (e.animationName === 'jelly-bounce') {
+        btn.classList.remove('jelly-animate');
+      }
+    });
+  };
+
+  // Re-create color buttons
+  currentColors.forEach(colorInfo => {
+    const colorButton = document.createElement('div');
+    colorButton.className = 'text-highlighter-control-button color-button';
+    colorButton.style.backgroundColor = colorInfo.color;
+    colorButton.title = getMessage(colorInfo.nameKey);
+    colorButton.addEventListener('click', function (e) {
+      if (activeHighlightElement) {
+        changeHighlightColor(activeHighlightElement, colorInfo.color);
+      }
+      e.stopPropagation();
+    });
+    addJellyAnimation(colorButton);
+    colorButtonsContainer.appendChild(colorButton);
+  });
+
+  // Recreate + button
+  const addColorBtn = document.createElement('div');
+  addColorBtn.className = 'text-highlighter-control-button add-color-button';
+  addColorBtn.textContent = '+';
+  addColorBtn.title = getMessage('addColor') || '+';
+  addColorBtn.style.display = 'flex';
+  addColorBtn.style.alignItems = 'center';
+  addColorBtn.style.justifyContent = 'center';
+  addColorBtn.style.position = 'relative';
+
+  const hiddenColorInput = document.createElement('input');
+  hiddenColorInput.type = 'color';
+  hiddenColorInput.style.opacity = '0';
+  hiddenColorInput.style.cursor = 'pointer';
+  hiddenColorInput.style.position = 'absolute';
+  hiddenColorInput.style.top = '0';
+  hiddenColorInput.style.left = '0';
+  hiddenColorInput.style.width = '100%';
+  hiddenColorInput.style.height = '100%';
+
+  // reuse existing picker logic
+  hiddenColorInput.addEventListener('click', () => { colorPickerOpen = true; });
+  hiddenColorInput.addEventListener('change', (e) => {
+    const newColor = e.target.value;
+    if (!newColor) return;
+    chrome.runtime.sendMessage({ action: 'addColor', color: newColor });
+  });
+
+  addColorBtn.appendChild(hiddenColorInput);
+  colorButtonsContainer.appendChild(addColorBtn);
 }
 
 // Display highlight controller UI
