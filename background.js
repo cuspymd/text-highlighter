@@ -398,3 +398,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return true; // Keep message channel open for async response
 });
+
+// -------------------------------------------------------------------
+// Initial load: ensure custom colors are loaded and context menus exist
+// -------------------------------------------------------------------
+(async () => {
+  try {
+    await loadCustomColors();
+    await createOrUpdateContextMenus();
+  } catch (e) {
+    console.error('Initialization error in background script', e);
+  }
+})();
+
