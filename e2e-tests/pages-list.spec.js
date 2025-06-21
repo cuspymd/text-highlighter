@@ -148,4 +148,36 @@ test.describe('Pages List UI and Delete All Pages', () => {
     expect(colors).toContain('yellow');
     expect(colors).toContain('green');
   });
+
+  test('all-highlights-test.json 파일을 import 하여 페이지가 목록에 표시되는지 검증', async ({ context, extensionId }) => {
+    // 1. pages-list.html 열기 (저장소는 새 context로 초기화 상태)
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    // 2. import 버튼 클릭 후 파일 선택
+    const importBtn = listPage.locator('#import-btn');
+    await expect(importBtn).toBeVisible();
+
+    // 대화상자(Import 성공 alert) 자동 수락
+    listPage.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+
+    const jsonPath = path.join(__dirname, 'all-highlights-test.json');
+
+    // importBtn 클릭으로 파일 input 열기 후 파일 설정
+    await importBtn.click();
+    await listPage.setInputFiles('#import-file', jsonPath);
+
+    // 3. import 완료 후 페이지 아이템이 2개 이상인지 확인
+    const pageItems = listPage.locator('.page-item');
+    await expect(pageItems).toHaveCount(2);
+
+    // 4. 각 페이지 URL 텍스트 포함 여부 확인
+    const urls = await pageItems.locator('.page-url').allTextContents();
+    expect(urls.some(u => u.includes('test-page.html'))).toBeTruthy();
+    expect(urls.some(u => u.includes('test-page2.html'))).toBeTruthy();
+
+    await listPage.close();
+  });
 });

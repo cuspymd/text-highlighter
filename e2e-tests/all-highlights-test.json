@@ -1,0 +1,70 @@
+{
+  "exportedAt": "2025-06-21T01:16:34.521Z",
+  "pages": [
+    {
+      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page.html",
+      "title": "Test Page for Text Highlighter",
+      "lastUpdated": "2025-06-21T01:15:47.993Z",
+      "highlights": [
+        {
+          "color": "#FFFF00",
+          "groupId": "1750468544019",
+          "spans": [
+            {
+              "position": 88.875,
+              "spanId": "1750468544019_0",
+              "text": "This is a sample paragraph with some text that can be highlighted."
+            }
+          ],
+          "text": "This is a sample paragraph with some text that can be highlighted.\n\n"
+        },
+        {
+          "color": "#AAFFAA",
+          "groupId": "1750468547989",
+          "spans": [
+            {
+              "position": 208.875,
+              "spanId": "1750468547989_0",
+              "text": "first "
+            },
+            {
+              "position": 208.875,
+              "spanId": "1750468547989_1",
+              "text": "second "
+            },
+            {
+              "position": 208.875,
+              "spanId": "1750468547989_2",
+              "text": "third"
+            },
+            {
+              "position": 0,
+              "spanId": "1750468547989_3",
+              "text": "\n    // JavaScript로 멀티 텍스트 노드 동적 생성\n    const container = document.getElementById('dynamic-multi-text');\n    container.appendChild(document.createTextNode('first '));\n    container.appendChild(document.createTextNode('second '));\n    container.appendChild(document.createTextNode('third'));\n  "
+            }
+          ],
+          "text": "first second third\n\n"
+        }
+      ]
+    },
+    {
+      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page2.html",
+      "title": "Test Page for Text Highlighter",
+      "lastUpdated": "2025-06-21T01:16:10.700Z",
+      "highlights": [
+        {
+          "color": "#AAAAFF",
+          "groupId": "1750468570697",
+          "spans": [
+            {
+              "position": 40,
+              "spanId": "1750468570697_0",
+              "text": "Second line"
+            }
+          ],
+          "text": "Second line\n"
+        }
+      ]
+    }
+  ]
+}
