@@ -218,6 +218,63 @@ document.addEventListener('DOMContentLoaded', function () {
   const deleteAllBtn = document.getElementById('delete-all-btn');
   const refreshBtn = document.getElementById('refresh-btn');
   const exportAllBtn = document.getElementById('export-all-btn');
+  const importBtn = document.getElementById('import-btn');
+  const importFileInput = document.getElementById('import-file');
+
+  // Import highlights event
+  if (importBtn && importFileInput) {
+    importBtn.addEventListener('click', function () {
+      importFileInput.value = '';
+      importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const json = JSON.parse(e.target.result);
+          if (!json.pages || !Array.isArray(json.pages)) {
+            alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+            return;
+          }
+          // Get all current storage to check for overlap
+          chrome.storage.local.get(null, (result) => {
+            const existingUrls = Object.keys(result).filter(k => Array.isArray(result[k]) && result[k].length > 0 && !k.endsWith('_meta'));
+            const importUrls = json.pages.map(p => p.url);
+            const overlap = importUrls.filter(url => existingUrls.includes(url));
+            let proceed = true;
+            if (overlap.length > 0) {
+              const confirmMsg = getMessage('importOverwriteConfirm', 'Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?');
+              proceed = confirm(confirmMsg);
+            }
+            if (!proceed) return;
+            // Prepare operations: delete old, add new
+            const ops = {};
+            overlap.forEach(url => {
+              ops[url] = null;
+              ops[`${url}_meta`] = null;
+            });
+            json.pages.forEach(page => {
+              ops[page.url] = page.highlights || [];
+              ops[`${page.url}_meta`] = {
+                title: page.title || '',
+                lastUpdated: page.lastUpdated || new Date().toISOString()
+              };
+            });
+            chrome.storage.local.set(ops, () => {
+              alert(getMessage('importSuccess', 'Import completed.'));
+              loadAllHighlightedPages();
+            });
+          });
+        } catch (err) {
+          alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
 
   // Export all highlights event
   if (exportAllBtn) {
