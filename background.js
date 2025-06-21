@@ -13,6 +13,24 @@ function debugLog(...args) {
 // 저장된 단축키 정보
 let storedShortcuts = {};
 
+// Load custom user-defined colors from local storage and merge into COLORS
+async function loadCustomColors() {
+  try {
+    const result = await chrome.storage.local.get(['customColors']);
+    const customColors = result.customColors || [];
+    customColors.forEach(c => {
+      if (!COLORS.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
+        COLORS.push(c);
+      }
+    });
+    if (customColors.length) {
+      debugLog('Loaded custom colors from storage.local:', customColors);
+    }
+  } catch (e) {
+    console.error('Error loading custom colors', e);
+  }
+}
+
 // 컨텍스트 메뉴 생성/업데이트 함수
 async function createOrUpdateContextMenus() {
   debugLog('Creating/updating context menus...');
@@ -65,8 +83,9 @@ async function createOrUpdateContextMenus() {
 }
 
 // Initial setup when extension is installed or updated
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
   if (DEBUG_MODE) console.log('Extension installed/updated. Debug mode:', DEBUG_MODE);
+  await loadCustomColors();
   createOrUpdateContextMenus();
 });
 
@@ -225,6 +244,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const result = await chrome.storage.local.get([message.url]);
         debugLog('Sending highlights for URL:', message.url, result[message.url] || []);
         sendResponse({ highlights: result[message.url] || [] });
+        return;
+      }
+
+      // Handle addColor request from content.js
+      if (message.action === 'addColor') {
+        const newColorValue = message.color;
+        if (!newColorValue) {
+          sendResponse({ success: false });
+          return;
+        }
+
+        // Load existing custom colors from storage.sync
+        const stored = await chrome.storage.local.get(['customColors']);
+        let customColors = stored.customColors || [];
+
+        // Check duplication by value
+        const exists = [...COLORS, ...customColors].some(c => c.color.toLowerCase() === newColorValue.toLowerCase());
+        if (!exists) {
+          const newColorObj = {
+            id: `custom_${Date.now()}`,
+            nameKey: 'customColor',
+            color: newColorValue
+          };
+          customColors.push(newColorObj);
+          COLORS.push(newColorObj);
+          await chrome.storage.local.set({ customColors });
+          debugLog('Added custom color:', newColorObj);
+
+          // Recreate context menus to include new color
+          await createOrUpdateContextMenus();
+
+          // Broadcast updated colors to all tabs
+          const tabs = await chrome.tabs.query({});
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: COLORS });
+          });
+        }
+        sendResponse({ success: true, colors: COLORS });
         return;
       }
 

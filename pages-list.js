@@ -34,8 +34,11 @@ document.addEventListener('DOMContentLoaded', function () {
     chrome.storage.local.get(null, (result) => {
       const pages = [];
 
-      // Filter items with URLs as keys from storage (exclude metadata)
+      // Filter items with URLs as keys from storage (exclude metadata and customColors)
       for (const key in result) {
+        if (key === 'customColors') {
+          continue; // skip customColors key
+        }
         if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
           const url = key;
           const metaKey = `${url}_meta`;
@@ -320,6 +323,9 @@ document.addEventListener('DOMContentLoaded', function () {
       chrome.storage.local.get(null, (result) => {
         const exportData = [];
         for (const key in result) {
+          if (key === 'customColors') {
+            continue; // skip customColors key
+          }
           if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
             const metaKey = `${key}_meta`;
             const metadata = result[metaKey] || {};

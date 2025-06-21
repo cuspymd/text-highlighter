@@ -67,6 +67,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+  else if (message.action === 'colorsUpdated') {
+    // Update local COLORS and rebuild controls
+    COLORS = message.colors || COLORS;
+    if (highlightControlsContainer) {
+      highlightControlsContainer.remove();
+      highlightControlsContainer = null;
+    }
+    createHighlightControls();
+    sendResponse({ success: true });
+    return true;
+  }
   else if (message.action === 'setMinimapVisibility') {
     if (minimapManager) {
       minimapManager.setVisibility(message.visible);
@@ -455,6 +466,48 @@ function createHighlightControls() {
   };
   // color 버튼들만 젤리 애니메이션 적용
   colorButtonsContainer.querySelectorAll('.text-highlighter-control-button').forEach(addJellyAnimation);
+
+  // -------------- '+' button (add new color) --------------
+  const addColorBtn = document.createElement('div');
+  addColorBtn.className = 'text-highlighter-control-button add-color-button';
+  addColorBtn.textContent = '+';
+  addColorBtn.title = getMessage('addColor') || '+';
+  addColorBtn.style.display = 'flex';
+  addColorBtn.style.alignItems = 'center';
+  addColorBtn.style.justifyContent = 'center';
+
+  const hiddenColorInput = document.createElement('input');
+  hiddenColorInput.type = 'color';
+  hiddenColorInput.style.opacity = '0';
+  hiddenColorInput.style.cursor = 'pointer';
+  hiddenColorInput.style.position = 'absolute';
+  hiddenColorInput.style.top = '0';
+  hiddenColorInput.style.left = '0';
+  hiddenColorInput.style.width = '100%';
+  hiddenColorInput.style.height = '100%';
+
+  // change 이벤트에서 실제 색상 추가 처리
+  hiddenColorInput.addEventListener('change', (e) => {
+    const newColor = e.target.value;
+    if (!newColor) return;
+    chrome.runtime.sendMessage({ action: 'addColor', color: newColor }, (response) => {
+      if (response && response.colors) {
+        COLORS = response.colors;
+        if (highlightControlsContainer) {
+          highlightControlsContainer.remove();
+          highlightControlsContainer = null;
+        }
+        createHighlightControls();
+      }
+    });
+  });
+
+  // addColorBtn 내부에 input을 넣어 오버레이되도록 함
+  addColorBtn.style.position = 'relative';
+  addColorBtn.appendChild(hiddenColorInput);
+
+  colorButtonsContainer.appendChild(addColorBtn);
+  addJellyAnimation(addColorBtn);
 
   document.body.appendChild(highlightControlsContainer);
 }
