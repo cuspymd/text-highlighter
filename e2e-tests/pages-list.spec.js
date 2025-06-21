@@ -1,5 +1,5 @@
 import path from 'path';
-import { test, expect, sendHighlightMessage } from './fixtures';
+import { test, expect, sendHighlightMessage, expectHighlightSpan } from './fixtures';
 
 // Helper to open the extension's pages-list.html
 async function openPagesList(page, extensionId) {
@@ -50,4 +50,102 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await expect(listPage.locator('#no-pages')).toBeVisible();
     await listPage.close();
   });
-}); 
+
+  test('test-page.html의 h1, test-page3.html의 h2 하이라이트 후 export highlights 동작 검증', async ({ context, background, extensionId }) => {
+    // 1. test-page.html: h1 하이라이트(노란색)
+    const page1 = await context.newPage();
+    await page1.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    const h1 = page1.locator('h1');
+    const h1Text = await h1.textContent();
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
+
+    // 2. test-page3.html: h2 하이라이트(초록색)
+    const page3 = await context.newPage();
+    await page3.goto(`file:///${path.join(__dirname, 'test-page3.html')}`);
+    const h2 = page3.locator('h2').first();
+    const h2Text = await h2.textContent();
+    await h2.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'green');
+    const h2Span = h2.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(h2Span, { color: 'rgb(0, 128, 0)', text: h2Text });
+
+    // 3. pages-list.html에서 export 버튼 클릭
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+    const [download] = await Promise.all([
+      listPage.waitForEvent('download'),
+      listPage.click('#export-all-btn'),
+    ]);
+    const fs = require('fs');
+    const downloadPath = await download.path();
+    const exported = JSON.parse(fs.readFileSync(downloadPath, 'utf-8'));
+
+    // 4. export된 데이터에 두 페이지의 하이라이트가 모두 포함되어 있는지 검증
+    const exportedPages = exported.pages;
+    expect(exportedPages.length).toBeGreaterThanOrEqual(2);
+    const pageHtmlNames = exportedPages.map(p => p.url || p.title || '');
+    const hasTestPage = pageHtmlNames.some(name => name.includes('test-page.html'));
+    const hasTestPage3 = pageHtmlNames.some(name => name.includes('test-page3.html'));
+    expect(hasTestPage).toBeTruthy();
+    expect(hasTestPage3).toBeTruthy();
+    const allHighlights = exportedPages.flatMap(page => page.highlights);
+    const texts = allHighlights.map(h => h.text.trim());
+    const colors = allHighlights.map(h => h.color);
+    expect(texts).toContain(h1Text.trim());
+    expect(texts).toContain(h2Text.trim());
+    expect(colors).toContain('yellow');
+    expect(colors).toContain('green');
+  });
+
+  test('test-page.html와 test-page3.html에서 각각 하이라이트 후 export에 모두 포함되는지 검증', async ({ context, background, extensionId }) => {
+    // 1. test-page.html: h1 하이라이트(노란색)
+    const page1 = await context.newPage();
+    await page1.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    const h1 = page1.locator('h1');
+    const h1Text = await h1.textContent();
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
+
+    // 2. test-page3.html: h2 하이라이트(초록색)
+    const page3 = await context.newPage();
+    await page3.goto(`file:///${path.join(__dirname, 'test-page3.html')}`);
+    const h2 = page3.locator('h2').first();
+    const h2Text = await h2.textContent();
+    await h2.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'green');
+    const h2Span = h2.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(h2Span, { color: 'rgb(0, 128, 0)', text: h2Text });
+
+    // 3. pages-list.html에서 export 버튼 클릭
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+    const [download] = await Promise.all([
+      listPage.waitForEvent('download'),
+      listPage.click('#export-all-btn'),
+    ]);
+    const fs = require('fs');
+    const downloadPath = await download.path();
+    const exported = JSON.parse(fs.readFileSync(downloadPath, 'utf-8'));
+
+    // 4. export된 데이터에 두 페이지의 하이라이트가 모두 포함되어 있는지 검증
+    const exportedPages = exported.pages;
+    expect(exportedPages.length).toBeGreaterThanOrEqual(2);
+    const pageHtmlNames = exportedPages.map(p => p.url || p.title || '');
+    const hasTestPage = pageHtmlNames.some(name => name.includes('test-page.html'));
+    const hasTestPage3 = pageHtmlNames.some(name => name.includes('test-page3.html'));
+    expect(hasTestPage).toBeTruthy();
+    expect(hasTestPage3).toBeTruthy();
+    const allHighlights = exportedPages.flatMap(page => page.highlights);
+    const texts = allHighlights.map(h => h.text.trim());
+    const colors = allHighlights.map(h => h.color);
+    expect(texts).toContain(h1Text.trim());
+    expect(texts).toContain(h2Text.trim());
+    expect(colors).toContain('yellow');
+    expect(colors).toContain('green');
+  });
+});
