@@ -52,6 +52,21 @@
   "exportAll": {
     "message": "Export"
   },
+  "importHighlights": {
+    "message": "Import"
+  },
+  "importHighlightsTooltip": {
+    "message": "Import highlights from JSON file"
+  },
+  "importOverwriteConfirm": {
+    "message": "Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?"
+  },
+  "importInvalidFormat": {
+    "message": "Invalid import file format."
+  },
+  "importSuccess": {
+    "message": "Import completed."
+  },
   "currentPageHighlights": {
     "message": "Current Page Highlights"
   },

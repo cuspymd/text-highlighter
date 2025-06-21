@@ -52,6 +52,21 @@
   "exportAll": {
     "message": "导出"
   },
+  "importHighlights": {
+    "message": "导入"
+  },
+  "importHighlightsTooltip": {
+    "message": "从JSON文件导入高亮"
+  },
+  "importOverwriteConfirm": {
+    "message": "部分页面已存在高亮。相关页面的现有高亮将被删除并用导入的数据替换。是否继续？"
+  },
+  "importInvalidFormat": {
+    "message": "导入文件格式无效。"
+  },
+  "importSuccess": {
+    "message": "导入完成。"
+  },
   "currentPageHighlights": {
     "message": "当前页面高亮"
   },

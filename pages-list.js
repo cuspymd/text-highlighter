@@ -223,6 +223,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Import highlights event
   if (importBtn && importFileInput) {
+    // 다국어 적용
+    importBtn.textContent = getMessage('importHighlights', 'Import');
+    importBtn.setAttribute('data-i18n', 'importHighlights');
+    importBtn.title = getMessage('importHighlightsTooltip', 'Import highlights from JSON');
+    importBtn.style.display = '';
     importBtn.addEventListener('click', function () {
       importFileInput.value = '';
       importFileInput.click();

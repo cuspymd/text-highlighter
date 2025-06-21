@@ -52,6 +52,21 @@
   "exportAll": {
     "message": "エクスポート"
   },
+  "importHighlights": {
+    "message": "インポート"
+  },
+  "importHighlightsTooltip": {
+    "message": "JSONファイルからハイライトをインポート"
+  },
+  "importOverwriteConfirm": {
+    "message": "一部のページには既にハイライトがあります。該当ページの既存ハイライトは削除され、インポートしたデータで上書きされます。続行しますか？"
+  },
+  "importInvalidFormat": {
+    "message": "インポートファイルの形式が正しくありません。"
+  },
+  "importSuccess": {
+    "message": "インポートが完了しました。"
+  },
   "currentPageHighlights": {
     "message": "現在のページのハイライト"
   },
