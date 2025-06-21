@@ -133,6 +133,9 @@
   "deletedCustomColors": {
     "message": "已删除自定义颜色。"
   },
+  "addColor": {
+    "message": "添加颜色"
+  },
   "refresh": {
     "message": "刷新",
     "description": "高亮页面列表刷新按钮文本"

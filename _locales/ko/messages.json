@@ -133,6 +133,9 @@
   "deletedCustomColors": {
     "message": "사용자 정의 색상이 삭제되었습니다."
   },
+  "addColor": {
+    "message": "색상 추가"
+  },
   "refresh": {
     "message": "새로고침",
     "description": "하이라이트 페이지 목록 새로고침 버튼 텍스트"

@@ -133,6 +133,9 @@
   "deletedCustomColors": {
     "message": "Custom colors deleted."
   },
+  "addColor": {
+    "message": "Add Color"
+  },
   "refresh": {
     "message": "Refresh",
     "description": "Button text for refreshing the highlighted pages list"

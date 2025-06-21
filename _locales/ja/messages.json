@@ -133,6 +133,9 @@
   "deletedCustomColors": {
     "message": "カスタムカラーを削除しました。"
   },
+  "addColor": {
+    "message": "色を追加"
+  },
   "refresh": {
     "message": "更新",
     "description": "ハイライトしたページ一覧の更新ボタンのテキスト"
