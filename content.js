@@ -3,7 +3,7 @@ const currentUrl = window.location.href;
 
 const DEBUG_MODE = true;
 
-let COLORS = [];
+let currentColors = [];
 
 // Highlight controller UI container
 let highlightControlsContainer = null;
@@ -68,8 +68,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   else if (message.action === 'colorsUpdated') {
-    // Update local COLORS and rebuild controls
-    COLORS = message.colors || COLORS;
+    currentColors = message.colors || currentColors;
     if (highlightControlsContainer) {
       highlightControlsContainer.remove();
       highlightControlsContainer = null;
@@ -96,8 +95,8 @@ function getColorsFromBackground() {
         return reject(chrome.runtime.lastError);
       }
       if (response && response.colors) {
-        COLORS = response.colors;
-        debugLog('Received colors from background:', COLORS);
+        currentColors = response.colors;
+        debugLog('Received colors from background:', currentColors);
         resolve();
       } else {
         reject('Invalid response from background for colors.');
@@ -106,7 +105,6 @@ function getColorsFromBackground() {
   });
 }
 
-// Load saved highlights
 function loadHighlights() {
   debugLog('Loading highlights for URL:', currentUrl);
 
@@ -121,13 +119,11 @@ function loadHighlights() {
         debugLog('No highlights found or invalid response');
       }
 
-      // Initialize minimap
       initMinimap();
     }
   );
 }
 
-// Save highlights
 function saveHighlights() {
   chrome.runtime.sendMessage(
     {
@@ -142,7 +138,6 @@ function saveHighlights() {
   );
 }
 
-// Remove highlight
 function removeHighlight(highlightElement = null) {
   if (!highlightElement) {
     const selection = window.getSelection();
@@ -179,7 +174,6 @@ function removeHighlight(highlightElement = null) {
   }
 }
 
-// Change highlight color
 function changeHighlightColor(highlightElement, newColor) {
   if (!highlightElement) return;
   const groupId = highlightElement.dataset.groupId;
@@ -432,7 +426,7 @@ function createHighlightControls() {
   });
   const colorButtonsContainer = document.createElement('div');
   colorButtonsContainer.className = 'text-highlighter-color-buttons';
-  COLORS.forEach(colorInfo => {
+  currentColors.forEach(colorInfo => {
     const colorButton = document.createElement('div');
     colorButton.className = 'text-highlighter-control-button color-button';
     colorButton.style.backgroundColor = colorInfo.color;
@@ -492,7 +486,7 @@ function createHighlightControls() {
     if (!newColor) return;
     chrome.runtime.sendMessage({ action: 'addColor', color: newColor }, (response) => {
       if (response && response.colors) {
-        COLORS = response.colors;
+        currentColors = response.colors;
         if (highlightControlsContainer) {
           highlightControlsContainer.remove();
           highlightControlsContainer = null;
@@ -507,8 +501,6 @@ function createHighlightControls() {
   addColorBtn.appendChild(hiddenColorInput);
 
   colorButtonsContainer.appendChild(addColorBtn);
-  addJellyAnimation(addColorBtn);
-
   document.body.appendChild(highlightControlsContainer);
 }
 
