@@ -103,21 +103,51 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
 
-        const pageContent = `
-          <div class="page-info-container">
-            <div class="page-title">${pageTitle}</div>
-            <div class="page-url">${page.url}</div>
-            <div class="page-info">${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount} | ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}</div>
-          </div>
-          <div class="page-actions">
-            <button class="btn btn-details">${getMessage('showDetails', 'Show Details')}</button>
-            <button class="btn btn-view">${getMessage('openPage', 'Open Page')}</button>
-            <button class="btn btn-delete">${getMessage('deletePage', 'Delete')}</button>
-          </div>
-          <div class="page-highlights"></div>
-        `;
+        // Build DOM safely to avoid XSS (no innerHTML)
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'page-info-container';
 
-        pageItem.innerHTML = pageContent;
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'page-title';
+        titleDiv.textContent = pageTitle;
+
+        const urlDiv = document.createElement('div');
+        urlDiv.className = 'page-url';
+        urlDiv.textContent = page.url;
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'page-info';
+        infoDiv.textContent = `${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount} | ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}`;
+
+        infoContainer.appendChild(titleDiv);
+        infoContainer.appendChild(urlDiv);
+        infoContainer.appendChild(infoDiv);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'page-actions';
+
+        const detailsBtn = document.createElement('button');
+        detailsBtn.className = 'btn btn-details';
+        detailsBtn.textContent = getMessage('showDetails', 'Show Details');
+        actionsDiv.appendChild(detailsBtn);
+
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'btn btn-view';
+        viewBtn.textContent = getMessage('openPage', 'Open Page');
+        actionsDiv.appendChild(viewBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-delete';
+        deleteBtn.textContent = getMessage('deletePage', 'Delete');
+        actionsDiv.appendChild(deleteBtn);
+
+        const highlightsDiv = document.createElement('div');
+        highlightsDiv.className = 'page-highlights';
+
+        pageItem.appendChild(infoContainer);
+        pageItem.appendChild(actionsDiv);
+        pageItem.appendChild(highlightsDiv);
+
         pagesContainer.appendChild(pageItem);
 
         // Page details button event
@@ -149,7 +179,10 @@ document.addEventListener('DOMContentLoaded', function () {
               if (displayText.length > 100) {
                 displayText = displayText.substring(0, 97) + '...';
               }
-              highlightItem.innerHTML = `<span class="highlight-text">${displayText}</span>`;
+              const span = document.createElement('span');
+              span.className = 'highlight-text';
+              span.textContent = displayText;
+              highlightItem.appendChild(span);
               highlightsContainer.appendChild(highlightItem);
             });
           }
