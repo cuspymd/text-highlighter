@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const noHighlights = document.getElementById('no-highlights');
   const clearAllBtn = document.getElementById('clear-all');
   const viewAllPagesBtn = document.getElementById('view-all-pages');
+  const deleteCustomColorsBtn = document.getElementById('delete-custom-colors');
   const minimapToggle = document.getElementById('minimap-toggle');
   // Set debug mode - change to true during development
   const DEBUG_MODE = false;
@@ -172,6 +173,19 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (response && response.success) {
         debugLog('All highlights cleared through background');
         await loadHighlights();
+      }
+    }
+  });
+
+  // Delete all custom colors
+  deleteCustomColorsBtn.addEventListener('click', async function () {
+    debugLog('Deleting all custom colors');
+    const confirmMessage = chrome.i18n.getMessage('confirmDeleteCustomColors') || 'Delete all custom colors?';
+    if (confirm(confirmMessage)) {
+      const response = await chrome.runtime.sendMessage({ action: 'clearCustomColors' });
+      if (response && response.success) {
+        debugLog('All custom colors deleted');
+        alert(chrome.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
       }
     }
   });

@@ -124,6 +124,15 @@
   "confirmDeleteAllPages": {
     "message": "确定要删除所有已高亮的页面吗？"
   },
+  "deleteCustomColors": {
+    "message": "删除自定义颜色"
+  },
+  "confirmDeleteCustomColors": {
+    "message": "确定要删除所有自定义颜色吗？"
+  },
+  "deletedCustomColors": {
+    "message": "已删除自定义颜色。"
+  },
   "refresh": {
     "message": "刷新",
     "description": "高亮页面列表刷新按钮文本"

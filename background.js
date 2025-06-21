@@ -13,14 +13,17 @@ function debugLog(...args) {
 // 저장된 단축키 정보
 let storedShortcuts = {};
 
+// Mutable copy of default COLORS to manage current color state without mutating the constant
+let currentColors = [...COLORS];
+
 // Load custom user-defined colors from local storage and merge into COLORS
 async function loadCustomColors() {
   try {
     const result = await chrome.storage.local.get(['customColors']);
     const customColors = result.customColors || [];
     customColors.forEach(c => {
-      if (!COLORS.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
-        COLORS.push(c);
+      if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
+        currentColors.push(c);
       }
     });
     if (customColors.length) {
@@ -59,7 +62,7 @@ async function createOrUpdateContextMenus() {
   // 단축키 정보 저장
   storedShortcuts = { ...commandShortcuts };
 
-  COLORS.forEach(color => {
+  currentColors.forEach(color => {
     const commandName = `highlight_${color.id}`;
     const shortcutDisplay = commandShortcuts[commandName] || '';
 
@@ -155,7 +158,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (menuId.startsWith('highlight-') && menuId !== 'highlight-text') {
     const colorId = menuId.replace('highlight-', '');
     // Use COLORS variable directly
-    const color = COLORS.find(c => c.id === colorId);
+    const color = currentColors.find(c => c.id === colorId);
 
     if (color) {
       debugLog('Sending highlight action to tab:', tab.id);
@@ -192,19 +195,19 @@ chrome.commands.onCommand.addListener(async (command) => {
     // Determine color based on shortcut
     switch (command) {
       case 'highlight_yellow':
-        targetColor = COLORS.find(c => c.id === 'yellow')?.color;
+        targetColor = currentColors.find(c => c.id === 'yellow')?.color;
         break;
       case 'highlight_green':
-        targetColor = COLORS.find(c => c.id === 'green')?.color;
+        targetColor = currentColors.find(c => c.id === 'green')?.color;
         break;
       case 'highlight_blue':
-        targetColor = COLORS.find(c => c.id === 'blue')?.color;
+        targetColor = currentColors.find(c => c.id === 'blue')?.color;
         break;
       case 'highlight_pink':
-        targetColor = COLORS.find(c => c.id === 'pink')?.color;
+        targetColor = currentColors.find(c => c.id === 'pink')?.color;
         break;
       case 'highlight_orange':
-        targetColor = COLORS.find(c => c.id === 'orange')?.color;
+        targetColor = currentColors.find(c => c.id === 'orange')?.color;
         break;
     }
 
@@ -235,7 +238,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // Handle COLORS info request from content.js
       if (message.action === 'getColors') {
         debugLog('Content script requested COLORS.');
-        sendResponse({ colors: COLORS });
+        sendResponse({ colors: currentColors });
         return;
       }
 
@@ -244,6 +247,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const result = await chrome.storage.local.get([message.url]);
         debugLog('Sending highlights for URL:', message.url, result[message.url] || []);
         sendResponse({ highlights: result[message.url] || [] });
+        return;
+      }
+
+      // Handle clearCustomColors request from popup.js
+      if (message.action === 'clearCustomColors') {
+        // Reset storage and currentColors
+        await chrome.storage.local.set({ customColors: [] });
+        // Remove custom colors from currentColors array
+        currentColors = currentColors.filter(c => !c.id.startsWith('custom_'));
+        debugLog('Cleared all custom colors');
+
+        // Recreate context menus with default colors only
+        await createOrUpdateContextMenus();
+
+        // Broadcast updated colors to all tabs
+        const tabs = await chrome.tabs.query({});
+        tabs.forEach(tab => {
+          chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
+        });
+
+        sendResponse({ success: true });
         return;
       }
 
@@ -260,7 +284,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         let customColors = stored.customColors || [];
 
         // Check duplication by value
-        const exists = [...COLORS, ...customColors].some(c => c.color.toLowerCase() === newColorValue.toLowerCase());
+        const exists = [...currentColors, ...customColors].some(c => c.color.toLowerCase() === newColorValue.toLowerCase());
         if (!exists) {
           const newColorObj = {
             id: `custom_${Date.now()}`,
@@ -268,7 +292,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             color: newColorValue
           };
           customColors.push(newColorObj);
-          COLORS.push(newColorObj);
+          currentColors.push(newColorObj);
           await chrome.storage.local.set({ customColors });
           debugLog('Added custom color:', newColorObj);
 
@@ -278,10 +302,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // Broadcast updated colors to all tabs
           const tabs = await chrome.tabs.query({});
           tabs.forEach(tab => {
-            chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: COLORS });
+            chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
           });
         }
-        sendResponse({ success: true, colors: COLORS });
+        sendResponse({ success: true, colors: currentColors });
         return;
       }
 

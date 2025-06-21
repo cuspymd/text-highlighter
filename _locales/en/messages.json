@@ -124,6 +124,15 @@
   "confirmDeleteAllPages": {
     "message": "Delete ALL highlighted pages?"
   },
+  "deleteCustomColors": {
+    "message": "Delete Custom Colors"
+  },
+  "confirmDeleteCustomColors": {
+    "message": "Delete ALL custom colors?"
+  },
+  "deletedCustomColors": {
+    "message": "Custom colors deleted."
+  },
   "refresh": {
     "message": "Refresh",
     "description": "Button text for refreshing the highlighted pages list"

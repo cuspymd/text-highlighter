@@ -124,6 +124,15 @@
   "confirmDeleteAllPages": {
     "message": "すべてのハイライトしたページを削除してよろしいですか？"
   },
+  "deleteCustomColors": {
+    "message": "カスタムカラーを削除"
+  },
+  "confirmDeleteCustomColors": {
+    "message": "すべてのカスタムカラーを削除しますか？"
+  },
+  "deletedCustomColors": {
+    "message": "カスタムカラーを削除しました。"
+  },
   "refresh": {
     "message": "更新",
     "description": "ハイライトしたページ一覧の更新ボタンのテキスト"
