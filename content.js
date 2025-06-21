@@ -431,7 +431,11 @@ function createHighlightControls() {
   });
   const colorButtonsContainer = document.createElement('div');
   colorButtonsContainer.className = 'text-highlighter-color-buttons';
-  currentColors.forEach(colorInfo => {
+  currentColors.forEach((colorInfo, idx) => {
+    // Insert a separator after the 5 default colors (only if custom colors exist)
+    if (idx === 5 && currentColors.length > 5) {
+      appendColorSeparator(colorButtonsContainer);
+    }
     const colorButton = document.createElement('div');
     colorButton.className = 'text-highlighter-control-button color-button';
     colorButton.style.backgroundColor = colorInfo.color;
@@ -510,7 +514,17 @@ function createHighlightControls() {
   document.body.appendChild(highlightControlsContainer);
 }
 
-// -------- Refresh only color buttons inside existing control UI --------
+function appendColorSeparator(container) {
+  const separator = document.createElement('div');
+  separator.className = 'color-separator';
+  separator.style.width = '1px';
+  separator.style.height = '22px'; 
+  separator.style.backgroundColor = '#ccc'; 
+  separator.style.margin = '0 3px';
+  container.appendChild(separator);
+}
+
+// -------- Helper: regenerate color buttons inside a container --------
 function refreshHighlightControlsColors() {
   if (!highlightControlsContainer) return;
   const colorButtonsContainer = highlightControlsContainer.querySelector('.text-highlighter-color-buttons');
@@ -534,7 +548,10 @@ function refreshHighlightControlsColors() {
   };
 
   // Re-create color buttons
-  currentColors.forEach(colorInfo => {
+  currentColors.forEach((colorInfo, idx) => {
+    if (idx === 5 && currentColors.length > 5) {
+      appendColorSeparator(colorButtonsContainer);
+    }
     const colorButton = document.createElement('div');
     colorButton.className = 'text-highlighter-control-button color-button';
     colorButton.style.backgroundColor = colorInfo.color;
