@@ -74,14 +74,6 @@ async function createOrUpdateContextMenus() {
     });
   });
 
-  // Add remove highlight menu item
-  chrome.contextMenus.create({
-    id: 'remove-highlight',
-    parentId: 'highlight-text',
-    title: getMessage('removeHighlight'),
-    contexts: ['selection']
-  });
-
   debugLog('Context menus created with shortcuts:', storedShortcuts);
 }
 
@@ -171,16 +163,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         debugLog('Highlight action response:', response);
       });
     }
-  }
-  else if (menuId === 'remove-highlight') {
-    debugLog('Sending remove highlight action to tab:', tab.id);
-    // Send remove highlight action to Content Script
-    chrome.tabs.sendMessage(tab.id, {
-      action: 'removeHighlight',
-      text: info.selectionText
-    }, response => {
-      debugLog('Remove highlight action response:', response);
-    });
   }
 });
 
@@ -410,4 +392,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.error('Initialization error in background script', e);
   }
 })();
-

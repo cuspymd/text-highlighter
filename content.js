@@ -58,10 +58,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     highlightSelectedText(message.color);
     sendResponse({ success: true });
   }
-  else if (message.action === 'removeHighlight') {
-    removeHighlight();
-    sendResponse({ success: true });
-  }
   else if (message.action === 'refreshHighlights') {
     debugLog('Refreshing highlights:', message.highlights);
     highlights = message.highlights || [];
