@@ -51,3 +51,24 @@ export async function expectHighlightSpan(spanLocator, { color, text }) {
     await expect(spanLocator).toHaveText(text.trim());
   }
 }
+
+/**
+ * Helper function to select a specific text string within a given element.
+ * @param {import('@playwright/test').Locator} locator - The Playwright locator for the element.
+ * @param {string} textToSelect - The text string to select within the element.
+ */
+export async function selectTextInElement(locator, textToSelect) {
+  await locator.evaluate((element, text) => {
+    const textNode = Array.from(element.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.includes(text));
+    if (textNode) {
+      const range = document.createRange();
+      const startIndex = textNode.textContent.indexOf(text);
+      range.setStart(textNode, startIndex);
+      range.setEnd(textNode, startIndex + text.length);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+    } else {
+      throw new Error(`Text "${text}" not found in element for selection.`);
+    }
+  }, textToSelect);
+}

@@ -1,5 +1,5 @@
 const path = require('path');
-import { test, expect, sendHighlightMessage, expectHighlightSpan } from './fixtures';
+import { test, expect, sendHighlightMessage, expectHighlightSpan, selectTextInElement } from './fixtures';
 
 async function getCurrentTabId(background) {
   return await background.evaluate(async () => {
@@ -132,19 +132,7 @@ test.describe('Popup Tests', () => {
     const textToSelect = 'sample paragraph';
 
     // 첫 번째 p 태그 내에서 'sample paragraph'만 선택
-    await firstParagraph.evaluate((element, textToSelect) => {
-      const textNode = Array.from(element.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.includes(textToSelect));
-      if (textNode) {
-        const range = document.createRange();
-        const startIndex = textNode.textContent.indexOf(textToSelect);
-        range.setStart(textNode, startIndex);
-        range.setEnd(textNode, startIndex + textToSelect.length);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
-      } else {
-        throw new Error(`Text "${textToSelect}" not found in element for selection.`);
-      }
-    }, textToSelect);
+    await selectTextInElement(firstParagraph, textToSelect);
 
     // 선택된 텍스트가 정확히 'sample paragraph'인지 확인
     const selected = await page.evaluate(() => window.getSelection().toString());

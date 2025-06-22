@@ -1,5 +1,5 @@
 const path = require('path');
-import { test, expect, sendHighlightMessage, expectHighlightSpan } from './fixtures';
+import { test, expect, sendHighlightMessage, expectHighlightSpan, selectTextInElement } from './fixtures';
 
 test.describe('Chrome Extension Tests', () => {
   test('텍스트 선택 후 컨텍스트 메뉴로 노란색 하이라이트 적용', async ({page, background}) => {
@@ -9,19 +9,7 @@ test.describe('Chrome Extension Tests', () => {
     const textToSelect = "This is a sample paragraph";
 
     // p 태그 내에서 textToSelect 문자열을 찾아 선택합니다.
-    await paragraph.evaluate((element, textToSelect) => {
-      const textNode = Array.from(element.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.includes(textToSelect));
-      if (textNode) {
-        const range = document.createRange();
-        const startIndex = textNode.textContent.indexOf(textToSelect);
-        range.setStart(textNode, startIndex);
-        range.setEnd(textNode, startIndex + textToSelect.length);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
-      } else {
-        throw new Error(`Text "${textToSelect}" not found in element for selection.`);
-      }
-    }, textToSelect);
+    await selectTextInElement(paragraph, textToSelect);
 
     // 선택된 텍스트가 있는지 확인 (디버깅용)
     const selected = await page.evaluate(() => window.getSelection().toString());
@@ -452,6 +440,37 @@ test.describe('Chrome Extension Tests', () => {
     await page.reload();
     const h1SpanAfterReload = page.locator('h1 span.text-highlighter-extension');
     await expectHighlightSpan(h1SpanAfterReload, { color: newColorRgb, text: h1Text });
+  });
+
+  test('이미 하이라이트된 텍스트의 일부를 다시 하이라이트하면 중첩되지 않아야 함', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const paragraph = page.locator('p').first();
+    const initialText = "This is a sample paragraph";
+    const overlappingText = "sample";
+
+    // 1. "This is a sample paragraph"를 선택하고 노란색으로 하이라이트
+    await selectTextInElement(paragraph, initialText);
+
+    await sendHighlightMessage(background, 'yellow');
+
+    // 2. 하이라이트가 1개 생성되었는지 확인
+    const highlightedSpan = paragraph.locator('span.text-highlighter-extension');
+    await expect(highlightedSpan).toHaveCount(1);
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: initialText });
+
+    // 3. 기존 하이라이트 내부의 "sample" 텍스트를 다시 선택
+    await selectTextInElement(highlightedSpan, overlappingText);
+
+    // 4. 다시 하이라이트 명령 실행 (초록색으로)
+    await sendHighlightMessage(background, 'green');
+
+    // 5. 중첩된 하이라이트가 생성되지 않았는지 확인 (span 개수는 여전히 1개여야 함)
+    const allSpans = paragraph.locator('span.text-highlighter-extension');
+    await expect(allSpans).toHaveCount(1);
+
+    // 6. 기존 하이라이트의 색상이나 내용이 변경되지 않았는지 확인
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: initialText });
   });
 
 });

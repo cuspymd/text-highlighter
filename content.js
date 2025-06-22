@@ -464,6 +464,18 @@ function highlightSelectedText(color) {
   const selectedText = selection.toString();
   if (selectedText.trim() === '') return;
 
+  // Check if the selection overlaps with an existing highlight to prevent nesting.
+  const rangeToCheck = selection.getRangeAt(0);
+  const existingHighlights = document.querySelectorAll('.text-highlighter-extension');
+  for (const hl of existingHighlights) {
+    // intersectsNode returns true if any part of the node is inside the range.
+    if (rangeToCheck.intersectsNode(hl)) {
+      debugLog('Selection overlaps with an existing highlight. Aborting highlight creation.');
+      selection.removeAllRanges();
+      return;
+    }
+  }
+
   const range = selection.getRangeAt(0);
   debugLog('Highlight Range:', {
     commonAncestorContainer: range.commonAncestorContainer,
