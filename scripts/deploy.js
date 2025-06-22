@@ -15,7 +15,8 @@ const filesToCopy = [
   'styles.css',
   'pages-list.html',
   'pages-list.js',
-  'constants.js'
+  'constants.js',
+  'controls.js'
 ];
 
 const directoriesToCopy = [
