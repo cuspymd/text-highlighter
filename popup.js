@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const deleteBtn = document.createElement('span');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = '×';
+        deleteBtn.title = chrome.i18n.getMessage('removeHighlight');
         deleteBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           deleteHighlight(group.groupId, currentUrl);
