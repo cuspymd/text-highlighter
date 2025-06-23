@@ -39,14 +39,24 @@ async function createOrUpdateContextMenus() {
   debugLog('Creating/updating context menus...');
 
   // 기존 메뉴 모두 제거
-  await chrome.contextMenus.removeAll();
+  try {
+    await chrome.contextMenus.removeAll();
+  } catch (error) {
+    debugLog('Error removing context menus:', error);
+  }
 
   // Create main menu item
-  chrome.contextMenus.create({
-    id: 'highlight-text',
-    title: getMessage('highlightText'),
-    contexts: ['selection']
-  });
+  try {
+    chrome.contextMenus.create({
+      id: 'highlight-text',
+      title: getMessage('highlightText'),
+      contexts: ['selection']
+    });
+  } catch (error) {
+    if (!error.message.includes('duplicate id')) {
+      debugLog('Error creating main context menu:', error);
+    }
+  }
 
   // Get shortcut information and display in context menu
   const commands = await chrome.commands.getAll();
@@ -66,12 +76,18 @@ async function createOrUpdateContextMenus() {
     const commandName = `highlight_${color.id}`;
     const shortcutDisplay = commandShortcuts[commandName] || '';
 
-    chrome.contextMenus.create({
-      id: `highlight-${color.id}`,
-      parentId: 'highlight-text',
-      title: `${getMessage(color.nameKey)}${shortcutDisplay}`,
-      contexts: ['selection']
-    });
+    try {
+      chrome.contextMenus.create({
+        id: `highlight-${color.id}`,
+        parentId: 'highlight-text',
+        title: `${getMessage(color.nameKey)}${shortcutDisplay}`,
+        contexts: ['selection']
+      });
+    } catch (error) {
+      if (!error.message.includes('duplicate id')) {
+        debugLog('Error creating color context menu:', error);
+      }
+    }
   });
 
   debugLog('Context menus created with shortcuts:', storedShortcuts);
@@ -80,8 +96,6 @@ async function createOrUpdateContextMenus() {
 // Initial setup when extension is installed or updated
 chrome.runtime.onInstalled.addListener(async () => {
   if (DEBUG_MODE) console.log('Extension installed/updated. Debug mode:', DEBUG_MODE);
-  await loadCustomColors();
-  createOrUpdateContextMenus();
 });
 
 // 탭 활성화 시 단축키 변경사항 확인 후 필요시 컨텍스트 메뉴 업데이트
@@ -114,7 +128,7 @@ chrome.tabs.onActivated.addListener(async () => {
 
   if (hasChanged) {
     debugLog('Shortcut changes detected, updating context menus');
-    createOrUpdateContextMenus();
+    await createOrUpdateContextMenus();
   }
 });
 
@@ -207,7 +221,7 @@ chrome.commands.onCommand.addListener(async (command) => {
 });
 
 // Communication with content script (message reception handler)
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // Handle async operations
   (async () => {
     try {
