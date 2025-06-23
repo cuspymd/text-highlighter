@@ -55,11 +55,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const DEBUG_MODE = false;
 
   // Debug log function
-  function debugLog(...args) {
-    if (DEBUG_MODE) {
-      console.log(...args);
-    }
-  }
+  const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 
   // Load highlight information from current active tab
   async function loadHighlights() {

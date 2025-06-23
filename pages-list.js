@@ -6,11 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const DEBUG_MODE = false;
 
   // Debug log function
-  function debugLog(...args) {
-    if (DEBUG_MODE) {
-      console.log(...args);
-    }
-  }
+  const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 
   // Function to get messages for multi-language support
   function getMessage(key, defaultValue = '') {

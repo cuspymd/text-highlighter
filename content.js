@@ -8,11 +8,7 @@ let currentColors = [];
 // Minimap manager instance
 let minimapManager = null;
 
-function debugLog(...args) {
-  if (DEBUG_MODE) {
-    console.log(...args);
-  }
-}
+const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 
 // i18n support function
 function getMessage(key, substitutions = null) {

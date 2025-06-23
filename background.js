@@ -4,11 +4,7 @@ import { COLORS, getMessage } from './constants.js';
 const DEBUG_MODE = false;
 
 // Debug log function
-function debugLog(...args) {
-  if (DEBUG_MODE) {
-    console.log(...args);
-  }
-}
+const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 
 // 저장된 단축키 정보
 let storedShortcuts = {};
