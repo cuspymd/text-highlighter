@@ -139,5 +139,8 @@
   "refresh": {
     "message": "更新",
     "description": "ハイライトしたページ一覧の更新ボタンのテキスト"
+  },
+  "customColor": {
+    "message": "カスタムカラー"
   }
 }

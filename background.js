@@ -20,12 +20,26 @@ let currentColors = [...COLORS];
 async function loadCustomColors() {
   try {
     const result = await chrome.storage.local.get(['customColors']);
-    const customColors = result.customColors || [];
-    customColors.forEach(c => {
+    let customColors = result.customColors || [];
+    let needsUpdate = false;
+    
+    // Assign numbers to existing custom colors if they don't have them
+    customColors.forEach((c, index) => {
+      if (!c.colorNumber) {
+        c.colorNumber = index + 1;
+        needsUpdate = true;
+      }
       if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
         currentColors.push(c);
       }
     });
+    
+    // Update storage if we added numbers to existing colors
+    if (needsUpdate) {
+      await chrome.storage.local.set({ customColors });
+      debugLog('Updated custom colors with numbers:', customColors);
+    }
+    
     if (customColors.length) {
       debugLog('Loaded custom colors from storage.local:', customColors);
     }
@@ -76,11 +90,19 @@ async function createOrUpdateContextMenus() {
     const commandName = `highlight_${color.id}`;
     const shortcutDisplay = commandShortcuts[commandName] || '';
 
+    // Generate title with number for custom colors
+    let title;
+    if (color.colorNumber) {
+      title = `${getMessage(color.nameKey)} ${color.colorNumber}${shortcutDisplay}`;
+    } else {
+      title = `${getMessage(color.nameKey)}${shortcutDisplay}`;
+    }
+
     try {
       chrome.contextMenus.create({
         id: `highlight-${color.id}`,
         parentId: 'highlight-text',
-        title: `${getMessage(color.nameKey)}${shortcutDisplay}`,
+        title: title,
         contexts: ['selection']
       });
     } catch (error) {
@@ -282,9 +304,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         // Check duplication by value
         const exists = [...currentColors, ...customColors].some(c => c.color.toLowerCase() === newColorValue.toLowerCase());
         if (!exists) {
+          // Calculate the next number for custom color naming
+          const existingCustomCount = currentColors.filter(c => c.id.startsWith('custom_')).length;
+          const colorNumber = existingCustomCount + 1;
+          
           const newColorObj = {
             id: `custom_${Date.now()}`,
             nameKey: 'customColor',
+            colorNumber: colorNumber,
             color: newColorValue
           };
           customColors.push(newColorObj);

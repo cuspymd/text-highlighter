@@ -139,5 +139,8 @@
   "refresh": {
     "message": "Refresh",
     "description": "Button text for refreshing the highlighted pages list"
+  },
+  "customColor": {
+    "message": "Custom Color"
   }
 }

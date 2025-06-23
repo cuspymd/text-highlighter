@@ -139,5 +139,8 @@
   "refresh": {
     "message": "刷新",
     "description": "高亮页面列表刷新按钮文本"
+  },
+  "customColor": {
+    "message": "自定义颜色"
   }
 }
