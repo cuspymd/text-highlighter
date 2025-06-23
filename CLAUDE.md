@@ -9,8 +9,8 @@ This is a Chrome extension called "Marks: Text Highlighter" that allows users to
 ## Essential Commands
 
 ### Testing
-- `npm test` - Run Jest unit tests
-- `npx playwright test` - Run E2E tests using Playwright
+- `npx playwright test` - Run E2E tests using Playwright (primary testing method)
+- `npm test` - Run Jest unit tests (environment configured but no tests written yet)
 
 ### Deployment
 - `npm run deploy` - Build extension for Chrome by copying files to `dist/` directory
@@ -71,7 +71,7 @@ Debug logging is controlled by `DEBUG_MODE` constants in each file. Set to `true
 
 ### Testing Structure
 
-- Jest for unit tests with jsdom environment
-- Playwright for E2E tests in `e2e-tests/` directory
-- Mock Chrome APIs in `mocks/chrome.js`
+- **Primary testing**: Playwright E2E tests in `e2e-tests/` directory
+- Jest unit test environment configured with jsdom but no unit tests written yet
+- Mock Chrome APIs available in `mocks/chrome.js`
 - Test fixtures in `e2e-tests/fixtures.js`
