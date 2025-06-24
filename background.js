@@ -409,6 +409,71 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
         return;
       }
+
+      // Handler for getting all highlighted pages
+      if (message.action === 'getAllHighlightedPages') {
+        const result = await chrome.storage.local.get(null);
+        const pages = [];
+
+        // Filter items with URLs as keys from storage (exclude metadata and customColors)
+        for (const key in result) {
+          if (key === 'customColors') {
+            continue; // skip customColors key
+          }
+          if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
+            const url = key;
+            const metaKey = `${url}_meta`;
+            const metadata = result[metaKey] || {};
+
+            pages.push({
+              url: url,
+              highlights: result[url],
+              highlightCount: result[url].length,
+              title: metadata.title || '',
+              lastUpdated: metadata.lastUpdated || ''
+            });
+          }
+        }
+
+        debugLog('Retrieved all highlighted pages:', pages);
+
+        // Sort pages by most recent update
+        pages.sort((a, b) => {
+          // Treat pages without lastUpdated as oldest
+          if (!a.lastUpdated) return 1;
+          if (!b.lastUpdated) return -1;
+
+          // Sort in descending order (newest date first)
+          return new Date(b.lastUpdated) - new Date(a.lastUpdated);
+        });
+
+        sendResponse({ success: true, pages: pages });
+        return;
+      }
+
+      // Handler for deleting all highlighted pages
+      if (message.action === 'deleteAllHighlightedPages') {
+        const result = await chrome.storage.local.get(null);
+        const keysToDelete = [];
+
+        // Find all highlight data and metadata keys
+        for (const key in result) {
+          if (key === 'customColors') {
+            continue; // skip customColors key
+          }
+          if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
+            keysToDelete.push(key, `${key}_meta`);
+          }
+        }
+
+        if (keysToDelete.length > 0) {
+          await chrome.storage.local.remove(keysToDelete);
+          debugLog('All highlighted pages deleted:', keysToDelete);
+        }
+
+        sendResponse({ success: true, deletedCount: keysToDelete.length / 2 });
+        return;
+      }
     } catch (error) {
       debugLog('Error in message handler:', error);
       sendResponse({ success: false, error: error.message });

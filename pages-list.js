@@ -27,43 +27,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Load all highlighted pages data
   function loadAllHighlightedPages() {
-    chrome.storage.local.get(null, (result) => {
-      const pages = [];
-
-      // Filter items with URLs as keys from storage (exclude metadata and customColors)
-      for (const key in result) {
-        if (key === 'customColors') {
-          continue; // skip customColors key
-        }
-        if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
-          const url = key;
-          const metaKey = `${url}_meta`;
-          const metadata = result[metaKey] || {};
-
-          pages.push({
-            url: url,
-            highlights: result[url],
-            highlightCount: result[url].length,
-            title: metadata.title || '',
-            lastUpdated: metadata.lastUpdated || ''
-          });
-        }
+    chrome.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+      if (response && response.success) {
+        debugLog('Received all highlighted pages from background:', response.pages);
+        displayPages(response.pages);
+      } else {
+        debugLog('Error loading highlighted pages:', response);
+        displayPages([]);
       }
-
-      debugLog('Loaded all highlighted pages:', pages);
-
-      // Sort pages by most recent update
-      pages.sort((a, b) => {
-        // Treat pages without lastUpdated as oldest
-        if (!a.lastUpdated) return 1;
-        if (!b.lastUpdated) return -1;
-
-        // Sort in descending order (newest date first)
-        return new Date(b.lastUpdated) - new Date(a.lastUpdated);
-      });
-
-      // Display page list
-      displayPages(pages);
     });
   }
 
@@ -225,19 +196,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Function to delete all highlighted pages
   function deleteAllPages() {
-    chrome.storage.local.get(null, (result) => {
-      const keysToDelete = [];
-      for (const key in result) {
-        if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
-          keysToDelete.push(key, `${key}_meta`);
-        }
-      }
-      if (keysToDelete.length > 0) {
-        chrome.storage.local.remove(keysToDelete, () => {
-          debugLog('All pages deleted:', keysToDelete);
-          loadAllHighlightedPages();
-        });
+    chrome.runtime.sendMessage({ action: 'deleteAllHighlightedPages' }, (response) => {
+      if (response && response.success) {
+        debugLog('All pages deleted successfully, count:', response.deletedCount);
+        // Clear the UI immediately without reloading from storage
+        displayPages([]);
       } else {
+        debugLog('Error deleting all pages:', response);
+        // On error, refresh the list to show current state
         loadAllHighlightedPages();
       }
     });
@@ -277,33 +243,37 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
           }
           // Get all current storage to check for overlap
-          chrome.storage.local.get(null, (result) => {
-            const existingUrls = Object.keys(result).filter(k => Array.isArray(result[k]) && result[k].length > 0 && !k.endsWith('_meta'));
-            const importUrls = json.pages.map(p => p.url);
-            const overlap = importUrls.filter(url => existingUrls.includes(url));
-            let proceed = true;
-            if (overlap.length > 0) {
-              const confirmMsg = getMessage('importOverwriteConfirm', 'Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?');
-              proceed = confirm(confirmMsg);
+          chrome.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+            if (response && response.success) {
+              const existingUrls = response.pages.map(p => p.url);
+              const importUrls = json.pages.map(p => p.url);
+              const overlap = importUrls.filter(url => existingUrls.includes(url));
+              let proceed = true;
+              if (overlap.length > 0) {
+                const confirmMsg = getMessage('importOverwriteConfirm', 'Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?');
+                proceed = confirm(confirmMsg);
+              }
+              if (!proceed) return;
+              // Prepare operations: delete old, add new
+              const ops = {};
+              overlap.forEach(url => {
+                ops[url] = null;
+                ops[`${url}_meta`] = null;
+              });
+              json.pages.forEach(page => {
+                ops[page.url] = page.highlights || [];
+                ops[`${page.url}_meta`] = {
+                  title: page.title || '',
+                  lastUpdated: page.lastUpdated || new Date().toISOString()
+                };
+              });
+              chrome.storage.local.set(ops, () => {
+                alert(getMessage('importSuccess', 'Import completed.'));
+                loadAllHighlightedPages();
+              });
+            } else {
+              alert(getMessage('importError', 'Error checking existing highlights.'));
             }
-            if (!proceed) return;
-            // Prepare operations: delete old, add new
-            const ops = {};
-            overlap.forEach(url => {
-              ops[url] = null;
-              ops[`${url}_meta`] = null;
-            });
-            json.pages.forEach(page => {
-              ops[page.url] = page.highlights || [];
-              ops[`${page.url}_meta`] = {
-                title: page.title || '',
-                lastUpdated: page.lastUpdated || new Date().toISOString()
-              };
-            });
-            chrome.storage.local.set(ops, () => {
-              alert(getMessage('importSuccess', 'Import completed.'));
-              loadAllHighlightedPages();
-            });
           });
         } catch (err) {
           alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
@@ -316,36 +286,25 @@ document.addEventListener('DOMContentLoaded', function () {
   // Export all highlights event
   if (exportAllBtn) {
     exportAllBtn.addEventListener('click', function () {
-      chrome.storage.local.get(null, (result) => {
-        const exportData = [];
-        for (const key in result) {
-          if (key === 'customColors') {
-            continue; // skip customColors key
+      chrome.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+        if (response && response.success) {
+          const exportData = response.pages;
+          if (exportData.length === 0) {
+            alert(getMessage('noHighlightsToExport', 'No highlights to export.'));
+            return;
           }
-          if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
-            const metaKey = `${key}_meta`;
-            const metadata = result[metaKey] || {};
-            exportData.push({
-              url: key,
-              title: metadata.title || '',
-              lastUpdated: metadata.lastUpdated || '',
-              highlights: result[key]
-            });
-          }
+          const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), pages: exportData }, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'all-highlights-' + new Date().getTime() + '.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else {
+          alert(getMessage('exportError', 'Error exporting highlights.'));
         }
-        if (exportData.length === 0) {
-          alert(getMessage('noHighlightsToExport', 'No highlights to export.'));
-          return;
-        }
-        const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), pages: exportData }, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'all-highlights-' + new Date().getTime() + '.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
       });
     });
   }
@@ -358,7 +317,6 @@ document.addEventListener('DOMContentLoaded', function () {
         deleteAllPages();
       }
     });
-    // 다국어 적용
     deleteAllBtn.textContent = getMessage('deleteAllPages', 'Delete All Pages');
   }
 
@@ -367,12 +325,11 @@ document.addEventListener('DOMContentLoaded', function () {
     refreshBtn.addEventListener('click', function () {
       loadAllHighlightedPages();
     });
-    // 다국어 적용
     refreshBtn.textContent = getMessage('refresh', 'Refresh');
   }
 
   // 메시지로 페이지 목록 새로고침
-  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  chrome.runtime.onMessage.addListener(function(request) {
     if (request.action === 'refreshPagesList') {
       loadAllHighlightedPages();
     }
