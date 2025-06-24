@@ -153,11 +153,13 @@ chrome.tabs.onActivated.addListener(async () => {
 // Helper function to notify tab about highlight updates
 async function notifyTabHighlightsRefresh(highlights, url) {
   const tabs = await chrome.tabs.query({ url: url });
-  if (tabs[0] && tabs[0].id) {
-    chrome.tabs.sendMessage(tabs[0].id, {
+  try {
+    await chrome.tabs.sendMessage(tabs[0].id, {
       action: 'refreshHighlights',
       highlights: highlights
     });
+  } catch (error) {
+    debugLog('Error notifying tab about highlight updates:', error);
   }
 }
 
