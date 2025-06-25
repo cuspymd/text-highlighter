@@ -4,6 +4,20 @@ let activeHighlightElement = null;
 // Flag to know when the native <input type="color"> picker is open
 let colorPickerOpen = false;
 
+// Helper function for jelly animation
+function addJellyAnimation(btn) {
+  btn.addEventListener('click', function () {
+    btn.classList.remove('jelly-animate');
+    void btn.offsetWidth;
+    btn.classList.add('jelly-animate');
+  });
+  btn.addEventListener('animationend', function (e) {
+    if (e.animationName === 'jelly-bounce') {
+      btn.classList.remove('jelly-animate');
+    }
+  });
+}
+
 // Create highlight controller UI
 function createHighlightControls() {
   if (highlightControlsContainer) return;
@@ -44,20 +58,6 @@ function createHighlightControls() {
   highlightControlsContainer.addEventListener('click', function (e) {
     e.stopPropagation();
   });
-  // --- 젤리 애니메이션 효과: 클릭 시 트리거 ---
-  const addJellyAnimation = (btn) => {
-    btn.addEventListener('click', function () {
-      btn.classList.remove('jelly-animate'); // 중복 방지
-      // 강제로 reflow를 발생시켜 애니메이션 재적용
-      void btn.offsetWidth;
-      btn.classList.add('jelly-animate');
-    });
-    btn.addEventListener('animationend', function (e) {
-      if (e.animationName === 'jelly-bounce') {
-        btn.classList.remove('jelly-animate');
-      }
-    });
-  };
   // color 버튼들만 젤리 애니메이션 적용
   colorButtonsContainer.querySelectorAll('.text-highlighter-control-button').forEach(addJellyAnimation);
 
@@ -114,19 +114,6 @@ function refreshHighlightControlsColors() {
   // Clear existing buttons
   colorButtonsContainer.innerHTML = '';
 
-  // Helper to add jelly animation
-  const addJellyAnimation = (btn) => {
-    btn.addEventListener('click', function () {
-      btn.classList.remove('jelly-animate');
-      void btn.offsetWidth;
-      btn.classList.add('jelly-animate');
-    });
-    btn.addEventListener('animationend', function (e) {
-      if (e.animationName === 'jelly-bounce') {
-        btn.classList.remove('jelly-animate');
-      }
-    });
-  };
 
   // Re-create color buttons
   currentColors.forEach((colorInfo, idx) => {
