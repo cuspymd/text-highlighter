@@ -40,6 +40,8 @@ npx playwright test
 
 ### Deployment
 
+#### Development Build
+
 Run the deployment script to copy only the required files to the dist directory for loading into Chrome:
 
 ```bash
@@ -52,6 +54,27 @@ To load the deployed extension in Chrome:
 2. Enable "Developer mode" in the top right
 3. Click "Load unpacked extension"
 4. Select the generated `dist` directory
+
+#### Production Build
+
+For creating a production-ready extension package:
+
+```bash
+npm run version-deploy <version>
+```
+
+This command will:
+1. Update the version in `manifest.json`
+2. Set `DEBUG_MODE` to `false` in all JavaScript files
+3. Build the extension to the `dist/` directory
+4. Create a zip file in the `outputs/` directory ready for Chrome Web Store upload
+
+Example:
+```bash
+npm run version-deploy 1.2.0
+```
+
+This creates `outputs/text-highlighter-1.2.0.zip` ready for submission to the Chrome Web Store.
 
 ## Contribution
 
