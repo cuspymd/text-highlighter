@@ -12,7 +12,7 @@ function createHighlightControls() {
   highlightControlsContainer.style.display = 'none';
   const deleteButton = document.createElement('div');
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
-  deleteButton.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="4" y1="4" x2="12" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
+  deleteButton.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="4" y1="4" x2="12" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
   deleteButton.title = getMessage('deleteHighlight');
   deleteButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
@@ -64,21 +64,12 @@ function createHighlightControls() {
   // -------------- '+' button (add new color) --------------
   const addColorBtn = document.createElement('div');
   addColorBtn.className = 'text-highlighter-control-button add-color-button';
-  addColorBtn.textContent = '+';
+  addColorBtn.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="8" y1="3" x2="8" y2="13" stroke="#999" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>`;
   addColorBtn.title = getMessage('addColor') || '+';
-  addColorBtn.style.display = 'flex';
-  addColorBtn.style.alignItems = 'center';
-  addColorBtn.style.justifyContent = 'center';
 
   const hiddenColorInput = document.createElement('input');
   hiddenColorInput.type = 'color';
-  hiddenColorInput.style.opacity = '0';
-  hiddenColorInput.style.cursor = 'pointer';
-  hiddenColorInput.style.position = 'absolute';
-  hiddenColorInput.style.top = '0';
-  hiddenColorInput.style.left = '0';
-  hiddenColorInput.style.width = '100%';
-  hiddenColorInput.style.height = '100%';
+  hiddenColorInput.className = 'hidden-color-input';
 
   // --- manage color picker open/close state ---
   hiddenColorInput.addEventListener('click', () => {
@@ -98,7 +89,6 @@ function createHighlightControls() {
   });
 
   // addColorBtn 내부에 input을 넣어 오버레이되도록 함
-  addColorBtn.style.position = 'relative';
   addColorBtn.appendChild(hiddenColorInput);
 
   colorButtonsContainer.appendChild(addColorBtn);
@@ -160,22 +150,12 @@ function refreshHighlightControlsColors() {
   // Recreate + button
   const addColorBtn = document.createElement('div');
   addColorBtn.className = 'text-highlighter-control-button add-color-button';
-  addColorBtn.textContent = '+';
+  addColorBtn.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="8" y1="3" x2="8" y2="13" stroke="#999" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>`;
   addColorBtn.title = getMessage('addColor') || '+';
-  addColorBtn.style.display = 'flex';
-  addColorBtn.style.alignItems = 'center';
-  addColorBtn.style.justifyContent = 'center';
-  addColorBtn.style.position = 'relative';
 
   const hiddenColorInput = document.createElement('input');
   hiddenColorInput.type = 'color';
-  hiddenColorInput.style.opacity = '0';
-  hiddenColorInput.style.cursor = 'pointer';
-  hiddenColorInput.style.position = 'absolute';
-  hiddenColorInput.style.top = '0';
-  hiddenColorInput.style.left = '0';
-  hiddenColorInput.style.width = '100%';
-  hiddenColorInput.style.height = '100%';
+  hiddenColorInput.className = 'hidden-color-input';
 
   // reuse existing picker logic
   hiddenColorInput.addEventListener('click', () => { colorPickerOpen = true; });

@@ -103,6 +103,39 @@
   width: 16px;
   height: 16px;
   pointer-events: none;
+  fill: none;
+}
+
+.add-color-button {
+  background-color: white;
+  border: 1px solid #ccc;
+  color: #999;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 0;
+  position: relative;
+}
+
+.add-color-button svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  fill: none;
+}
+
+.hidden-color-input {
+  opacity: 0;
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .text-highlighter-color-buttons {
