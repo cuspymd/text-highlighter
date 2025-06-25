@@ -3,3 +3,4 @@ dist/
 outputs/
 .jest_cache/
 /test-results/
+.claude/
