@@ -142,5 +142,8 @@
   },
   "customColor": {
     "message": "사용자 정의 색상"
+  },
+  "noCustomColorsToDelete": {
+    "message": "삭제할 사용자 정의 색상이 없습니다."
   }
 }

@@ -181,8 +181,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (confirm(confirmMessage)) {
       const response = await chrome.runtime.sendMessage({ action: 'clearCustomColors' });
       if (response && response.success) {
-        debugLog('All custom colors deleted');
-        alert(chrome.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
+        if (response.noCustomColors) {
+          debugLog('No custom colors to delete');
+          alert(chrome.i18n.getMessage('noCustomColorsToDelete') || 'No custom colors to delete.');
+        } else {
+          debugLog('All custom colors deleted');
+          alert(chrome.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
+        }
       }
     }
   });

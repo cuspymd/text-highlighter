@@ -142,5 +142,8 @@
   },
   "customColor": {
     "message": "自定义颜色"
+  },
+  "noCustomColorsToDelete": {
+    "message": "没有可删除的自定义颜色。"
   }
 }

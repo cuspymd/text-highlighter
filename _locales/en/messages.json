@@ -142,5 +142,8 @@
   },
   "customColor": {
     "message": "Custom Color"
+  },
+  "noCustomColorsToDelete": {
+    "message": "No custom colors to delete."
   }
 }

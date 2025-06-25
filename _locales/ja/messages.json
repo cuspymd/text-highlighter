@@ -142,5 +142,8 @@
   },
   "customColor": {
     "message": "カスタムカラー"
+  },
+  "noCustomColorsToDelete": {
+    "message": "削除するカスタムカラーがありません。"
   }
 }

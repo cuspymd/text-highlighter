@@ -177,7 +177,7 @@ async function cleanupEmptyHighlightData(url) {
 }
 
 // Context menu click handler
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const menuId = info.menuItemId;
   debugLog('Context menu clicked:', menuId);
 
@@ -189,13 +189,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (color) {
       debugLog('Sending highlight action to tab:', tab.id);
       // Send highlight action and color info to Content Script
-      chrome.tabs.sendMessage(tab.id, {
-        action: 'highlight',
-        color: color.color,
-        text: info.selectionText
-      }, response => {
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, {
+          action: 'highlight',
+          color: color.color,
+          text: info.selectionText
+        });
         debugLog('Highlight action response:', response);
-      });
+      } catch (error) {
+        debugLog('Error sending highlight action:', error);
+      }
     }
   }
 });
@@ -230,12 +233,15 @@ chrome.commands.onCommand.addListener(async (command) => {
     // Process color highlight command
     if (targetColor) {
       debugLog('Sending highlight action to tab:', activeTab.id, 'with color:', targetColor);
-      chrome.tabs.sendMessage(activeTab.id, {
-        action: 'highlight',
-        color: targetColor
-      }, response => {
+      try {
+        const response = await chrome.tabs.sendMessage(activeTab.id, {
+          action: 'highlight',
+          color: targetColor
+        });
         debugLog('Highlight action response:', response);
-      });
+      } catch (error) {
+        debugLog('Error sending highlight action:', error);
+      }
     }
   }
 });
@@ -268,6 +274,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Handle clearCustomColors request from popup.js
       if (message.action === 'clearCustomColors') {
+        // Check if there are any custom colors to clear
+        const result = await chrome.storage.local.get(['customColors']);
+        const customColors = result.customColors || [];
+        
+        if (customColors.length === 0) {
+          debugLog('No custom colors to clear');
+          sendResponse({ success: true, noCustomColors: true });
+          return;
+        }
+
         // Reset storage and currentColors
         await chrome.storage.local.set({ customColors: [] });
         // Remove custom colors from currentColors array
@@ -279,9 +295,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         // Broadcast updated colors to all tabs
         const tabs = await chrome.tabs.query({});
-        tabs.forEach(tab => {
-          chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
-        });
+        for (const tab of tabs) {
+          try {
+            await chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
+          } catch (error) {
+            debugLog('Error broadcasting colors to tab:', tab.id, error);
+          }
+        }
 
         sendResponse({ success: true });
         return;
@@ -322,9 +342,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
           // Broadcast updated colors to all tabs
           const tabs = await chrome.tabs.query({});
-          tabs.forEach(tab => {
-            chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
-          });
+          for (const tab of tabs) {
+            try {
+              await chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
+            } catch (error) {
+              debugLog('Error broadcasting colors to tab:', tab.id, error);
+            }
+          }
         }
         sendResponse({ success: true, colors: currentColors });
         return;
