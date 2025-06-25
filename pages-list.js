@@ -1,4 +1,37 @@
+// 테마 변경 감지 및 처리
+function initializeThemeWatcher() {
+  const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  
+  // 초기 테마 적용
+  updateTheme(darkModeQuery.matches);
+  
+  // 테마 변경 감지
+  darkModeQuery.addEventListener('change', (e) => {
+    updateTheme(e.matches);
+  });
+}
+
+function updateTheme(isDark) {
+  document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  
+  // Chrome 확장에서 현재 브라우저 테마 정보도 가져올 수 있음
+  if (chrome.theme && chrome.theme.getCurrent) {
+    chrome.theme.getCurrent((theme) => {
+      // 브라우저 커스텀 테마가 있으면 추가로 처리 가능
+      console.log('Current browser theme:', theme);
+    });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+  // Initialize theme watcher
+  initializeThemeWatcher();
+  
+  // 페이지 로드 완료 후 transition 활성화
+  setTimeout(() => {
+    document.body.classList.remove('preload');
+  }, 50);
+  
   const pagesContainer = document.getElementById('pages-container');
   const noPages = document.getElementById('no-pages');
 

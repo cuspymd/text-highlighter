@@ -41,9 +41,37 @@ function initializeI18n() {
   });
 }
 
+// 테마 변경 감지 및 처리
+function initializeThemeWatcher() {
+  const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  
+  // 초기 테마 적용
+  updateTheme(darkModeQuery.matches);
+  
+  // 테마 변경 감지
+  darkModeQuery.addEventListener('change', (e) => {
+    updateTheme(e.matches);
+  });
+}
+
+function updateTheme(isDark) {
+  document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  
+  // Chrome 확장에서 현재 브라우저 테마 정보도 가져올 수 있음
+  if (chrome.theme && chrome.theme.getCurrent) {
+    chrome.theme.getCurrent((theme) => {
+      // 브라우저 커스텀 테마가 있으면 추가로 처리 가능
+      console.log('Current browser theme:', theme);
+    });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
   // Initialize internationalization first
   initializeI18n();
+  
+  // Initialize theme watcher
+  initializeThemeWatcher();
 
   const highlightsContainer = document.getElementById('highlights-container');
   const noHighlights = document.getElementById('no-highlights');
