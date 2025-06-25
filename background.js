@@ -9,6 +9,20 @@ const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 // 저장된 단축키 정보
 let storedShortcuts = {};
 
+// Get current shortcuts from chrome.commands API
+async function getCurrentShortcuts() {
+  const commands = await chrome.commands.getAll();
+  const shortcuts = {};
+  
+  commands.forEach(command => {
+    if (command.name.startsWith('highlight_') && command.shortcut) {
+      shortcuts[command.name] = ` (${command.shortcut})`;
+    }
+  });
+  
+  return shortcuts;
+}
+
 // Mutable copy of default COLORS to manage current color state without mutating the constant
 let currentColors = [...COLORS];
 
@@ -53,11 +67,12 @@ async function createOrUpdateContextMenus() {
     await chrome.contextMenus.removeAll();
   } catch (error) {
     debugLog('Error removing context menus:', error);
+    return;
   }
 
   // Create main menu item
   try {
-    chrome.contextMenus.create({
+    await chrome.contextMenus.create({
       id: 'highlight-text',
       title: getMessage('highlightText'),
       contexts: ['selection']
@@ -69,20 +84,12 @@ async function createOrUpdateContextMenus() {
   }
 
   // Get shortcut information and display in context menu
-  const commands = await chrome.commands.getAll();
-  const commandShortcuts = {};
-
-  commands.forEach(command => {
-    if (command.name.startsWith('highlight_') && command.shortcut) {
-      // Save shortcut by matching command name defined in commands.json
-      commandShortcuts[command.name] = ` (${command.shortcut})`;
-    }
-  });
+  const commandShortcuts = await getCurrentShortcuts();
 
   // 단축키 정보 저장
   storedShortcuts = { ...commandShortcuts };
 
-  currentColors.forEach(color => {
+  for (const color of currentColors) {
     const commandName = `highlight_${color.id}`;
     const shortcutDisplay = commandShortcuts[commandName] || '';
 
@@ -95,7 +102,7 @@ async function createOrUpdateContextMenus() {
     }
 
     try {
-      chrome.contextMenus.create({
+      await chrome.contextMenus.create({
         id: `highlight-${color.id}`,
         parentId: 'highlight-text',
         title: title,
@@ -106,7 +113,7 @@ async function createOrUpdateContextMenus() {
         debugLog('Error creating color context menu:', error);
       }
     }
-  });
+  }
 
   debugLog('Context menus created with shortcuts:', storedShortcuts);
 }
@@ -118,15 +125,8 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 // 탭 활성화 시 단축키 변경사항 확인 후 필요시 컨텍스트 메뉴 업데이트
 chrome.tabs.onActivated.addListener(async () => {
-  const commands = await chrome.commands.getAll();
-  const currentShortcuts = {};
+  const currentShortcuts = await getCurrentShortcuts();
   let hasChanged = false;
-
-  commands.forEach(command => {
-    if (command.name.startsWith('highlight_') && command.shortcut) {
-      currentShortcuts[command.name] = ` (${command.shortcut})`;
-    }
-  });
 
   // 저장된 단축키와 현재 단축키 비교
   for (const commandName in currentShortcuts) {
