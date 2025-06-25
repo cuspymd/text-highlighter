@@ -4,7 +4,12 @@
   "version": "1.2.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
-  "permissions": ["storage", "contextMenus", "activeTab", "tabs"],
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "activeTab",
+    "tabs"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -52,9 +57,17 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["minimap.js", "controls.js", "content.js"],
-      "css": ["styles.css"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "minimap.js",
+        "controls.js",
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ]
     }
   ],
   "icons": {
@@ -64,8 +77,13 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["pages-list.html", "pages-list.js"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "pages-list.html",
+        "pages-list.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

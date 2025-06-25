@@ -1,4 +1,5 @@
 node_modules/
 dist/
+outputs/
 .jest_cache/
 /test-results/

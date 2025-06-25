@@ -5,7 +5,8 @@
   "main": "background.js",
   "scripts": {
     "test": "jest --runInBand --cacheDirectory=./.jest_cache",
-    "deploy": "node ./scripts/deploy.js"
+    "deploy": "node ./scripts/deploy.js",
+    "version-deploy": "node ./scripts/version-deploy.js"
   },
   "author": "",
   "license": "MIT",
