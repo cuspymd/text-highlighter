@@ -58,6 +58,9 @@
   "importHighlightsTooltip": {
     "message": "从JSON文件导入高亮"
   },
+  "exportAllTooltip": {
+    "message": "将所有高亮导出为JSON文件"
+  },
   "importOverwriteConfirm": {
     "message": "部分页面已存在高亮。相关页面的现有高亮将被删除并用导入的数据替换。是否继续？"
   },

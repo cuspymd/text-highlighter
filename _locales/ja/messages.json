@@ -58,6 +58,9 @@
   "importHighlightsTooltip": {
     "message": "JSONファイルからハイライトをインポート"
   },
+  "exportAllTooltip": {
+    "message": "すべてのハイライトをJSONファイルにエクスポート"
+  },
   "importOverwriteConfirm": {
     "message": "一部のページには既にハイライトがあります。該当ページの既存ハイライトは削除され、インポートしたデータで上書きされます。続行しますか？"
   },

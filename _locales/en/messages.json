@@ -58,6 +58,9 @@
   "importHighlightsTooltip": {
     "message": "Import highlights from JSON file"
   },
+  "exportAllTooltip": {
+    "message": "Export all highlights to JSON file"
+  },
   "importOverwriteConfirm": {
     "message": "Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?"
   },

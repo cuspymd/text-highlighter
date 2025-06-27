@@ -56,6 +56,13 @@ document.addEventListener('DOMContentLoaded', function () {
       const key = element.getAttribute('data-i18n');
       element.textContent = getMessage(key, element.textContent);
     });
+    
+    // Handle data-i18n-title attributes
+    const elementsWithTitle = document.querySelectorAll('[data-i18n-title]');
+    elementsWithTitle.forEach(element => {
+      const key = element.getAttribute('data-i18n-title');
+      element.title = getMessage(key, element.title);
+    });
   }
 
   // Load all highlighted pages data
@@ -254,11 +261,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Import highlights event
   if (importBtn && importFileInput) {
-    // 다국어 적용
-    importBtn.textContent = getMessage('importHighlights', 'Import');
-    importBtn.setAttribute('data-i18n', 'importHighlights');
-    importBtn.title = getMessage('importHighlightsTooltip', 'Import highlights from JSON');
-    importBtn.style.display = '';
     importBtn.addEventListener('click', function () {
       importFileInput.value = '';
       importFileInput.click();

@@ -58,6 +58,9 @@
   "importHighlightsTooltip": {
     "message": "JSON 파일에서 하이라이트 가져오기"
   },
+  "exportAllTooltip": {
+    "message": "모든 하이라이트를 JSON 파일로 내보내기"
+  },
   "importOverwriteConfirm": {
     "message": "일부 페이지에 이미 하이라이트가 있습니다. 해당 페이지의 기존 하이라이트는 삭제되고 가져온 데이터로 덮어씁니다. 계속하시겠습니까?"
   },

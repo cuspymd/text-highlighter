@@ -39,6 +39,16 @@ function initializeI18n() {
       }
     }
   });
+  
+  // Handle data-i18n-title attributes
+  const elementsWithTitle = document.querySelectorAll('[data-i18n-title]');
+  elementsWithTitle.forEach(element => {
+    const key = element.getAttribute('data-i18n-title');
+    const message = chrome.i18n.getMessage(key);
+    if (message) {
+      element.title = message;
+    }
+  });
 }
 
 // 테마 변경 감지 및 처리
