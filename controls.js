@@ -3,6 +3,8 @@ let highlightControlsContainer = null;
 let activeHighlightElement = null;
 // Flag to know when the native <input type="color"> picker is open
 let colorPickerOpen = false;
+// Track the last added color to apply animation only to new colors
+let lastAddedColor = null;
 
 // Helper function for jelly animation
 function addJellyAnimation(btn) {
@@ -80,6 +82,7 @@ function createHighlightControls() {
   hiddenColorInput.addEventListener('change', (e) => {
     const newColor = e.target.value;
     if (!newColor) return;
+    lastAddedColor = newColor; // 방금 추가된 색상 추적
     chrome.runtime.sendMessage({ action: 'addColor', color: newColor }, (response) => {
       if (response && response.colors) {
         currentColors = response.colors;
@@ -131,6 +134,19 @@ function refreshHighlightControlsColors() {
       e.stopPropagation();
     });
     addJellyAnimation(colorButton);
+    
+    // 방금 추가된 색상에만 애니메이션 효과 추가
+    if (lastAddedColor && colorInfo.color === lastAddedColor) {
+      colorButton.classList.add('new-color-animate');
+      // 애니메이션 완료 후 클래스 제거
+      colorButton.addEventListener('animationend', function(e) {
+        if (e.animationName === 'pop-in-new-color') {
+          colorButton.classList.remove('new-color-animate');
+          lastAddedColor = null; // 애니메이션 완료 후 초기화
+        }
+      });
+    }
+    
     colorButtonsContainer.appendChild(colorButton);
   });
 
@@ -149,6 +165,7 @@ function refreshHighlightControlsColors() {
   hiddenColorInput.addEventListener('change', (e) => {
     const newColor = e.target.value;
     if (!newColor) return;
+    lastAddedColor = newColor; // 방금 추가된 색상 추적
     chrome.runtime.sendMessage({ action: 'addColor', color: newColor });
   });
 

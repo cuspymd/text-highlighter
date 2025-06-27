@@ -74,6 +74,24 @@
   100% { transform: scale(1.18, 1.18); }
 }
 
+@keyframes pop-in-new-color {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .text-highlighter-control-button:hover, .text-highlighter-control-button:focus {
   transform: scale(1.18);
   z-index: 1;
@@ -83,6 +101,10 @@
   animation: jelly-bounce 0.45s cubic-bezier(.22,1.6,.42,1.01);
   transform: scale(1.18);
   z-index: 1;
+}
+
+.text-highlighter-control-button.new-color-animate {
+  animation: pop-in-new-color 0.5s cubic-bezier(.22,1.6,.42,1.01);
 }
 
 .delete-highlight {
