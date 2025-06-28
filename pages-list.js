@@ -24,14 +24,6 @@ function initializeThemeWatcher() {
 
 function updateTheme(isDark) {
   document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
-  
-  // Chrome 확장에서 현재 브라우저 테마 정보도 가져올 수 있음
-  if (browserAPI.theme && browserAPI.theme.getCurrent) {
-    browserAPI.theme.getCurrent((theme) => {
-      // 브라우저 커스텀 테마가 있으면 추가로 처리 가능
-      console.log('Current browser theme:', theme);
-    });
-  }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
