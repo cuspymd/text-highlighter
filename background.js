@@ -1,3 +1,4 @@
+import './node_modules/webextension-polyfill/dist/browser-polyfill.js';
 import { COLORS, getMessage } from './constants.js';
 
 // Debug mode setting - change to true during development
@@ -9,9 +10,9 @@ const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 // 저장된 단축키 정보
 let storedShortcuts = {};
 
-// Get current shortcuts from chrome.commands API
+// Get current shortcuts from browser.commands API
 async function getCurrentShortcuts() {
-  const commands = await chrome.commands.getAll();
+  const commands = await browser.commands.getAll();
   const shortcuts = {};
   
   commands.forEach(command => {
@@ -29,7 +30,7 @@ let currentColors = [...COLORS];
 // Load custom user-defined colors from local storage and merge into COLORS
 async function loadCustomColors() {
   try {
-    const result = await chrome.storage.local.get(['customColors']);
+    const result = await browser.storage.local.get(['customColors']);
     let customColors = result.customColors || [];
     let needsUpdate = false;
     
@@ -46,7 +47,7 @@ async function loadCustomColors() {
     
     // Update storage if we added numbers to existing colors
     if (needsUpdate) {
-      await chrome.storage.local.set({ customColors });
+      await browser.storage.local.set({ customColors });
       debugLog('Updated custom colors with numbers:', customColors);
     }
     
@@ -64,7 +65,7 @@ async function createOrUpdateContextMenus() {
 
   // 기존 메뉴 모두 제거
   try {
-    await chrome.contextMenus.removeAll();
+    await browser.contextMenus.removeAll();
   } catch (error) {
     debugLog('Error removing context menus:', error);
     return;
@@ -72,7 +73,7 @@ async function createOrUpdateContextMenus() {
 
   // Create main menu item
   try {
-    await chrome.contextMenus.create({
+    await browser.contextMenus.create({
       id: 'highlight-text',
       title: getMessage('highlightText'),
       contexts: ['selection']
@@ -102,7 +103,7 @@ async function createOrUpdateContextMenus() {
     }
 
     try {
-      await chrome.contextMenus.create({
+      await browser.contextMenus.create({
         id: `highlight-${color.id}`,
         parentId: 'highlight-text',
         title: title,
@@ -119,12 +120,12 @@ async function createOrUpdateContextMenus() {
 }
 
 // Initial setup when extension is installed or updated
-chrome.runtime.onInstalled.addListener(async () => {
+browser.runtime.onInstalled.addListener(async () => {
   if (DEBUG_MODE) console.log('Extension installed/updated. Debug mode:', DEBUG_MODE);
 });
 
 // 탭 활성화 시 단축키 변경사항 확인 후 필요시 컨텍스트 메뉴 업데이트
-chrome.tabs.onActivated.addListener(async () => {
+browser.tabs.onActivated.addListener(async () => {
   const currentShortcuts = await getCurrentShortcuts();
   let hasChanged = false;
 
@@ -152,9 +153,9 @@ chrome.tabs.onActivated.addListener(async () => {
 
 // Helper function to notify tab about highlight updates
 async function notifyTabHighlightsRefresh(highlights, url) {
-  const tabs = await chrome.tabs.query({ url: url });
+  const tabs = await browser.tabs.query({ url: url });
   try {
-    await chrome.tabs.sendMessage(tabs[0].id, {
+    await browser.tabs.sendMessage(tabs[0].id, {
       action: 'refreshHighlights',
       highlights: highlights
     });
@@ -169,7 +170,7 @@ async function cleanupEmptyHighlightData(url) {
 
   debugLog('Cleaning up empty highlight data for URL:', url);
   try {
-    await chrome.storage.local.remove([url, `${url}_meta`]);
+    await browser.storage.local.remove([url, `${url}_meta`]);
     debugLog('Successfully removed empty highlight data for URL:', url);
   } catch (error) {
     debugLog('Error removing empty highlight data:', error);
@@ -177,7 +178,7 @@ async function cleanupEmptyHighlightData(url) {
 }
 
 // Context menu click handler
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+browser.contextMenus.onClicked.addListener(async (info, tab) => {
   const menuId = info.menuItemId;
   debugLog('Context menu clicked:', menuId);
 
@@ -190,7 +191,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       debugLog('Sending highlight action to tab:', tab.id);
       // Send highlight action and color info to Content Script
       try {
-        const response = await chrome.tabs.sendMessage(tab.id, {
+        const response = await browser.tabs.sendMessage(tab.id, {
           action: 'highlight',
           color: color.color,
           text: info.selectionText
@@ -204,9 +205,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 // Shortcut command handler
-chrome.commands.onCommand.addListener(async (command) => {
+browser.commands.onCommand.addListener(async (command) => {
   debugLog('Command received:', command);
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tabs = await browser.tabs.query({ active: true, currentWindow: true });
   const activeTab = tabs[0];
 
   if (activeTab) {
@@ -234,7 +235,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     if (targetColor) {
       debugLog('Sending highlight action to tab:', activeTab.id, 'with color:', targetColor);
       try {
-        const response = await chrome.tabs.sendMessage(activeTab.id, {
+        const response = await browser.tabs.sendMessage(activeTab.id, {
           action: 'highlight',
           color: targetColor
         });
@@ -247,7 +248,7 @@ chrome.commands.onCommand.addListener(async (command) => {
 });
 
 // Communication with content script (message reception handler)
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // Handle async operations
   (async () => {
     try {
@@ -266,7 +267,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Handle highlight information request from content.js
       if (message.action === 'getHighlights') {
-        const result = await chrome.storage.local.get([message.url]);
+        const result = await browser.storage.local.get([message.url]);
         debugLog('Sending highlights for URL:', message.url, result[message.url] || []);
         sendResponse({ highlights: result[message.url] || [] });
         return;
@@ -275,7 +276,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       // Handle clearCustomColors request from popup.js
       if (message.action === 'clearCustomColors') {
         // Check if there are any custom colors to clear
-        const result = await chrome.storage.local.get(['customColors']);
+        const result = await browser.storage.local.get(['customColors']);
         const customColors = result.customColors || [];
         
         if (customColors.length === 0) {
@@ -285,7 +286,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
 
         // Reset storage and currentColors
-        await chrome.storage.local.set({ customColors: [] });
+        await browser.storage.local.set({ customColors: [] });
         // Remove custom colors from currentColors array
         currentColors = currentColors.filter(c => !c.id.startsWith('custom_'));
         debugLog('Cleared all custom colors');
@@ -294,10 +295,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         await createOrUpdateContextMenus();
 
         // Broadcast updated colors to all tabs
-        const tabs = await chrome.tabs.query({});
+        const tabs = await browser.tabs.query({});
         for (const tab of tabs) {
           try {
-            await chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
+            await browser.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
           } catch (error) {
             debugLog('Error broadcasting colors to tab:', tab.id, error);
           }
@@ -316,7 +317,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
 
         // Load existing custom colors from storage.sync
-        const stored = await chrome.storage.local.get(['customColors']);
+        const stored = await browser.storage.local.get(['customColors']);
         let customColors = stored.customColors || [];
 
         // Check duplication by value
@@ -334,17 +335,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           };
           customColors.push(newColorObj);
           currentColors.push(newColorObj);
-          await chrome.storage.local.set({ customColors });
+          await browser.storage.local.set({ customColors });
           debugLog('Added custom color:', newColorObj);
 
           // Recreate context menus to include new color
           await createOrUpdateContextMenus();
 
           // Broadcast updated colors to all tabs
-          const tabs = await chrome.tabs.query({});
+          const tabs = await browser.tabs.query({});
           for (const tab of tabs) {
             try {
-              await chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
+              await browser.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
             } catch (error) {
               debugLog('Error broadcasting colors to tab:', tab.id, error);
             }
@@ -356,7 +357,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Handle highlight information save request from content.js
       if (message.action === 'saveHighlights') {
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tabs = await browser.tabs.query({ active: true, currentWindow: true });
         const currentTab = tabs[0];
 
         // Check if there are any highlights
@@ -365,11 +366,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           saveData[message.url] = message.highlights;
 
           // Save highlights
-          await chrome.storage.local.set(saveData);
+          await browser.storage.local.set(saveData);
           debugLog('Saved highlights for URL:', message.url, message.highlights);
 
           // Save metadata only if highlights exist
-          const result = await chrome.storage.local.get([`${message.url}_meta`]);
+          const result = await browser.storage.local.get([`${message.url}_meta`]);
           const metaData = result[`${message.url}_meta`] || {};
           metaData.title = currentTab.title;
           metaData.lastUpdated = new Date().toISOString();
@@ -377,7 +378,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           const metaSaveData = {};
           metaSaveData[`${message.url}_meta`] = metaData;
 
-          await chrome.storage.local.set(metaSaveData);
+          await browser.storage.local.set(metaSaveData);
           debugLog('Saved page metadata:', metaData);
           sendResponse({ success: true });
         } else {
@@ -391,14 +392,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       // Handler for single highlight deletion
       if (message.action === 'deleteHighlight') {
         const { url, groupId } = message;
-        const result = await chrome.storage.local.get([url]);
+        const result = await browser.storage.local.get([url]);
         const highlights = result[url] || [];
         // groupId로 그룹 삭제
         const updatedHighlights = highlights.filter(g => g.groupId !== groupId);
         if (updatedHighlights.length > 0) {
           const saveData = {};
           saveData[url] = updatedHighlights;
-          await chrome.storage.local.set(saveData);
+          await browser.storage.local.set(saveData);
           debugLog('Highlight group deleted:', groupId, 'from URL:', url);
           if (message.notifyRefresh) {
             await notifyTabHighlightsRefresh(updatedHighlights, url);
@@ -438,7 +439,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Handler for getting all highlighted pages
       if (message.action === 'getAllHighlightedPages') {
-        const result = await chrome.storage.local.get(null);
+        const result = await browser.storage.local.get(null);
         const pages = [];
 
         // Filter items with URLs as keys from storage (exclude metadata and customColors)
@@ -479,7 +480,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Handler for deleting all highlighted pages
       if (message.action === 'deleteAllHighlightedPages') {
-        const result = await chrome.storage.local.get(null);
+        const result = await browser.storage.local.get(null);
         const keysToDelete = [];
 
         // Find all highlight data and metadata keys
@@ -493,7 +494,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
 
         if (keysToDelete.length > 0) {
-          await chrome.storage.local.remove(keysToDelete);
+          await browser.storage.local.remove(keysToDelete);
           debugLog('All highlighted pages deleted:', keysToDelete);
         }
 

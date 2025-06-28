@@ -12,7 +12,7 @@ const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 
 // i18n support function
 function getMessage(key, substitutions = null) {
-  return chrome.i18n.getMessage(key, substitutions);
+  return browser.i18n.getMessage(key, substitutions);
 }
 
 debugLog('Content script loaded for:', currentUrl);
@@ -49,7 +49,7 @@ document.addEventListener('click', function (e) {
 });
 
 // Handle messages received from background
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'highlight') {
     highlightSelectedText(message.color);
     sendResponse({ success: true });
@@ -80,10 +80,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Function to asynchronously get color information from Background Service Worker
 function getColorsFromBackground() {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ action: 'getColors' }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error('Error getting colors:', chrome.runtime.lastError);
-        return reject(chrome.runtime.lastError);
+    browser.runtime.sendMessage({ action: 'getColors' }, (response) => {
+      if (browser.runtime.lastError) {
+        console.error('Error getting colors:', browser.runtime.lastError);
+        return reject(browser.runtime.lastError);
       }
       if (response && response.colors) {
         currentColors = response.colors;
@@ -99,7 +99,7 @@ function getColorsFromBackground() {
 function loadHighlights() {
   debugLog('Loading highlights for URL:', currentUrl);
 
-  chrome.runtime.sendMessage(
+  browser.runtime.sendMessage(
     { action: 'getHighlights', url: currentUrl },
     (response) => {
       debugLog('Got highlights response:', response);
@@ -116,7 +116,7 @@ function loadHighlights() {
 }
 
 function saveHighlights() {
-  chrome.runtime.sendMessage(
+  browser.runtime.sendMessage(
     {
       action: 'saveHighlights',
       url: currentUrl,
@@ -431,7 +431,7 @@ function getFirstTextNodePosition(element) {
 }
 
 function initMinimap() {
-  chrome.storage.local.get(['minimapVisible'], (result) => {
+  browser.storage.local.get(['minimapVisible'], (result) => {
     const minimapVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
 
     minimapManager = new MinimapManager();

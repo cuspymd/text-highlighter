@@ -4,10 +4,10 @@ async function getActiveTab() {
   // Open popup.html?tab=5 to use tab ID 5, etc.
   if (URL_PARAMS.has("tab")) {
     const tabId = parseInt(URL_PARAMS.get("tab"));
-    return await chrome.tabs.get(tabId);
+    return await browser.tabs.get(tabId);
   }
 
-  const tabs = await chrome.tabs.query({
+  const tabs = await browser.tabs.query({
     active: true,
     currentWindow: true
   });
@@ -22,7 +22,7 @@ function initializeI18n() {
 
   elements.forEach(element => {
     const key = element.getAttribute('data-i18n');
-    const message = chrome.i18n.getMessage(key);
+    const message = browser.i18n.getMessage(key);
 
     if (message) {
       // Set the content based on element type
@@ -44,7 +44,7 @@ function initializeI18n() {
   const elementsWithTitle = document.querySelectorAll('[data-i18n-title]');
   elementsWithTitle.forEach(element => {
     const key = element.getAttribute('data-i18n-title');
-    const message = chrome.i18n.getMessage(key);
+    const message = browser.i18n.getMessage(key);
     if (message) {
       element.title = message;
     }
@@ -68,8 +68,8 @@ function updateTheme(isDark) {
   document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
   
   // Chrome 확장에서 현재 브라우저 테마 정보도 가져올 수 있음
-  if (chrome.theme && chrome.theme.getCurrent) {
-    chrome.theme.getCurrent((theme) => {
+  if (browser.theme && browser.theme.getCurrent) {
+    browser.theme.getCurrent((theme) => {
       // 브라우저 커스텀 테마가 있으면 추가로 처리 가능
       console.log('Current browser theme:', theme);
     });
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const currentUrl = tab.url;
     if (!currentUrl) return;
 
-    const result = await chrome.storage.local.get([currentUrl]);
+    const result = await browser.storage.local.get([currentUrl]);
     let highlights = result[currentUrl] || [];
 
     // 그룹 구조이므로 position은 대표 span의 position 사용
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const deleteBtn = document.createElement('span');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = '×';
-        deleteBtn.title = chrome.i18n.getMessage('removeHighlight');
+        deleteBtn.title = browser.i18n.getMessage('removeHighlight');
         deleteBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           deleteHighlight(group.groupId, currentUrl);
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Load minimap settings
   async function loadMinimapSetting() {
-    const result = await chrome.storage.local.get(['minimapVisible']);
+    const result = await browser.storage.local.get(['minimapVisible']);
     // Default value is true (show minimap)
     const isVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
     minimapToggle.checked = isVisible;
@@ -165,12 +165,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     const isVisible = minimapToggle.checked;
 
     // Save to storage
-    await chrome.storage.local.set({ minimapVisible: isVisible });
+    await browser.storage.local.set({ minimapVisible: isVisible });
     debugLog('Minimap visibility saved:', isVisible);
 
     // Apply settings to current page
     const tab = await getActiveTab();
-    await chrome.tabs.sendMessage(tab.id, {
+    await browser.tabs.sendMessage(tab.id, {
       action: 'setMinimapVisibility',
       visible: isVisible
     });
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Delete highlight (그룹 단위)
   async function deleteHighlight(groupId, url) {
-    const response = await chrome.runtime.sendMessage({
+    const response = await browser.runtime.sendMessage({
       action: 'deleteHighlight',
       url: url,
       groupId: groupId, // groupId로 삭제
@@ -193,13 +193,13 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Delete all highlights
   clearAllBtn.addEventListener('click', async function () {
     debugLog('Clearing all highlights');
-    const confirmMessage = chrome.i18n.getMessage('confirmClearAll');
+    const confirmMessage = browser.i18n.getMessage('confirmClearAll');
     if (confirm(confirmMessage)) {
       const tab = await getActiveTab();
       const currentUrl = tab.url;
       if (!currentUrl) return;
       
-      const response = await chrome.runtime.sendMessage({
+      const response = await browser.runtime.sendMessage({
         action: 'clearAllHighlights',
         url: currentUrl,
         notifyRefresh: true
@@ -215,16 +215,16 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Delete all custom colors
   deleteCustomColorsBtn.addEventListener('click', async function () {
     debugLog('Deleting all custom colors');
-    const confirmMessage = chrome.i18n.getMessage('confirmDeleteCustomColors') || 'Delete all custom colors?';
+    const confirmMessage = browser.i18n.getMessage('confirmDeleteCustomColors') || 'Delete all custom colors?';
     if (confirm(confirmMessage)) {
-      const response = await chrome.runtime.sendMessage({ action: 'clearCustomColors' });
+      const response = await browser.runtime.sendMessage({ action: 'clearCustomColors' });
       if (response && response.success) {
         if (response.noCustomColors) {
           debugLog('No custom colors to delete');
-          alert(chrome.i18n.getMessage('noCustomColorsToDelete') || 'No custom colors to delete.');
+          alert(browser.i18n.getMessage('noCustomColorsToDelete') || 'No custom colors to delete.');
         } else {
           debugLog('All custom colors deleted');
-          alert(chrome.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
+          alert(browser.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
         }
       }
     }
@@ -233,16 +233,16 @@ document.addEventListener('DOMContentLoaded', async function () {
   // View list of highlighted pages
   viewAllPagesBtn.addEventListener('click', function () {
     debugLog('Opening all pages list');
-    const targetUrl = chrome.runtime.getURL('pages-list.html');
-    chrome.windows.getAll({populate: true}, function(windows) {
+    const targetUrl = browser.runtime.getURL('pages-list.html');
+    browser.windows.getAll({populate: true}, function(windows) {
       let found = false;
       for (const win of windows) {
         for (const tab of win.tabs) {
           if (tab.url && tab.url.startsWith(targetUrl)) {
-            chrome.windows.update(win.id, {focused: true});
-            chrome.tabs.update(tab.id, {active: true});
+            browser.windows.update(win.id, {focused: true});
+            browser.tabs.update(tab.id, {active: true});
             // 페이지 목록 갱신 메시지 전송
-            chrome.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
+            browser.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
             found = true;
             break;
           }
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (found) break;
       }
       if (!found) {
-        chrome.windows.create({
+        browser.windows.create({
           url: targetUrl,
           type: 'popup',
           width: 860,

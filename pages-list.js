@@ -15,8 +15,8 @@ function updateTheme(isDark) {
   document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
   
   // Chrome 확장에서 현재 브라우저 테마 정보도 가져올 수 있음
-  if (chrome.theme && chrome.theme.getCurrent) {
-    chrome.theme.getCurrent((theme) => {
+  if (browser.theme && browser.theme.getCurrent) {
+    browser.theme.getCurrent((theme) => {
       // 브라우저 커스텀 테마가 있으면 추가로 처리 가능
       console.log('Current browser theme:', theme);
     });
@@ -43,8 +43,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Function to get messages for multi-language support
   function getMessage(key, defaultValue = '') {
-    if (typeof chrome !== 'undefined' && chrome.i18n) {
-      return chrome.i18n.getMessage(key) || defaultValue;
+    if (typeof chrome !== 'undefined' && browser.i18n) {
+      return browser.i18n.getMessage(key) || defaultValue;
     }
     return defaultValue;
   }
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Load all highlighted pages data
   function loadAllHighlightedPages() {
-    chrome.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+    browser.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
       if (response && response.success) {
         debugLog('Received all highlighted pages from background:', response.pages);
         displayPages(response.pages);
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
           try {
             const date = new Date(page.lastUpdated);
             // Determine date format based on current language
-            const locale = chrome.i18n.getUILanguage ? chrome.i18n.getUILanguage() : 'en';
+            const locale = browser.i18n.getUILanguage ? browser.i18n.getUILanguage() : 'en';
             lastUpdated = date.toLocaleString(locale);
           } catch (e) {
             lastUpdated = page.lastUpdated;
@@ -200,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Open page button event
         pageItem.querySelector('.btn-view').addEventListener('click', function () {
-          chrome.tabs.create({ url: page.url });
+          browser.tabs.create({ url: page.url });
         });
 
         // Delete page button event
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Delete all highlights for a page
   function deletePageHighlights(url) {
-    chrome.runtime.sendMessage({
+    browser.runtime.sendMessage({
       action: 'clearAllHighlights',
       url: url,
       notifyRefresh: false  // No need to notify as we're not on the page
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Function to delete all highlighted pages
   function deleteAllPages() {
-    chrome.runtime.sendMessage({ action: 'deleteAllHighlightedPages' }, (response) => {
+    browser.runtime.sendMessage({ action: 'deleteAllHighlightedPages' }, (response) => {
       if (response && response.success) {
         debugLog('All pages deleted successfully, count:', response.deletedCount);
         // Clear the UI immediately without reloading from storage
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
           }
           // Get all current storage to check for overlap
-          chrome.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+          browser.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
             if (response && response.success) {
               const existingUrls = response.pages.map(p => p.url);
               const importUrls = json.pages.map(p => p.url);
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   lastUpdated: page.lastUpdated || new Date().toISOString()
                 };
               });
-              chrome.storage.local.set(ops, () => {
+              browser.storage.local.set(ops, () => {
                 alert(getMessage('importSuccess', 'Import completed.'));
                 loadAllHighlightedPages();
               });
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Export all highlights event
   if (exportAllBtn) {
     exportAllBtn.addEventListener('click', function () {
-      chrome.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+      browser.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
         if (response && response.success) {
           const exportData = response.pages;
           if (exportData.length === 0) {
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // 메시지로 페이지 목록 새로고침
-  chrome.runtime.onMessage.addListener(function(request) {
+  browser.runtime.onMessage.addListener(function(request) {
     if (request.action === 'refreshPagesList') {
       loadAllHighlightedPages();
     }

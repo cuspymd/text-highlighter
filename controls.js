@@ -83,7 +83,7 @@ function createHighlightControls() {
     const newColor = e.target.value;
     if (!newColor) return;
     lastAddedColor = newColor; // 방금 추가된 색상 추적
-    chrome.runtime.sendMessage({ action: 'addColor', color: newColor }, (response) => {
+    browser.runtime.sendMessage({ action: 'addColor', color: newColor }, (response) => {
       if (response && response.colors) {
         currentColors = response.colors;
         refreshHighlightControlsColors();
@@ -166,7 +166,7 @@ function refreshHighlightControlsColors() {
     const newColor = e.target.value;
     if (!newColor) return;
     lastAddedColor = newColor; // 방금 추가된 색상 추적
-    chrome.runtime.sendMessage({ action: 'addColor', color: newColor });
+    browser.runtime.sendMessage({ action: 'addColor', color: newColor });
   });
 
   addColorBtn.appendChild(hiddenColorInput);

@@ -7,5 +7,5 @@ export const COLORS = [
 ];
 
 export function getMessage(key, substitutions = null) {
-  return chrome.i18n.getMessage(key, substitutions);
+  return browser.i18n.getMessage(key, substitutions);
 }
