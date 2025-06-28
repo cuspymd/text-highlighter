@@ -57,7 +57,6 @@ This is a cross-browser extension called "Marks: Text Highlighter" that allows u
 
 ### Key Files
 
-- `constants.js` - Defines default colors and i18n helper
 - `pages-list.js` - Manages list of pages with highlights
 - `manifest.json` - Extension configuration with permissions and commands
 - `_locales/` - Internationalization files (en, ja, ko, zh)
