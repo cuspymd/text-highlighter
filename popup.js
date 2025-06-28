@@ -1,13 +1,24 @@
 const URL_PARAMS  = new URLSearchParams(window.location.search);
 
+// Cross-browser compatibility - use chrome API in Chrome, browser API in Firefox
+const browserAPI = (() => {
+  if (typeof browser !== 'undefined') {
+    return browser;
+  }
+  if (typeof chrome !== 'undefined') {
+    return chrome;
+  }
+  throw new Error('Neither browser nor chrome API is available');
+})();
+
 async function getActiveTab() {
   // Open popup.html?tab=5 to use tab ID 5, etc.
   if (URL_PARAMS.has("tab")) {
     const tabId = parseInt(URL_PARAMS.get("tab"));
-    return await browser.tabs.get(tabId);
+    return await browserAPI.tabs.get(tabId);
   }
 
-  const tabs = await browser.tabs.query({
+  const tabs = await browserAPI.tabs.query({
     active: true,
     currentWindow: true
   });
@@ -22,7 +33,7 @@ function initializeI18n() {
 
   elements.forEach(element => {
     const key = element.getAttribute('data-i18n');
-    const message = browser.i18n.getMessage(key);
+    const message = browserAPI.i18n.getMessage(key);
 
     if (message) {
       // Set the content based on element type
@@ -44,7 +55,7 @@ function initializeI18n() {
   const elementsWithTitle = document.querySelectorAll('[data-i18n-title]');
   elementsWithTitle.forEach(element => {
     const key = element.getAttribute('data-i18n-title');
-    const message = browser.i18n.getMessage(key);
+    const message = browserAPI.i18n.getMessage(key);
     if (message) {
       element.title = message;
     }
@@ -68,8 +79,8 @@ function updateTheme(isDark) {
   document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
   
   // Chrome 확장에서 현재 브라우저 테마 정보도 가져올 수 있음
-  if (browser.theme && browser.theme.getCurrent) {
-    browser.theme.getCurrent((theme) => {
+  if (browserAPI.theme && browserAPI.theme.getCurrent) {
+    browserAPI.theme.getCurrent((theme) => {
       // 브라우저 커스텀 테마가 있으면 추가로 처리 가능
       console.log('Current browser theme:', theme);
     });
@@ -101,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const currentUrl = tab.url;
     if (!currentUrl) return;
 
-    const result = await browser.storage.local.get([currentUrl]);
+    const result = await browserAPI.storage.local.get([currentUrl]);
     let highlights = result[currentUrl] || [];
 
     // 그룹 구조이므로 position은 대표 span의 position 사용
@@ -135,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const deleteBtn = document.createElement('span');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = '×';
-        deleteBtn.title = browser.i18n.getMessage('removeHighlight');
+        deleteBtn.title = browserAPI.i18n.getMessage('removeHighlight');
         deleteBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           deleteHighlight(group.groupId, currentUrl);
@@ -153,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Load minimap settings
   async function loadMinimapSetting() {
-    const result = await browser.storage.local.get(['minimapVisible']);
+    const result = await browserAPI.storage.local.get(['minimapVisible']);
     // Default value is true (show minimap)
     const isVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
     minimapToggle.checked = isVisible;
@@ -165,12 +176,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     const isVisible = minimapToggle.checked;
 
     // Save to storage
-    await browser.storage.local.set({ minimapVisible: isVisible });
+    await browserAPI.storage.local.set({ minimapVisible: isVisible });
     debugLog('Minimap visibility saved:', isVisible);
 
     // Apply settings to current page
     const tab = await getActiveTab();
-    await browser.tabs.sendMessage(tab.id, {
+    await browserAPI.tabs.sendMessage(tab.id, {
       action: 'setMinimapVisibility',
       visible: isVisible
     });
@@ -178,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Delete highlight (그룹 단위)
   async function deleteHighlight(groupId, url) {
-    const response = await browser.runtime.sendMessage({
+    const response = await browserAPI.runtime.sendMessage({
       action: 'deleteHighlight',
       url: url,
       groupId: groupId, // groupId로 삭제
@@ -193,13 +204,13 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Delete all highlights
   clearAllBtn.addEventListener('click', async function () {
     debugLog('Clearing all highlights');
-    const confirmMessage = browser.i18n.getMessage('confirmClearAll');
+    const confirmMessage = browserAPI.i18n.getMessage('confirmClearAll');
     if (confirm(confirmMessage)) {
       const tab = await getActiveTab();
       const currentUrl = tab.url;
       if (!currentUrl) return;
       
-      const response = await browser.runtime.sendMessage({
+      const response = await browserAPI.runtime.sendMessage({
         action: 'clearAllHighlights',
         url: currentUrl,
         notifyRefresh: true
@@ -215,16 +226,16 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Delete all custom colors
   deleteCustomColorsBtn.addEventListener('click', async function () {
     debugLog('Deleting all custom colors');
-    const confirmMessage = browser.i18n.getMessage('confirmDeleteCustomColors') || 'Delete all custom colors?';
+    const confirmMessage = browserAPI.i18n.getMessage('confirmDeleteCustomColors') || 'Delete all custom colors?';
     if (confirm(confirmMessage)) {
-      const response = await browser.runtime.sendMessage({ action: 'clearCustomColors' });
+      const response = await browserAPI.runtime.sendMessage({ action: 'clearCustomColors' });
       if (response && response.success) {
         if (response.noCustomColors) {
           debugLog('No custom colors to delete');
-          alert(browser.i18n.getMessage('noCustomColorsToDelete') || 'No custom colors to delete.');
+          alert(browserAPI.i18n.getMessage('noCustomColorsToDelete') || 'No custom colors to delete.');
         } else {
           debugLog('All custom colors deleted');
-          alert(browser.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
+          alert(browserAPI.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
         }
       }
     }
@@ -233,16 +244,16 @@ document.addEventListener('DOMContentLoaded', async function () {
   // View list of highlighted pages
   viewAllPagesBtn.addEventListener('click', function () {
     debugLog('Opening all pages list');
-    const targetUrl = browser.runtime.getURL('pages-list.html');
-    browser.windows.getAll({populate: true}, function(windows) {
+    const targetUrl = browserAPI.runtime.getURL('pages-list.html');
+    browserAPI.windows.getAll({populate: true}, function(windows) {
       let found = false;
       for (const win of windows) {
         for (const tab of win.tabs) {
           if (tab.url && tab.url.startsWith(targetUrl)) {
-            browser.windows.update(win.id, {focused: true});
-            browser.tabs.update(tab.id, {active: true});
+            browserAPI.windows.update(win.id, {focused: true});
+            browserAPI.tabs.update(tab.id, {active: true});
             // 페이지 목록 갱신 메시지 전송
-            browser.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
+            browserAPI.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
             found = true;
             break;
           }
@@ -250,7 +261,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (found) break;
       }
       if (!found) {
-        browser.windows.create({
+        browserAPI.windows.create({
           url: targetUrl,
           type: 'popup',
           width: 860,

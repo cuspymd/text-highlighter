@@ -1,3 +1,14 @@
+// Cross-browser compatibility - use chrome API in Chrome, browser API in Firefox
+const browserAPI = (() => {
+  if (typeof browser !== 'undefined') {
+    return browser;
+  }
+  if (typeof chrome !== 'undefined') {
+    return chrome;
+  }
+  throw new Error('Neither browser nor chrome API is available');
+})();
+
 // 테마 변경 감지 및 처리
 function initializeThemeWatcher() {
   const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -15,8 +26,8 @@ function updateTheme(isDark) {
   document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
   
   // Chrome 확장에서 현재 브라우저 테마 정보도 가져올 수 있음
-  if (browser.theme && browser.theme.getCurrent) {
-    browser.theme.getCurrent((theme) => {
+  if (browserAPI.theme && browserAPI.theme.getCurrent) {
+    browserAPI.theme.getCurrent((theme) => {
       // 브라우저 커스텀 테마가 있으면 추가로 처리 가능
       console.log('Current browser theme:', theme);
     });
@@ -43,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Function to get messages for multi-language support
   function getMessage(key, defaultValue = '') {
-    if (typeof chrome !== 'undefined' && browser.i18n) {
-      return browser.i18n.getMessage(key) || defaultValue;
+    if (typeof chrome !== 'undefined' && browserAPI.i18n) {
+      return browserAPI.i18n.getMessage(key) || defaultValue;
     }
     return defaultValue;
   }
@@ -67,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Load all highlighted pages data
   function loadAllHighlightedPages() {
-    browser.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+    browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
       if (response && response.success) {
         debugLog('Received all highlighted pages from background:', response.pages);
         displayPages(response.pages);
@@ -106,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
           try {
             const date = new Date(page.lastUpdated);
             // Determine date format based on current language
-            const locale = browser.i18n.getUILanguage ? browser.i18n.getUILanguage() : 'en';
+            const locale = browserAPI.i18n.getUILanguage ? browserAPI.i18n.getUILanguage() : 'en';
             lastUpdated = date.toLocaleString(locale);
           } catch (e) {
             lastUpdated = page.lastUpdated;
@@ -200,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Open page button event
         pageItem.querySelector('.btn-view').addEventListener('click', function () {
-          browser.tabs.create({ url: page.url });
+          browserAPI.tabs.create({ url: page.url });
         });
 
         // Delete page button event
@@ -220,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Delete all highlights for a page
   function deletePageHighlights(url) {
-    browser.runtime.sendMessage({
+    browserAPI.runtime.sendMessage({
       action: 'clearAllHighlights',
       url: url,
       notifyRefresh: false  // No need to notify as we're not on the page
@@ -236,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Function to delete all highlighted pages
   function deleteAllPages() {
-    browser.runtime.sendMessage({ action: 'deleteAllHighlightedPages' }, (response) => {
+    browserAPI.runtime.sendMessage({ action: 'deleteAllHighlightedPages' }, (response) => {
       if (response && response.success) {
         debugLog('All pages deleted successfully, count:', response.deletedCount);
         // Clear the UI immediately without reloading from storage
@@ -278,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
           }
           // Get all current storage to check for overlap
-          browser.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+          browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
             if (response && response.success) {
               const existingUrls = response.pages.map(p => p.url);
               const importUrls = json.pages.map(p => p.url);
@@ -302,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   lastUpdated: page.lastUpdated || new Date().toISOString()
                 };
               });
-              browser.storage.local.set(ops, () => {
+              browserAPI.storage.local.set(ops, () => {
                 alert(getMessage('importSuccess', 'Import completed.'));
                 loadAllHighlightedPages();
               });
@@ -321,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Export all highlights event
   if (exportAllBtn) {
     exportAllBtn.addEventListener('click', function () {
-      browser.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+      browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
         if (response && response.success) {
           const exportData = response.pages;
           if (exportData.length === 0) {
@@ -364,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // 메시지로 페이지 목록 새로고침
-  browser.runtime.onMessage.addListener(function(request) {
+  browserAPI.runtime.onMessage.addListener(function(request) {
     if (request.action === 'refreshPagesList') {
       loadAllHighlightedPages();
     }

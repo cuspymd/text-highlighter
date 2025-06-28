@@ -30,11 +30,6 @@ const directoriesToCopy = [
   'images'
 ];
 
-// Additional files for Firefox (webextension-polyfill)
-const firefoxAdditionalFiles = [
-  'node_modules/webextension-polyfill/dist/browser-polyfill.min.js'
-];
-
 // Select deployment directory based on target browser
 const currentDeployDir = targetBrowser === 'firefox' ? firefoxDeployDir : deployDir;
 
@@ -86,23 +81,6 @@ for (const file of filesToCopy) {
     copyFile(src, dest);
   } else {
     console.warn(`Warning: ${file} not found`);
-  }
-}
-
-// Copy Firefox-specific files if building for Firefox
-if (targetBrowser === 'firefox') {
-  // Create node_modules directory in deploy
-  const nodeModulesDir = path.join(currentDeployDir, 'node_modules', 'webextension-polyfill', 'dist');
-  fs.mkdirSync(nodeModulesDir, { recursive: true });
-  
-  for (const file of firefoxAdditionalFiles) {
-    const src = path.join(sourceDir, file);
-    const dest = path.join(currentDeployDir, file);
-    if (fs.existsSync(src)) {
-      copyFile(src, dest);
-    } else {
-      console.warn(`Warning: ${file} not found`);
-    }
   }
 }
 

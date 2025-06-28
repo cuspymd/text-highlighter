@@ -61,7 +61,6 @@
         "<all_urls>"
       ],
       "js": [
-        "node_modules/webextension-polyfill/dist/browser-polyfill.min.js",
         "minimap.js",
         "controls.js",
         "content.js"
@@ -80,8 +79,7 @@
     {
       "resources": [
         "pages-list.html",
-        "pages-list.js",
-        "node_modules/webextension-polyfill/dist/browser-polyfill.min.js"
+        "pages-list.js"
       ],
       "matches": [
         "<all_urls>"
