@@ -151,6 +151,101 @@
           color: #000 !important;
         }
       }
+
+      /* Custom Modal Styles */
+      .custom-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content {
+        position: relative;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        min-width: 250px;
+        max-width: 90%;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 10001;
+      }
+
+      .modal-content p {
+        margin: 0 0 15px 0;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .modal-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .modal-btn {
+        padding: 8px 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #f0f0f0;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .modal-btn:hover {
+        background-color: #e0e0e0;
+      }
+
+      .modal-confirm {
+        background-color: #007cba;
+        color: white;
+        border-color: #007cba;
+      }
+
+      .modal-confirm:hover {
+        background-color: #005a87;
+      }
+
+      /* Dark theme for modal */
+      @media (prefers-color-scheme: dark) {
+        .modal-content {
+          background-color: #2d2d2d;
+          color: #e0e0e0;
+        }
+
+        .modal-btn {
+          background-color: #404040;
+          border-color: #555;
+          color: #e0e0e0;
+        }
+
+        .modal-btn:hover {
+          background-color: #505050;
+        }
+
+        .modal-confirm {
+          background-color: #0066cc;
+          border-color: #0066cc;
+        }
+
+        .modal-confirm:hover {
+          background-color: #004499;
+        }
+      }
     </style>
   </head>
   <body>

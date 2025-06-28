@@ -77,13 +77,13 @@ test.describe('Popup Tests', () => {
     const highlight = await highlightItems.nth(0).textContent();
     expect(highlight.startsWith(h1Text.substring(0, 45))).toBe(true);
 
-    // confirm 다이얼로그 자동 수락
-    popupPage.on('dialog', async dialog => {
-      await dialog.accept();
-    });
-
     // 5. 팝업의 clear-all 버튼 클릭
     await popupPage.click('#clear-all');
+    
+    // 커스텀 modal의 confirm 버튼 클릭
+    const confirmBtn = popupPage.locator('.modal-confirm');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
 
     // 6. 모든 하이라이트가 제거되었는지 검증
     await expect(h1Span).toHaveCount(0);
@@ -195,9 +195,18 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
 
-    // confirm 자동 수락
-    popupPage.on('dialog', async dialog => { await dialog.accept(); });
+    // Delete Custom Colors 버튼 클릭
     await popupPage.click('#delete-custom-colors');
+    
+    // 커스텀 modal의 confirm 버튼 클릭
+    const confirmBtn = popupPage.locator('.modal-confirm');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
+    
+    // alert modal의 OK 버튼 클릭 (성공 메시지)
+    const okBtn = popupPage.locator('.modal-confirm');
+    await expect(okBtn).toBeVisible();
+    await okBtn.click();
 
     // 컨트롤 UI에 새 색상 버튼이 사라졌는지 확인
     await page.waitForFunction((rgb) => {

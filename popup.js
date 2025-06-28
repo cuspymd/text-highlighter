@@ -79,6 +79,102 @@ function updateTheme(isDark) {
   document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
 }
 
+// Custom modal functions to replace alert/confirm for Firefox compatibility
+function showConfirmModal(message) {
+  return new Promise((resolve) => {
+    const modal = createModal();
+    const content = modal.querySelector('.modal-content');
+    
+    content.innerHTML = `
+      <p>${message}</p>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-confirm">${browserAPI.i18n.getMessage('confirmButton') || 'OK'}</button>
+        <button class="modal-btn modal-cancel">${browserAPI.i18n.getMessage('cancelButton') || 'Cancel'}</button>
+      </div>
+    `;
+    
+    const confirmBtn = content.querySelector('.modal-confirm');
+    const cancelBtn = content.querySelector('.modal-cancel');
+    
+    confirmBtn.addEventListener('click', () => {
+      removeModal(modal);
+      resolve(true);
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+      removeModal(modal);
+      resolve(false);
+    });
+    
+    // ESC key to cancel
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', escHandler);
+        removeModal(modal);
+        resolve(false);
+      }
+    });
+  });
+}
+
+function showAlertModal(message) {
+  return new Promise((resolve) => {
+    const modal = createModal();
+    const content = modal.querySelector('.modal-content');
+    
+    content.innerHTML = `
+      <p>${message}</p>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-confirm">${browserAPI.i18n.getMessage('okButton') || 'OK'}</button>
+      </div>
+    `;
+    
+    const confirmBtn = content.querySelector('.modal-confirm');
+    
+    confirmBtn.addEventListener('click', () => {
+      removeModal(modal);
+      resolve();
+    });
+    
+    // ESC key to close
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', escHandler);
+        removeModal(modal);
+        resolve();
+      }
+    });
+  });
+}
+
+function createModal() {
+  const modal = document.createElement('div');
+  modal.className = 'custom-modal';
+  
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  
+  const content = document.createElement('div');
+  content.className = 'modal-content';
+  
+  modal.appendChild(overlay);
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  
+  // Close on overlay click
+  overlay.addEventListener('click', () => {
+    removeModal(modal);
+  });
+  
+  return modal;
+}
+
+function removeModal(modal) {
+  if (modal && modal.parentNode) {
+    modal.parentNode.removeChild(modal);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
   // Initialize internationalization first
   initializeI18n();
@@ -197,7 +293,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   clearAllBtn.addEventListener('click', async function () {
     debugLog('Clearing all highlights');
     const confirmMessage = browserAPI.i18n.getMessage('confirmClearAll');
-    if (confirm(confirmMessage)) {
+    const confirmed = await showConfirmModal(confirmMessage);
+    if (confirmed) {
       const tab = await getActiveTab();
       const currentUrl = tab.url;
       if (!currentUrl) return;
@@ -219,15 +316,16 @@ document.addEventListener('DOMContentLoaded', async function () {
   deleteCustomColorsBtn.addEventListener('click', async function () {
     debugLog('Deleting all custom colors');
     const confirmMessage = browserAPI.i18n.getMessage('confirmDeleteCustomColors') || 'Delete all custom colors?';
-    if (confirm(confirmMessage)) {
+    const confirmed = await showConfirmModal(confirmMessage);
+    if (confirmed) {
       const response = await browserAPI.runtime.sendMessage({ action: 'clearCustomColors' });
       if (response && response.success) {
         if (response.noCustomColors) {
           debugLog('No custom colors to delete');
-          alert(browserAPI.i18n.getMessage('noCustomColorsToDelete') || 'No custom colors to delete.');
+          await showAlertModal(browserAPI.i18n.getMessage('noCustomColorsToDelete') || 'No custom colors to delete.');
         } else {
           debugLog('All custom colors deleted');
-          alert(browserAPI.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
+          await showAlertModal(browserAPI.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
         }
       }
     }
