@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Chrome extension called "Marks: Text Highlighter" that allows users to highlight text on web pages with multiple colors, manage highlights, and view them via a minimap interface. The extension supports keyboard shortcuts, context menus, and multilingual localization.
+This is a cross-browser extension called "Marks: Text Highlighter" that allows users to highlight text on web pages with multiple colors, manage highlights, and view them via a minimap interface. The extension supports keyboard shortcuts, context menus, and multilingual localization (English, Korean, Japanese, Chinese).
 
 ## Essential Commands
 
@@ -12,11 +12,17 @@ This is a Chrome extension called "Marks: Text Highlighter" that allows users to
 - `npx playwright test` - Run E2E tests using Playwright (primary testing method)
 - `npm test` - Run Jest unit tests (environment configured but no tests written yet)
 
-### Deployment
+### Development Builds
 - `npm run deploy` - Build extension for Chrome by copying files to `dist/` directory
+- `npm run deploy:firefox` - Build extension for Firefox by copying files to `dist-firefox/` directory
 
-### Loading in Chrome
-After running `npm run deploy`, load the `dist/` directory as an unpacked extension in Chrome.
+### Production Builds
+- `npm run version-deploy <version>` - Updates manifest versions, sets DEBUG_MODE to false, builds for Chrome, and creates zip file in `outputs/` directory
+- Example: `npm run version-deploy 1.2.0`
+
+### Loading Extensions
+- **Chrome**: Load `dist/` directory as unpacked extension via chrome://extensions
+- **Firefox**: Load `dist-firefox/manifest.json` as temporary add-on via about:debugging
 
 ## Architecture
 
@@ -58,12 +64,42 @@ After running `npm run deploy`, load the `dist/` directory as an unpacked extens
 - `e2e-tests/` - Playwright test files
 - `scripts/deploy.js` - Deployment script
 
+### Cross-Browser Compatibility Architecture
+
+The extension uses a `browserAPI` compatibility layer instead of webextension-polyfill:
+
+```javascript
+const browserAPI = (() => {
+  if (typeof browser !== 'undefined') {
+    return browser;  // Firefox native
+  }
+  if (typeof chrome !== 'undefined') {
+    return chrome;   // Chrome native
+  }
+  throw new Error('Neither browser nor chrome API is available');
+})();
+```
+
+- **Chrome**: Uses native `chrome.*` APIs directly
+- **Firefox**: Uses native `browser.*` APIs directly
+- **Manifests**: Separate manifest files for browser-specific configurations
+  - `manifest.json`: Chrome-optimized
+  - `manifest-firefox.json`: Firefox-optimized
+
 ### Storage Architecture
 
-- Uses `chrome.storage.local` for highlight data
-- Highlights stored by URL as key
-- Metadata stored with `${url}_meta` suffix
+- Uses `browserAPI.storage.local` for highlight data
+- Highlights stored by URL as key with array of highlight groups
+- Metadata stored with `${url}_meta` suffix containing title and lastUpdated
 - Custom colors stored in `customColors` array
+- Each highlight group has: `groupId`, `color`, `text`, `spans[]` with position data
+
+### Message Communication Flow
+
+1. **Background ↔ Content**: Highlight creation, color updates, storage operations
+2. **Background ↔ Popup**: Page data retrieval, bulk operations
+3. **Content → Controls**: UI interaction for highlight modification
+4. **Content → Minimap**: Position updates for visual representation
 
 ### Debug Mode
 
