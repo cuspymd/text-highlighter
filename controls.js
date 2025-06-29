@@ -437,6 +437,7 @@ function refreshHighlightControlsColors() {
 function showControlUi(highlightElement, e) {
   if (!highlightControlsContainer) createHighlightControls();
 
+  activeHighlightElement = highlightElement;
   highlightControlsContainer.style.top = `${window.scrollY + e.clientY - 40}px`;
   highlightControlsContainer.style.left = `${window.scrollX + e.clientX - 40}px`;
   highlightControlsContainer.style.display = 'flex';

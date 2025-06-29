@@ -411,16 +411,20 @@ test.describe('Chrome Extension Tests', () => {
     const controls = page.locator('.text-highlighter-controls');
     await expect(controls).toBeVisible();
 
-    // '+' 버튼의 숨겨진 input[type="color"]에 값 설정 후 change 이벤트 트리거
+    // '+' 버튼 클릭하여 커스텀 색상 피커 열기
     const addColorBtn = controls.locator('.add-color-button');
-    const newColorHex = '#00FFFF'; // cyan
-    await addColorBtn.locator('input[type="color"]').evaluate((input, color) => {
-      input.value = color;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    }, newColorHex);
+    await addColorBtn.click();
+    
+    // 커스텀 색상 피커가 나타날 때까지 대기
+    const customColorPicker = page.locator('.custom-color-picker');
+    await expect(customColorPicker).toBeVisible();
+    
+    // 원하는 색상의 프리셋 클릭 (cyan에 가까운 색상 선택)
+    const newColorHex = '#4ECDC4'; // 프리셋에서 사용 가능한 cyan 계열 색상
+    await customColorPicker.locator(`[data-color="${newColorHex}"]`).click();
 
     // 컨트롤 UI가 새 색상 버튼을 생성할 때까지 대기
-    const newColorRgb = 'rgb(0, 255, 255)';
+    const newColorRgb = 'rgb(78, 205, 196)'; // #4ECDC4의 RGB 값
     await page.waitForFunction((rgb) => {
       const controls = document.querySelector('.text-highlighter-controls');
       return Array.from(controls.querySelectorAll('.color-button')).some(b => getComputedStyle(b).backgroundColor === rgb);

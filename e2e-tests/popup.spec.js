@@ -177,13 +177,17 @@ test.describe('Popup Tests', () => {
 
     // + 버튼으로 새 색상 추가
     const addColorBtn = controls.locator('.add-color-button');
-    const newColorHex = '#00FFFF';
-    await addColorBtn.locator('input[type="color"]').evaluate((input, color) => {
-      input.value = color;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    }, newColorHex);
+    await addColorBtn.click();
+    
+    // 커스텀 색상 피커가 나타날 때까지 대기
+    const customColorPicker = page.locator('.custom-color-picker');
+    await expect(customColorPicker).toBeVisible();
+    
+    // 원하는 색상의 프리셋 클릭 (cyan에 가까운 색상 선택)
+    const newColorHex = '#4ECDC4'; // 프리셋에서 사용 가능한 cyan 계열 색상
+    await customColorPicker.locator(`[data-color="${newColorHex}"]`).click();
 
-    const newColorRgb = 'rgb(0, 255, 255)';
+    const newColorRgb = 'rgb(78, 205, 196)'; // #4ECDC4의 RGB 값
     // 새 버튼이 나타날 때까지 대기
     await page.waitForFunction((rgb) => {
       const controls = document.querySelector('.text-highlighter-controls');
