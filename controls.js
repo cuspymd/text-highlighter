@@ -117,12 +117,21 @@ function createAddColorButton() {
   return addColorBtn;
 }
 
+// 현재 활성화된 closeHandler를 추적하기 위한 변수
+let currentCloseHandler = null;
+
 // 커스텀 색상 선택기 생성 및 표시 (재사용 가능한 함수)
 function showCustomColorPicker(triggerButton) {
   // 기존 색상 선택기가 있으면 제거
   const existingPicker = document.querySelector('.custom-color-picker');
   if (existingPicker) {
     existingPicker.remove();
+  }
+  
+  // 이전 closeHandler가 있으면 제거
+  if (currentCloseHandler) {
+    document.removeEventListener('click', currentCloseHandler);
+    currentCloseHandler = null;
   }
   
   // 커스텀 색상 선택기 생성
@@ -181,37 +190,43 @@ function showCustomColorPicker(triggerButton) {
   // HSL 슬라이더 초기화
   initHSLSliders(customColorPicker);
   
+  // closeHandler 제거 및 피커 닫기 공통 함수
+  const closeColorPicker = () => {
+    customColorPicker.remove();
+    colorPickerOpen = false;
+    if (currentCloseHandler) {
+      document.removeEventListener('click', currentCloseHandler);
+      currentCloseHandler = null;
+    }
+  };
+
   // 색상 선택 이벤트
   customColorPicker.addEventListener('click', (e) => {
     if (e.target.classList.contains('color-preset')) {
       e.stopPropagation();
       const color = e.target.dataset.color;
       addCustomColor(color);
-      customColorPicker.remove();
-      colorPickerOpen = false;
+      closeColorPicker();
     } else if (e.target.classList.contains('color-picker-close')) {
       e.stopPropagation();
-      customColorPicker.remove();
-      colorPickerOpen = false;
+      closeColorPicker();
     } else if (e.target.id === 'applyColor') {
       e.stopPropagation();
       const preview = customColorPicker.querySelector('#colorPreview');
       const color = rgbToHex(preview.style.backgroundColor);
       addCustomColor(color);
-      customColorPicker.remove();
-      colorPickerOpen = false;
+      closeColorPicker();
     }
   });
   
   // 외부 클릭 시 닫기
   setTimeout(() => {
-    document.addEventListener('click', function closeHandler(e) {
+    currentCloseHandler = function(e) {
       if (!customColorPicker.contains(e.target) && !triggerButton.contains(e.target)) {
-        customColorPicker.remove();
-        colorPickerOpen = false;
-        document.removeEventListener('click', closeHandler);
+        closeColorPicker();
       }
-    });
+    };
+    document.addEventListener('click', currentCloseHandler);
   }, 10);
 }
 
