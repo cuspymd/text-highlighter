@@ -184,16 +184,22 @@ function showCustomColorPicker(triggerButton) {
   // 색상 선택 이벤트
   customColorPicker.addEventListener('click', (e) => {
     if (e.target.classList.contains('color-preset')) {
+      e.stopPropagation();
       const color = e.target.dataset.color;
       addCustomColor(color);
       customColorPicker.remove();
+      colorPickerOpen = false;
     } else if (e.target.classList.contains('color-picker-close')) {
+      e.stopPropagation();
       customColorPicker.remove();
+      colorPickerOpen = false;
     } else if (e.target.id === 'applyColor') {
+      e.stopPropagation();
       const preview = customColorPicker.querySelector('#colorPreview');
       const color = rgbToHex(preview.style.backgroundColor);
       addCustomColor(color);
       customColorPicker.remove();
+      colorPickerOpen = false;
     }
   });
   
@@ -202,6 +208,7 @@ function showCustomColorPicker(triggerButton) {
     document.addEventListener('click', function closeHandler(e) {
       if (!customColorPicker.contains(e.target) && !triggerButton.contains(e.target)) {
         customColorPicker.remove();
+        colorPickerOpen = false;
         document.removeEventListener('click', closeHandler);
       }
     });

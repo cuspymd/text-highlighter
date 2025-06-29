@@ -32,10 +32,7 @@ document.addEventListener('click', function (e) {
   if (!highlightControlsContainer) return;
   // While native color picker is open, keep the control UI visible
   if (colorPickerOpen) {
-    colorPickerOpen = false;
     return; 
-  } else {
-    colorPickerOpen = false;
   }
 
   const isClickOnHighlight = activeHighlightElement &&
