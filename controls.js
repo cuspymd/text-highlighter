@@ -80,33 +80,286 @@ function createHighlightControls() {
   addColorBtn.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="8" y1="3" x2="8" y2="13" stroke="#999" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>`;
   addColorBtn.title = getMessage('addColor') || '+';
 
-  const hiddenColorInput = document.createElement('input');
-  hiddenColorInput.type = 'color';
-  hiddenColorInput.className = 'hidden-color-input';
-
   // --- manage color picker open/close state ---
-  hiddenColorInput.addEventListener('click', () => {
+  let customColorPicker = null;
+  
+  // 모든 브라우저에서 add 버튼에 직접 이벤트 연결
+  addColorBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     colorPickerOpen = true;
+    showCustomColorPicker();
   });
-
-  // change 이벤트에서 실제 색상 추가 처리
-  hiddenColorInput.addEventListener('change', (e) => {
-    const newColor = e.target.value;
-    if (!newColor) return;
-    lastAddedColor = newColor; // 방금 추가된 색상 추적
-    browserAPI.runtime.sendMessage({ action: 'addColor', color: newColor }, (response) => {
+  
+  function showCustomColorPicker() {
+    // 기존 색상 선택기가 있으면 제거
+    if (customColorPicker) {
+      customColorPicker.remove();
+    }
+    
+    // 커스텀 색상 선택기 생성
+    customColorPicker = document.createElement('div');
+    customColorPicker.className = 'custom-color-picker';
+    customColorPicker.innerHTML = `
+      <div class="color-picker-header">색상 선택</div>
+      <div class="color-preset-grid">
+        <div class="color-preset" style="background-color: #FF6B6B" data-color="#FF6B6B"></div>
+        <div class="color-preset" style="background-color: #4ECDC4" data-color="#4ECDC4"></div>
+        <div class="color-preset" style="background-color: #45B7D1" data-color="#45B7D1"></div>
+        <div class="color-preset" style="background-color: #96CEB4" data-color="#96CEB4"></div>
+        <div class="color-preset" style="background-color: #FFEAA7" data-color="#FFEAA7"></div>
+        <div class="color-preset" style="background-color: #DDA0DD" data-color="#DDA0DD"></div>
+        <div class="color-preset" style="background-color: #98D8C8" data-color="#98D8C8"></div>
+        <div class="color-preset" style="background-color: #F7DC6F" data-color="#F7DC6F"></div>
+        <div class="color-preset" style="background-color: #BB8FCE" data-color="#BB8FCE"></div>
+        <div class="color-preset" style="background-color: #85C1E9" data-color="#85C1E9"></div>
+        <div class="color-preset" style="background-color: #F39C12" data-color="#F39C12"></div>
+        <div class="color-preset" style="background-color: #E74C3C" data-color="#E74C3C"></div>
+        <div class="color-preset" style="background-color: #9B59B6" data-color="#9B59B6"></div>
+        <div class="color-preset" style="background-color: #3498DB" data-color="#3498DB"></div>
+        <div class="color-preset" style="background-color: #1ABC9C" data-color="#1ABC9C"></div>
+        <div class="color-preset" style="background-color: #2ECC71" data-color="#2ECC71"></div>
+        <div class="color-preset" style="background-color: #F1C40F" data-color="#F1C40F"></div>
+        <div class="color-preset" style="background-color: #E67E22" data-color="#E67E22"></div>
+        <div class="color-preset" style="background-color: #95A5A6" data-color="#95A5A6"></div>
+        <div class="color-preset" style="background-color: #34495E" data-color="#34495E"></div>
+      </div>
+      <div class="custom-color-section">
+        <div class="hue-slider-container">
+          <div class="hue-slider" id="hueSlider">
+            <div class="hue-handle" id="hueHandle"></div>
+          </div>
+        </div>
+        <div class="saturation-lightness-picker" id="slPicker">
+          <div class="sl-handle" id="slHandle"></div>
+        </div>
+        <div class="color-preview" id="colorPreview" style="background-color: #FF6B6B;"></div>
+      </div>
+      <div class="color-picker-buttons">
+        <button class="color-picker-apply" id="applyColor">적용</button>
+        <button class="color-picker-close">취소</button>
+      </div>
+    `;
+    
+    // 위치 설정
+    const controlsRect = highlightControlsContainer.getBoundingClientRect();
+    customColorPicker.style.position = 'fixed';
+    customColorPicker.style.top = `${controlsRect.bottom + 5}px`;
+    customColorPicker.style.left = `${controlsRect.left}px`;
+    customColorPicker.style.zIndex = '10000';
+    
+    document.body.appendChild(customColorPicker);
+    
+    // 이벤트 리스너 추가
+    customColorPicker.addEventListener('click', (e) => {
+      if (e.target.classList.contains('color-preset')) {
+        const color = e.target.dataset.color;
+        addCustomColor(color);
+        hideCustomColorPicker();
+      } else if (e.target.classList.contains('color-picker-close')) {
+        hideCustomColorPicker();
+      } else if (e.target.id === 'applyColor') {
+        const preview = customColorPicker.querySelector('#colorPreview');
+        const color = rgbToHex(preview.style.backgroundColor);
+        addCustomColor(color);
+        hideCustomColorPicker();
+      }
+    });
+    
+    // 커스텀 색상 선택기 초기화
+    initHSLSliders(customColorPicker);
+    
+    // 외부 클릭 시 닫기
+    setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+    }, 10);
+    
+    function handleOutsideClick(e) {
+      if (customColorPicker && !customColorPicker.contains(e.target) && !addColorBtn.contains(e.target)) {
+        hideCustomColorPicker();
+        document.removeEventListener('click', handleOutsideClick);
+      }
+    }
+  }
+  
+  function hideCustomColorPicker() {
+    if (customColorPicker) {
+      customColorPicker.remove();
+      customColorPicker = null;
+    }
+  }
+  
+  function addCustomColor(color) {
+    lastAddedColor = color;
+    browserAPI.runtime.sendMessage({ action: 'addColor', color: color }, (response) => {
       if (response && response.colors) {
         currentColors = response.colors;
         refreshHighlightControlsColors();
       }
     });
-  });
+  }
+  
+  
+  // RGB to Hex 변환 함수
+  function rgbToHex(rgb) {
+    if (rgb.startsWith('#')) return rgb;
+    
+    // HSL 형식 처리
+    if (rgb.startsWith('hsl')) {
+      return hslToHex(rgb);
+    }
+    
+    const match = rgb.match(/\d+/g);
+    if (!match) return '#FF6B6B';
+    
+    const r = parseInt(match[0]);
+    const g = parseInt(match[1]);
+    const b = parseInt(match[2]);
+    
+    return '#' + [r, g, b].map(x => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  }
+  
+  // HSL to Hex 변환 함수
+  function hslToHex(hsl) {
+    const match = hsl.match(/\d+/g);
+    if (!match) return '#FF6B6B';
+    
+    const h = parseInt(match[0]) / 360;
+    const s = parseInt(match[1]) / 100;
+    const l = parseInt(match[2]) / 100;
+    
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    
+    let r, g, b;
+    
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    
+    const toHex = (c) => {
+      const hex = Math.round(c * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
 
-  // addColorBtn 내부에 input을 넣어 오버레이되도록 함
-  addColorBtn.appendChild(hiddenColorInput);
 
   colorButtonsContainer.appendChild(addColorBtn);
   document.body.appendChild(highlightControlsContainer);
+}
+
+// HSL 슬라이더 초기화 (재사용 가능한 함수)
+function initHSLSliders(picker) {
+  // 요소들이 존재하는지 확인
+  const hueSlider = picker.querySelector('[id^="hueSlider"]');
+  const hueHandle = picker.querySelector('[id^="hueHandle"]');
+  const slPicker = picker.querySelector('[id^="slPicker"]');
+  const slHandle = picker.querySelector('[id^="slHandle"]');
+  const colorPreview = picker.querySelector('[id^="colorPreview"]');
+  
+  if (!hueSlider || !hueHandle || !slPicker || !slHandle || !colorPreview) {
+    return; // 필요한 요소가 없으면 초기화하지 않음
+  }
+  
+  let currentHue = 0;
+  let currentSaturation = 100;
+  let currentLightness = 50;
+  
+  // Hue 슬라이더 이벤트
+  let isDraggingHue = false;
+  
+  hueSlider.addEventListener('mousedown', (e) => {
+    isDraggingHue = true;
+    updateHue(e);
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (isDraggingHue) {
+      updateHue(e);
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    isDraggingHue = false;
+  });
+  
+  function updateHue(e) {
+    const rect = hueSlider.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const hue = (x / rect.width) * 360;
+    
+    currentHue = hue;
+    hueHandle.style.left = `${x}px`;
+    updateSLBackground();
+    updateColorPreview();
+  }
+  
+  // Saturation/Lightness 피커 이벤트
+  let isDraggingSL = false;
+  
+  slPicker.addEventListener('mousedown', (e) => {
+    isDraggingSL = true;
+    updateSL(e);
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (isDraggingSL) {
+      updateSL(e);
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    isDraggingSL = false;
+  });
+  
+  function updateSL(e) {
+    const rect = slPicker.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+    
+    currentSaturation = (x / rect.width) * 100;
+    currentLightness = 100 - (y / rect.height) * 100;
+    
+    slHandle.style.left = `${x}px`;
+    slHandle.style.top = `${y}px`;
+    updateColorPreview();
+  }
+  
+  function updateSLBackground() {
+    slPicker.style.background = `linear-gradient(to bottom, 
+      hsl(${currentHue}, 100%, 50%) 0%, 
+      hsl(${currentHue}, 100%, 50%) 50%, 
+      hsl(${currentHue}, 0%, 50%) 100%),
+      linear-gradient(to right, 
+      hsl(${currentHue}, 0%, 100%) 0%, 
+      hsl(${currentHue}, 100%, 50%) 100%)`;
+  }
+  
+  function updateColorPreview() {
+    const color = `hsl(${currentHue}, ${currentSaturation}%, ${currentLightness}%)`;
+    colorPreview.style.backgroundColor = color;
+  }
+  
+  // 초기 설정
+  updateSLBackground();
+  updateColorPreview();
 }
 
 function appendColorSeparator(container) {
@@ -167,20 +420,112 @@ function refreshHighlightControlsColors() {
   addColorBtn.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="8" y1="3" x2="8" y2="13" stroke="#999" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>`;
   addColorBtn.title = getMessage('addColor') || '+';
 
-  const hiddenColorInput = document.createElement('input');
-  hiddenColorInput.type = 'color';
-  hiddenColorInput.className = 'hidden-color-input';
-
-  // reuse existing picker logic
-  hiddenColorInput.addEventListener('click', () => { colorPickerOpen = true; });
-  hiddenColorInput.addEventListener('change', (e) => {
-    const newColor = e.target.value;
-    if (!newColor) return;
-    lastAddedColor = newColor; // 방금 추가된 색상 추적
-    browserAPI.runtime.sendMessage({ action: 'addColor', color: newColor });
+  // 커스텀 색상 선택기 이벤트 추가 (인라인으로 처리)
+  addColorBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 기존 색상 선택기가 있으면 제거
+    const existingPicker = document.querySelector('.custom-color-picker');
+    if (existingPicker) {
+      existingPicker.remove();
+    }
+    
+    // 완전한 커스텀 색상 선택기 생성
+    const simpleColorPicker = document.createElement('div');
+    simpleColorPicker.className = 'custom-color-picker';
+    simpleColorPicker.innerHTML = `
+      <div class="color-picker-header">색상 선택</div>
+      <div class="color-preset-grid">
+        <div class="color-preset" style="background-color: #FF6B6B" data-color="#FF6B6B"></div>
+        <div class="color-preset" style="background-color: #4ECDC4" data-color="#4ECDC4"></div>
+        <div class="color-preset" style="background-color: #45B7D1" data-color="#45B7D1"></div>
+        <div class="color-preset" style="background-color: #96CEB4" data-color="#96CEB4"></div>
+        <div class="color-preset" style="background-color: #FFEAA7" data-color="#FFEAA7"></div>
+        <div class="color-preset" style="background-color: #DDA0DD" data-color="#DDA0DD"></div>
+        <div class="color-preset" style="background-color: #98D8C8" data-color="#98D8C8"></div>
+        <div class="color-preset" style="background-color: #F7DC6F" data-color="#F7DC6F"></div>
+        <div class="color-preset" style="background-color: #BB8FCE" data-color="#BB8FCE"></div>
+        <div class="color-preset" style="background-color: #85C1E9" data-color="#85C1E9"></div>
+        <div class="color-preset" style="background-color: #F39C12" data-color="#F39C12"></div>
+        <div class="color-preset" style="background-color: #E74C3C" data-color="#E74C3C"></div>
+        <div class="color-preset" style="background-color: #9B59B6" data-color="#9B59B6"></div>
+        <div class="color-preset" style="background-color: #3498DB" data-color="#3498DB"></div>
+        <div class="color-preset" style="background-color: #1ABC9C" data-color="#1ABC9C"></div>
+        <div class="color-preset" style="background-color: #2ECC71" data-color="#2ECC71"></div>
+        <div class="color-preset" style="background-color: #F1C40F" data-color="#F1C40F"></div>
+        <div class="color-preset" style="background-color: #E67E22" data-color="#E67E22"></div>
+        <div class="color-preset" style="background-color: #95A5A6" data-color="#95A5A6"></div>
+        <div class="color-preset" style="background-color: #34495E" data-color="#34495E"></div>
+      </div>
+      <div class="custom-color-section">
+        <div class="hue-slider-container">
+          <div class="hue-slider" id="hueSlider2">
+            <div class="hue-handle" id="hueHandle2"></div>
+          </div>
+        </div>
+        <div class="saturation-lightness-picker" id="slPicker2">
+          <div class="sl-handle" id="slHandle2"></div>
+        </div>
+        <div class="color-preview" id="colorPreview2" style="background-color: #FF6B6B;"></div>
+      </div>
+      <div class="color-picker-buttons">
+        <button class="color-picker-apply" id="applyColor2">적용</button>
+        <button class="color-picker-close">취소</button>
+      </div>
+    `;
+    
+    // 위치 설정
+    const controlsRect = highlightControlsContainer.getBoundingClientRect();
+    simpleColorPicker.style.position = 'fixed';
+    simpleColorPicker.style.top = `${controlsRect.bottom + 5}px`;
+    simpleColorPicker.style.left = `${controlsRect.left}px`;
+    simpleColorPicker.style.zIndex = '10000';
+    
+    document.body.appendChild(simpleColorPicker);
+    
+    // HSL 슬라이더 초기화
+    initHSLSliders(simpleColorPicker);
+    
+    // 색상 선택 이벤트
+    simpleColorPicker.addEventListener('click', (e) => {
+      if (e.target.classList.contains('color-preset')) {
+        const color = e.target.dataset.color;
+        lastAddedColor = color;
+        browserAPI.runtime.sendMessage({ action: 'addColor', color: color }, (response) => {
+          if (response && response.colors) {
+            currentColors = response.colors;
+            refreshHighlightControlsColors();
+          }
+        });
+        simpleColorPicker.remove();
+      } else if (e.target.classList.contains('color-picker-close')) {
+        simpleColorPicker.remove();
+      } else if (e.target.id === 'applyColor2') {
+        const preview = simpleColorPicker.querySelector('#colorPreview2');
+        const color = hslToHex(preview.style.backgroundColor);
+        lastAddedColor = color;
+        browserAPI.runtime.sendMessage({ action: 'addColor', color: color }, (response) => {
+          if (response && response.colors) {
+            currentColors = response.colors;
+            refreshHighlightControlsColors();
+          }
+        });
+        simpleColorPicker.remove();
+      }
+    });
+    
+    // 외부 클릭 시 닫기
+    setTimeout(() => {
+      document.addEventListener('click', function closeHandler(e) {
+        if (!simpleColorPicker.contains(e.target) && !addColorBtn.contains(e.target)) {
+          simpleColorPicker.remove();
+          document.removeEventListener('click', closeHandler);
+        }
+      });
+    }, 10);
   });
 
-  addColorBtn.appendChild(hiddenColorInput);
   colorButtonsContainer.appendChild(addColorBtn);
 }
 

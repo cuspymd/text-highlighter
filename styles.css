@@ -27,6 +27,9 @@
   transform: scale(0.8);
   pointer-events: none;
   transition: opacity 0.35s cubic-bezier(.4,1.4,.6,1), transform 0.35s cubic-bezier(.4,1.4,.6,1);
+  /* Firefox color picker positioning fix */
+  contain: layout;
+  isolation: isolate;
 }
 
 .text-highlighter-controls.visible {
@@ -150,14 +153,143 @@
   fill: none;
 }
 
-.hidden-color-input {
-  opacity: 0;
+
+.add-color-button {
+  position: relative;
+}
+
+/* Firefox 커스텀 색상 선택기 */
+.custom-color-picker {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 240px;
+}
+
+.color-picker-header {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.color-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.color-preset {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
   cursor: pointer;
-  position: absolute;
-  top: 0;
-  left: 0;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.color-preset:hover {
+  border-color: #999;
+}
+
+.custom-color-section {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hue-slider-container {
   width: 100%;
-  height: 100%;
+  height: 12px;
+  position: relative;
+}
+
+.hue-slider {
+  width: 100%;
+  height: 12px;
+  background: linear-gradient(to right, 
+    #ff0000 0%, #ffff00 16.66%, #00ff00 33.33%, 
+    #00ffff 50%, #0000ff 66.66%, #ff00ff 83.33%, #ff0000 100%);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+}
+
+.hue-handle {
+  width: 16px;
+  height: 16px;
+  background: white;
+  border: 2px solid #333;
+  border-radius: 50%;
+  position: absolute;
+  top: -2px;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.saturation-lightness-picker {
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent 0%, black 100%),
+              linear-gradient(to right, white 0%, red 100%);
+  border-radius: 4px;
+  cursor: crosshair;
+  position: relative;
+}
+
+.sl-handle {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: 2px solid #333;
+  border-radius: 50%;
+  position: absolute;
+  cursor: pointer;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.color-preview {
+  width: 40px;
+  height: 30px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  align-self: center;
+}
+
+.color-picker-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.color-picker-apply, .color-picker-close {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #333;
+}
+
+.color-picker-apply {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.color-picker-apply:hover {
+  background: #0056b3;
+}
+
+.color-picker-close:hover {
+  background: #e0e0e0;
 }
 
 .text-highlighter-color-buttons {
