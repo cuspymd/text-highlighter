@@ -370,8 +370,10 @@ function initHSLSliders(picker) {
     const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
     
+    // x축: 0 (white) -> 100 (pure color/최대 채도)
     currentSaturation = (x / rect.width) * 100;
-    currentLightness = 100 - (y / rect.height) * 100;
+    // y축: 0 (위쪽/밝음) -> 100 (아래쪽/검은색으로)
+    currentLightness = (1 - y / rect.height) * 100;
     
     slHandle.style.left = `${x}px`;
     slHandle.style.top = `${y}px`;
@@ -379,13 +381,9 @@ function initHSLSliders(picker) {
   }
   
   function updateSLBackground() {
-    slPicker.style.background = `linear-gradient(to bottom, 
-      hsl(${currentHue}, 100%, 50%) 0%, 
-      hsl(${currentHue}, 100%, 50%) 50%, 
-      hsl(${currentHue}, 0%, 50%) 100%),
-      linear-gradient(to right, 
-      hsl(${currentHue}, 0%, 100%) 0%, 
-      hsl(${currentHue}, 100%, 50%) 100%)`;
+    slPicker.style.background = `
+      linear-gradient(to bottom, transparent 0%, black 100%),
+      linear-gradient(to right, white 0%, hsl(${currentHue}, 100%, 50%) 100%)`;
   }
   
   function updateColorPreview() {
