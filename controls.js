@@ -180,9 +180,9 @@ function showCustomColorPicker(triggerButton) {
   
   // 위치 설정
   const controlsRect = highlightControlsContainer.getBoundingClientRect();
-  customColorPicker.style.position = 'fixed';
-  customColorPicker.style.top = `${controlsRect.bottom + 5}px`;
-  customColorPicker.style.left = `${controlsRect.left}px`;
+  customColorPicker.style.position = 'absolute';
+  customColorPicker.style.top = `${window.scrollY + controlsRect.bottom + 5}px`;
+  customColorPicker.style.left = `${window.scrollX + controlsRect.left}px`;
   customColorPicker.style.zIndex = '10000';
   
   document.body.appendChild(customColorPicker);
