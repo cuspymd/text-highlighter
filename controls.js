@@ -167,8 +167,8 @@ function showCustomColorPicker(triggerButton) {
           <div class="hue-handle" id="hueHandle"></div>
         </div>
       </div>
-      <div class="saturation-lightness-picker" id="slPicker">
-        <div class="sl-handle" id="slHandle"></div>
+      <div class="saturation-value-picker" id="svPicker">
+        <div class="sv-handle" id="svHandle"></div>
       </div>
       <div class="color-preview" id="colorPreview" style="background-color: #FF6B6B;"></div>
     </div>
@@ -187,8 +187,8 @@ function showCustomColorPicker(triggerButton) {
   
   document.body.appendChild(customColorPicker);
   
-  // HSL 슬라이더 초기화
-  initHSLSliders(customColorPicker);
+  // HSV 슬라이더 초기화
+  initHSVSliders(customColorPicker);
   
   // closeHandler 제거 및 피커 닫기 공통 함수
   const closeColorPicker = () => {
@@ -241,7 +241,40 @@ function addCustomColor(color) {
   });
 }
 
-// HSL 슬라이더 초기화 (재사용 가능한 함수)
+// HSV to RGB 변환 함수
+function hsvToRgb(h, s, v) {
+  h = h / 360;
+  s = s / 100;
+  v = v / 100;
+  
+  const c = v * s;
+  const x = c * (1 - Math.abs((h * 6) % 2 - 1));
+  const m = v - c;
+  
+  let r, g, b;
+  
+  if (h >= 0 && h < 1/6) {
+    r = c; g = x; b = 0;
+  } else if (h >= 1/6 && h < 2/6) {
+    r = x; g = c; b = 0;
+  } else if (h >= 2/6 && h < 3/6) {
+    r = 0; g = c; b = x;
+  } else if (h >= 3/6 && h < 4/6) {
+    r = 0; g = x; b = c;
+  } else if (h >= 4/6 && h < 5/6) {
+    r = x; g = 0; b = c;
+  } else {
+    r = c; g = 0; b = x;
+  }
+  
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255)
+  };
+}
+
+// HSV 슬라이더 초기화 (재사용 가능한 함수)
 // RGB to Hex 변환 함수
 function rgbToHex(rgb) {
   if (rgb.startsWith('#')) return rgb;
@@ -302,21 +335,21 @@ function hslToHex(hsl) {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-function initHSLSliders(picker) {
+function initHSVSliders(picker) {
   // 요소들이 존재하는지 확인
   const hueSlider = picker.querySelector('[id^="hueSlider"]');
   const hueHandle = picker.querySelector('[id^="hueHandle"]');
-  const slPicker = picker.querySelector('[id^="slPicker"]');
-  const slHandle = picker.querySelector('[id^="slHandle"]');
+  const svPicker = picker.querySelector('[id^="svPicker"]');
+  const svHandle = picker.querySelector('[id^="svHandle"]');
   const colorPreview = picker.querySelector('[id^="colorPreview"]');
   
-  if (!hueSlider || !hueHandle || !slPicker || !slHandle || !colorPreview) {
+  if (!hueSlider || !hueHandle || !svPicker || !svHandle || !colorPreview) {
     return; // 필요한 요소가 없으면 초기화하지 않음
   }
   
   let currentHue = 0;
   let currentSaturation = 100;
-  let currentLightness = 50;
+  let currentValue = 100;
   
   // Hue 슬라이더 이벤트
   let isDraggingHue = false;
@@ -343,57 +376,72 @@ function initHSLSliders(picker) {
     
     currentHue = hue;
     hueHandle.style.left = `${x}px`;
-    updateSLBackground();
+    updateSVBackground();
     updateColorPreview();
   }
   
-  // Saturation/Lightness 피커 이벤트
-  let isDraggingSL = false;
+  // Saturation/Value 피커 이벤트
+  let isDraggingSV = false;
   
-  slPicker.addEventListener('mousedown', (e) => {
-    isDraggingSL = true;
-    updateSL(e);
+  svPicker.addEventListener('mousedown', (e) => {
+    isDraggingSV = true;
+    updateSV(e);
   });
   
   document.addEventListener('mousemove', (e) => {
-    if (isDraggingSL) {
-      updateSL(e);
+    if (isDraggingSV) {
+      updateSV(e);
     }
   });
   
   document.addEventListener('mouseup', () => {
-    isDraggingSL = false;
+    isDraggingSV = false;
   });
   
-  function updateSL(e) {
-    const rect = slPicker.getBoundingClientRect();
+  function updateSV(e) {
+    const rect = svPicker.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
     
-    // x축: 0 (white) -> 100 (pure color/최대 채도)
+    // x축: 0 (왼쪽/낮은 채도) -> 100 (오른쪽/높은 채도)
     currentSaturation = (x / rect.width) * 100;
-    // y축: 0 (위쪽/밝음) -> 100 (아래쪽/검은색으로)
-    currentLightness = (1 - y / rect.height) * 100;
+    // y축: 100 (위쪽/높은 명도) -> 0 (아래쪽/낮은 명도)
+    currentValue = 100 - (y / rect.height) * 100;
     
-    slHandle.style.left = `${x}px`;
-    slHandle.style.top = `${y}px`;
+    svHandle.style.left = `${x}px`;
+    svHandle.style.top = `${y}px`;
     updateColorPreview();
   }
   
-  function updateSLBackground() {
-    slPicker.style.background = `
+  function updateSVBackground() {
+    svPicker.style.background = `
       linear-gradient(to bottom, transparent 0%, black 100%),
       linear-gradient(to right, white 0%, hsl(${currentHue}, 100%, 50%) 100%)`;
   }
   
   function updateColorPreview() {
-    const color = `hsl(${currentHue}, ${currentSaturation}%, ${currentLightness}%)`;
+    const rgb = hsvToRgb(currentHue, currentSaturation, currentValue);
+    const color = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
     colorPreview.style.backgroundColor = color;
   }
   
   // 초기 설정
-  updateSLBackground();
+  updateSVBackground();
   updateColorPreview();
+  
+  // 초기 핸들 위치 설정 (높은 채도, 높은 명도)
+  setTimeout(() => {
+    const svRect = svPicker.getBoundingClientRect();
+    const initialX = svRect.width * 0.8;
+    const initialY = svRect.height * 0.2;
+    
+    currentSaturation = 80;
+    currentValue = 80;
+    
+    svHandle.style.left = `${initialX}px`;
+    svHandle.style.top = `${initialY}px`;
+    updateColorPreview();
+  }, 10);
 }
 
 function appendColorSeparator(container) {
