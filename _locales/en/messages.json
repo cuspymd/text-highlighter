@@ -148,5 +148,14 @@
   },
   "noCustomColorsToDelete": {
     "message": "No custom colors to delete."
+  },
+  "selectColor": {
+    "message": "Select Color"
+  },
+  "apply": {
+    "message": "Apply"
+  },
+  "cancel": {
+    "message": "Cancel"
   }
 }

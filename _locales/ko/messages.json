@@ -148,5 +148,14 @@
   },
   "noCustomColorsToDelete": {
     "message": "삭제할 사용자 정의 색상이 없습니다."
+  },
+  "selectColor": {
+    "message": "색상 선택"
+  },
+  "apply": {
+    "message": "적용"
+  },
+  "cancel": {
+    "message": "취소"
   }
 }

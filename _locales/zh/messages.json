@@ -148,5 +148,14 @@
   },
   "noCustomColorsToDelete": {
     "message": "没有可删除的自定义颜色。"
+  },
+  "selectColor": {
+    "message": "选择颜色"
+  },
+  "apply": {
+    "message": "应用"
+  },
+  "cancel": {
+    "message": "取消"
   }
 }

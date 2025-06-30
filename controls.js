@@ -138,7 +138,7 @@ function showCustomColorPicker(triggerButton) {
   const customColorPicker = document.createElement('div');
   customColorPicker.className = 'custom-color-picker';
   customColorPicker.innerHTML = `
-    <div class="color-picker-header">색상 선택</div>
+    <div class="color-picker-header">${browserAPI.i18n.getMessage('selectColor')}</div>
     <div class="color-preset-grid">
       <div class="color-preset" style="background-color: #FF6B6B" data-color="#FF6B6B"></div>
       <div class="color-preset" style="background-color: #4ECDC4" data-color="#4ECDC4"></div>
@@ -173,8 +173,8 @@ function showCustomColorPicker(triggerButton) {
       <div class="color-preview" id="colorPreview" style="background-color: #FF6B6B;"></div>
     </div>
     <div class="color-picker-buttons">
-      <button class="color-picker-apply" id="applyColor">적용</button>
-      <button class="color-picker-close">취소</button>
+      <button class="color-picker-apply" id="applyColor">${browserAPI.i18n.getMessage('apply')}</button>
+      <button class="color-picker-close">${browserAPI.i18n.getMessage('cancel')}</button>
     </div>
   `;
   
