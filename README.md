@@ -81,26 +81,35 @@ To load the deployed extension in Firefox:
 
 #### Production Build
 
-For creating a production-ready extension package:
+For creating a production-ready extension package, you can now specify the target browser:
 
 ```bash
-npm run version-deploy <version>
+npm run version-deploy <version> [browser]
 ```
 
 This command will:
-1. Update the version in `manifest.json` and `manifest-firefox.json`
+1. Update the version in the appropriate manifest file (`manifest.json` for Chrome, `manifest-firefox.json` for Firefox)
 2. Set `DEBUG_MODE` to `false` in all JavaScript files
-3. Build the extension to the `dist/` directory for Chrome
-4. Create a zip file in the `outputs/` directory ready for Chrome Web Store upload
+3. Build the extension to the appropriate directory (`dist/` for Chrome, `dist-firefox/` for Firefox)
+4. Create a browser-specific zip file in the `outputs/` directory
 
-**Note**: For Firefox production builds, manually run `npm run deploy:firefox` after version-deploy to generate the Firefox-compatible build in `dist-firefox/`.
-
-Example:
+##### Chrome Production Build (default)
 ```bash
 npm run version-deploy 1.2.0
+# or explicitly
+npm run version-deploy 1.2.0 chrome
 ```
 
-This creates `outputs/text-highlighter-1.2.0.zip` ready for submission to the Chrome Web Store.
+This creates `outputs/text-highlighter-1.2.0-chrome.zip` ready for submission to the Chrome Web Store.
+
+##### Firefox Production Build
+```bash
+npm run version-deploy 1.2.0 firefox
+```
+
+This creates `outputs/text-highlighter-1.2.0-firefox.zip` ready for submission to Firefox Add-ons (AMO).
+
+**Note**: Each browser build uses its own manifest file and output directory, allowing you to maintain separate versions for each browser if needed.
 
 ### Technical Implementation
 

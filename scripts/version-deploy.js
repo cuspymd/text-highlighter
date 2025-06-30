@@ -4,32 +4,41 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// 버전 인수 확인
+// 버전 및 브라우저 인수 확인
 const version = process.argv[2];
+const browser = process.argv[3] || 'chrome';
+
 if (!version) {
   console.error('Error: Version argument is required');
-  console.log('Usage: node scripts/version-deploy.js <version>');
-  console.log('Example: node scripts/version-deploy.js 1.1.0');
+  console.log('Usage: node scripts/version-deploy.js <version> [browser]');
+  console.log('Example: node scripts/version-deploy.js 1.1.0 chrome');
+  console.log('Example: node scripts/version-deploy.js 1.1.0 firefox');
+  process.exit(1);
+}
+
+if (!['chrome', 'firefox'].includes(browser)) {
+  console.error('Error: Browser must be either "chrome" or "firefox"');
   process.exit(1);
 }
 
 const sourceDir = path.resolve(__dirname, '..');
-const manifestPath = path.join(sourceDir, 'manifest.json');
+const manifestFile = browser === 'firefox' ? 'manifest-firefox.json' : 'manifest.json';
+const manifestPath = path.join(sourceDir, manifestFile);
 const outputsDir = path.join(sourceDir, 'outputs');
-const zipFileName = `text-highlighter-${version}.zip`;
+const zipFileName = `text-highlighter-${version}-${browser}.zip`;
 
-console.log(`Starting version deploy for version: ${version}`);
+console.log(`Starting version deploy for version: ${version} (${browser})`);
 
-// 1. manifest.json 버전 업데이트
-console.log('\n1. Updating manifest.json version...');
+// 1. manifest 파일 버전 업데이트
+console.log(`\n1. Updating ${manifestFile} version...`);
 try {
   const manifestContent = fs.readFileSync(manifestPath, 'utf8');
   const manifest = JSON.parse(manifestContent);
   manifest.version = version;
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
-  console.log(`✓ Updated manifest.json version to ${version}`);
+  console.log(`✓ Updated ${manifestFile} version to ${version}`);
 } catch (error) {
-  console.error('Error updating manifest.json:', error.message);
+  console.error(`Error updating ${manifestFile}:`, error.message);
   process.exit(1);
 }
 
@@ -68,7 +77,7 @@ for (const file of jsFiles) {
 // 3. deploy.js 실행
 console.log('\n3. Running deploy script...');
 try {
-  execSync('node scripts/deploy.js', { 
+  execSync(`node scripts/deploy.js ${browser}`, { 
     cwd: sourceDir, 
     stdio: 'inherit' 
   });
@@ -80,11 +89,11 @@ try {
 
 // 4. outputs 디렉토리 생성 및 zip 파일 생성
 console.log('\n4. Creating outputs directory and zip file...');
-const distDir = path.join(sourceDir, 'dist');
+const distDir = browser === 'firefox' ? path.join(sourceDir, 'dist-firefox') : path.join(sourceDir, 'dist');
 const zipPath = path.join(outputsDir, zipFileName);
 
 if (!fs.existsSync(distDir)) {
-  console.error('Error: dist directory not found');
+  console.error(`Error: ${browser === 'firefox' ? 'dist-firefox' : 'dist'} directory not found`);
   process.exit(1);
 }
 
@@ -114,4 +123,4 @@ try {
 
 console.log(`\n🎉 Version deploy completed successfully!`);
 console.log(`📦 Extension package: outputs/${zipFileName}`);
-console.log(`📁 Development files: dist/`);
+console.log(`📁 Development files: ${browser === 'firefox' ? 'dist-firefox/' : 'dist/'}`);
