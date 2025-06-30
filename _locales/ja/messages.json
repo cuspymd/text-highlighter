@@ -157,5 +157,8 @@
   },
   "cancel": {
     "message": "キャンセル"
+  },
+  "ok": {
+    "message": "OK"
   }
 }

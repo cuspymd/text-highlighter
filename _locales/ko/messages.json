@@ -157,5 +157,8 @@
   },
   "cancel": {
     "message": "취소"
+  },
+  "ok": {
+    "message": "확인"
   }
 }

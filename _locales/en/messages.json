@@ -157,5 +157,8 @@
   },
   "cancel": {
     "message": "Cancel"
+  },
+  "ok": {
+    "message": "OK"
   }
 }

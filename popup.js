@@ -88,8 +88,8 @@ function showConfirmModal(message) {
     content.innerHTML = `
       <p>${message}</p>
       <div class="modal-buttons">
-        <button class="modal-btn modal-confirm">${browserAPI.i18n.getMessage('confirmButton') || 'OK'}</button>
-        <button class="modal-btn modal-cancel">${browserAPI.i18n.getMessage('cancelButton') || 'Cancel'}</button>
+        <button class="modal-btn modal-confirm">${browserAPI.i18n.getMessage('ok') || 'OK'}</button>
+        <button class="modal-btn modal-cancel">${browserAPI.i18n.getMessage('cancel') || 'Cancel'}</button>
       </div>
     `;
     
@@ -125,7 +125,7 @@ function showAlertModal(message) {
     content.innerHTML = `
       <p>${message}</p>
       <div class="modal-buttons">
-        <button class="modal-btn modal-confirm">${browserAPI.i18n.getMessage('okButton') || 'OK'}</button>
+        <button class="modal-btn modal-confirm">${browserAPI.i18n.getMessage('ok') || 'OK'}</button>
       </div>
     `;
     
