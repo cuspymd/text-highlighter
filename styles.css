@@ -313,7 +313,7 @@
   transform: translateY(-50%);
   width: 12px;
   height: 60%;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, 0.1);
   border-radius: 6px;
   z-index: 9998;
   display: flex;
