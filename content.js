@@ -447,6 +447,40 @@ function updateMinimapMarkers() {
   }
 }
 
+// Convert selection range when all containers are the same node
+function convertSelectionRange(range) {
+  const commonAncestor = range.commonAncestorContainer;
+  const startContainer = range.startContainer;
+  const endContainer = range.endContainer;
+  
+  // Check if common ancestor and start container are the same node
+  if (commonAncestor === startContainer) {
+    // Find the child node at start offset
+    if (commonAncestor.childNodes && range.startOffset < commonAncestor.childNodes.length) {
+      const childNode = commonAncestor.childNodes[range.startOffset];
+      
+      // Check if child node is a text node
+      if (childNode && childNode.nodeType === Node.TEXT_NODE) {
+        const convertedRange = document.createRange();
+        convertedRange.setStart(childNode, 0);
+        convertedRange.setEnd(range.endContainer, range.endOffset);
+        
+        debugLog('Converted Range:', {
+          commonAncestorContainer: convertedRange.commonAncestorContainer,
+          startContainer: convertedRange.startContainer,
+          endContainer: convertedRange.endContainer,
+          startOffset: convertedRange.startOffset,
+          endOffset: convertedRange.endOffset
+        });
+        
+        return convertedRange;
+      }
+    }
+  }
+  
+  return range;
+}
+
 // Refactored highlightSelectedText function with tree traversal algorithm
 function highlightSelectedText(color) {
   const selection = window.getSelection();
@@ -474,9 +508,12 @@ function highlightSelectedText(color) {
     endOffset: range.endOffset
   });
 
+  // Convert range if common ancestor and start container are the same node
+  const convertedRange = convertSelectionRange(range);
+
   try {
     const groupId = Date.now().toString();
-    const highlightSpans = processSelectionRange(range, color, groupId);
+    const highlightSpans = processSelectionRange(convertedRange, color, groupId);
     if (highlightSpans.length > 0) {
       // 그룹 정보 생성
       const group = {
