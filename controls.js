@@ -134,49 +134,95 @@ function showCustomColorPicker(triggerButton) {
     currentCloseHandler = null;
   }
   
+  // 색상 프리셋 배열
+  const presetColors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    '#F39C12', '#E74C3C', '#9B59B6', '#3498DB', '#1ABC9C',
+    '#2ECC71', '#F1C40F', '#E67E22', '#95A5A6', '#34495E'
+  ];
+  
   // 커스텀 색상 선택기 생성
   const customColorPicker = document.createElement('div');
   customColorPicker.className = 'custom-color-picker';
-  customColorPicker.innerHTML = `
-    <div class="color-picker-header">${browserAPI.i18n.getMessage('selectColor')}</div>
-    <div class="color-preset-grid">
-      <div class="color-preset" style="background-color: #FF6B6B" data-color="#FF6B6B"></div>
-      <div class="color-preset" style="background-color: #4ECDC4" data-color="#4ECDC4"></div>
-      <div class="color-preset" style="background-color: #45B7D1" data-color="#45B7D1"></div>
-      <div class="color-preset" style="background-color: #96CEB4" data-color="#96CEB4"></div>
-      <div class="color-preset" style="background-color: #FFEAA7" data-color="#FFEAA7"></div>
-      <div class="color-preset" style="background-color: #DDA0DD" data-color="#DDA0DD"></div>
-      <div class="color-preset" style="background-color: #98D8C8" data-color="#98D8C8"></div>
-      <div class="color-preset" style="background-color: #F7DC6F" data-color="#F7DC6F"></div>
-      <div class="color-preset" style="background-color: #BB8FCE" data-color="#BB8FCE"></div>
-      <div class="color-preset" style="background-color: #85C1E9" data-color="#85C1E9"></div>
-      <div class="color-preset" style="background-color: #F39C12" data-color="#F39C12"></div>
-      <div class="color-preset" style="background-color: #E74C3C" data-color="#E74C3C"></div>
-      <div class="color-preset" style="background-color: #9B59B6" data-color="#9B59B6"></div>
-      <div class="color-preset" style="background-color: #3498DB" data-color="#3498DB"></div>
-      <div class="color-preset" style="background-color: #1ABC9C" data-color="#1ABC9C"></div>
-      <div class="color-preset" style="background-color: #2ECC71" data-color="#2ECC71"></div>
-      <div class="color-preset" style="background-color: #F1C40F" data-color="#F1C40F"></div>
-      <div class="color-preset" style="background-color: #E67E22" data-color="#E67E22"></div>
-      <div class="color-preset" style="background-color: #95A5A6" data-color="#95A5A6"></div>
-      <div class="color-preset" style="background-color: #34495E" data-color="#34495E"></div>
-    </div>
-    <div class="custom-color-section">
-      <div class="hue-slider-container">
-        <div class="hue-slider" id="hueSlider">
-          <div class="hue-handle" id="hueHandle"></div>
-        </div>
-      </div>
-      <div class="saturation-value-picker" id="svPicker">
-        <div class="sv-handle" id="svHandle"></div>
-      </div>
-      <div class="color-preview" id="colorPreview" style="background-color: #FF6B6B;"></div>
-    </div>
-    <div class="color-picker-buttons">
-      <button class="color-picker-apply" id="applyColor">${browserAPI.i18n.getMessage('apply')}</button>
-      <button class="color-picker-close">${browserAPI.i18n.getMessage('cancel')}</button>
-    </div>
-  `;
+  
+  // 헤더 생성
+  const header = document.createElement('div');
+  header.className = 'color-picker-header';
+  header.textContent = browserAPI.i18n.getMessage('selectColor');
+  customColorPicker.appendChild(header);
+  
+  // 색상 프리셋 그리드 생성
+  const presetGrid = document.createElement('div');
+  presetGrid.className = 'color-preset-grid';
+  
+  presetColors.forEach(color => {
+    const colorDiv = document.createElement('div');
+    colorDiv.className = 'color-preset';
+    colorDiv.style.backgroundColor = color;
+    colorDiv.dataset.color = color;
+    presetGrid.appendChild(colorDiv);
+  });
+  
+  customColorPicker.appendChild(presetGrid);
+  
+  // 커스텀 색상 섹션 생성
+  const customSection = document.createElement('div');
+  customSection.className = 'custom-color-section';
+  
+  // Hue 슬라이더 컨테이너
+  const hueContainer = document.createElement('div');
+  hueContainer.className = 'hue-slider-container';
+  
+  const hueSlider = document.createElement('div');
+  hueSlider.className = 'hue-slider';
+  hueSlider.id = 'hueSlider';
+  
+  const hueHandle = document.createElement('div');
+  hueHandle.className = 'hue-handle';
+  hueHandle.id = 'hueHandle';
+  
+  hueSlider.appendChild(hueHandle);
+  hueContainer.appendChild(hueSlider);
+  customSection.appendChild(hueContainer);
+  
+  // Saturation-Value 피커
+  const svPicker = document.createElement('div');
+  svPicker.className = 'saturation-value-picker';
+  svPicker.id = 'svPicker';
+  
+  const svHandle = document.createElement('div');
+  svHandle.className = 'sv-handle';
+  svHandle.id = 'svHandle';
+  
+  svPicker.appendChild(svHandle);
+  customSection.appendChild(svPicker);
+  
+  // 색상 미리보기
+  const colorPreview = document.createElement('div');
+  colorPreview.className = 'color-preview';
+  colorPreview.id = 'colorPreview';
+  colorPreview.style.backgroundColor = '#FF6B6B';
+  customSection.appendChild(colorPreview);
+  
+  customColorPicker.appendChild(customSection);
+  
+  // 버튼 섹션 생성
+  const buttonsSection = document.createElement('div');
+  buttonsSection.className = 'color-picker-buttons';
+  
+  const applyButton = document.createElement('button');
+  applyButton.className = 'color-picker-apply';
+  applyButton.id = 'applyColor';
+  applyButton.textContent = browserAPI.i18n.getMessage('apply');
+  
+  const cancelButton = document.createElement('button');
+  cancelButton.className = 'color-picker-close';
+  cancelButton.textContent = browserAPI.i18n.getMessage('cancel');
+  
+  buttonsSection.appendChild(applyButton);
+  buttonsSection.appendChild(cancelButton);
+  customColorPicker.appendChild(buttonsSection);
   
   // 위치 설정
   const controlsRect = highlightControlsContainer.getBoundingClientRect();
