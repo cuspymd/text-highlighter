@@ -110,6 +110,13 @@ function createAddColorButton() {
   addColorBtn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // 이미 열려있는 색상 선택기가 있으면 무시
+    const existingPicker = document.querySelector('.custom-color-picker');
+    if (existingPicker) {
+      return;
+    }
+    
     colorPickerOpen = true;
     showCustomColorPicker(addColorBtn);
   });
