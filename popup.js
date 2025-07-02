@@ -85,16 +85,31 @@ function showConfirmModal(message) {
     const modal = createModal();
     const content = modal.querySelector('.modal-content');
     
-    content.innerHTML = `
-      <p>${message}</p>
-      <div class="modal-buttons">
-        <button class="modal-btn modal-confirm">${browserAPI.i18n.getMessage('ok') || 'OK'}</button>
-        <button class="modal-btn modal-cancel">${browserAPI.i18n.getMessage('cancel') || 'Cancel'}</button>
-      </div>
-    `;
+    // Clear content
+    content.replaceChildren();
     
-    const confirmBtn = content.querySelector('.modal-confirm');
-    const cancelBtn = content.querySelector('.modal-cancel');
+    // Create paragraph
+    const p = document.createElement('p');
+    p.textContent = message;
+    content.appendChild(p);
+    
+    // Create button container
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'modal-buttons';
+    
+    // Create confirm button
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'modal-btn modal-confirm';
+    confirmBtn.textContent = browserAPI.i18n.getMessage('ok') || 'OK';
+    
+    // Create cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'modal-btn modal-cancel';
+    cancelBtn.textContent = browserAPI.i18n.getMessage('cancel') || 'Cancel';
+    
+    buttonsDiv.appendChild(confirmBtn);
+    buttonsDiv.appendChild(cancelBtn);
+    content.appendChild(buttonsDiv);
     
     confirmBtn.addEventListener('click', () => {
       removeModal(modal);
@@ -122,14 +137,25 @@ function showAlertModal(message) {
     const modal = createModal();
     const content = modal.querySelector('.modal-content');
     
-    content.innerHTML = `
-      <p>${message}</p>
-      <div class="modal-buttons">
-        <button class="modal-btn modal-confirm">${browserAPI.i18n.getMessage('ok') || 'OK'}</button>
-      </div>
-    `;
+    // Clear content
+    content.replaceChildren();
     
-    const confirmBtn = content.querySelector('.modal-confirm');
+    // Create paragraph
+    const p = document.createElement('p');
+    p.textContent = message;
+    content.appendChild(p);
+    
+    // Create button container
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'modal-buttons';
+    
+    // Create confirm button
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'modal-btn modal-confirm';
+    confirmBtn.textContent = browserAPI.i18n.getMessage('ok') || 'OK';
+    
+    buttonsDiv.appendChild(confirmBtn);
+    content.appendChild(buttonsDiv);
     
     confirmBtn.addEventListener('click', () => {
       removeModal(modal);
