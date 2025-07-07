@@ -638,6 +638,7 @@ function showSelectionIcon(mouseX, mouseY) {
   selectionIcon = document.createElement('div');
   selectionIcon.className = 'text-highlighter-selection-icon';
   selectionIcon.innerHTML = `<img src="${browserAPI.runtime.getURL('images/icon16.png')}" alt="Highlight" style="width: 16px; height: 16px;">`;
+  selectionIcon.title = getMessage('highlightText');
   
   // Position the icon near the mouse position
   selectionIcon.style.position = 'absolute';
@@ -647,9 +648,14 @@ function showSelectionIcon(mouseX, mouseY) {
   selectionIcon.style.cursor = 'pointer';
   selectionIcon.style.backgroundColor = 'white';
   selectionIcon.style.border = '1px solid #ccc';
-  selectionIcon.style.borderRadius = '3px';
-  selectionIcon.style.padding = '2px';
+  selectionIcon.style.borderRadius = '50%'; // Make it circular
+  selectionIcon.style.padding = '4px';
   selectionIcon.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+  selectionIcon.style.width = '24px';
+  selectionIcon.style.height = '24px';
+  selectionIcon.style.display = 'flex';
+  selectionIcon.style.alignItems = 'center';
+  selectionIcon.style.justifyContent = 'center';
   
   // Add click event to show controls
   selectionIcon.addEventListener('click', function(e) {
@@ -736,10 +742,27 @@ function showSelectionControls(mouseX, mouseY) {
     });
   });
   
-  // Remove the add color button from selection controls
+  // Keep the add color button in selection controls but update its event listener
   const addColorButton = selectionControlsContainer.querySelector('.add-color-button');
   if (addColorButton) {
-    addColorButton.remove();
+    // Clone to remove existing event listeners
+    const newAddColorButton = addColorButton.cloneNode(true);
+    addColorButton.parentNode.replaceChild(newAddColorButton, addColorButton);
+    
+    // Add new event listener for selection mode
+    newAddColorButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Check if color picker is already open
+      const existingPicker = document.querySelector('.custom-color-picker');
+      if (existingPicker) {
+        return;
+      }
+      
+      colorPickerOpen = true;
+      showCustomColorPickerForSelection(newAddColorButton);
+    });
   }
   
   // Add click event to stop propagation
@@ -774,6 +797,189 @@ function setSelectionControlsVisibility(visible) {
   if (!selectionControlsEnabled) {
     hideSelectionIcon();
     hideSelectionControls();
+  }
+}
+
+// Custom color picker for selection controls (creates highlight instead of changing existing one)
+function showCustomColorPickerForSelection(triggerButton) {
+  // 기존 색상 선택기가 있으면 제거
+  const existingPicker = document.querySelector('.custom-color-picker');
+  if (existingPicker) {
+    existingPicker.remove();
+  }
+  
+  // 이전 closeHandler가 있으면 제거
+  if (currentCloseHandler) {
+    document.removeEventListener('click', currentCloseHandler);
+    currentCloseHandler = null;
+  }
+  
+  // 색상 프리셋 배열
+  const presetColors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    '#F39C12', '#E74C3C', '#9B59B6', '#3498DB', '#1ABC9C',
+    '#2ECC71', '#F1C40F', '#E67E22', '#95A5A6', '#34495E'
+  ];
+  
+  // 커스텀 색상 선택기 생성
+  const customColorPicker = document.createElement('div');
+  customColorPicker.className = 'custom-color-picker';
+  
+  // 헤더 생성
+  const header = document.createElement('div');
+  header.className = 'color-picker-header';
+  header.textContent = browserAPI.i18n.getMessage('selectColor');
+  customColorPicker.appendChild(header);
+  
+  // 색상 프리셋 그리드 생성
+  const presetGrid = document.createElement('div');
+  presetGrid.className = 'color-preset-grid';
+  
+  presetColors.forEach(color => {
+    const colorDiv = document.createElement('div');
+    colorDiv.className = 'color-preset';
+    colorDiv.style.backgroundColor = color;
+    colorDiv.dataset.color = color;
+    presetGrid.appendChild(colorDiv);
+  });
+  
+  customColorPicker.appendChild(presetGrid);
+  
+  // 커스텀 색상 섹션 생성
+  const customSection = document.createElement('div');
+  customSection.className = 'custom-color-section';
+  
+  // Hue 슬라이더 컨테이너
+  const hueContainer = document.createElement('div');
+  hueContainer.className = 'hue-slider-container';
+  
+  const hueSlider = document.createElement('div');
+  hueSlider.className = 'hue-slider';
+  hueSlider.id = 'hueSliderSelection';
+  
+  const hueHandle = document.createElement('div');
+  hueHandle.className = 'hue-handle';
+  hueHandle.id = 'hueHandleSelection';
+  
+  hueSlider.appendChild(hueHandle);
+  hueContainer.appendChild(hueSlider);
+  customSection.appendChild(hueContainer);
+  
+  // Saturation-Value 피커
+  const svPicker = document.createElement('div');
+  svPicker.className = 'saturation-value-picker';
+  svPicker.id = 'svPickerSelection';
+  
+  const svHandle = document.createElement('div');
+  svHandle.className = 'sv-handle';
+  svHandle.id = 'svHandleSelection';
+  
+  svPicker.appendChild(svHandle);
+  customSection.appendChild(svPicker);
+  
+  // 색상 미리보기
+  const colorPreview = document.createElement('div');
+  colorPreview.className = 'color-preview';
+  colorPreview.id = 'colorPreviewSelection';
+  colorPreview.style.backgroundColor = '#FF6B6B';
+  customSection.appendChild(colorPreview);
+  
+  customColorPicker.appendChild(customSection);
+  
+  // 버튼 섹션 생성
+  const buttonsSection = document.createElement('div');
+  buttonsSection.className = 'color-picker-buttons';
+  
+  const applyButton = document.createElement('button');
+  applyButton.className = 'color-picker-apply';
+  applyButton.id = 'applyColorSelection';
+  applyButton.textContent = browserAPI.i18n.getMessage('apply');
+  
+  const cancelButton = document.createElement('button');
+  cancelButton.className = 'color-picker-close';
+  cancelButton.textContent = browserAPI.i18n.getMessage('cancel');
+  
+  buttonsSection.appendChild(applyButton);
+  buttonsSection.appendChild(cancelButton);
+  customColorPicker.appendChild(buttonsSection);
+  
+  // 위치 설정
+  const controlsRect = selectionControlsContainer.getBoundingClientRect();
+  customColorPicker.style.position = 'absolute';
+  customColorPicker.style.top = `${window.scrollY + controlsRect.bottom + 5}px`;
+  customColorPicker.style.left = `${window.scrollX + controlsRect.left}px`;
+  customColorPicker.style.zIndex = '10000';
+  
+  document.body.appendChild(customColorPicker);
+  
+  // HSV 슬라이더 초기화
+  initHSVSliders(customColorPicker);
+  
+  // closeHandler 제거 및 피커 닫기 공통 함수
+  const closeColorPicker = () => {
+    customColorPicker.remove();
+    colorPickerOpen = false;
+    if (currentCloseHandler) {
+      document.removeEventListener('click', currentCloseHandler);
+      currentCloseHandler = null;
+    }
+  };
+
+  // 색상 선택 이벤트
+  customColorPicker.addEventListener('click', (e) => {
+    if (e.target.classList.contains('color-preset')) {
+      e.stopPropagation();
+      const color = e.target.dataset.color;
+      createHighlightWithColor(color);
+      closeColorPicker();
+    } else if (e.target.classList.contains('color-picker-close')) {
+      e.stopPropagation();
+      closeColorPicker();
+    } else if (e.target.id === 'applyColorSelection') {
+      e.stopPropagation();
+      const preview = customColorPicker.querySelector('#colorPreviewSelection');
+      const color = rgbToHex(preview.style.backgroundColor);
+      createHighlightWithColor(color);
+      closeColorPicker();
+    }
+  });
+  
+  // 외부 클릭 시 닫기
+  setTimeout(() => {
+    currentCloseHandler = function(e) {
+      if (!customColorPicker.contains(e.target) && !triggerButton.contains(e.target)) {
+        closeColorPicker();
+      }
+    };
+    document.addEventListener('click', currentCloseHandler);
+  }, 10);
+}
+
+// Helper function to create highlight with selected color from color picker
+function createHighlightWithColor(color) {
+  if (currentSelection && (currentSelection.range || currentSelection.selection)) {
+    // Restore the selection using the stored range
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    
+    try {
+      if (currentSelection.range) {
+        selection.addRange(currentSelection.range);
+      } else if (currentSelection.selection.getRangeAt) {
+        selection.addRange(currentSelection.selection.getRangeAt(0));
+      }
+      
+      highlightSelectedText(color);
+      hideSelectionControls();
+      hideSelectionIcon();
+      currentSelection = null;
+    } catch (error) {
+      debugLog('Could not restore selection:', error);
+      hideSelectionControls();
+      hideSelectionIcon();
+      currentSelection = null;
+    }
   }
 }
 

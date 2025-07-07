@@ -414,10 +414,15 @@
   cursor: pointer;
   background-color: white;
   border: 1px solid #ccc;
-  border-radius: 3px;
-  padding: 2px;
+  border-radius: 50%;
+  padding: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   transition: transform 0.2s, box-shadow 0.2s;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .text-highlighter-selection-icon:hover {
