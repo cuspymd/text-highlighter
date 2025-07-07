@@ -214,6 +214,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const viewAllPagesBtn = document.getElementById('view-all-pages');
   const deleteCustomColorsBtn = document.getElementById('delete-custom-colors');
   const minimapToggle = document.getElementById('minimap-toggle');
+  const selectionControlsToggle = document.getElementById('selection-controls-toggle');
   // Set debug mode - change to true during development
   const DEBUG_MODE = false;
 
@@ -285,6 +286,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     debugLog('Loaded minimap setting:', isVisible);
   }
 
+  // Load selection controls setting
+  async function loadSelectionControlsSetting() {
+    const result = await browserAPI.storage.local.get(['selectionControlsVisible']);
+    // Default value is false (don't show controls on selection)
+    const isVisible = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : false;
+    selectionControlsToggle.checked = isVisible;
+    debugLog('Loaded selection controls setting:', isVisible);
+  }
+
   // Save and apply minimap settings to current page
   minimapToggle.addEventListener('change', async function () {
     const isVisible = minimapToggle.checked;
@@ -297,6 +307,22 @@ document.addEventListener('DOMContentLoaded', async function () {
     const tab = await getActiveTab();
     await browserAPI.tabs.sendMessage(tab.id, {
       action: 'setMinimapVisibility',
+      visible: isVisible
+    });
+  });
+
+  // Save and apply selection controls settings to current page
+  selectionControlsToggle.addEventListener('change', async function () {
+    const isVisible = selectionControlsToggle.checked;
+
+    // Save to storage
+    await browserAPI.storage.local.set({ selectionControlsVisible: isVisible });
+    debugLog('Selection controls visibility saved:', isVisible);
+
+    // Apply settings to current page
+    const tab = await getActiveTab();
+    await browserAPI.tabs.sendMessage(tab.id, {
+      action: 'setSelectionControlsVisibility',
       visible: isVisible
     });
   });
@@ -390,4 +416,5 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Initialization
   await loadHighlights();
   await loadMinimapSetting();
+  await loadSelectionControlsSetting();
 });

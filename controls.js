@@ -17,6 +17,12 @@ let colorPickerOpen = false;
 // Track the last added color to apply animation only to new colors
 let lastAddedColor = null;
 
+// Selection controls feature
+let selectionControlsEnabled = false;
+let selectionIcon = null;
+let selectionControlsContainer = null;
+let currentSelection = null;
+
 // Helper function for jelly animation
 function addJellyAnimation(btn) {
   btn.addEventListener('click', function () {
@@ -560,4 +566,252 @@ function hideHighlightControls() {
     }, 350); // CSS 트랜지션과 동일하게 맞춤
   }
   activeHighlightElement = null;
+}
+
+// ============ SELECTION CONTROLS FUNCTIONS ============
+
+// Initialize selection controls feature
+function initializeSelectionControls() {
+  // Load selection controls setting from storage
+  browserAPI.storage.local.get(['selectionControlsVisible'], (result) => {
+    selectionControlsEnabled = result.selectionControlsVisible || false;
+    debugLog('Selection controls enabled:', selectionControlsEnabled);
+  });
+
+  // Add mouseup event listener to detect text selection
+  document.addEventListener('mouseup', handleSelectionMouseUp);
+  document.addEventListener('selectionchange', handleSelectionChange);
+}
+
+// Handle mouse up event to detect text selection
+function handleSelectionMouseUp(e) {
+  if (!selectionControlsEnabled) return;
+  
+  // Check if the click was on an existing highlight or control
+  if (e.target.classList.contains('text-highlighter-extension') || 
+      e.target.closest('.text-highlighter-controls') ||
+      e.target.closest('.text-highlighter-selection-controls') ||
+      e.target.closest('.text-highlighter-selection-icon')) {
+    return;
+  }
+  
+  setTimeout(() => {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+    
+    if (selectedText && selectedText.length > 0 && selection.rangeCount > 0) {
+      // Store a copy of the range to avoid issues with selection changes
+      const range = selection.getRangeAt(0).cloneRange();
+      currentSelection = {
+        selection: selection,
+        range: range,
+        text: selectedText,
+        mouseX: e.clientX,
+        mouseY: e.clientY
+      };
+      showSelectionIcon(e.clientX, e.clientY);
+    } else {
+      hideSelectionIcon();
+      hideSelectionControls();
+    }
+  }, 10);
+}
+
+// Handle selection change event
+function handleSelectionChange() {
+  if (!selectionControlsEnabled) return;
+  
+  const selection = window.getSelection();
+  const selectedText = selection.toString().trim();
+  
+  if (!selectedText || selectedText.length === 0) {
+    hideSelectionIcon();
+    hideSelectionControls();
+    currentSelection = null;
+  }
+}
+
+// Show selection icon near mouse position
+function showSelectionIcon(mouseX, mouseY) {
+  hideSelectionIcon(); // Remove any existing icon
+  
+  selectionIcon = document.createElement('div');
+  selectionIcon.className = 'text-highlighter-selection-icon';
+  selectionIcon.innerHTML = `<img src="${browserAPI.runtime.getURL('images/icon16.png')}" alt="Highlight" style="width: 16px; height: 16px;">`;
+  
+  // Position the icon near the mouse position
+  selectionIcon.style.position = 'absolute';
+  selectionIcon.style.left = `${window.scrollX + mouseX + 10}px`;
+  selectionIcon.style.top = `${window.scrollY + mouseY - 20}px`;
+  selectionIcon.style.zIndex = '9999';
+  selectionIcon.style.cursor = 'pointer';
+  selectionIcon.style.backgroundColor = 'white';
+  selectionIcon.style.border = '1px solid #ccc';
+  selectionIcon.style.borderRadius = '3px';
+  selectionIcon.style.padding = '2px';
+  selectionIcon.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+  
+  // Add click event to show controls
+  selectionIcon.addEventListener('click', function(e) {
+    e.stopPropagation();
+    showSelectionControls(e.clientX, e.clientY);
+  });
+  
+  document.body.appendChild(selectionIcon);
+}
+
+// Hide selection icon
+function hideSelectionIcon() {
+  if (selectionIcon) {
+    selectionIcon.remove();
+    selectionIcon = null;
+  }
+}
+
+// Show selection controls (reusing existing controls.js UI without delete button)
+function showSelectionControls(mouseX, mouseY) {
+  if (!currentSelection) return;
+  
+  hideSelectionControls(); // Remove any existing controls
+  
+  // Create a modified version of the existing highlight controls
+  if (!highlightControlsContainer) createHighlightControls();
+  
+  // Clone the existing controls container but modify it for selection mode
+  selectionControlsContainer = highlightControlsContainer.cloneNode(true);
+  selectionControlsContainer.className = 'text-highlighter-controls text-highlighter-selection-controls';
+  
+  // Remove the delete button from the cloned container
+  const deleteButton = selectionControlsContainer.querySelector('.delete-highlight');
+  if (deleteButton) {
+    deleteButton.remove();
+  }
+  
+  // Position the controls
+  selectionControlsContainer.style.position = 'absolute';
+  selectionControlsContainer.style.left = `${window.scrollX + mouseX + 10}px`;
+  selectionControlsContainer.style.top = `${window.scrollY + mouseY - 20}px`;
+  selectionControlsContainer.style.zIndex = '10000';
+  selectionControlsContainer.style.display = 'flex';
+  
+  // Update event listeners for color buttons to create highlights instead of changing existing ones
+  const colorButtons = selectionControlsContainer.querySelectorAll('.color-button');
+  colorButtons.forEach((colorButton, idx) => {
+    // Remove existing event listeners by cloning the node
+    const newColorButton = colorButton.cloneNode(true);
+    colorButton.parentNode.replaceChild(newColorButton, colorButton);
+    
+    // Add new event listener for creating highlights
+    newColorButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      // Create highlight with selected color
+      if (currentSelection && (currentSelection.range || currentSelection.selection)) {
+        // Restore the selection using the stored range
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        
+        try {
+          if (currentSelection.range) {
+            selection.addRange(currentSelection.range);
+          } else if (currentSelection.selection.getRangeAt) {
+            selection.addRange(currentSelection.selection.getRangeAt(0));
+          }
+          
+          // Get the color from the button's background color
+          const colorInfo = currentColors[idx];
+          if (colorInfo) {
+            highlightSelectedText(colorInfo.color);
+          }
+          
+          hideSelectionControls();
+          hideSelectionIcon();
+          currentSelection = null;
+        } catch (error) {
+          debugLog('Could not restore selection:', error);
+          hideSelectionControls();
+          hideSelectionIcon();
+          currentSelection = null;
+        }
+      }
+    });
+  });
+  
+  // Remove the add color button from selection controls
+  const addColorButton = selectionControlsContainer.querySelector('.add-color-button');
+  if (addColorButton) {
+    addColorButton.remove();
+  }
+  
+  // Add click event to stop propagation
+  selectionControlsContainer.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+  
+  document.body.appendChild(selectionControlsContainer);
+  
+  // Apply the visible animation
+  selectionControlsContainer.classList.remove('visible');
+  void selectionControlsContainer.offsetWidth; // reflow
+  setTimeout(() => {
+    selectionControlsContainer.classList.add('visible');
+  }, 10);
+  
+  // Hide icon when controls are shown
+  hideSelectionIcon();
+}
+
+// Hide selection controls
+function hideSelectionControls() {
+  if (selectionControlsContainer) {
+    selectionControlsContainer.remove();
+    selectionControlsContainer = null;
+  }
+}
+
+// Set selection controls visibility
+function setSelectionControlsVisibility(visible) {
+  selectionControlsEnabled = visible;
+  if (!selectionControlsEnabled) {
+    hideSelectionIcon();
+    hideSelectionControls();
+  }
+}
+
+// Handle global click events for both highlight and selection controls
+document.addEventListener('click', function (e) {
+  // Handle existing highlight controls
+  if (highlightControlsContainer) {
+    // While native color picker is open, keep the control UI visible
+    if (colorPickerOpen) {
+      return; 
+    }
+
+    const isClickOnHighlight = activeHighlightElement &&
+      (activeHighlightElement.contains(e.target) || activeHighlightElement === e.target);
+    const isClickOnControls = highlightControlsContainer.contains(e.target) ||
+      highlightControlsContainer === e.target;
+
+    if (!isClickOnHighlight && !isClickOnControls) {
+      hideHighlightControls();
+    }
+  }
+
+  // Handle selection controls
+  if (!selectionControlsEnabled) return;
+  
+  if (selectionIcon && !selectionIcon.contains(e.target)) {
+    hideSelectionIcon();
+  }
+  
+  if (selectionControlsContainer && !selectionControlsContainer.contains(e.target)) {
+    hideSelectionControls();
+  }
+}, true); // Use capture phase to handle this before other handlers
+
+// Auto-initialize selection controls when the script loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeSelectionControls);
+} else {
+  // DOM is already ready
+  initializeSelectionControls();
 }

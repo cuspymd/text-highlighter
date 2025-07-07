@@ -85,6 +85,9 @@
   "showMinimap": {
     "message": "미니맵 표시"
   },
+  "showControlsOnSelection": {
+    "message": "텍스트 선택 시 컨트롤 UI 표시"
+  },
   "confirmClearAll": {
     "message": "정말 현재 페이지의 모든 하이라이트를 삭제하시겠습니까?"
   },

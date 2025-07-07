@@ -85,6 +85,9 @@
   "showMinimap": {
     "message": "显示小地图"
   },
+  "showControlsOnSelection": {
+    "message": "选择文本时显示控制UI"
+  },
   "confirmClearAll": {
     "message": "确定要删除当前页面的所有高亮吗？"
   },

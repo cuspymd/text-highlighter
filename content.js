@@ -8,6 +8,8 @@ let currentColors = [];
 // Minimap manager instance
 let minimapManager = null;
 
+// Selection controls are now handled in controls.js
+
 const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 
 // i18n support function
@@ -27,23 +29,7 @@ getColorsFromBackground().then(() => {
   createHighlightControls();
 });
 
-// Add event listener to hide controller when clicking other areas
-document.addEventListener('click', function (e) {
-  if (!highlightControlsContainer) return;
-  // While native color picker is open, keep the control UI visible
-  if (colorPickerOpen) {
-    return; 
-  }
-
-  const isClickOnHighlight = activeHighlightElement &&
-    (activeHighlightElement.contains(e.target) || activeHighlightElement === e.target);
-  const isClickOnControls = highlightControlsContainer.contains(e.target) ||
-    highlightControlsContainer === e.target;
-
-  if (!isClickOnHighlight && !isClickOnControls) {
-    hideHighlightControls();
-  }
-});
+// Event listener is now combined below to handle both highlight and selection controls
 
 // Handle messages received from background
 browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -69,6 +55,11 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (minimapManager) {
       minimapManager.setVisibility(message.visible);
     }
+    sendResponse({ success: true });
+    return true;
+  }
+  else if (message.action === 'setSelectionControlsVisibility') {
+    setSelectionControlsVisibility(message.visible);
     sendResponse({ success: true });
     return true;
   }
@@ -774,3 +765,5 @@ function processSelectionRange(range, color, groupId) {
   
   return highlightSpans;
 }
+
+// Selection controls functionality is now handled in controls.js

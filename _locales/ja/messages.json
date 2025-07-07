@@ -85,6 +85,9 @@
   "showMinimap": {
     "message": "ミニマップを表示"
   },
+  "showControlsOnSelection": {
+    "message": "テキスト選択時にコントロールUIを表示"
+  },
   "confirmClearAll": {
     "message": "現在のページのすべてのハイライトを削除してよろしいですか？"
   },
