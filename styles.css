@@ -15,7 +15,7 @@
 
 .text-highlighter-controls {
   position: absolute;
-  display: flex;
+  display: none;
   align-items: center;
   z-index: 9999;
   background-color: #fff;
@@ -33,6 +33,7 @@
 }
 
 .text-highlighter-controls.visible {
+  display: flex;
   opacity: 1;
   transform: scale(1);
   pointer-events: auto;
@@ -417,20 +418,40 @@
   border-radius: 50%;
   padding: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  transition: transform 0.2s, box-shadow 0.2s;
-  width: 24px;
-  height: 24px;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  width: 25px;
+  height: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0.7 !important; /* Semi-transparent by default */
 }
 
 .text-highlighter-selection-icon:hover {
-  transform: scale(1.1);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transform: scale(1.1) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+  opacity: 1 !important; /* Remove transparency on hover */
 }
 
-/* Reuse existing controls styles for selection controls */
-.text-highlighter-controls.text-highlighter-selection-controls {
-  /* All existing .text-highlighter-controls styles will be inherited */
+/* Selection controls reuse existing .text-highlighter-controls styles automatically */
+
+/* Color separator styles */
+.color-separator {
+  width: 1px;
+  height: 22px;
+  background-color: #ccc;
+  margin: 0 3px;
+}
+
+/* Custom color picker positioning */
+.custom-color-picker {
+  position: absolute;
+  z-index: 10000;
+}
+
+/* Selection controls positioning */
+.text-highlighter-selection-controls {
+  position: absolute;
+  z-index: 10000;
+  display: flex;
 }

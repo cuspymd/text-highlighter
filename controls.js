@@ -42,7 +42,6 @@ function createHighlightControls() {
   if (highlightControlsContainer) return;
   highlightControlsContainer = document.createElement('div');
   highlightControlsContainer.className = 'text-highlighter-controls';
-  highlightControlsContainer.style.display = 'none';
   const deleteButton = document.createElement('div');
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
   deleteButton.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="4" y1="4" x2="12" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
@@ -237,12 +236,10 @@ function showCustomColorPicker(triggerButton) {
   buttonsSection.appendChild(cancelButton);
   customColorPicker.appendChild(buttonsSection);
   
-  // 위치 설정
+  // 위치 설정 (only dynamic positioning)
   const controlsRect = highlightControlsContainer.getBoundingClientRect();
-  customColorPicker.style.position = 'absolute';
   customColorPicker.style.top = `${window.scrollY + controlsRect.bottom + 5}px`;
   customColorPicker.style.left = `${window.scrollX + controlsRect.left}px`;
-  customColorPicker.style.zIndex = '10000';
   
   document.body.appendChild(customColorPicker);
   
@@ -506,10 +503,6 @@ function initHSVSliders(picker) {
 function appendColorSeparator(container) {
   const separator = document.createElement('div');
   separator.className = 'color-separator';
-  separator.style.width = '1px';
-  separator.style.height = '22px'; 
-  separator.style.backgroundColor = '#ccc'; 
-  separator.style.margin = '0 3px';
   container.appendChild(separator);
 }
 
@@ -545,7 +538,6 @@ function showControlUi(highlightElement, e) {
   activeHighlightElement = highlightElement;
   highlightControlsContainer.style.top = `${window.scrollY + e.clientY - 40}px`;
   highlightControlsContainer.style.left = `${window.scrollX + e.clientX - 40}px`;
-  highlightControlsContainer.style.display = 'flex';
   // pop 애니메이션이 항상 재생되도록 visible 클래스를 remove/add
   highlightControlsContainer.classList.remove('visible');
   void highlightControlsContainer.offsetWidth; // reflow로 강제 초기화
@@ -558,12 +550,6 @@ function showControlUi(highlightElement, e) {
 function hideHighlightControls() {
   if (highlightControlsContainer) {
     highlightControlsContainer.classList.remove('visible');
-    // 트랜지션이 끝난 뒤 display를 none으로 변경
-    setTimeout(() => {
-      if (!highlightControlsContainer.classList.contains('visible')) {
-        highlightControlsContainer.style.display = 'none';
-      }
-    }, 350); // CSS 트랜지션과 동일하게 맞춤
   }
   activeHighlightElement = null;
 }
@@ -637,25 +623,12 @@ function showSelectionIcon(mouseX, mouseY) {
   
   selectionIcon = document.createElement('div');
   selectionIcon.className = 'text-highlighter-selection-icon';
-  selectionIcon.innerHTML = `<img src="${browserAPI.runtime.getURL('images/icon16.png')}" alt="Highlight" style="width: 16px; height: 16px;">`;
+  selectionIcon.innerHTML = `<img src="${browserAPI.runtime.getURL('images/icon48.png')}" alt="Highlight" style="width: 19px; height: 19px;">`;
   selectionIcon.title = getMessage('highlightText');
   
-  // Position the icon near the mouse position
-  selectionIcon.style.position = 'absolute';
+  // Only set dynamic positioning styles that can't be in CSS
   selectionIcon.style.left = `${window.scrollX + mouseX + 10}px`;
   selectionIcon.style.top = `${window.scrollY + mouseY - 20}px`;
-  selectionIcon.style.zIndex = '9999';
-  selectionIcon.style.cursor = 'pointer';
-  selectionIcon.style.backgroundColor = 'white';
-  selectionIcon.style.border = '1px solid #ccc';
-  selectionIcon.style.borderRadius = '50%'; // Make it circular
-  selectionIcon.style.padding = '4px';
-  selectionIcon.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-  selectionIcon.style.width = '24px';
-  selectionIcon.style.height = '24px';
-  selectionIcon.style.display = 'flex';
-  selectionIcon.style.alignItems = 'center';
-  selectionIcon.style.justifyContent = 'center';
   
   // Add click event to show controls
   selectionIcon.addEventListener('click', function(e) {
@@ -693,12 +666,9 @@ function showSelectionControls(mouseX, mouseY) {
     deleteButton.remove();
   }
   
-  // Position the controls
-  selectionControlsContainer.style.position = 'absolute';
+  // Position the controls (only dynamic positioning)
   selectionControlsContainer.style.left = `${window.scrollX + mouseX + 10}px`;
   selectionControlsContainer.style.top = `${window.scrollY + mouseY - 20}px`;
-  selectionControlsContainer.style.zIndex = '10000';
-  selectionControlsContainer.style.display = 'flex';
   
   // Update event listeners for color buttons to create highlights instead of changing existing ones
   const colorButtons = selectionControlsContainer.querySelectorAll('.color-button');
@@ -904,12 +874,10 @@ function showCustomColorPickerForSelection(triggerButton) {
   buttonsSection.appendChild(cancelButton);
   customColorPicker.appendChild(buttonsSection);
   
-  // 위치 설정
+  // 위치 설정 (only dynamic positioning)
   const controlsRect = selectionControlsContainer.getBoundingClientRect();
-  customColorPicker.style.position = 'absolute';
   customColorPicker.style.top = `${window.scrollY + controlsRect.bottom + 5}px`;
   customColorPicker.style.left = `${window.scrollX + controlsRect.left}px`;
-  customColorPicker.style.zIndex = '10000';
   
   document.body.appendChild(customColorPicker);
   
