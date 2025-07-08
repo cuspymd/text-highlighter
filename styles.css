@@ -410,21 +410,39 @@
 
 /* Selection controls styles */
 .text-highlighter-selection-icon {
-  position: absolute;
-  z-index: 9999;
-  cursor: pointer;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 50%;
-  padding: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
-  width: 25px;
-  height: 25px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.7 !important; /* Semi-transparent by default */
+  position: absolute !important;
+  z-index: 9999 !important;
+  cursor: pointer !important;
+  background-color: white !important;
+  border: 1px solid #ccc !important;
+  border-radius: 50% !important;
+  padding: 4px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0.7 !important;
+  /* CSS 리셋 */
+  box-sizing: border-box !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  font-weight: normal !important;
+  line-height: normal !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  margin: 0 !important;
+  outline: none !important;
+  vertical-align: baseline !important;
+  width: 27px !important;
+  height: 27px !important;
+  min-width: 27px !important;
+  min-height: 27px !important;
+  max-width: 27px !important;
+  max-height: 27px !important;
 }
 
 .text-highlighter-selection-icon:hover {
