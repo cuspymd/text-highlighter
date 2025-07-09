@@ -415,8 +415,7 @@
   cursor: pointer !important;
   background-color: white !important;
   border: 1px solid #ccc !important;
-  border-radius: 50% !important;
-  padding: 4px !important;
+  border-radius: 20% !important;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s !important;
   display: flex !important;
