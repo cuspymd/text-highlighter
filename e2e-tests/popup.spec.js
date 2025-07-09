@@ -227,4 +227,47 @@ test.describe('Popup Tests', () => {
     await popupPage.close();
   });
 
+  test('selection icon을 이용한 highlight 동작 검증', async ({ page, context, background, extensionId }) => {
+    // popup.html 로딩 후 selection-controls-toggle 체크
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
+
+    const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
+    await expect(selectionControlsToggle).toBeVisible();
+    await selectionControlsToggle.check();
+    await expect(selectionControlsToggle).toBeChecked();
+
+    await popupPage.close();
+
+    // test-page.html 로딩 후 h1 태그 선택
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    
+    const h1 = page.locator('h1');
+    const h1Text = await h1.textContent();
+    
+    await h1.click({ clickCount: 3 });
+    
+    const selected = await page.evaluate(() => window.getSelection().toString());
+    expect(selected.trim()).toBe(h1Text.trim());
+
+    // selection icon 표시 확인
+    const selectionIcon = page.locator('.text-highlighter-selection-icon');
+    await expect(selectionIcon).toBeVisible();
+
+    // selection icon 클릭 (div 안의 img 태그 클릭)
+    await selectionIcon.locator('img').click();
+
+    // control UI 표시 확인 (selection-controls 클래스가 있는 것 선택)
+    const controls = page.locator('.text-highlighter-controls.text-highlighter-selection-controls');
+    await expect(controls).toBeVisible();
+
+    // 첫번째 yellow 색상 아이콘 클릭
+    const yellowColorButton = controls.locator('.color-button').first();
+    await yellowColorButton.click();
+
+    // 선택된 영역이 highlight 되었는지 검증
+    const highlightedSpan = h1.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: h1Text });
+  });
+
 });
