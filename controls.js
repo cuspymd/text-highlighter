@@ -628,7 +628,7 @@ function showSelectionIcon(mouseX, mouseY) {
   
   // Only set dynamic positioning styles that can't be in CSS
   selectionIcon.style.left = `${window.scrollX + mouseX + 10}px`;
-  selectionIcon.style.top = `${window.scrollY + mouseY - 20}px`;
+  selectionIcon.style.top = `${window.scrollY + mouseY - 30}px`;
   
   // Add click event to show controls
   selectionIcon.addEventListener('click', function(e) {

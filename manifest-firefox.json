@@ -81,7 +81,8 @@
     {
       "resources": [
         "pages-list.html",
-        "pages-list.js"
+        "pages-list.js",
+        "images/icon48.png"
       ],
       "matches": [
         "<all_urls>"
