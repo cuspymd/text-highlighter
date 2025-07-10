@@ -132,20 +132,8 @@ function createAddColorButton() {
 // 현재 활성화된 closeHandler를 추적하기 위한 변수
 let currentCloseHandler = null;
 
-// 커스텀 색상 선택기 생성 및 표시 (재사용 가능한 함수)
-function showCustomColorPicker(triggerButton) {
-  // 기존 색상 선택기가 있으면 제거
-  const existingPicker = document.querySelector('.custom-color-picker');
-  if (existingPicker) {
-    existingPicker.remove();
-  }
-  
-  // 이전 closeHandler가 있으면 제거
-  if (currentCloseHandler) {
-    document.removeEventListener('click', currentCloseHandler);
-    currentCloseHandler = null;
-  }
-  
+// 공통 색상 피커 UI 생성 함수
+function createColorPickerUI(idSuffix = '') {
   // 색상 프리셋 배열
   const presetColors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
@@ -188,11 +176,11 @@ function showCustomColorPicker(triggerButton) {
   
   const hueSlider = document.createElement('div');
   hueSlider.className = 'hue-slider';
-  hueSlider.id = 'hueSlider';
+  hueSlider.id = `hueSlider${idSuffix}`;
   
   const hueHandle = document.createElement('div');
   hueHandle.className = 'hue-handle';
-  hueHandle.id = 'hueHandle';
+  hueHandle.id = `hueHandle${idSuffix}`;
   
   hueSlider.appendChild(hueHandle);
   hueContainer.appendChild(hueSlider);
@@ -201,11 +189,11 @@ function showCustomColorPicker(triggerButton) {
   // Saturation-Value 피커
   const svPicker = document.createElement('div');
   svPicker.className = 'saturation-value-picker';
-  svPicker.id = 'svPicker';
+  svPicker.id = `svPicker${idSuffix}`;
   
   const svHandle = document.createElement('div');
   svHandle.className = 'sv-handle';
-  svHandle.id = 'svHandle';
+  svHandle.id = `svHandle${idSuffix}`;
   
   svPicker.appendChild(svHandle);
   customSection.appendChild(svPicker);
@@ -213,7 +201,7 @@ function showCustomColorPicker(triggerButton) {
   // 색상 미리보기
   const colorPreview = document.createElement('div');
   colorPreview.className = 'color-preview';
-  colorPreview.id = 'colorPreview';
+  colorPreview.id = `colorPreview${idSuffix}`;
   colorPreview.style.backgroundColor = '#FF6B6B';
   customSection.appendChild(colorPreview);
   
@@ -225,7 +213,7 @@ function showCustomColorPicker(triggerButton) {
   
   const applyButton = document.createElement('button');
   applyButton.className = 'color-picker-apply';
-  applyButton.id = 'applyColor';
+  applyButton.id = `applyColor${idSuffix}`;
   applyButton.textContent = browserAPI.i18n.getMessage('apply');
   
   const cancelButton = document.createElement('button');
@@ -235,6 +223,58 @@ function showCustomColorPicker(triggerButton) {
   buttonsSection.appendChild(applyButton);
   buttonsSection.appendChild(cancelButton);
   customColorPicker.appendChild(buttonsSection);
+  
+  return customColorPicker;
+}
+
+// 색상 피커 공통 이벤트 처리 함수
+function setupColorPickerEvents(customColorPicker, triggerButton, onColorSelect, onClose) {
+  // 색상 선택 이벤트
+  customColorPicker.addEventListener('click', (e) => {
+    if (e.target.classList.contains('color-preset')) {
+      e.stopPropagation();
+      const color = e.target.dataset.color;
+      onColorSelect(color);
+      onClose();
+    } else if (e.target.classList.contains('color-picker-close')) {
+      e.stopPropagation();
+      onClose();
+    } else if (e.target.classList.contains('color-picker-apply')) {
+      e.stopPropagation();
+      const preview = customColorPicker.querySelector('.color-preview');
+      const color = rgbToHex(preview.style.backgroundColor);
+      onColorSelect(color);
+      onClose();
+    }
+  });
+  
+  // 외부 클릭 시 닫기
+  setTimeout(() => {
+    currentCloseHandler = function(e) {
+      if (!customColorPicker.contains(e.target) && !triggerButton.contains(e.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener('click', currentCloseHandler);
+  }, 10);
+}
+
+// 커스텀 색상 선택기 생성 및 표시 (재사용 가능한 함수)
+function showCustomColorPicker(triggerButton) {
+  // 기존 색상 선택기가 있으면 제거
+  const existingPicker = document.querySelector('.custom-color-picker');
+  if (existingPicker) {
+    existingPicker.remove();
+  }
+  
+  // 이전 closeHandler가 있으면 제거
+  if (currentCloseHandler) {
+    document.removeEventListener('click', currentCloseHandler);
+    currentCloseHandler = null;
+  }
+  
+  // 색상 피커 UI 생성
+  const customColorPicker = createColorPickerUI();
   
   // 위치 설정 (only dynamic positioning)
   const controlsRect = highlightControlsContainer.getBoundingClientRect();
@@ -256,34 +296,8 @@ function showCustomColorPicker(triggerButton) {
     }
   };
 
-  // 색상 선택 이벤트
-  customColorPicker.addEventListener('click', (e) => {
-    if (e.target.classList.contains('color-preset')) {
-      e.stopPropagation();
-      const color = e.target.dataset.color;
-      addCustomColor(color);
-      closeColorPicker();
-    } else if (e.target.classList.contains('color-picker-close')) {
-      e.stopPropagation();
-      closeColorPicker();
-    } else if (e.target.id === 'applyColor') {
-      e.stopPropagation();
-      const preview = customColorPicker.querySelector('#colorPreview');
-      const color = rgbToHex(preview.style.backgroundColor);
-      addCustomColor(color);
-      closeColorPicker();
-    }
-  });
-  
-  // 외부 클릭 시 닫기
-  setTimeout(() => {
-    currentCloseHandler = function(e) {
-      if (!customColorPicker.contains(e.target) && !triggerButton.contains(e.target)) {
-        closeColorPicker();
-      }
-    };
-    document.addEventListener('click', currentCloseHandler);
-  }, 10);
+  // 이벤트 설정
+  setupColorPickerEvents(customColorPicker, triggerButton, addCustomColor, closeColorPicker);
 }
 
 // 커스텀 색상 추가 함수
@@ -784,95 +798,8 @@ function showCustomColorPickerForSelection(triggerButton) {
     currentCloseHandler = null;
   }
   
-  // 색상 프리셋 배열
-  const presetColors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
-    '#F39C12', '#E74C3C', '#9B59B6', '#3498DB', '#1ABC9C',
-    '#2ECC71', '#F1C40F', '#E67E22', '#95A5A6', '#34495E'
-  ];
-  
-  // 커스텀 색상 선택기 생성
-  const customColorPicker = document.createElement('div');
-  customColorPicker.className = 'custom-color-picker';
-  
-  // 헤더 생성
-  const header = document.createElement('div');
-  header.className = 'color-picker-header';
-  header.textContent = browserAPI.i18n.getMessage('selectColor');
-  customColorPicker.appendChild(header);
-  
-  // 색상 프리셋 그리드 생성
-  const presetGrid = document.createElement('div');
-  presetGrid.className = 'color-preset-grid';
-  
-  presetColors.forEach(color => {
-    const colorDiv = document.createElement('div');
-    colorDiv.className = 'color-preset';
-    colorDiv.style.backgroundColor = color;
-    colorDiv.dataset.color = color;
-    presetGrid.appendChild(colorDiv);
-  });
-  
-  customColorPicker.appendChild(presetGrid);
-  
-  // 커스텀 색상 섹션 생성
-  const customSection = document.createElement('div');
-  customSection.className = 'custom-color-section';
-  
-  // Hue 슬라이더 컨테이너
-  const hueContainer = document.createElement('div');
-  hueContainer.className = 'hue-slider-container';
-  
-  const hueSlider = document.createElement('div');
-  hueSlider.className = 'hue-slider';
-  hueSlider.id = 'hueSliderSelection';
-  
-  const hueHandle = document.createElement('div');
-  hueHandle.className = 'hue-handle';
-  hueHandle.id = 'hueHandleSelection';
-  
-  hueSlider.appendChild(hueHandle);
-  hueContainer.appendChild(hueSlider);
-  customSection.appendChild(hueContainer);
-  
-  // Saturation-Value 피커
-  const svPicker = document.createElement('div');
-  svPicker.className = 'saturation-value-picker';
-  svPicker.id = 'svPickerSelection';
-  
-  const svHandle = document.createElement('div');
-  svHandle.className = 'sv-handle';
-  svHandle.id = 'svHandleSelection';
-  
-  svPicker.appendChild(svHandle);
-  customSection.appendChild(svPicker);
-  
-  // 색상 미리보기
-  const colorPreview = document.createElement('div');
-  colorPreview.className = 'color-preview';
-  colorPreview.id = 'colorPreviewSelection';
-  colorPreview.style.backgroundColor = '#FF6B6B';
-  customSection.appendChild(colorPreview);
-  
-  customColorPicker.appendChild(customSection);
-  
-  // 버튼 섹션 생성
-  const buttonsSection = document.createElement('div');
-  buttonsSection.className = 'color-picker-buttons';
-  
-  const applyButton = document.createElement('button');
-  applyButton.className = 'color-picker-apply';
-  applyButton.id = 'applyColorSelection';
-  applyButton.textContent = browserAPI.i18n.getMessage('apply');
-  
-  const cancelButton = document.createElement('button');
-  cancelButton.className = 'color-picker-close';
-  cancelButton.textContent = browserAPI.i18n.getMessage('cancel');
-  
-  buttonsSection.appendChild(applyButton);
-  buttonsSection.appendChild(cancelButton);
-  customColorPicker.appendChild(buttonsSection);
+  // 색상 피커 UI 생성 (Selection용 고유 ID 사용)
+  const customColorPicker = createColorPickerUI('Selection');
   
   // 위치 설정 (only dynamic positioning)
   const controlsRect = selectionControlsContainer.getBoundingClientRect();
@@ -894,34 +821,8 @@ function showCustomColorPickerForSelection(triggerButton) {
     }
   };
 
-  // 색상 선택 이벤트
-  customColorPicker.addEventListener('click', (e) => {
-    if (e.target.classList.contains('color-preset')) {
-      e.stopPropagation();
-      const color = e.target.dataset.color;
-      createHighlightWithColor(color);
-      closeColorPicker();
-    } else if (e.target.classList.contains('color-picker-close')) {
-      e.stopPropagation();
-      closeColorPicker();
-    } else if (e.target.id === 'applyColorSelection') {
-      e.stopPropagation();
-      const preview = customColorPicker.querySelector('#colorPreviewSelection');
-      const color = rgbToHex(preview.style.backgroundColor);
-      createHighlightWithColor(color);
-      closeColorPicker();
-    }
-  });
-  
-  // 외부 클릭 시 닫기
-  setTimeout(() => {
-    currentCloseHandler = function(e) {
-      if (!customColorPicker.contains(e.target) && !triggerButton.contains(e.target)) {
-        closeColorPicker();
-      }
-    };
-    document.addEventListener('click', currentCloseHandler);
-  }, 10);
+  // 이벤트 설정
+  setupColorPickerEvents(customColorPicker, triggerButton, createHighlightWithColor, closeColorPicker);
 }
 
 // Helper function to create highlight with selected color from color picker
