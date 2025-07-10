@@ -1,16 +1,10 @@
 let highlights = [];
 const currentUrl = window.location.href;
 
-const DEBUG_MODE = false;
-
 let currentColors = [];
 
 // Minimap manager instance
 let minimapManager = null;
-
-// Selection controls are now handled in controls.js
-
-const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 
 // i18n support function
 function getMessage(key, substitutions = null) {

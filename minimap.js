@@ -1,3 +1,6 @@
+const DEBUG_MODE = false;
+const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
+
 class MinimapManager {
   constructor() {
     this.container = null;
