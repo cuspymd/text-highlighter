@@ -728,27 +728,10 @@ function showSelectionControls(mouseX, mouseY) {
     });
   });
   
-  // Keep the add color button in selection controls but update its event listener
+  // Remove the add color button from selection controls to prevent selection changes
   const addColorButton = selectionControlsContainer.querySelector('.add-color-button');
   if (addColorButton) {
-    // Clone to remove existing event listeners
-    const newAddColorButton = addColorButton.cloneNode(true);
-    addColorButton.parentNode.replaceChild(newAddColorButton, addColorButton);
-    
-    // Add new event listener for selection mode
-    newAddColorButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Check if color picker is already open
-      const existingPicker = document.querySelector('.custom-color-picker');
-      if (existingPicker) {
-        return;
-      }
-      
-      colorPickerOpen = true;
-      showCustomColorPicker(newAddColorButton);
-    });
+    addColorButton.remove();
   }
   
   // Add click event to stop propagation
