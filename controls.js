@@ -139,7 +139,7 @@ function createColorPickerUI() {
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
     '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
     '#F39C12', '#E74C3C', '#9B59B6', '#3498DB', '#1ABC9C',
-    '#2ECC71', '#F1C40F', '#E67E22', '#95A5A6', '#34495E'
+    '#2ECC71', '#F1C40F', '#E67E22', '#FF90A0', '#A8E6CF'
   ];
   
   // 커스텀 색상 선택기 생성
