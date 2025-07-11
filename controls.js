@@ -347,7 +347,7 @@ function hsvToRgb(h, s, v) {
 }
 
 // HSV 슬라이더 초기화 (재사용 가능한 함수)
-// RGB to Hex 변환 함수
+// RGB to Hex 변환 함수  
 function rgbToHex(rgb) {
   if (rgb.startsWith('#')) return rgb;
   
@@ -426,19 +426,26 @@ function initHSVSliders(picker) {
   // Hue 슬라이더 이벤트
   let isDraggingHue = false;
   
-  hueSlider.addEventListener('mousedown', (e) => {
-    isDraggingHue = true;
-    updateHue(e);
-  });
-  
-  document.addEventListener('mousemove', (e) => {
+  // 이벤트 핸들러 함수들을 미리 선언하여 removeEventListener에서 사용할 수 있도록 함
+  const hueMouseMoveHandler = (e) => {
     if (isDraggingHue) {
       updateHue(e);
     }
-  });
+  };
   
-  document.addEventListener('mouseup', () => {
+  const hueMouseUpHandler = () => {
     isDraggingHue = false;
+    // 드래그 종료 시 이벤트 리스너 제거
+    document.removeEventListener('mousemove', hueMouseMoveHandler);
+    document.removeEventListener('mouseup', hueMouseUpHandler);
+  };
+  
+  hueSlider.addEventListener('mousedown', (e) => {
+    isDraggingHue = true;
+    updateHue(e);
+    // 드래그 시작 시에만 이벤트 리스너 추가
+    document.addEventListener('mousemove', hueMouseMoveHandler);
+    document.addEventListener('mouseup', hueMouseUpHandler);
   });
   
   function updateHue(e) {
@@ -455,19 +462,26 @@ function initHSVSliders(picker) {
   // Saturation/Value 피커 이벤트
   let isDraggingSV = false;
   
-  svPicker.addEventListener('mousedown', (e) => {
-    isDraggingSV = true;
-    updateSV(e);
-  });
-  
-  document.addEventListener('mousemove', (e) => {
+  // SV 이벤트 핸들러 함수들도 미리 선언
+  const svMouseMoveHandler = (e) => {
     if (isDraggingSV) {
       updateSV(e);
     }
-  });
+  };
   
-  document.addEventListener('mouseup', () => {
+  const svMouseUpHandler = () => {
     isDraggingSV = false;
+    // 드래그 종료 시 이벤트 리스너 제거
+    document.removeEventListener('mousemove', svMouseMoveHandler);
+    document.removeEventListener('mouseup', svMouseUpHandler);
+  };
+  
+  svPicker.addEventListener('mousedown', (e) => {
+    isDraggingSV = true;
+    updateSV(e);
+    // 드래그 시작 시에만 이벤트 리스너 추가
+    document.addEventListener('mousemove', svMouseMoveHandler);
+    document.addEventListener('mouseup', svMouseUpHandler);
   });
   
   function updateSV(e) {
@@ -797,41 +811,53 @@ function createHighlightWithColor(color) {
   }
 }
 
-// Handle global click events for both highlight and selection controls
-document.addEventListener('click', function (e) {
-  // Handle existing highlight controls
-  if (highlightControlsContainer) {
-    // While native color picker is open, keep the control UI visible
-    if (colorPickerOpen) {
-      return; 
+// Global click event handler - only add once
+let globalClickListenerAdded = false;
+
+function addGlobalClickListener() {
+  if (globalClickListenerAdded) return;
+  
+  document.addEventListener('click', function (e) {
+    // Handle existing highlight controls
+    if (highlightControlsContainer) {
+      // While native color picker is open, keep the control UI visible
+      if (colorPickerOpen) {
+        return; 
+      }
+
+      const isClickOnHighlight = activeHighlightElement &&
+        (activeHighlightElement.contains(e.target) || activeHighlightElement === e.target);
+      const isClickOnControls = highlightControlsContainer.contains(e.target) ||
+        highlightControlsContainer === e.target;
+
+      if (!isClickOnHighlight && !isClickOnControls) {
+        hideHighlightControls();
+      }
     }
 
-    const isClickOnHighlight = activeHighlightElement &&
-      (activeHighlightElement.contains(e.target) || activeHighlightElement === e.target);
-    const isClickOnControls = highlightControlsContainer.contains(e.target) ||
-      highlightControlsContainer === e.target;
-
-    if (!isClickOnHighlight && !isClickOnControls) {
-      hideHighlightControls();
+    // Handle selection controls
+    if (!selectionControlsEnabled) return;
+    
+    if (selectionIcon && !selectionIcon.contains(e.target)) {
+      hideSelectionIcon();
     }
-  }
-
-  // Handle selection controls
-  if (!selectionControlsEnabled) return;
+    
+    if (selectionControlsContainer && !selectionControlsContainer.contains(e.target)) {
+      hideSelectionControls();
+    }
+  }, true); // Use capture phase to handle this before other handlers
   
-  if (selectionIcon && !selectionIcon.contains(e.target)) {
-    hideSelectionIcon();
-  }
-  
-  if (selectionControlsContainer && !selectionControlsContainer.contains(e.target)) {
-    hideSelectionControls();
-  }
-}, true); // Use capture phase to handle this before other handlers
+  globalClickListenerAdded = true;
+}
 
 // Auto-initialize selection controls when the script loads
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeSelectionControls);
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeSelectionControls();
+    addGlobalClickListener();
+  });
 } else {
   // DOM is already ready
   initializeSelectionControls();
+  addGlobalClickListener();
 }
