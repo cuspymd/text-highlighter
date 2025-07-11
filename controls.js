@@ -656,9 +656,42 @@ function showSelectionIcon(mouseX, mouseY) {
   selectionIcon.innerHTML = `<img src="${browserAPI.runtime.getURL('images/icon48.png')}" alt="Highlight" style="width: 19px; height: 19px;">`;
   selectionIcon.title = getMessage('highlightText');
   
-  // Only set dynamic positioning styles that can't be in CSS
-  selectionIcon.style.left = `${window.scrollX + mouseX + 10}px`;
-  selectionIcon.style.top = `${window.scrollY + mouseY - 30}px`;
+  // Position the icon with viewport boundary checking
+  const iconWidth = 19; // Width of the icon
+  const iconHeight = 19; // Height of the icon
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // Calculate horizontal position
+  let leftPosition = window.scrollX + mouseX + 10;
+  
+  // Check if mouse is in the right 30% of the viewport (70% threshold)
+  if (mouseX > viewportWidth * 0.7) {
+    // Position to the left of mouse cursor instead
+    leftPosition = window.scrollX + mouseX - iconWidth - 10;
+    
+    // If still beyond left edge, align to left edge with some padding
+    if (leftPosition < window.scrollX + 10) {
+      leftPosition = window.scrollX + 10;
+    }
+  }
+  
+  // Calculate vertical position
+  let topPosition = window.scrollY + mouseY - 30;
+  
+  // Check if icon would go beyond top edge of viewport
+  if (mouseY - 30 < 0) {
+    // Position below mouse cursor instead
+    topPosition = window.scrollY + mouseY + 10;
+    
+    // If still beyond bottom edge, align to bottom edge with some padding
+    if (topPosition + iconHeight > window.scrollY + viewportHeight - 10) {
+      topPosition = window.scrollY + viewportHeight - iconHeight - 10;
+    }
+  }
+  
+  selectionIcon.style.left = `${leftPosition}px`;
+  selectionIcon.style.top = `${topPosition}px`;
   
   // Add click event to show controls
   selectionIcon.addEventListener('click', function(e) {
@@ -696,9 +729,49 @@ function showSelectionControls(mouseX, mouseY) {
     deleteButton.remove();
   }
   
-  // Position the controls (only dynamic positioning)
-  selectionControlsContainer.style.left = `${window.scrollX + mouseX + 10}px`;
-  selectionControlsContainer.style.top = `${window.scrollY + mouseY - 20}px`;
+  // Temporarily position off-screen to get dimensions
+  selectionControlsContainer.style.left = '-9999px';
+  selectionControlsContainer.style.top = '-9999px';
+  selectionControlsContainer.style.visibility = 'hidden';
+  document.body.appendChild(selectionControlsContainer);
+  
+  // Position the controls with viewport boundary checking
+  const controlsRect = selectionControlsContainer.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // Calculate horizontal position
+  let leftPosition = window.scrollX + mouseX + 10;
+  
+  // Check if mouse is in the right 30% of the viewport (70% threshold)
+  if (mouseX > viewportWidth * 0.7) {
+    // Position to the left of mouse cursor instead
+    leftPosition = window.scrollX + mouseX - controlsRect.width - 10;
+    
+    // If still beyond left edge, align to left edge with some padding
+    if (leftPosition < window.scrollX + 10) {
+      leftPosition = window.scrollX + 10;
+    }
+  }
+  
+  // Calculate vertical position
+  let topPosition = window.scrollY + mouseY - 20;
+  
+  // Check if controls would go beyond bottom edge of viewport
+  if (mouseY + controlsRect.height - 20 > viewportHeight) {
+    // Position above mouse cursor instead
+    topPosition = window.scrollY + mouseY - controlsRect.height - 10;
+    
+    // If still beyond top edge, align to top edge with some padding
+    if (topPosition < window.scrollY + 10) {
+      topPosition = window.scrollY + 10;
+    }
+  }
+  
+  // Set final position and make visible
+  selectionControlsContainer.style.left = `${leftPosition}px`;
+  selectionControlsContainer.style.top = `${topPosition}px`;
+  selectionControlsContainer.style.visibility = 'visible';
   
   // Update event listeners for color buttons to create highlights instead of changing existing ones
   const colorButtons = selectionControlsContainer.querySelectorAll('.color-button');
@@ -752,8 +825,6 @@ function showSelectionControls(mouseX, mouseY) {
   selectionControlsContainer.addEventListener('click', function(e) {
     e.stopPropagation();
   });
-  
-  document.body.appendChild(selectionControlsContainer);
   
   // Apply the visible animation
   selectionControlsContainer.classList.remove('visible');
