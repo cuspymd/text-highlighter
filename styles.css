@@ -295,6 +295,7 @@
   font-size: 12px;
   cursor: pointer;
   color: #333;
+  line-height: 1.2;
 }
 
 .color-picker-apply {
