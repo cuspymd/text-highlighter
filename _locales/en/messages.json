@@ -163,5 +163,17 @@
   },
   "ok": {
     "message": "OK"
+  },
+  "searchTooltip": {
+    "message": "Search highlights"
+  },
+  "searchPlaceholder": {
+    "message": "Search..."
+  },
+  "sortNewestFirst": {
+    "message": "Sort by time (newest first)"
+  },
+  "sortOldestFirst": {
+    "message": "Sort by time (oldest first)"
   }
 }

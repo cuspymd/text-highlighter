@@ -160,5 +160,17 @@
   },
   "ok": {
     "message": "Aceptar"
+  },
+  "searchTooltip": {
+    "message": "Buscar resaltados"
+  },
+  "searchPlaceholder": {
+    "message": "Buscar..."
+  },
+  "sortNewestFirst": {
+    "message": "Ordenar por tiempo (más reciente primero)"
+  },
+  "sortOldestFirst": {
+    "message": "Ordenar por tiempo (más antiguo primero)"
   }
 }

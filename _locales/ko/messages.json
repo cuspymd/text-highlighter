@@ -163,5 +163,17 @@
   },
   "ok": {
     "message": "확인"
+  },
+  "searchTooltip": {
+    "message": "하이라이트 검색"
+  },
+  "searchPlaceholder": {
+    "message": "검색..."
+  },
+  "sortNewestFirst": {
+    "message": "시간순 정렬 (최신 순)"
+  },
+  "sortOldestFirst": {
+    "message": "시간순 정렬 (오래된 순)"
   }
 }

@@ -66,6 +66,13 @@ document.addEventListener('DOMContentLoaded', function () {
       const key = element.getAttribute('data-i18n-title');
       element.title = getMessage(key, element.title);
     });
+
+    // Handle data-i18n-placeholder attributes
+    const elementsWithPlaceholder = document.querySelectorAll('[data-i18n-placeholder]');
+    elementsWithPlaceholder.forEach(element => {
+      const key = element.getAttribute('data-i18n-placeholder');
+      element.placeholder = getMessage(key, element.placeholder);
+    });
   }
 
   // Load all highlighted pages data
@@ -412,13 +419,13 @@ document.addEventListener('DOMContentLoaded', function () {
         sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
           <path d="M3 6h6v2H3V6zm0 5h12v2H3v-2zm0 5h18v2H3v-2z"/>
         </svg>`;
-        sortBtn.title = 'Sort by time (oldest first)';
+        sortBtn.title = getMessage('sortOldestFirst', 'Sort by time (oldest first)');
         sortBtn.classList.add('sort-active');
       } else {
         sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
           <path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h6v2H3v-2z"/>
         </svg>`;
-        sortBtn.title = 'Sort by time (newest first)';
+        sortBtn.title = getMessage('sortNewestFirst', 'Sort by time (newest first)');
         sortBtn.classList.remove('sort-active');
       }
 

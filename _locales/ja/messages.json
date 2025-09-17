@@ -163,5 +163,17 @@
   },
   "ok": {
     "message": "OK"
+  },
+  "searchTooltip": {
+    "message": "ハイライト検索"
+  },
+  "searchPlaceholder": {
+    "message": "検索..."
+  },
+  "sortNewestFirst": {
+    "message": "時間順ソート（新しい順）"
+  },
+  "sortOldestFirst": {
+    "message": "時間順ソート（古い順）"
   }
 }

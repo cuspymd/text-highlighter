@@ -163,5 +163,17 @@
   },
   "ok": {
     "message": "确定"
+  },
+  "searchTooltip": {
+    "message": "搜索高亮内容"
+  },
+  "searchPlaceholder": {
+    "message": "搜索..."
+  },
+  "sortNewestFirst": {
+    "message": "按时间排序（最新优先）"
+  },
+  "sortOldestFirst": {
+    "message": "按时间排序（最旧优先）"
   }
 }
