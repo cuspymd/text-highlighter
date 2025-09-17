@@ -81,8 +81,56 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Search functionality
+  function filterPages(searchTerm) {
+    if (!searchTerm.trim()) {
+      filteredPages = [...allPages];
+    } else {
+      const term = searchTerm.toLowerCase();
+      filteredPages = allPages.filter(page => {
+        // Search in page title
+        const titleMatch = (page.title || '').toLowerCase().includes(term);
+
+        // Search in highlight text
+        const highlightMatch = page.highlights && page.highlights.some(group =>
+          group.text && group.text.toLowerCase().includes(term)
+        );
+
+        return titleMatch || highlightMatch;
+      });
+    }
+
+    sortAndDisplayPages();
+  }
+
+  // Sort functionality
+  function sortPages() {
+    if (currentSortMode === 'time') {
+      filteredPages.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
+    } else {
+      filteredPages.sort((a, b) => {
+        const titleA = (a.title || '').toLowerCase();
+        const titleB = (b.title || '').toLowerCase();
+        return titleA.localeCompare(titleB);
+      });
+    }
+  }
+
+  // Sort and display pages
+  function sortAndDisplayPages() {
+    sortPages();
+    displayFilteredPages(filteredPages);
+  }
+
   // Display page list
   function displayPages(pages) {
+    allPages = [...pages];
+    filteredPages = [...pages];
+    sortAndDisplayPages();
+  }
+
+  // Display filtered pages
+  function displayFilteredPages(pages) {
     if (pages.length > 0) {
       noPages.style.display = 'none';
       pagesContainer.innerHTML = '';
@@ -261,6 +309,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const exportAllBtn = document.getElementById('export-all-btn');
   const importBtn = document.getElementById('import-btn');
   const importFileInput = document.getElementById('import-file');
+  const searchToggleBtn = document.getElementById('search-toggle-btn');
+  const searchInput = document.getElementById('search-input');
+  const sortBtn = document.getElementById('sort-btn');
+
+  // Search and sort state
+  let allPages = [];
+  let filteredPages = [];
+  let currentSortMode = 'time'; // 'time' or 'title'
 
   // Import highlights event
   if (importBtn && importFileInput) {
@@ -321,6 +377,59 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Search toggle event
+  if (searchToggleBtn && searchInput) {
+    searchToggleBtn.addEventListener('click', function () {
+      const isVisible = searchInput.style.display !== 'none';
+      if (isVisible) {
+        searchInput.style.display = 'none';
+        searchInput.value = '';
+        filterPages(''); // Reset filter
+      } else {
+        searchInput.style.display = 'block';
+        searchInput.focus();
+      }
+    });
+
+    // Search input event
+    searchInput.addEventListener('input', function () {
+      filterPages(this.value);
+    });
+
+    // Handle escape key to close search
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        searchInput.style.display = 'none';
+        searchInput.value = '';
+        filterPages('');
+      }
+    });
+  }
+
+  // Sort button event
+  if (sortBtn) {
+    sortBtn.addEventListener('click', function () {
+      currentSortMode = currentSortMode === 'time' ? 'title' : 'time';
+
+      // Update button appearance and tooltip
+      if (currentSortMode === 'title') {
+        sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
+          <path d="M9.25 5L12.75 1.5L16.25 5H14.5V9H11V5H9.25ZM14.5 15V19H16.25L12.75 22.5L9.25 19H11V15H14.5ZM5 8V6H9V8H5ZM5 12V10H10.5V12H5ZM5 16V14H12V16H5Z"/>
+        </svg>`;
+        sortBtn.title = 'Sort by title';
+        sortBtn.classList.add('sort-active');
+      } else {
+        sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
+          <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/>
+        </svg>`;
+        sortBtn.title = 'Sort by time';
+        sortBtn.classList.remove('sort-active');
+      }
+
+      sortAndDisplayPages();
+    });
+  }
+
   // Export all highlights event
   if (exportAllBtn) {
     exportAllBtn.addEventListener('click', function () {
@@ -355,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function () {
         deleteAllPages();
       }
     });
-    deleteAllBtn.textContent = getMessage('deleteAllPages', 'Delete All Pages');
   }
 
   // Refresh 버튼 이벤트 연결
@@ -363,7 +471,6 @@ document.addEventListener('DOMContentLoaded', function () {
     refreshBtn.addEventListener('click', function () {
       loadAllHighlightedPages();
     });
-    refreshBtn.textContent = getMessage('refresh', 'Refresh');
   }
 
   // 메시지로 페이지 목록 새로고침
