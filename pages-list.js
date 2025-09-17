@@ -105,14 +105,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Sort functionality
   function sortPages() {
-    if (currentSortMode === 'time') {
+    if (currentSortMode === 'timeDesc') {
       filteredPages.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
     } else {
-      filteredPages.sort((a, b) => {
-        const titleA = (a.title || '').toLowerCase();
-        const titleB = (b.title || '').toLowerCase();
-        return titleA.localeCompare(titleB);
-      });
+      filteredPages.sort((a, b) => new Date(a.lastUpdated) - new Date(b.lastUpdated));
     }
   }
 
@@ -316,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Search and sort state
   let allPages = [];
   let filteredPages = [];
-  let currentSortMode = 'time'; // 'time' or 'title'
+  let currentSortMode = 'timeDesc'; // 'timeDesc' or 'timeAsc'
 
   // Import highlights event
   if (importBtn && importFileInput) {
@@ -409,20 +405,20 @@ document.addEventListener('DOMContentLoaded', function () {
   // Sort button event
   if (sortBtn) {
     sortBtn.addEventListener('click', function () {
-      currentSortMode = currentSortMode === 'time' ? 'title' : 'time';
+      currentSortMode = currentSortMode === 'timeDesc' ? 'timeAsc' : 'timeDesc';
 
       // Update button appearance and tooltip
-      if (currentSortMode === 'title') {
+      if (currentSortMode === 'timeAsc') {
         sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
-          <path d="M9.25 5L12.75 1.5L16.25 5H14.5V9H11V5H9.25ZM14.5 15V19H16.25L12.75 22.5L9.25 19H11V15H14.5ZM5 8V6H9V8H5ZM5 12V10H10.5V12H5ZM5 16V14H12V16H5Z"/>
+          <path d="M3 6h6v2H3V6zm0 5h12v2H3v-2zm0 5h18v2H3v-2z"/>
         </svg>`;
-        sortBtn.title = 'Sort by title';
+        sortBtn.title = 'Sort by time (oldest first)';
         sortBtn.classList.add('sort-active');
       } else {
         sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
-          <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/>
+          <path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h6v2H3v-2z"/>
         </svg>`;
-        sortBtn.title = 'Sort by time';
+        sortBtn.title = 'Sort by time (newest first)';
         sortBtn.classList.remove('sort-active');
       }
 
