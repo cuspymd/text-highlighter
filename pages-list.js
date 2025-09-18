@@ -238,14 +238,9 @@ document.addEventListener('DOMContentLoaded', function () {
               const highlightItem = document.createElement('div');
               highlightItem.className = 'highlight-item';
               highlightItem.style.backgroundColor = group.color;
-              // Truncate text if too long
-              let displayText = group.text;
-              if (displayText.length > 100) {
-                displayText = displayText.substring(0, 97) + '...';
-              }
               const span = document.createElement('span');
               span.className = 'highlight-text';
-              span.textContent = displayText;
+              span.textContent = group.text;
               highlightItem.appendChild(span);
               highlightsContainer.appendChild(highlightItem);
             });
