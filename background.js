@@ -21,6 +21,54 @@ function getMessage(key, substitutions = null) {
   return browserAPI.i18n.getMessage(key, substitutions);
 }
 
+function normalizeUrlKey(urlString) {
+  if (!urlString) return '';
+  try {
+    const url = new URL(urlString);
+    if (url.protocol === 'file:') {
+      return `file://${url.pathname}`;
+    }
+    if (url.origin === 'null') {
+      return `${url.protocol}//${url.pathname}`;
+    }
+    return `${url.origin}${url.pathname}`;
+  } catch (e) {
+    const noHash = urlString.split('#')[0];
+    return noHash.split('?')[0];
+  }
+}
+
+function mergeHighlights(primary = [], secondary = []) {
+  const merged = new Map();
+  for (const item of primary) {
+    const key = item?.groupId || JSON.stringify(item);
+    merged.set(key, item);
+  }
+  for (const item of secondary) {
+    const key = item?.groupId || JSON.stringify(item);
+    if (!merged.has(key)) {
+      merged.set(key, item);
+    }
+  }
+  return Array.from(merged.values());
+}
+
+function mergeMeta(targetMeta = {}, sourceMeta = {}, displayUrl = '') {
+  const merged = { ...targetMeta };
+  if (!merged.title && sourceMeta.title) {
+    merged.title = sourceMeta.title;
+  }
+  const targetDate = Date.parse(merged.lastUpdated || '');
+  const sourceDate = Date.parse(sourceMeta.lastUpdated || '');
+  if (sourceDate && (!targetDate || sourceDate > targetDate)) {
+    merged.lastUpdated = sourceMeta.lastUpdated;
+  }
+  if (displayUrl) {
+    merged.displayUrl = displayUrl;
+  }
+  return merged;
+}
+
 // Debug mode setting - change to true during development
 const DEBUG_MODE = false;
 
@@ -172,8 +220,9 @@ browserAPI.tabs.onActivated.addListener(async () => {
 });
 
 // Helper function to notify tab about highlight updates
-async function notifyTabHighlightsRefresh(highlights, url) {
-  const tabs = await browserAPI.tabs.query({ url: url });
+async function notifyTabHighlightsRefresh(highlights, urlKey, pageUrl = '') {
+  const urlPattern = urlKey ? `${urlKey}*` : pageUrl;
+  const tabs = await browserAPI.tabs.query({ url: urlPattern });
   try {
     await browserAPI.tabs.sendMessage(tabs[0].id, {
       action: 'refreshHighlights',
@@ -185,13 +234,20 @@ async function notifyTabHighlightsRefresh(highlights, url) {
 }
 
 // Helper function to remove storage keys when no highlights remain
-async function cleanupEmptyHighlightData(url) {
-  if (!url) return;
+async function cleanupEmptyHighlightData(urlKey, pageUrl = '') {
+  if (!urlKey && !pageUrl) return;
 
-  debugLog('Cleaning up empty highlight data for URL:', url);
+  debugLog('Cleaning up empty highlight data for URL:', urlKey || pageUrl);
   try {
-    await browserAPI.storage.local.remove([url, `${url}_meta`]);
-    debugLog('Successfully removed empty highlight data for URL:', url);
+    const keysToRemove = [];
+    if (urlKey) {
+      keysToRemove.push(urlKey, `${urlKey}_meta`);
+    }
+    if (pageUrl && pageUrl !== urlKey) {
+      keysToRemove.push(pageUrl, `${pageUrl}_meta`);
+    }
+    await browserAPI.storage.local.remove(keysToRemove);
+    debugLog('Successfully removed empty highlight data for URL:', urlKey || pageUrl);
   } catch (error) {
     debugLog('Error removing empty highlight data:', error);
   }
@@ -287,9 +343,25 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Handle highlight information request from content.js
       if (message.action === 'getHighlights') {
-        const result = await browserAPI.storage.local.get([message.url]);
-        debugLog('Sending highlights for URL:', message.url, result[message.url] || []);
-        sendResponse({ highlights: result[message.url] || [] });
+        const urlKey = normalizeUrlKey(message.urlKey || message.url || message.pageUrl);
+        const pageUrl = message.pageUrl || '';
+        const result = await browserAPI.storage.local.get([urlKey, pageUrl, `${urlKey}_meta`, `${pageUrl}_meta`]);
+
+        if (pageUrl && pageUrl !== urlKey && !result[urlKey] && Array.isArray(result[pageUrl])) {
+          const mergedHighlights = mergeHighlights([], result[pageUrl]);
+          const meta = mergeMeta(result[`${urlKey}_meta`] || {}, result[`${pageUrl}_meta`] || {}, urlKey);
+          await browserAPI.storage.local.set({
+            [urlKey]: mergedHighlights,
+            [`${urlKey}_meta`]: meta
+          });
+          await browserAPI.storage.local.remove([pageUrl, `${pageUrl}_meta`]);
+          debugLog('Migrated highlights to URL key:', urlKey);
+          sendResponse({ highlights: mergedHighlights });
+          return;
+        }
+
+        debugLog('Sending highlights for URL key:', urlKey, result[urlKey] || []);
+        sendResponse({ highlights: result[urlKey] || [] });
         return;
       }
 
@@ -379,31 +451,37 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.action === 'saveHighlights') {
         const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
         const currentTab = tabs[0];
+        const urlKey = normalizeUrlKey(message.urlKey || message.url || message.pageUrl);
+        const pageUrl = message.pageUrl || '';
+        const displayUrl = normalizeUrlKey(message.displayUrl || urlKey || pageUrl);
 
         // Check if there are any highlights
         if (message.highlights.length > 0) {
           const saveData = {};
-          saveData[message.url] = message.highlights;
+          saveData[urlKey] = message.highlights;
 
           // Save highlights
           await browserAPI.storage.local.set(saveData);
-          debugLog('Saved highlights for URL:', message.url, message.highlights);
+          debugLog('Saved highlights for URL key:', urlKey, message.highlights);
 
           // Save metadata only if highlights exist
-          const result = await browserAPI.storage.local.get([`${message.url}_meta`]);
-          const metaData = result[`${message.url}_meta`] || {};
+          const result = await browserAPI.storage.local.get([`${urlKey}_meta`, `${pageUrl}_meta`]);
+          const metaData = mergeMeta(result[`${urlKey}_meta`] || {}, result[`${pageUrl}_meta`] || {}, displayUrl);
           metaData.title = currentTab.title;
           metaData.lastUpdated = new Date().toISOString();
 
           const metaSaveData = {};
-          metaSaveData[`${message.url}_meta`] = metaData;
+          metaSaveData[`${urlKey}_meta`] = metaData;
 
           await browserAPI.storage.local.set(metaSaveData);
           debugLog('Saved page metadata:', metaData);
+          if (pageUrl && pageUrl !== urlKey) {
+            await browserAPI.storage.local.remove([pageUrl, `${pageUrl}_meta`]);
+          }
           sendResponse({ success: true });
         } else {
           // If no highlights remain, remove both data and metadata
-          await cleanupEmptyHighlightData(message.url);
+          await cleanupEmptyHighlightData(urlKey, pageUrl);
           sendResponse({ success: true });
         }
         return;
@@ -411,27 +489,28 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Handler for single highlight deletion
       if (message.action === 'deleteHighlight') {
-        const { url, groupId } = message;
-        const result = await browserAPI.storage.local.get([url]);
-        const highlights = result[url] || [];
+        const { urlKey, pageUrl, groupId } = message;
+        const normalizedKey = normalizeUrlKey(urlKey || pageUrl);
+        const result = await browserAPI.storage.local.get([normalizedKey, pageUrl]);
+        const highlights = result[normalizedKey] || result[pageUrl] || [];
         // groupId로 그룹 삭제
         const updatedHighlights = highlights.filter(g => g.groupId !== groupId);
         if (updatedHighlights.length > 0) {
           const saveData = {};
-          saveData[url] = updatedHighlights;
+          saveData[normalizedKey] = updatedHighlights;
           await browserAPI.storage.local.set(saveData);
-          debugLog('Highlight group deleted:', groupId, 'from URL:', url);
+          debugLog('Highlight group deleted:', groupId, 'from URL key:', normalizedKey);
           if (message.notifyRefresh) {
-            await notifyTabHighlightsRefresh(updatedHighlights, url);
+            await notifyTabHighlightsRefresh(updatedHighlights, normalizedKey, pageUrl);
           }
           sendResponse({
             success: true,
             highlights: updatedHighlights
           });
         } else {
-          await cleanupEmptyHighlightData(url);
+          await cleanupEmptyHighlightData(normalizedKey, pageUrl);
           if (message.notifyRefresh) {
-            await notifyTabHighlightsRefresh([], url);
+            await notifyTabHighlightsRefresh([], normalizedKey, pageUrl);
           }
           sendResponse({
             success: true,
@@ -443,14 +522,15 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Handler for clearing all highlights
       if (message.action === 'clearAllHighlights') {
-        const { url } = message;
+        const { urlKey, pageUrl } = message;
+        const normalizedKey = normalizeUrlKey(urlKey || pageUrl);
 
         // Remove both data and metadata for the URL
-        await cleanupEmptyHighlightData(url);
+        await cleanupEmptyHighlightData(normalizedKey, pageUrl);
 
         // Notify content script to refresh highlights if requested
         if (message.notifyRefresh) {
-          await notifyTabHighlightsRefresh([], url);
+          await notifyTabHighlightsRefresh([], normalizedKey, pageUrl);
         }
 
         sendResponse({ success: true });
@@ -461,6 +541,8 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.action === 'getAllHighlightedPages') {
         const result = await browserAPI.storage.local.get(null);
         const pages = [];
+        const updates = {};
+        const removals = [];
 
         // Filter items with URLs as keys from storage (exclude metadata and customColors)
         for (const key in result) {
@@ -468,18 +550,36 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             continue; // skip customColors key
           }
           if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
-            const url = key;
-            const metaKey = `${url}_meta`;
+            const urlKey = normalizeUrlKey(key);
+            const metaKey = `${key}_meta`;
+            const normalizedMetaKey = `${urlKey}_meta`;
             const metadata = result[metaKey] || {};
+            const normalizedMeta = result[normalizedMetaKey] || {};
+            let highlights = result[key] || [];
+
+            if (urlKey !== key) {
+              const existing = Array.isArray(result[urlKey]) ? result[urlKey] : [];
+              highlights = mergeHighlights(existing, highlights);
+              updates[urlKey] = highlights;
+              updates[normalizedMetaKey] = mergeMeta(normalizedMeta, metadata, urlKey);
+              removals.push(key, metaKey);
+            }
 
             pages.push({
-              url: url,
-              highlights: result[url],
-              highlightCount: result[url].length,
-              title: metadata.title || '',
-              lastUpdated: metadata.lastUpdated || ''
+              url: urlKey,
+              highlights: highlights,
+              highlightCount: highlights.length,
+              title: (urlKey !== key ? (updates[normalizedMetaKey]?.title || '') : (metadata.title || '')),
+              lastUpdated: (urlKey !== key ? (updates[normalizedMetaKey]?.lastUpdated || '') : (metadata.lastUpdated || ''))
             });
           }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await browserAPI.storage.local.set(updates);
+        }
+        if (removals.length > 0) {
+          await browserAPI.storage.local.remove(removals);
         }
 
         debugLog('Retrieved all highlighted pages:', pages);

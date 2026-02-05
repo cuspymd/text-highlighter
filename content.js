@@ -1,5 +1,6 @@
 let highlights = [];
-const currentUrl = window.location.href;
+const currentPageUrl = window.location.href;
+const currentUrlKey = normalizeUrlKey(currentPageUrl);
 
 let currentColors = [];
 
@@ -11,7 +12,24 @@ function getMessage(key, substitutions = null) {
   return browserAPI.i18n.getMessage(key, substitutions);
 }
 
-debugLog('Content script loaded for:', currentUrl);
+debugLog('Content script loaded for:', currentPageUrl);
+
+function normalizeUrlKey(urlString) {
+  if (!urlString) return '';
+  try {
+    const url = new URL(urlString);
+    if (url.protocol === 'file:') {
+      return `file://${url.pathname}`;
+    }
+    if (url.origin === 'null') {
+      return `${url.protocol}//${url.pathname}`;
+    }
+    return `${url.origin}${url.pathname}`;
+  } catch (e) {
+    const noHash = urlString.split('#')[0];
+    return noHash.split('?')[0];
+  }
+}
 
 getColorsFromBackground().then(() => {
   setTimeout(() => {
@@ -79,10 +97,10 @@ function getColorsFromBackground() {
 }
 
 function loadHighlights() {
-  debugLog('Loading highlights for URL:', currentUrl);
+  debugLog('Loading highlights for URL key:', currentUrlKey);
 
   browserAPI.runtime.sendMessage(
-    { action: 'getHighlights', url: currentUrl },
+    { action: 'getHighlights', urlKey: currentUrlKey, pageUrl: currentPageUrl },
     (response) => {
       debugLog('Got highlights response:', response);
       if (response && response.highlights) {
@@ -101,7 +119,9 @@ function saveHighlights() {
   browserAPI.runtime.sendMessage(
     {
       action: 'saveHighlights',
-      url: currentUrl,
+      urlKey: currentUrlKey,
+      displayUrl: currentUrlKey,
+      pageUrl: currentPageUrl,
       highlights: highlights,
       timestamp: new Date().toISOString()
     },

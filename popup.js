@@ -11,6 +11,23 @@ const browserAPI = (() => {
   throw new Error('Neither browser nor chrome API is available');
 })();
 
+function normalizeUrlKey(urlString) {
+  if (!urlString) return '';
+  try {
+    const url = new URL(urlString);
+    if (url.protocol === 'file:') {
+      return `file://${url.pathname}`;
+    }
+    if (url.origin === 'null') {
+      return `${url.protocol}//${url.pathname}`;
+    }
+    return `${url.origin}${url.pathname}`;
+  } catch (e) {
+    const noHash = urlString.split('#')[0];
+    return noHash.split('?')[0];
+  }
+}
+
 async function getActiveTab() {
   // Open popup.html?tab=5 to use tab ID 5, etc.
   if (URL_PARAMS.has("tab")) {
@@ -226,9 +243,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     const tab = await getActiveTab();
     const currentUrl = tab.url;
     if (!currentUrl) return;
+    const currentUrlKey = normalizeUrlKey(currentUrl);
 
-    const result = await browserAPI.storage.local.get([currentUrl]);
-    let highlights = result[currentUrl] || [];
+    const response = await browserAPI.runtime.sendMessage({
+      action: 'getHighlights',
+      urlKey: currentUrlKey,
+      pageUrl: currentUrl
+    });
+    let highlights = response?.highlights || [];
 
     // 그룹 구조이므로 position은 대표 span의 position 사용
     highlights.sort((a, b) => {
@@ -264,7 +286,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         deleteBtn.title = browserAPI.i18n.getMessage('removeHighlight');
         deleteBtn.addEventListener('click', function (e) {
           e.stopPropagation();
-          deleteHighlight(group.groupId, currentUrl);
+          deleteHighlight(group.groupId, currentUrlKey, currentUrl);
         });
 
         highlightItem.appendChild(deleteBtn);
@@ -328,10 +350,11 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   // Delete highlight (그룹 단위)
-  async function deleteHighlight(groupId, url) {
+  async function deleteHighlight(groupId, urlKey, pageUrl) {
     const response = await browserAPI.runtime.sendMessage({
       action: 'deleteHighlight',
-      url: url,
+      urlKey: urlKey,
+      pageUrl: pageUrl,
       groupId: groupId, // groupId로 삭제
       notifyRefresh: true
     });
@@ -350,10 +373,12 @@ document.addEventListener('DOMContentLoaded', async function () {
       const tab = await getActiveTab();
       const currentUrl = tab.url;
       if (!currentUrl) return;
+      const currentUrlKey = normalizeUrlKey(currentUrl);
       
       const response = await browserAPI.runtime.sendMessage({
         action: 'clearAllHighlights',
-        url: currentUrl,
+        urlKey: currentUrlKey,
+        pageUrl: currentUrl,
         notifyRefresh: true
       });
       

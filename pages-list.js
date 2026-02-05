@@ -9,6 +9,23 @@ const browserAPI = (() => {
   throw new Error('Neither browser nor chrome API is available');
 })();
 
+function normalizeUrlKey(urlString) {
+  if (!urlString) return '';
+  try {
+    const url = new URL(urlString);
+    if (url.protocol === 'file:') {
+      return `file://${url.pathname}`;
+    }
+    if (url.origin === 'null') {
+      return `${url.protocol}//${url.pathname}`;
+    }
+    return `${url.origin}${url.pathname}`;
+  } catch (e) {
+    const noHash = urlString.split('#')[0];
+    return noHash.split('?')[0];
+  }
+}
+
 // 테마 변경 감지 및 처리
 function initializeThemeWatcher() {
   const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -269,9 +286,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Delete all highlights for a page
   function deletePageHighlights(url) {
+    const urlKey = normalizeUrlKey(url);
     browserAPI.runtime.sendMessage({
       action: 'clearAllHighlights',
-      url: url,
+      urlKey: urlKey,
       notifyRefresh: false  // No need to notify as we're not on the page
     }, (response) => {
       if (response && response.success) {
@@ -338,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
           browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
             if (response && response.success) {
               const existingUrls = response.pages.map(p => p.url);
-              const importUrls = json.pages.map(p => p.url);
+              const importUrls = json.pages.map(p => normalizeUrlKey(p.url));
               const overlap = importUrls.filter(url => existingUrls.includes(url));
               let proceed = true;
               if (overlap.length > 0) {
@@ -353,10 +371,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 ops[`${url}_meta`] = null;
               });
               json.pages.forEach(page => {
-                ops[page.url] = page.highlights || [];
-                ops[`${page.url}_meta`] = {
+                const urlKey = normalizeUrlKey(page.url);
+                ops[urlKey] = page.highlights || [];
+                ops[`${urlKey}_meta`] = {
                   title: page.title || '',
-                  lastUpdated: page.lastUpdated || new Date().toISOString()
+                  lastUpdated: page.lastUpdated || new Date().toISOString(),
+                  displayUrl: urlKey
                 };
               });
               browserAPI.storage.local.set(ops, () => {
