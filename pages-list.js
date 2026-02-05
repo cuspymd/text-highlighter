@@ -52,6 +52,16 @@ document.addEventListener('DOMContentLoaded', function () {
     return defaultValue;
   }
 
+  function isSafeOpenUrl(urlString) {
+    if (!urlString) return false;
+    try {
+      const url = new URL(urlString);
+      return url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'file:';
+    } catch (e) {
+      return false;
+    }
+  }
+
   // Change text of HTML elements to multi-language
   function localizeStaticElements() {
     const elementsToLocalize = document.querySelectorAll('[data-i18n]');
@@ -249,6 +259,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Open page button event
         pageItem.querySelector('.btn-view').addEventListener('click', function () {
+          if (!isSafeOpenUrl(page.url)) {
+            alert(getMessage('invalidUrl', 'Invalid or unsafe URL.'));
+            return;
+          }
           browserAPI.tabs.create({ url: page.url });
         });
 
