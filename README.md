@@ -42,6 +42,10 @@ This extension supports:
 Run E2E tests using Playwright:
 
 ```bash
+# Install Playwright browsers (required before first run)
+npx playwright install
+
+# Run tests
 npx playwright test
 ```
 
