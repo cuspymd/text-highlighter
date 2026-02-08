@@ -1,6 +1,6 @@
 # Marks: Text Highlighter
 
-A cross-browser extension that allows you to highlight and manage text on web pages. Supports both Chrome and Firefox.
+A cross-browser extension that allows you to highlight and manage text on web pages. Supports Chrome, Firefox, and Firefox for Android.
 
 ## Features
 
@@ -8,8 +8,9 @@ A cross-browser extension that allows you to highlight and manage text on web pa
 - Highlight Management: Manage and review highlighted text per page
 - Minimap: View highlighted positions at a glance with a minimap on the right side of the page
 - Multilingual Support: Available in English, Korean, Japanese, and Chinese
-- Cross-Browser Support: Works on both Chrome and Firefox
-- Keyboard Shortcuts: Quick highlighting with customizable keyboard shortcuts
+- Cross-Browser Support: Works on Chrome, Firefox, and Firefox for Android
+- Keyboard Shortcuts: Quick highlighting with customizable keyboard shortcuts (desktop only)
+- Selection Controls: Floating highlight UI on text selection, ideal for mobile devices
 
 ## Getting Started
 
@@ -33,7 +34,17 @@ npm install
 
 This extension supports:
 - **Chrome**: Manifest V3 with native Chrome APIs
-- **Firefox**: Manifest V3 with WebExtensions polyfill for cross-browser compatibility
+- **Firefox**: Manifest V3 with native WebExtensions APIs
+- **Firefox for Android**: Manifest V3 with mobile-optimized UI (requires Firefox 120.0+)
+
+#### Firefox Android Notes
+
+On Firefox for Android, the following desktop-only APIs are unavailable and handled gracefully:
+- **Context Menus** (`contextMenus`): Not supported. Use the Selection Controls UI instead (enabled by default on mobile).
+- **Keyboard Shortcuts** (`commands`): Not supported. Use the Selection Controls UI instead.
+- **Windows API** (`windows`): Not supported. The extension uses the Tabs API as a fallback.
+
+The Selection Controls feature (floating highlight icon on text selection) is automatically enabled on mobile devices, providing a touch-friendly alternative to context menus and keyboard shortcuts.
 
 ## Development
 
@@ -47,6 +58,43 @@ npx playwright install
 
 # Run tests
 npx playwright test
+```
+
+### Testing on Firefox for Android
+
+To test the extension on a real Android device:
+
+#### Prerequisites
+
+1. Install [Firefox for Android](https://play.google.com/store/apps/details?id=org.mozilla.firefox) on your device
+2. Enable USB debugging on your Android device (Settings > Developer options > USB debugging)
+3. Connect your device via USB and authorize the connection
+
+#### Using web-ext
+
+```bash
+# Run on connected Android device
+npx web-ext run -t firefox-android --adb-device <device-id> --firefox-apk org.mozilla.firefox -s dist-firefox
+```
+
+To find your device ID:
+```bash
+adb devices
+```
+
+#### Using about:debugging
+
+1. On your Android device, open Firefox and go to `about:config`
+2. Set `xpcom.debug.remote.enabled` to `true`
+3. On your desktop Firefox, go to `about:debugging` > Setup
+4. Add your device and connect
+5. Load the extension from `dist-firefox/manifest.json`
+
+#### Viewing Logs
+
+```bash
+# View extension logs from the Android device
+adb logcat -s GeckoConsole
 ```
 
 ### Deployment
@@ -119,23 +167,27 @@ This creates `outputs/text-highlighter-1.2.0-firefox.zip` ready for submission t
 
 #### Cross-Browser Compatibility
 
-The extension uses the WebExtensions polyfill to ensure compatibility between Chrome and Firefox:
+The extension uses a `browserAPI` compatibility layer to support Chrome and Firefox:
 
 - **Chrome**: Uses native `chrome.*` APIs directly
-- **Firefox**: Uses `browser.*` APIs via webextension-polyfill
-- **Manifest Files**: Separate manifests for browser-specific optimizations
+- **Firefox (Desktop/Android)**: Uses native `browser.*` APIs directly
+- **Manifest Files**: Separate manifests for browser-specific configurations
   - `manifest.json`: Chrome-optimized (default)
-  - `manifest-firefox.json`: Firefox-optimized with polyfill inclusion
+  - `manifest-firefox.json`: Firefox-optimized with `gecko` and `gecko_android` settings
 
 #### API Compatibility
 
-All major APIs are fully compatible between browsers:
-- Storage API (`chrome.storage`/`browser.storage`)
-- Context Menus API (`chrome.contextMenus`/`browser.contextMenus`)
-- Commands API (`chrome.commands`/`browser.commands`)
-- Tabs API (`chrome.tabs`/`browser.tabs`)
-- Runtime API (`chrome.runtime`/`browser.runtime`)
-- Internationalization API (`chrome.i18n`/`browser.i18n`)
+| API | Chrome | Firefox Desktop | Firefox Android |
+|-----|--------|----------------|-----------------|
+| Storage | O | O | O |
+| Tabs | O | O | O |
+| Runtime | O | O | O |
+| Internationalization | O | O | O |
+| Context Menus | O | O | X |
+| Commands | O | O | X |
+| Windows | O | O | X |
+
+On Firefox Android, unavailable APIs are conditionally guarded using `browser.runtime.getPlatformInfo()` to detect the platform at runtime.
 
 ## Contribution
 
