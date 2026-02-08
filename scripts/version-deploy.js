@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const archiver = require('archiver');
 
 // 버전 및 브라우저 인수 확인
 const version = process.argv[2];
@@ -57,10 +58,10 @@ for (const file of jsFiles) {
     try {
       let content = fs.readFileSync(filePath, 'utf8');
       const originalContent = content;
-      
+
       // DEBUG_MODE = true를 DEBUG_MODE = false로 변경
       content = content.replace(/const DEBUG_MODE = true/g, 'const DEBUG_MODE = false');
-      
+
       if (content !== originalContent) {
         fs.writeFileSync(filePath, content);
         console.log(`✓ Updated DEBUG_MODE in ${file}`);
@@ -77,9 +78,9 @@ for (const file of jsFiles) {
 // 3. deploy.js 실행
 console.log('\n3. Running deploy script...');
 try {
-  execSync(`node scripts/deploy.js ${browser}`, { 
-    cwd: sourceDir, 
-    stdio: 'inherit' 
+  execSync(`node scripts/deploy.js ${browser}`, {
+    cwd: sourceDir,
+    stdio: 'inherit'
   });
   console.log('✓ Deploy script completed');
 } catch (error) {
@@ -97,30 +98,33 @@ if (!fs.existsSync(distDir)) {
   process.exit(1);
 }
 
-try {
-  // outputs 디렉토리 생성
-  if (!fs.existsSync(outputsDir)) {
-    fs.mkdirSync(outputsDir);
-    console.log('✓ Created outputs directory');
-  }
-  
-  // 기존 zip 파일이 있으면 삭제
-  if (fs.existsSync(zipPath)) {
-    fs.unlinkSync(zipPath);
-  }
-  
-  // zip 명령어 실행
-  execSync(`cd "${distDir}" && zip -r "../outputs/${zipFileName}" .`, { 
-    stdio: 'inherit' 
-  });
-  
-  console.log(`✓ Created outputs/${zipFileName}`);
-} catch (error) {
-  console.error('Error creating zip file:', error.message);
-  console.log('Note: Make sure zip command is available on your system');
-  process.exit(1);
+// outputs 디렉토리 생성
+if (!fs.existsSync(outputsDir)) {
+  fs.mkdirSync(outputsDir);
+  console.log('✓ Created outputs directory');
 }
 
-console.log(`\n🎉 Version deploy completed successfully!`);
-console.log(`📦 Extension package: outputs/${zipFileName}`);
-console.log(`📁 Development files: ${browser === 'firefox' ? 'dist-firefox/' : 'dist/'}`);
+// 기존 zip 파일이 있으면 삭제
+if (fs.existsSync(zipPath)) {
+  fs.unlinkSync(zipPath);
+}
+
+// archiver를 사용하여 zip 파일 생성
+const output = fs.createWriteStream(zipPath);
+const archive = archiver('zip', { zlib: { level: 9 } });
+
+output.on('close', () => {
+  console.log(`✓ Created outputs/${zipFileName} (${archive.pointer()} bytes)`);
+  console.log(`\n🎉 Version deploy completed successfully!`);
+  console.log(`📦 Extension package: outputs/${zipFileName}`);
+  console.log(`📁 Development files: ${browser === 'firefox' ? 'dist-firefox/' : 'dist/'}`);
+});
+
+archive.on('error', (err) => {
+  console.error('Error creating zip file:', err.message);
+  process.exit(1);
+});
+
+archive.pipe(output);
+archive.directory(distDir, false);
+archive.finalize();
