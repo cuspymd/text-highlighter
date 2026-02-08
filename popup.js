@@ -387,30 +387,46 @@ document.addEventListener('DOMContentLoaded', async function () {
   viewAllPagesBtn.addEventListener('click', function () {
     debugLog('Opening all pages list');
     const targetUrl = browserAPI.runtime.getURL('pages-list.html');
-    browserAPI.windows.getAll({populate: true}, function(windows) {
-      let found = false;
-      for (const win of windows) {
-        for (const tab of win.tabs) {
-          if (tab.url && tab.url.startsWith(targetUrl)) {
-            browserAPI.windows.update(win.id, {focused: true});
-            browserAPI.tabs.update(tab.id, {active: true});
-            // 페이지 목록 갱신 메시지 전송
-            browserAPI.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
-            found = true;
-            break;
+
+    // browserAPI.windows is not available on Firefox Android
+    if (browserAPI.windows) {
+      browserAPI.windows.getAll({populate: true}, function(windows) {
+        let found = false;
+        for (const win of windows) {
+          for (const tab of win.tabs) {
+            if (tab.url && tab.url.startsWith(targetUrl)) {
+              browserAPI.windows.update(win.id, {focused: true});
+              browserAPI.tabs.update(tab.id, {active: true});
+              browserAPI.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
+              found = true;
+              break;
+            }
           }
+          if (found) break;
         }
-        if (found) break;
-      }
-      if (!found) {
-        browserAPI.windows.create({
-          url: targetUrl,
-          type: 'popup',
-          width: 860,
-          height: 600
-        });
-      }
-    });
+        if (!found) {
+          browserAPI.windows.create({
+            url: targetUrl,
+            type: 'popup',
+            width: 860,
+            height: 600
+          });
+        }
+      });
+    } else {
+      // Mobile fallback: use tabs API only
+      browserAPI.tabs.query({}, function(tabs) {
+        const existingTab = tabs.find(tab => tab.url && tab.url.startsWith(targetUrl));
+        if (existingTab) {
+          browserAPI.tabs.update(existingTab.id, {active: true});
+          browserAPI.tabs.sendMessage(existingTab.id, {action: 'refreshPagesList'});
+        } else {
+          browserAPI.tabs.create({ url: targetUrl });
+        }
+        // Close the popup so the user sees the page directly
+        window.close();
+      });
+    }
   });
 
   // Initialization
