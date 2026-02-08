@@ -12,10 +12,10 @@ const browserAPI = (() => {
 // 테마 변경 감지 및 처리
 function initializeThemeWatcher() {
   const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  
+
   // 초기 테마 적용
   updateTheme(darkModeQuery.matches);
-  
+
   // 테마 변경 감지
   darkModeQuery.addEventListener('change', (e) => {
     updateTheme(e.matches);
@@ -29,12 +29,12 @@ function updateTheme(isDark) {
 document.addEventListener('DOMContentLoaded', function () {
   // Initialize theme watcher
   initializeThemeWatcher();
-  
+
   // 페이지 로드 완료 후 transition 활성화
   setTimeout(() => {
     document.body.classList.remove('preload');
   }, 50);
-  
+
   const pagesContainer = document.getElementById('pages-container');
   const noPages = document.getElementById('no-pages');
 
@@ -42,11 +42,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const DEBUG_MODE = false;
 
   // Debug log function
-  const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
+  const debugLog = DEBUG_MODE ? console.log.bind(console) : () => { };
 
   // Function to get messages for multi-language support
-  function getMessage(key, defaultValue = '') {
+  function getMessage(key, defaultValue = '', substitutions) {
     if (typeof chrome !== 'undefined' && browserAPI.i18n) {
+      if (substitutions) {
+        return browserAPI.i18n.getMessage(key, substitutions) || defaultValue;
+      }
       return browserAPI.i18n.getMessage(key) || defaultValue;
     }
     return defaultValue;
@@ -69,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const key = element.getAttribute('data-i18n');
       element.textContent = getMessage(key, element.textContent);
     });
-    
+
     // Handle data-i18n-title attributes
     const elementsWithTitle = document.querySelectorAll('[data-i18n-title]');
     elementsWithTitle.forEach(element => {
@@ -259,10 +262,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Open page button event
         pageItem.querySelector('.btn-view').addEventListener('click', function () {
-          if (!isSafeOpenUrl(page.url)) {
-            alert(getMessage('invalidUrl', 'Invalid or unsafe URL.'));
-            return;
-          }
           browserAPI.tabs.create({ url: page.url });
         });
 
@@ -348,11 +347,21 @@ document.addEventListener('DOMContentLoaded', function () {
             alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
             return;
           }
+          // Filter out pages with unsafe URLs
+          const safePages = json.pages.filter(page => isSafeOpenUrl(page.url));
+          const skippedCount = json.pages.length - safePages.length;
+          if (skippedCount > 0) {
+            alert(getMessage('importUnsafeUrlSkipped', `${skippedCount} page(s) with invalid or unsafe URLs were skipped.`, [skippedCount]));
+          }
+          if (safePages.length === 0) {
+            alert(getMessage('importAllUnsafeUrl', 'No pages could be imported because all URLs are invalid or unsafe.'));
+            return;
+          }
           // Get all current storage to check for overlap
           browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
             if (response && response.success) {
               const existingUrls = response.pages.map(p => p.url);
-              const importUrls = json.pages.map(p => p.url);
+              const importUrls = safePages.map(p => p.url);
               const overlap = importUrls.filter(url => existingUrls.includes(url));
               let proceed = true;
               if (overlap.length > 0) {
@@ -366,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 ops[url] = null;
                 ops[`${url}_meta`] = null;
               });
-              json.pages.forEach(page => {
+              safePages.forEach(page => {
                 ops[page.url] = page.highlights || [];
                 ops[`${page.url}_meta`] = {
                   title: page.title || '',
@@ -486,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // 메시지로 페이지 목록 새로고침
-  browserAPI.runtime.onMessage.addListener(function(request) {
+  browserAPI.runtime.onMessage.addListener(function (request) {
     if (request.action === 'refreshPagesList') {
       loadAllHighlightedPages();
     }

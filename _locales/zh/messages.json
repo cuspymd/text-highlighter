@@ -67,6 +67,12 @@
   "importInvalidFormat": {
     "message": "导入文件格式无效。"
   },
+  "importUnsafeUrlSkipped": {
+    "message": "已跳过$1个包含无效或不安全URL的页面。"
+  },
+  "importAllUnsafeUrl": {
+    "message": "由于所有URL无效或不安全，没有可导入的页面。"
+  },
   "importSuccess": {
     "message": "导入完成。"
   },

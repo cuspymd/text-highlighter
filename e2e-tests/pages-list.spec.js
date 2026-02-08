@@ -26,7 +26,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const textToSelect2 = await firstParagraph2.textContent();
     await firstParagraph2.click({ clickCount: 3 });
     const selected2 = await page2.evaluate(() => window.getSelection().toString().trim());
- 
+
     await sendHighlightMessage(background, 'yellow');
 
     // 3. Open pages-list.html
@@ -177,6 +177,69 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const urls = await pageItems.locator('.page-url').allTextContents();
     expect(urls.some(u => u.includes('test-page.html'))).toBeTruthy();
     expect(urls.some(u => u.includes('test-page2.html'))).toBeTruthy();
+
+    await listPage.close();
+  });
+
+  test('unsafe URL이 포함된 JSON import 시 safe URL만 import되는지 검증', async ({ context, extensionId }) => {
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    const importBtn = listPage.locator('#import-btn');
+    await expect(importBtn).toBeVisible();
+
+    // alert 메시지를 캡처하여 검증
+    const dialogMessages = [];
+    listPage.on('dialog', async (dialog) => {
+      dialogMessages.push(dialog.message());
+      await dialog.accept();
+    });
+
+    const jsonPath = path.join(__dirname, 'import-mixed-unsafe-urls.json');
+    await importBtn.click();
+    await listPage.setInputFiles('#import-file', jsonPath);
+
+    // safe URL(test-page.html) 1개만 import되어야 함
+    const pageItems = listPage.locator('.page-item');
+    await expect(pageItems).toHaveCount(1);
+
+    const urls = await pageItems.locator('.page-url').allTextContents();
+    expect(urls.some(u => u.includes('test-page.html'))).toBeTruthy();
+
+    // unsafe URL 스킵 alert이 표시되었는지 확인
+    await expect(async () => {
+      expect(dialogMessages.some(m => m.includes('2'))).toBeTruthy();
+    }).toPass();
+
+    await listPage.close();
+  });
+
+  test('모든 URL이 unsafe한 JSON import 시 import가 차단되는지 검증', async ({ context, extensionId }) => {
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    const importBtn = listPage.locator('#import-btn');
+    await expect(importBtn).toBeVisible();
+
+    // alert 메시지를 캡처하여 검증
+    const dialogMessages = [];
+    listPage.on('dialog', async (dialog) => {
+      dialogMessages.push(dialog.message());
+      await dialog.accept();
+    });
+
+    const jsonPath = path.join(__dirname, 'import-all-unsafe-urls.json');
+    await importBtn.click();
+    await listPage.setInputFiles('#import-file', jsonPath);
+
+    // 아무 페이지도 import되지 않아야 함
+    await expect(listPage.locator('.page-item')).toHaveCount(0);
+    await expect(listPage.locator('#no-pages')).toBeVisible();
+
+    // unsafe URL 관련 alert이 2개 표시되었는지 확인 (skipped + all unsafe)
+    await expect(async () => {
+      expect(dialogMessages.length).toBe(2);
+    }).toPass();
 
     await listPage.close();
   });

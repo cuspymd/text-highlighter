@@ -1,0 +1,62 @@
+{
+  "exportedAt": "2025-06-21T01:16:34.521Z",
+  "pages": [
+    {
+      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page.html",
+      "title": "Safe Page",
+      "lastUpdated": "2025-06-21T01:15:47.993Z",
+      "highlights": [
+        {
+          "color": "#FFFF00",
+          "groupId": "safe_1",
+          "spans": [
+            {
+              "position": 88.875,
+              "spanId": "safe_1_0",
+              "text": "Safe highlight text"
+            }
+          ],
+          "text": "Safe highlight text"
+        }
+      ]
+    },
+    {
+      "url": "javascript:alert('xss')",
+      "title": "Malicious Page",
+      "lastUpdated": "2025-06-21T01:16:10.700Z",
+      "highlights": [
+        {
+          "color": "#FF0000",
+          "groupId": "unsafe_1",
+          "spans": [
+            {
+              "position": 40,
+              "spanId": "unsafe_1_0",
+              "text": "Unsafe highlight"
+            }
+          ],
+          "text": "Unsafe highlight"
+        }
+      ]
+    },
+    {
+      "url": "data:text/html,<script>alert(1)</script>",
+      "title": "Data URL Page",
+      "lastUpdated": "2025-06-21T01:16:10.700Z",
+      "highlights": [
+        {
+          "color": "#00FF00",
+          "groupId": "unsafe_2",
+          "spans": [
+            {
+              "position": 50,
+              "spanId": "unsafe_2_0",
+              "text": "Data URL highlight"
+            }
+          ],
+          "text": "Data URL highlight"
+        }
+      ]
+    }
+  ]
+}

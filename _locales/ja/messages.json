@@ -67,6 +67,12 @@
   "importInvalidFormat": {
     "message": "インポートファイルの形式が正しくありません。"
   },
+  "importUnsafeUrlSkipped": {
+    "message": "無効または安全でないURLを含む$1件のページがスキップされました。"
+  },
+  "importAllUnsafeUrl": {
+    "message": "すべてのURLが無効または安全でないため、インポートできるページがありません。"
+  },
   "importSuccess": {
     "message": "インポートが完了しました。"
   },

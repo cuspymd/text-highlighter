@@ -67,6 +67,12 @@
   "importInvalidFormat": {
     "message": "Formato de archivo de importación inválido."
   },
+  "importUnsafeUrlSkipped": {
+    "message": "Se omitieron $1 página(s) con URLs inválidas o inseguras."
+  },
+  "importAllUnsafeUrl": {
+    "message": "No se pudo importar ninguna página porque todas las URLs son inválidas o inseguras."
+  },
   "importSuccess": {
     "message": "Importación completada."
   },

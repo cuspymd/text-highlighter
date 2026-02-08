@@ -1,0 +1,43 @@
+{
+  "exportedAt": "2025-06-21T01:16:34.521Z",
+  "pages": [
+    {
+      "url": "javascript:alert('xss')",
+      "title": "Malicious Page 1",
+      "lastUpdated": "2025-06-21T01:15:47.993Z",
+      "highlights": [
+        {
+          "color": "#FF0000",
+          "groupId": "unsafe_1",
+          "spans": [
+            {
+              "position": 40,
+              "spanId": "unsafe_1_0",
+              "text": "Unsafe highlight 1"
+            }
+          ],
+          "text": "Unsafe highlight 1"
+        }
+      ]
+    },
+    {
+      "url": "data:text/html,<script>alert(1)</script>",
+      "title": "Malicious Page 2",
+      "lastUpdated": "2025-06-21T01:16:10.700Z",
+      "highlights": [
+        {
+          "color": "#00FF00",
+          "groupId": "unsafe_2",
+          "spans": [
+            {
+              "position": 50,
+              "spanId": "unsafe_2_0",
+              "text": "Unsafe highlight 2"
+            }
+          ],
+          "text": "Unsafe highlight 2"
+        }
+      ]
+    }
+  ]
+}
