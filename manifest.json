@@ -78,8 +78,6 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "pages-list.html",
-        "pages-list.js",
         "images/icon48.png"
       ],
       "matches": [
