@@ -23,6 +23,9 @@ let selectionIcon = null;
 let selectionControlsContainer = null;
 let currentSelection = null;
 
+// Mobile platform detection
+let isMobilePlatform = false;
+
 // Helper function for jelly animation
 function addJellyAnimation(btn) {
   btn.addEventListener('click', function () {
@@ -425,79 +428,101 @@ function initHSVSliders(picker) {
   
   // Hue 슬라이더 이벤트
   let isDraggingHue = false;
-  
-  // 이벤트 핸들러 함수들을 미리 선언하여 removeEventListener에서 사용할 수 있도록 함
-  const hueMouseMoveHandler = (e) => {
-    if (isDraggingHue) {
-      updateHue(e);
-    }
-  };
-  
-  const hueMouseUpHandler = () => {
-    isDraggingHue = false;
-    // 드래그 종료 시 이벤트 리스너 제거
-    document.removeEventListener('mousemove', hueMouseMoveHandler);
-    document.removeEventListener('mouseup', hueMouseUpHandler);
-  };
-  
-  hueSlider.addEventListener('mousedown', (e) => {
-    isDraggingHue = true;
-    updateHue(e);
-    // 드래그 시작 시에만 이벤트 리스너 추가
-    document.addEventListener('mousemove', hueMouseMoveHandler);
-    document.addEventListener('mouseup', hueMouseUpHandler);
-  });
-  
-  function updateHue(e) {
+
+  function updateHueAt(clientX) {
     const rect = hueSlider.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    const hue = (x / rect.width) * 360;
-    
-    currentHue = hue;
+    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    currentHue = (x / rect.width) * 360;
     hueHandle.style.left = `${x}px`;
     updateSVBackground();
     updateColorPreview();
   }
-  
-  // Saturation/Value 피커 이벤트
-  let isDraggingSV = false;
-  
-  // SV 이벤트 핸들러 함수들도 미리 선언
-  const svMouseMoveHandler = (e) => {
-    if (isDraggingSV) {
-      updateSV(e);
+
+  // Mouse handlers for hue slider
+  const hueMouseMoveHandler = (e) => { if (isDraggingHue) updateHueAt(e.clientX); };
+  const hueMouseUpHandler = () => {
+    isDraggingHue = false;
+    document.removeEventListener('mousemove', hueMouseMoveHandler);
+    document.removeEventListener('mouseup', hueMouseUpHandler);
+  };
+
+  hueSlider.addEventListener('mousedown', (e) => {
+    isDraggingHue = true;
+    updateHueAt(e.clientX);
+    document.addEventListener('mousemove', hueMouseMoveHandler);
+    document.addEventListener('mouseup', hueMouseUpHandler);
+  });
+
+  // Touch handlers for hue slider
+  const hueTouchMoveHandler = (e) => {
+    if (isDraggingHue) {
+      e.preventDefault();
+      updateHueAt(e.touches[0].clientX);
     }
   };
-  
-  const svMouseUpHandler = () => {
-    isDraggingSV = false;
-    // 드래그 종료 시 이벤트 리스너 제거
-    document.removeEventListener('mousemove', svMouseMoveHandler);
-    document.removeEventListener('mouseup', svMouseUpHandler);
+  const hueTouchEndHandler = () => {
+    isDraggingHue = false;
+    document.removeEventListener('touchmove', hueTouchMoveHandler);
+    document.removeEventListener('touchend', hueTouchEndHandler);
   };
-  
-  svPicker.addEventListener('mousedown', (e) => {
-    isDraggingSV = true;
-    updateSV(e);
-    // 드래그 시작 시에만 이벤트 리스너 추가
-    document.addEventListener('mousemove', svMouseMoveHandler);
-    document.addEventListener('mouseup', svMouseUpHandler);
-  });
-  
-  function updateSV(e) {
+
+  hueSlider.addEventListener('touchstart', (e) => {
+    isDraggingHue = true;
+    updateHueAt(e.touches[0].clientX);
+    document.addEventListener('touchmove', hueTouchMoveHandler, { passive: false });
+    document.addEventListener('touchend', hueTouchEndHandler);
+  }, { passive: true });
+
+  // Saturation/Value 피커 이벤트
+  let isDraggingSV = false;
+
+  function updateSVAt(clientX, clientY) {
     const rect = svPicker.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-    
+    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
     // x축: 0 (왼쪽/낮은 채도) -> 100 (오른쪽/높은 채도)
     currentSaturation = (x / rect.width) * 100;
     // y축: 100 (위쪽/높은 명도) -> 0 (아래쪽/낮은 명도)
     currentValue = 100 - (y / rect.height) * 100;
-    
     svHandle.style.left = `${x}px`;
     svHandle.style.top = `${y}px`;
     updateColorPreview();
   }
+
+  // Mouse handlers for SV picker
+  const svMouseMoveHandler = (e) => { if (isDraggingSV) updateSVAt(e.clientX, e.clientY); };
+  const svMouseUpHandler = () => {
+    isDraggingSV = false;
+    document.removeEventListener('mousemove', svMouseMoveHandler);
+    document.removeEventListener('mouseup', svMouseUpHandler);
+  };
+
+  svPicker.addEventListener('mousedown', (e) => {
+    isDraggingSV = true;
+    updateSVAt(e.clientX, e.clientY);
+    document.addEventListener('mousemove', svMouseMoveHandler);
+    document.addEventListener('mouseup', svMouseUpHandler);
+  });
+
+  // Touch handlers for SV picker
+  const svTouchMoveHandler = (e) => {
+    if (isDraggingSV) {
+      e.preventDefault();
+      updateSVAt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+  const svTouchEndHandler = () => {
+    isDraggingSV = false;
+    document.removeEventListener('touchmove', svTouchMoveHandler);
+    document.removeEventListener('touchend', svTouchEndHandler);
+  };
+
+  svPicker.addEventListener('touchstart', (e) => {
+    isDraggingSV = true;
+    updateSVAt(e.touches[0].clientX, e.touches[0].clientY);
+    document.addEventListener('touchmove', svTouchMoveHandler, { passive: false });
+    document.addEventListener('touchend', svTouchEndHandler);
+  }, { passive: true });
   
   function updateSVBackground() {
     svPicker.style.background = `
@@ -588,15 +613,35 @@ function hideHighlightControls() {
 
 // Initialize selection controls feature
 function initializeSelectionControls() {
-  // Load selection controls setting from storage
-  browserAPI.storage.local.get(['selectionControlsVisible'], (result) => {
-    selectionControlsEnabled = result.selectionControlsVisible || false;
-    debugLog('Selection controls enabled:', selectionControlsEnabled);
+  // Detect mobile platform from background script
+  browserAPI.runtime.sendMessage({ action: 'getPlatformInfo' }, (response) => {
+    if (browserAPI.runtime.lastError) {
+      debugLog('Error getting platform info:', browserAPI.runtime.lastError);
+      return;
+    }
+    if (response && response.isMobile) {
+      isMobilePlatform = true;
+      debugLog('Mobile platform detected in controls.js');
+    }
+
+    // Load selection controls setting from storage (after platform detection)
+    browserAPI.storage.local.get(['selectionControlsVisible'], (result) => {
+      if (isMobilePlatform) {
+        // On mobile, default to enabled unless user explicitly disabled
+        selectionControlsEnabled = result.selectionControlsVisible !== false;
+      } else {
+        selectionControlsEnabled = result.selectionControlsVisible || false;
+      }
+      debugLog('Selection controls enabled:', selectionControlsEnabled);
+    });
   });
 
   // Add mouseup event listener to detect text selection
   document.addEventListener('mouseup', handleSelectionMouseUp);
   document.addEventListener('selectionchange', handleSelectionChange);
+
+  // Add touch event support for mobile
+  document.addEventListener('touchend', handleSelectionTouchEnd);
 }
 
 // Handle mouse up event to detect text selection
@@ -631,6 +676,43 @@ function handleSelectionMouseUp(e) {
       hideSelectionControls();
     }
   }, 10);
+}
+
+// Handle touch end event to detect text selection on mobile
+function handleSelectionTouchEnd(e) {
+  if (!selectionControlsEnabled) return;
+
+  const target = e.target;
+  if (target.classList.contains('text-highlighter-extension') ||
+      target.closest('.text-highlighter-controls') ||
+      target.closest('.text-highlighter-selection-controls') ||
+      target.closest('.text-highlighter-selection-icon')) {
+    return;
+  }
+
+  // Delay to let the browser finalize the selection after touch
+  setTimeout(() => {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+
+    if (selectedText && selectedText.length > 0 && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0).cloneRange();
+      const rect = range.getBoundingClientRect();
+
+      currentSelection = {
+        selection: selection,
+        range: range,
+        text: selectedText,
+        mouseX: rect.left + rect.width / 2,
+        mouseY: rect.top
+      };
+
+      showSelectionIcon(rect.left + rect.width / 2, rect.top);
+    } else {
+      hideSelectionIcon();
+      hideSelectionControls();
+    }
+  }, 300);
 }
 
 // Handle selection change event

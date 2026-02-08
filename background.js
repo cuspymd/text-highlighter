@@ -27,11 +27,30 @@ const DEBUG_MODE = false;
 // Debug log function
 const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 
+// Platform detection for mobile (Firefox Android) support
+let platformInfo = { os: 'unknown' };
+
+async function initializePlatform() {
+  try {
+    platformInfo = await browserAPI.runtime.getPlatformInfo();
+    debugLog('Platform detected:', platformInfo);
+  } catch (e) {
+    debugLog('Platform detection failed:', e);
+  }
+}
+
+function isMobile() {
+  return platformInfo.os === 'android';
+}
+
+initializePlatform();
+
 // 저장된 단축키 정보
 let storedShortcuts = {};
 
 // Get current shortcuts from browserAPI.commands API
 async function getCurrentShortcuts() {
+  if (!browserAPI.commands) return {};
   const commands = await browserAPI.commands.getAll();
   const shortcuts = {};
   
@@ -81,6 +100,9 @@ async function loadCustomColors() {
 
 // 컨텍스트 메뉴 생성/업데이트 함수
 async function createOrUpdateContextMenus() {
+  // Context menus are not supported on Firefox Android
+  if (isMobile() || !browserAPI.contextMenus) return;
+
   debugLog('Creating/updating context menus...');
 
   // 기존 메뉴 모두 제거
@@ -146,6 +168,7 @@ browserAPI.runtime.onInstalled.addListener(async () => {
 
 // 탭 활성화 시 단축키 변경사항 확인 후 필요시 컨텍스트 메뉴 업데이트
 browserAPI.tabs.onActivated.addListener(async () => {
+  if (isMobile() || !browserAPI.commands) return;
   const currentShortcuts = await getCurrentShortcuts();
   let hasChanged = false;
 
@@ -197,75 +220,79 @@ async function cleanupEmptyHighlightData(url) {
   }
 }
 
-// Context menu click handler
-browserAPI.contextMenus.onClicked.addListener(async (info, tab) => {
-  const menuId = info.menuItemId;
-  debugLog('Context menu clicked:', menuId);
+// Context menu click handler (desktop only)
+if (browserAPI.contextMenus) {
+  browserAPI.contextMenus.onClicked.addListener(async (info, tab) => {
+    const menuId = info.menuItemId;
+    debugLog('Context menu clicked:', menuId);
 
-  if (menuId.startsWith('highlight-') && menuId !== 'highlight-text') {
-    const colorId = menuId.replace('highlight-', '');
-    // Use COLORS variable directly
-    const color = currentColors.find(c => c.id === colorId);
+    if (menuId.startsWith('highlight-') && menuId !== 'highlight-text') {
+      const colorId = menuId.replace('highlight-', '');
+      // Use COLORS variable directly
+      const color = currentColors.find(c => c.id === colorId);
 
-    if (color) {
-      debugLog('Sending highlight action to tab:', tab.id);
-      // Send highlight action and color info to Content Script
-      try {
-        const response = await browserAPI.tabs.sendMessage(tab.id, {
-          action: 'highlight',
-          color: color.color,
-          text: info.selectionText
-        });
-        debugLog('Highlight action response:', response);
-      } catch (error) {
-        debugLog('Error sending highlight action:', error);
+      if (color) {
+        debugLog('Sending highlight action to tab:', tab.id);
+        // Send highlight action and color info to Content Script
+        try {
+          const response = await browserAPI.tabs.sendMessage(tab.id, {
+            action: 'highlight',
+            color: color.color,
+            text: info.selectionText
+          });
+          debugLog('Highlight action response:', response);
+        } catch (error) {
+          debugLog('Error sending highlight action:', error);
+        }
       }
     }
-  }
-});
+  });
+}
 
-// Shortcut command handler
-browserAPI.commands.onCommand.addListener(async (command) => {
-  debugLog('Command received:', command);
-  const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-  const activeTab = tabs[0];
+// Shortcut command handler (desktop only)
+if (browserAPI.commands) {
+  browserAPI.commands.onCommand.addListener(async (command) => {
+    debugLog('Command received:', command);
+    const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
+    const activeTab = tabs[0];
 
-  if (activeTab) {
-    let targetColor = null;
-    // Determine color based on shortcut
-    switch (command) {
-      case 'highlight_yellow':
-        targetColor = currentColors.find(c => c.id === 'yellow')?.color;
-        break;
-      case 'highlight_green':
-        targetColor = currentColors.find(c => c.id === 'green')?.color;
-        break;
-      case 'highlight_blue':
-        targetColor = currentColors.find(c => c.id === 'blue')?.color;
-        break;
-      case 'highlight_pink':
-        targetColor = currentColors.find(c => c.id === 'pink')?.color;
-        break;
-      case 'highlight_orange':
-        targetColor = currentColors.find(c => c.id === 'orange')?.color;
-        break;
-    }
+    if (activeTab) {
+      let targetColor = null;
+      // Determine color based on shortcut
+      switch (command) {
+        case 'highlight_yellow':
+          targetColor = currentColors.find(c => c.id === 'yellow')?.color;
+          break;
+        case 'highlight_green':
+          targetColor = currentColors.find(c => c.id === 'green')?.color;
+          break;
+        case 'highlight_blue':
+          targetColor = currentColors.find(c => c.id === 'blue')?.color;
+          break;
+        case 'highlight_pink':
+          targetColor = currentColors.find(c => c.id === 'pink')?.color;
+          break;
+        case 'highlight_orange':
+          targetColor = currentColors.find(c => c.id === 'orange')?.color;
+          break;
+      }
 
-    // Process color highlight command
-    if (targetColor) {
-      debugLog('Sending highlight action to tab:', activeTab.id, 'with color:', targetColor);
-      try {
-        const response = await browserAPI.tabs.sendMessage(activeTab.id, {
-          action: 'highlight',
-          color: targetColor
-        });
-        debugLog('Highlight action response:', response);
-      } catch (error) {
-        debugLog('Error sending highlight action:', error);
+      // Process color highlight command
+      if (targetColor) {
+        debugLog('Sending highlight action to tab:', activeTab.id, 'with color:', targetColor);
+        try {
+          const response = await browserAPI.tabs.sendMessage(activeTab.id, {
+            action: 'highlight',
+            color: targetColor
+          });
+          debugLog('Highlight action response:', response);
+        } catch (error) {
+          debugLog('Error sending highlight action:', error);
+        }
       }
     }
-  }
-});
+  });
+}
 
 // Communication with content script (message reception handler)
 browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -275,6 +302,12 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       // Handle debug mode status request
       if (message.action === 'getDebugMode') {
         sendResponse({ debugMode: DEBUG_MODE });
+        return;
+      }
+
+      // Handle platform info request from content scripts
+      if (message.action === 'getPlatformInfo') {
+        sendResponse({ platform: platformInfo, isMobile: isMobile() });
         return;
       }
 

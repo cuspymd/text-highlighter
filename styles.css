@@ -473,3 +473,152 @@
   z-index: 10000;
   display: flex;
 }
+
+/* ========== Mobile / touch device styles ========== */
+@media (pointer: coarse) {
+  /* Larger control buttons for touch targets */
+  .text-highlighter-control-button {
+    width: 36px;
+    height: 36px;
+    margin: 0 4px;
+  }
+
+  .delete-highlight {
+    width: 36px;
+    height: 36px;
+  }
+
+  .delete-highlight svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Larger controls container padding */
+  .text-highlighter-controls {
+    padding: 6px 10px;
+    border-radius: 22px;
+  }
+
+  /* Larger selection icon */
+  .text-highlighter-selection-icon {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+  }
+
+  /* Wider minimap and markers */
+  .text-highlighter-minimap {
+    width: 16px;
+    right: 5px;
+  }
+
+  .text-highlighter-minimap-marker {
+    width: 14px;
+    height: 14px;
+  }
+
+  .text-highlighter-minimap-marker.visible {
+    left: -1px;
+  }
+
+  /* Larger color presets in custom picker */
+  .color-preset {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Larger HSV slider handles */
+  .hue-handle {
+    width: 22px;
+    height: 22px;
+    top: -5px;
+  }
+
+  .hue-slider-container,
+  .hue-slider {
+    height: 18px;
+  }
+
+  .sv-handle {
+    width: 18px;
+    height: 18px;
+  }
+
+  .saturation-value-picker {
+    height: 100px;
+  }
+
+  /* Larger picker buttons */
+  .color-picker-apply, .color-picker-close {
+    padding: 10px 16px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  /* Color separator height to match larger buttons */
+  .color-separator {
+    height: 30px;
+  }
+
+  /* Replace :hover with :active for touch devices */
+  .text-highlighter-control-button:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .text-highlighter-control-button:active {
+    transform: scale(1.15);
+    z-index: 1;
+  }
+
+  .text-highlighter-extension:hover,
+  .text-highlighter-extension.group-hover {
+    box-shadow: none;
+  }
+
+  .text-highlighter-extension:active {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+  }
+
+  .color-preset:hover {
+    border-color: transparent;
+  }
+
+  .color-preset:active {
+    border-color: #999;
+  }
+
+  .text-highlighter-selection-icon:hover {
+    transform: none !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+  }
+
+  .text-highlighter-selection-icon:active {
+    transform: scale(0.95) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+    opacity: 1 !important;
+  }
+
+  .text-highlighter-minimap-marker:hover {
+    transform: none;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .text-highlighter-minimap-marker:active {
+    transform: scale(1.3);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  }
+
+  .color-button:hover,
+  .delete-highlight:hover {
+    transform: none;
+  }
+
+  .color-button:active,
+  .delete-highlight:active {
+    transform: scale(1.1);
+  }
+}
