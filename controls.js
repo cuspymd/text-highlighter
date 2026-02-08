@@ -718,14 +718,18 @@ function handleSelectionTouchEnd(e) {
 // Handle selection change event
 function handleSelectionChange() {
   if (!selectionControlsEnabled) return;
-  
+
   const selection = window.getSelection();
   const selectedText = selection.toString().trim();
-  
+
   if (!selectedText || selectedText.length === 0) {
     hideSelectionIcon();
     hideSelectionControls();
     currentSelection = null;
+  } else if (currentSelection && selection.rangeCount > 0) {
+    // Update stored range to reflect the latest selection (e.g. after handle adjustment)
+    currentSelection.range = selection.getRangeAt(0).cloneRange();
+    currentSelection.text = selectedText;
   }
 }
 
