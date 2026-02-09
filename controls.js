@@ -629,7 +629,12 @@ function initializeSelectionControls() {
 
     // Load selection controls setting from storage (after platform detection)
     browserAPI.storage.local.get(['selectionControlsVisible'], (result) => {
-      selectionControlsEnabled = result.selectionControlsVisible !== false;
+      if (isMobilePlatform) {
+        // On mobile, always enable - controls are essential for operation
+        selectionControlsEnabled = true;
+      } else {
+        selectionControlsEnabled = result.selectionControlsVisible !== false;
+      }
       debugLog('Selection controls enabled:', selectionControlsEnabled);
     });
   });

@@ -288,6 +288,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Load selection controls setting
   async function loadSelectionControlsSetting() {
+    // On mobile (no browserAPI.windows), always enable and hide the toggle
+    if (!browserAPI.windows) {
+      selectionControlsToggle.closest('.toggle-container').style.display = 'none';
+      debugLog('Mobile platform: selection controls always enabled, toggle hidden');
+      return;
+    }
     const result = await browserAPI.storage.local.get(['selectionControlsVisible']);
     // Default value is true (show controls on selection)
     const isVisible = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true;
