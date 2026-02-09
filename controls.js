@@ -704,10 +704,10 @@ function handleSelectionTouchEnd(e) {
         range: range,
         text: selectedText,
         mouseX: rect.left + rect.width / 2,
-        mouseY: rect.top
+        mouseY: rect.bottom
       };
 
-      showSelectionIcon(rect.left + rect.width / 2, rect.top);
+      showSelectionIcon(rect.left + rect.width / 2, rect.bottom);
     } else {
       hideSelectionIcon();
       hideSelectionControls();
@@ -749,30 +749,48 @@ function showSelectionIcon(mouseX, mouseY) {
   const viewportHeight = window.innerHeight;
   
   // Calculate horizontal position
-  let leftPosition = window.scrollX + mouseX + 10;
-  
-  // Check if mouse is in the right 30% of the viewport (70% threshold)
-  if (mouseX > viewportWidth * 0.7) {
-    // Position to the left of mouse cursor instead
+  let leftPosition;
+  if (isMobilePlatform) {
+    // On mobile, position to the left of selection to avoid right selection handle
     leftPosition = window.scrollX + mouseX - iconWidth - 10;
-    
-    // If still beyond left edge, align to left edge with some padding
+
+    // If beyond left edge, position to the right instead
     if (leftPosition < window.scrollX + 10) {
-      leftPosition = window.scrollX + 10;
+      leftPosition = window.scrollX + mouseX + 20;
+    }
+  } else {
+    leftPosition = window.scrollX + mouseX + 10;
+
+    // Check if mouse is in the right 30% of the viewport (70% threshold)
+    if (mouseX > viewportWidth * 0.7) {
+      leftPosition = window.scrollX + mouseX - iconWidth - 10;
+
+      if (leftPosition < window.scrollX + 10) {
+        leftPosition = window.scrollX + 10;
+      }
     }
   }
   
   // Calculate vertical position
-  let topPosition = window.scrollY + mouseY - 30;
-  
-  // Check if icon would go beyond top edge of viewport
-  if (mouseY - 30 < 0) {
-    // Position below mouse cursor instead
+  let topPosition;
+  if (isMobilePlatform) {
+    // On mobile, position below selection to avoid overlap with native popup menu
     topPosition = window.scrollY + mouseY + 10;
-    
-    // If still beyond bottom edge, align to bottom edge with some padding
+
+    // If beyond bottom edge, position above instead
     if (topPosition + iconHeight > window.scrollY + viewportHeight - 10) {
-      topPosition = window.scrollY + viewportHeight - iconHeight - 10;
+      topPosition = window.scrollY + mouseY - iconHeight - 40;
+    }
+  } else {
+    topPosition = window.scrollY + mouseY - 30;
+
+    // Check if icon would go beyond top edge of viewport
+    if (mouseY - 30 < 0) {
+      topPosition = window.scrollY + mouseY + 10;
+
+      if (topPosition + iconHeight > window.scrollY + viewportHeight - 10) {
+        topPosition = window.scrollY + viewportHeight - iconHeight - 10;
+      }
     }
   }
   
