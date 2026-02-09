@@ -289,8 +289,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Load selection controls setting
   async function loadSelectionControlsSetting() {
     const result = await browserAPI.storage.local.get(['selectionControlsVisible']);
-    // Default value is false (don't show controls on selection)
-    const isVisible = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : false;
+    // Default value is true (show controls on selection)
+    const isVisible = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true;
     selectionControlsToggle.checked = isVisible;
     debugLog('Loaded selection controls setting:', isVisible);
   }
