@@ -501,12 +501,17 @@
 
   /* Larger selection icon */
   .text-highlighter-selection-icon {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-    max-width: 40px !important;
-    max-height: 40px !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    max-width: 48px !important;
+    max-height: 48px !important;
+  }
+
+  .text-highlighter-selection-icon img {
+    width: 27px !important;
+    height: 27px !important;
   }
 
   /* Wider minimap and markers */
