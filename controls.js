@@ -592,7 +592,10 @@ function showControlUi(highlightElement, e) {
 
   activeHighlightElement = highlightElement;
   highlightControlsContainer.style.top = `${window.scrollY + e.clientY - 40}px`;
-  highlightControlsContainer.style.left = `${window.scrollX + e.clientX - 40}px`;
+  const isPortrait = isMobilePlatform && window.innerWidth < window.innerHeight;
+  highlightControlsContainer.style.left = isPortrait
+    ? `${window.scrollX + 10}px`
+    : `${window.scrollX + e.clientX - 40}px`;
   // pop 애니메이션이 항상 재생되도록 visible 클래스를 remove/add
   highlightControlsContainer.classList.remove('visible');
   void highlightControlsContainer.offsetWidth; // reflow로 강제 초기화
@@ -845,16 +848,22 @@ function showSelectionControls(mouseX, mouseY) {
   const viewportHeight = window.innerHeight;
   
   // Calculate horizontal position
-  let leftPosition = window.scrollX + mouseX + 10;
-  
-  // Check if mouse is in the right 30% of the viewport (70% threshold)
-  if (mouseX > viewportWidth * 0.7) {
-    // Position to the left of mouse cursor instead
-    leftPosition = window.scrollX + mouseX - controlsRect.width - 10;
-    
-    // If still beyond left edge, align to left edge with some padding
-    if (leftPosition < window.scrollX + 10) {
-      leftPosition = window.scrollX + 10;
+  let leftPosition;
+  const isPortrait = isMobilePlatform && window.innerWidth < window.innerHeight;
+
+  if (isPortrait) {
+    // In portrait mode, always align to left edge
+    leftPosition = window.scrollX + 10;
+  } else {
+    leftPosition = window.scrollX + mouseX + 10;
+
+    // Check if mouse is in the right 30% of the viewport (70% threshold)
+    if (mouseX > viewportWidth * 0.7) {
+      leftPosition = window.scrollX + mouseX - controlsRect.width - 10;
+
+      if (leftPosition < window.scrollX + 10) {
+        leftPosition = window.scrollX + 10;
+      }
     }
   }
   
