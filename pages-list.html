@@ -406,6 +406,20 @@
           border-color: #4a7bb8 !important;
         }
       }
+
+      /* 모바일 세로 화면에서 버튼 크기 조정 */
+      @media (max-width: 500px) {
+        .btn {
+          min-width: 0;
+          padding: 6px 10px;
+          font-size: 13px;
+          flex: 1;
+        }
+
+        .page-actions {
+          gap: 6px;
+        }
+      }
     </style>
   </head>
   <body class="preload">
