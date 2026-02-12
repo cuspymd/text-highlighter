@@ -133,7 +133,7 @@ test.describe('Popup Tests', () => {
   });
 
 
-  test('selection icon 표시 테스트: 기본 비활성화 상태에서 선택 후 아이콘 없음 검증', async ({ page, context, background, extensionId }) => {
+  test('selection icon 표시 테스트: 기본 활성화 상태에서 선택 시 아이콘 표시 검증', async ({ page, context, background, extensionId }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
     // 비동기 초기화(설정 로드)를 기다리기 위해 명시적 대기 추가
     await page.waitForTimeout(500);
@@ -145,7 +145,7 @@ test.describe('Popup Tests', () => {
     expect(selected.trim()).toBe('This is a sample paragraph with some text that can be highlighted.');
 
     const selectionIcon = page.locator('.text-highlighter-selection-icon');
-    await expect(selectionIcon).toHaveCount(0);
+    await expect(selectionIcon).toBeVisible();
   });
 
   test('selection icon 표시 테스트: popup에서 활성화 후 선택 시 아이콘 표시 검증', async ({ page, context, background, extensionId }) => {
