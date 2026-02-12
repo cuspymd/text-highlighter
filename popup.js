@@ -301,12 +301,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     debugLog('Loaded selection controls setting:', isVisible);
   }
 
-  // Save and apply minimap settings to current page
+  // Save and apply minimap settings to current page (synced via background)
   minimapToggle.addEventListener('change', async function () {
     const isVisible = minimapToggle.checked;
 
-    // Save to storage
-    await browserAPI.storage.local.set({ minimapVisible: isVisible });
+    // Save to storage via background (handles sync)
+    await browserAPI.runtime.sendMessage({
+      action: 'saveSettings',
+      minimapVisible: isVisible
+    });
     debugLog('Minimap visibility saved:', isVisible);
 
     // Apply settings to current page
@@ -317,12 +320,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   });
 
-  // Save and apply selection controls settings to current page
+  // Save and apply selection controls settings to current page (synced via background)
   selectionControlsToggle.addEventListener('change', async function () {
     const isVisible = selectionControlsToggle.checked;
 
-    // Save to storage
-    await browserAPI.storage.local.set({ selectionControlsVisible: isVisible });
+    // Save to storage via background (handles sync)
+    await browserAPI.runtime.sendMessage({
+      action: 'saveSettings',
+      selectionControlsVisible: isVisible
+    });
     debugLog('Selection controls visibility saved:', isVisible);
 
     // Apply settings to current page
