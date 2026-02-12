@@ -135,6 +135,8 @@ test.describe('Popup Tests', () => {
 
   test('selection icon 표시 테스트: 기본 비활성화 상태에서 선택 후 아이콘 없음 검증', async ({ page, context, background, extensionId }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    // 비동기 초기화(설정 로드)를 기다리기 위해 명시적 대기 추가
+    await page.waitForTimeout(500);
 
     const firstParagraph = page.locator('p').first();
     await firstParagraph.click({ clickCount: 3 });
