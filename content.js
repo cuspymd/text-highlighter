@@ -159,6 +159,7 @@ function changeHighlightColor(highlightElement, newColor) {
   const group = highlights.find(g => g.groupId === groupId);
   if (group) {
     group.color = newColor;
+    group.updatedAt = Date.now();
     saveHighlights();
     updateMinimapMarkers();
   }
@@ -505,6 +506,7 @@ function highlightSelectedText(color) {
         groupId,
         color,
         text: selectedText,
+        updatedAt: Date.now(),
         spans: []
       };
       highlightSpans.forEach((span, index) => {
