@@ -37,6 +37,21 @@ const SYNC_META_KEY = 'sync_meta';
 const SYNC_QUOTA_BYTES_PER_ITEM = 8192;
 // Reserve space for settings and sync_meta
 const SYNC_HIGHLIGHT_BUDGET = 90000;
+// Keep tombstones for 30 days
+const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Clean up old tombstones from a metadata object.
+ */
+function cleanupTombstones(obj) {
+  if (!obj) return;
+  const now = Date.now();
+  for (const key in obj) {
+    if (now - obj[key] > TOMBSTONE_RETENTION_MS) {
+      delete obj[key];
+    }
+  }
+}
 
 // Generate a short hash from a URL for use as sync storage key
 function urlToSyncKey(url) {
@@ -47,40 +62,6 @@ function urlToSyncKey(url) {
     hash |= 0;
   }
   return SYNC_HIGHLIGHT_PREFIX + Math.abs(hash).toString(36);
-}
-
-// Write to storage.sync with local fallback
-async function syncSet(data) {
-  await browserAPI.storage.local.set(data);
-  try {
-    await browserAPI.storage.sync.set(data);
-    debugLog('Saved to storage.sync:', Object.keys(data));
-  } catch (e) {
-    debugLog('storage.sync.set failed, local only:', e.message);
-  }
-}
-
-// Read from storage.sync with local fallback
-async function syncGet(keys) {
-  try {
-    const syncResult = await browserAPI.storage.sync.get(keys);
-    if (Object.keys(syncResult).length > 0) {
-      return syncResult;
-    }
-  } catch (e) {
-    debugLog('storage.sync.get failed, falling back to local:', e.message);
-  }
-  return await browserAPI.storage.local.get(keys);
-}
-
-// Remove from both storage.sync and storage.local
-async function syncRemove(keys) {
-  await browserAPI.storage.local.remove(keys);
-  try {
-    await browserAPI.storage.sync.remove(keys);
-  } catch (e) {
-    debugLog('storage.sync.remove failed:', e.message);
-  }
 }
 
 // Save settings (customColors, minimapVisible, selectionControlsVisible) to sync
@@ -148,6 +129,9 @@ async function syncSaveHighlights(url, highlights, title, lastUpdated) {
     const meta = await getSyncMeta();
     let totalSize = meta.totalSize || 0;
 
+    // Cleanup old URL tombstones
+    cleanupTombstones(meta.deletedUrls);
+
     // Remove from deletedUrls if we are re-syncing this URL
     if (meta.deletedUrls && meta.deletedUrls[url]) {
       delete meta.deletedUrls[url];
@@ -193,19 +177,24 @@ async function syncRemoveHighlights(url) {
     const meta = await getSyncMeta();
     const idx = meta.pages.findIndex(p => p.syncKey === syncKey);
 
-    // Track that this URL was explicitly deleted by the user (Rule 4.3)
+    // 1. Track that this URL was explicitly deleted by the user (Rule 4.3)
     if (!meta.deletedUrls) meta.deletedUrls = {};
     meta.deletedUrls[url] = Date.now();
+
+    // 2. Perform cleanup of old tombstones to stay under quota
+    cleanupTombstones(meta.deletedUrls);
 
     if (idx >= 0) {
       meta.totalSize = (meta.totalSize || 0) - (meta.pages[idx].size || 0);
       meta.pages.splice(idx, 1);
     }
 
-    // Remove the actual highlight data from sync
-    await browserAPI.storage.sync.remove(syncKey);
-    // Update metadata with deletedUrls tombstone
+    // 3. Update metadata with tombstone FIRST to ensure other devices
+    // recognize this as a deletion when they see the data key removed.
     await browserAPI.storage.sync.set({ [SYNC_META_KEY]: meta });
+
+    // 4. Remove the actual highlight data from sync
+    await browserAPI.storage.sync.remove(syncKey);
 
     debugLog('Removed highlights from sync and added tombstone for:', url);
   } catch (e) {
@@ -233,8 +222,9 @@ function mergeHighlights(localData, remoteData) {
   const localDeleted = localData.deletedGroupIds || {};
   const remoteDeleted = remoteData.deletedGroupIds || {};
 
-  // 1. Merge deleted markers (Tombstones) - Union
+  // 1. Merge deleted markers (Tombstones) - Union and Cleanup
   const mergedDeleted = { ...localDeleted, ...remoteDeleted };
+  cleanupTombstones(mergedDeleted);
 
   // 2. Combine all highlight groups
   const allGroupsMap = new Map();
@@ -826,6 +816,7 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         // Track deleted groupId (Rule 4.1)
         const deletedGroupIds = meta.deletedGroupIds || {};
         deletedGroupIds[groupId] = Date.now();
+        cleanupTombstones(deletedGroupIds);
 
         // groupId로 그룹 삭제
         const updatedHighlights = highlights.filter(g => g.groupId !== groupId);
