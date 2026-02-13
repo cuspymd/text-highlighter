@@ -147,6 +147,7 @@ nav {
 }
 
 .btn-primary {
+    display: inline-block;
     background: rgba(255, 255, 255, 0.2);
     color: white;
     padding: 1rem 2.5rem;
@@ -166,6 +167,7 @@ nav {
 }
 
 .btn-secondary {
+    display: inline-block;
     background: white;
     color: #667eea;
     padding: 1rem 2.5rem;
@@ -378,6 +380,13 @@ nav {
     opacity: 0.9;
 }
 
+.install-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 3rem;
+}
+
 .install-steps {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -474,7 +483,7 @@ footer {
         font-size: 1.1rem;
     }
 
-    .hero-buttons {
+    .hero-buttons, .install-buttons {
         flex-direction: column;
         align-items: center;
     }
