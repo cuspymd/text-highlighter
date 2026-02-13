@@ -232,8 +232,12 @@ function mergeHighlights(localData, remoteData) {
   // Process all groups from both sides
   [...localHighlights, ...remoteHighlights].forEach(group => {
     const existing = allGroupsMap.get(group.groupId);
+    // Use updatedAt if available, otherwise fallback to 0 (Rule 4.1)
+    const groupTime = group.updatedAt || 0;
+    const existingTime = existing ? (existing.updatedAt || 0) : -1;
+
     // Favor newer version if same groupId exists
-    if (!existing || (group.updatedAt > (existing.updatedAt || 0))) {
+    if (!existing || (groupTime > existingTime)) {
       allGroupsMap.set(group.groupId, group);
     }
   });
@@ -243,7 +247,8 @@ function mergeHighlights(localData, remoteData) {
   // UNLESS it was updated AFTER it was deleted.
   const finalHighlights = Array.from(allGroupsMap.values()).filter(group => {
     const deletedAt = mergedDeleted[group.groupId];
-    return !deletedAt || (group.updatedAt > deletedAt);
+    const groupTime = group.updatedAt || 0;
+    return !deletedAt || (groupTime > deletedAt);
   });
 
   return {
