@@ -11,6 +11,8 @@
 
 ## 1) 전체 삭제 전파 불일치 (가장 우선)
 
+상태: 수정 완료 (2026-02-14)
+
 ### 문제 요약
 `deleteAllHighlightedPages` 경로에서 sync 데이터를 일괄 삭제할 때, 수신 기기에서 이를 "사용자 삭제"가 아니라 "용량 초과로 인한 제외(eviction)"로 오인할 가능성이 있다.
 
@@ -49,6 +51,11 @@
 2. A에서 "전체 페이지 일괄 삭제" 실행.
 3. B에서 열려 있는 페이지와 저장 목록 모두 비워지는지 확인.
 4. B 오프라인 후 재온라인에서도 데이터가 재출현하지 않는지 확인.
+
+### 최종 반영 요약
+- `deleteAllHighlightedPages` 경로에서 전체 URL을 `deletedUrls`에 먼저 기록한 뒤 sync에 저장하도록 변경.
+- 그 다음 highlight sync key를 제거하고, 마지막에 `pages`, `totalSize`만 0으로 정리하도록 분리.
+- 수신 측에서는 key 제거 이벤트를 즉시 확정하지 않고 재시도(retry) 기반으로 `sync_meta.deletedUrls`를 재확인해 사용자 삭제/eviction을 판정하도록 변경.
 
 ---
 
