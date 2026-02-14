@@ -65,9 +65,9 @@
 로컬 삭제/클리어 시 `notifyTabHighlightsRefresh`가 첫 번째 탭 하나에만 `refreshHighlights`를 보낸다.
 
 ### 코드 근거
-- 함수 정의: `background.js:540`
-- 탭 조회: `background.js:541`
-- 단일 탭 전송: `background.js:543`
+- 함수 정의: `background.js:552`
+- 탭 조회: `background.js:553`
+- 단일 탭 전송: `background.js:555`
 
 ### 왜 발생하는가
 `tabs.query({ url })` 결과가 여러 개여도 `tabs[0]`만 메시지 전송한다.
