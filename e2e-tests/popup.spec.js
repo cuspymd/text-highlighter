@@ -181,6 +181,39 @@ test.describe('Popup Tests', () => {
     await expect(selectionIcon).toBeVisible();
   });
 
+  test('설정 변경 즉시 반영 테스트: popup 토글 변경이 다른 열린 탭에 즉시 적용', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    const secondPage = await context.newPage();
+    await secondPage.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await secondPage.waitForTimeout(500);
+
+    const secondParagraph = secondPage.locator('p').first();
+    await secondParagraph.click({ clickCount: 3 });
+    await expect(secondPage.locator('.text-highlighter-selection-icon')).toBeVisible();
+
+    await page.bringToFront();
+    const tabId = await getCurrentTabId(background);
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+
+    const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
+    await expect(selectionControlsToggle).toBeVisible();
+    await selectionControlsToggle.setChecked(false);
+    await expect(selectionControlsToggle).not.toBeChecked();
+    await popupPage.close();
+
+    await secondPage.bringToFront();
+    await secondPage.keyboard.press('Escape');
+    await secondPage.locator('body').click();
+    await expect(secondPage.locator('.text-highlighter-selection-icon')).toHaveCount(0);
+
+    await secondParagraph.click({ clickCount: 3 });
+    await secondPage.waitForTimeout(200);
+    await expect(secondPage.locator('.text-highlighter-selection-icon')).toHaveCount(0);
+
+    await secondPage.close();
+  });
+
   test('control UI에서 커스텀 색상 추가 후 popup에서 Delete Custom Colors 로 제거', async ({ page, context, background, extensionId }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 

@@ -561,6 +561,31 @@ async function notifyTabHighlightsRefresh(highlights, url) {
   }
 }
 
+// Broadcast setting updates to all open tabs (local-first propagation).
+async function broadcastSettingsToTabs(changedSettings) {
+  if (!changedSettings || Object.keys(changedSettings).length === 0) return;
+
+  const tabs = await browserAPI.tabs.query({});
+  for (const tab of tabs) {
+    try {
+      if (changedSettings.minimapVisible !== undefined) {
+        await browserAPI.tabs.sendMessage(tab.id, {
+          action: 'setMinimapVisibility',
+          visible: changedSettings.minimapVisible
+        });
+      }
+      if (changedSettings.selectionControlsVisible !== undefined) {
+        await browserAPI.tabs.sendMessage(tab.id, {
+          action: 'setSelectionControlsVisibility',
+          visible: changedSettings.selectionControlsVisible
+        });
+      }
+    } catch (e) {
+      // Some tabs may not have content script injected.
+    }
+  }
+}
+
 // Helper function to remove storage keys when no highlights remain
 async function cleanupEmptyHighlightData(url) {
   if (!url) return;
@@ -697,9 +722,28 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (message.selectionControlsVisible !== undefined) {
           settings.selectionControlsVisible = message.selectionControlsVisible;
         }
+        const keys = Object.keys(settings);
+        if (keys.length === 0) {
+          sendResponse({ success: true });
+          return;
+        }
+
+        const previous = await browserAPI.storage.local.get(keys);
+        const changedSettings = {};
+        for (const key of keys) {
+          if (previous[key] !== settings[key]) {
+            changedSettings[key] = settings[key];
+          }
+        }
+
         await browserAPI.storage.local.set(settings);
-        await saveSettingsToSync();
-        debugLog('Settings saved (local + sync):', settings);
+        await broadcastSettingsToTabs(changedSettings);
+
+        saveSettingsToSync().catch((e) => {
+          debugLog('Failed to save settings to sync (local already applied):', e.message);
+        });
+
+        debugLog('Settings saved locally and broadcasted:', settings, 'changed:', changedSettings);
         sendResponse({ success: true });
         return;
       }

@@ -92,14 +92,18 @@
 
 ## 3) 설정 변경의 "로컬 우선" 반영 누락
 
+상태: 수정 완료 (2026-02-14)
+
 ### 문제 요약
 설정 저장(`saveSettings`) 후 다른 열린 탭에 즉시 반영하는 로컬 브로드캐스트가 없다. 결과적으로 sync 이벤트 기반 반영에만 의존한다.
 
 ### 코드 근거
-- 설정 저장 처리: `background.js:663`
-- 저장 로직: `background.js:672`, `background.js:673`
-- popup에서 현재 탭 직접 반영: `popup.js:315`, `popup.js:335`
-- 전 탭 반영은 sync 변경 이벤트 핸들러에 존재: `background.js:964` 이후
+- 설정 저장 처리: `background.js:717`
+- 로컬 저장 + 변경 필드 브로드캐스트: `background.js:739`, `background.js:740`
+- 브로드캐스트 헬퍼: `background.js:565`
+- sync 저장은 비차단(실패 허용) 처리: `background.js:742`
+- popup 직접 반영 제거(배경 스크립트 일원화): `popup.js:305`, `popup.js:317`
+- 원격 동기화 반영 경로 유지: `background.js:1058` 이후
 
 ### 왜 발생하는가
 설정 적용 경로가 두 갈래다.
@@ -128,6 +132,11 @@
 2. popup에서 minimap/selection toggle 변경.
 3. 모든 열린 탭 즉시 반영되는지 확인.
 4. 네트워크 복구 후 타 기기로 설정 전파 확인.
+
+### 최종 반영 요약
+- `saveSettings`에서 변경된 필드만 계산한 뒤, local 저장 직후 전체 탭 브로드캐스트를 수행하도록 수정.
+- `saveSettingsToSync()`는 비차단으로 호출해 실패 시 로깅만 하고 로컬 성공 응답을 유지.
+- popup의 현재 탭 직접 메시지 전송을 제거해 설정 반영 경로를 background로 일원화.
 
 ---
 
