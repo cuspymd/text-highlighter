@@ -154,7 +154,15 @@ test.describe('Popup Tests', () => {
 
     const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
     await expect(selectionControlsToggle).toBeVisible();
-    await selectionControlsToggle.check();
+    // Wait until popup async initialization applies stored/default state.
+    await popupPage.waitForFunction(async () => {
+      const toggle = document.getElementById('selection-controls-toggle');
+      if (!toggle) return false;
+      const result = await chrome.storage.local.get(['selectionControlsVisible']);
+      const expected = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true;
+      return toggle.checked === expected;
+    });
+    await selectionControlsToggle.setChecked(true);
 
     await expect(selectionControlsToggle).toBeChecked();
 

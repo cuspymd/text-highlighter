@@ -138,7 +138,25 @@ function removeHighlight(highlightElement = null) {
     });
     // highlights 배열에서 그룹 삭제
     highlights = highlights.filter(g => g.groupId !== groupId);
-    saveHighlights();
+    if (groupId) {
+      browserAPI.runtime.sendMessage(
+        {
+          action: 'deleteHighlight',
+          url: currentUrl,
+          groupId,
+          notifyRefresh: true
+        },
+        (response) => {
+          if (browserAPI.runtime.lastError) {
+            debugLog('Failed to delete highlight via background:', browserAPI.runtime.lastError);
+            return;
+          }
+          if (!response || !response.success) {
+            debugLog('Delete highlight via background was not successful:', response);
+          }
+        }
+      );
+    }
     updateMinimapMarkers();
     if (activeHighlightElement && activeHighlightElement.dataset.groupId === groupId) {
       activeHighlightElement = null;

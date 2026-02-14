@@ -241,6 +241,47 @@ test.describe('Chrome Extension Tests', () => {
     await expect(h1SpanAfterReload).toHaveCount(0);
   });
 
+  test('두 개 하이라이트 중 하나를 controls 삭제 버튼으로 제거해도 sync merge로 복원되지 않아야 함', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    const firstParagraph = page.locator('p').first();
+
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+    await expect(h1.locator('span.text-highlighter-extension')).toHaveCount(1);
+
+    await firstParagraph.click({ clickCount: 3 });
+    await sendHighlightMessage(background, '#AAFFAA');
+    await expect(firstParagraph.locator('span.text-highlighter-extension')).toHaveCount(1);
+
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await h1Span.click();
+    const controls = page.locator('.text-highlighter-controls');
+    await expect(controls).toBeVisible();
+    await controls.locator('.delete-highlight').click();
+
+    // Give sync merge/onChanged a chance to re-apply stale data.
+    await page.waitForTimeout(1500);
+
+    const groupCount = await page.evaluate(() => {
+      const groups = new Set(
+        Array.from(document.querySelectorAll('.text-highlighter-extension'))
+          .map(el => el.dataset.groupId)
+          .filter(Boolean)
+      );
+      return groups.size;
+    });
+    expect(groupCount).toBe(1);
+
+    const currentUrl = page.url();
+    const localCount = await background.evaluate(async (url) => {
+      const result = await chrome.storage.local.get([url]);
+      return Array.isArray(result[url]) ? result[url].length : 0;
+    }, currentUrl);
+    expect(localCount).toBe(1);
+  });
+
   test('h1 태그 tripple click 하이라이트 후 highlight control UI에서 색상 변경', async ({ page, background }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
