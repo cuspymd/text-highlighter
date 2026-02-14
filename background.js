@@ -551,13 +551,16 @@ browserAPI.tabs.onActivated.addListener(async () => {
 // Helper function to notify tab about highlight updates
 async function notifyTabHighlightsRefresh(highlights, url) {
   const tabs = await browserAPI.tabs.query({ url: url });
-  try {
-    await browserAPI.tabs.sendMessage(tabs[0].id, {
-      action: 'refreshHighlights',
-      highlights: highlights
-    });
-  } catch (error) {
-    debugLog('Error notifying tab about highlight updates:', error);
+  for (const tab of tabs) {
+    if (!tab || !tab.id) continue;
+    try {
+      await browserAPI.tabs.sendMessage(tab.id, {
+        action: 'refreshHighlights',
+        highlights: highlights
+      });
+    } catch (error) {
+      debugLog('Error notifying tab about highlight updates:', error);
+    }
   }
 }
 

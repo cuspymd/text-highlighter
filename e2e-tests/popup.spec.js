@@ -106,6 +106,42 @@ test.describe('Popup Tests', () => {
     await expect(h1Span).toHaveCount(0);
   });
 
+  test('동일 URL 다중 탭에서 하이라이트 삭제 시 모든 탭에 즉시 반영', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    const h1Text = await h1.textContent();
+
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+
+    const primaryH1Span = h1.locator('span.text-highlighter-extension');
+    await expectHighlightSpan(primaryH1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
+
+    const secondPage = await context.newPage();
+    await secondPage.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const secondaryH1 = secondPage.locator('h1');
+    const secondaryH1Span = secondaryH1.locator('span.text-highlighter-extension');
+    await expect(secondaryH1Span).toHaveCount(1);
+
+    await page.bringToFront();
+    const tabId = await getCurrentTabId(background);
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+
+    const highlightItems = popupPage.locator('.highlight-item');
+    await expect(highlightItems).toHaveCount(1);
+    await highlightItems.nth(0).locator('.delete-btn').click();
+    await expect(highlightItems).toHaveCount(0);
+
+    await expect(primaryH1Span).toHaveCount(0);
+    await expect(secondaryH1Span).toHaveCount(0);
+
+    await popupPage.close();
+    await secondPage.close();
+  });
+
   test('텍스트 선택 후 하이라이트, popup에 해당 하이라이트가 표시되는지 검증', async ({ page, context, background, extensionId }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
