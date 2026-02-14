@@ -39,6 +39,9 @@ const SYNC_QUOTA_BYTES_PER_ITEM = 8192;
 const SYNC_HIGHLIGHT_BUDGET = 90000;
 // Keep tombstones for 30 days
 const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const SYNC_REMOVAL_RECHECK_DELAY_MS = 500;
+const SYNC_REMOVAL_MAX_RETRIES = 3;
+const pendingSyncRemovalResolutions = new Map();
 
 /**
  * Clean up old tombstones from a metadata object.
@@ -51,6 +54,15 @@ function cleanupTombstones(obj) {
       delete obj[key];
     }
   }
+}
+
+function normalizeSyncMeta(rawMeta) {
+  const meta = rawMeta || {};
+  if (!Array.isArray(meta.pages)) meta.pages = [];
+  if (typeof meta.totalSize !== 'number') meta.totalSize = 0;
+  if (!meta.deletedUrls || typeof meta.deletedUrls !== 'object') meta.deletedUrls = {};
+  cleanupTombstones(meta.deletedUrls);
+  return meta;
 }
 
 // Generate a short hash from a URL for use as sync storage key
@@ -206,9 +218,9 @@ async function syncRemoveHighlights(url) {
 async function getSyncMeta() {
   try {
     const result = await browserAPI.storage.sync.get(SYNC_META_KEY);
-    return result[SYNC_META_KEY] || { pages: [], totalSize: 0, deletedUrls: {} };
+    return normalizeSyncMeta(result[SYNC_META_KEY]);
   } catch (e) {
-    return { pages: [], totalSize: 0, deletedUrls: {} };
+    return normalizeSyncMeta();
   }
 }
 
@@ -560,6 +572,22 @@ async function cleanupEmptyHighlightData(url) {
   } catch (error) {
     debugLog('Error removing empty highlight data:', error);
   }
+}
+
+// Handle a confirmed user-driven sync deletion for a URL.
+async function applyUserDeletionFromSync(url) {
+  await cleanupEmptyHighlightData(url);
+  try {
+    const tabs = await browserAPI.tabs.query({ url: url });
+    for (const tab of tabs) {
+      try {
+        await browserAPI.tabs.sendMessage(tab.id, {
+          action: 'refreshHighlights',
+          highlights: []
+        });
+      } catch (e) { /* tab may not have content script */ }
+    }
+  } catch (e) { /* tabs query may fail */ }
 }
 
 // Context menu click handler (desktop only)
@@ -936,10 +964,26 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           try {
             const meta = await getSyncMeta();
             const syncKeysToRemove = meta.pages.map(p => p.syncKey);
+
+            // Mark all current synced pages as explicitly user-deleted first.
+            const now = Date.now();
+            for (const page of meta.pages) {
+              if (page.url) {
+                meta.deletedUrls[page.url] = now;
+              }
+            }
+            await browserAPI.storage.sync.set({ [SYNC_META_KEY]: meta });
+
             if (syncKeysToRemove.length > 0) {
               await browserAPI.storage.sync.remove(syncKeysToRemove);
             }
-            await browserAPI.storage.sync.set({ [SYNC_META_KEY]: { pages: [], totalSize: 0, deletedUrls: {} } });
+            await browserAPI.storage.sync.set({
+              [SYNC_META_KEY]: {
+                ...meta,
+                pages: [],
+                totalSize: 0
+              }
+            });
             debugLog('Cleared all synced highlights');
           } catch (e) {
             debugLog('Failed to clear synced highlights:', e.message);
@@ -1023,6 +1067,44 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
   }
 
   // Handle highlight changes from another device
+  const scheduleRemovalResolution = (oldData, retryCount = 0) => {
+    if (!oldData || !oldData.url) return;
+    const url = oldData.url;
+
+    const existing = pendingSyncRemovalResolutions.get(url);
+    if (existing) {
+      clearTimeout(existing.timeoutId);
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const meta = await getSyncMeta();
+        if (meta.deletedUrls && meta.deletedUrls[url]) {
+          debugLog('Confirmed user-initiated deletion for:', url);
+          await applyUserDeletionFromSync(url);
+          pendingSyncRemovalResolutions.delete(url);
+          return;
+        }
+
+        if (retryCount < SYNC_REMOVAL_MAX_RETRIES) {
+          scheduleRemovalResolution(oldData, retryCount + 1);
+          return;
+        }
+
+        debugLog('Sync removal treated as eviction after retries. Keeping local data for:', url);
+      } catch (e) {
+        debugLog('Error resolving sync removal for:', url, e.message);
+      } finally {
+        const pending = pendingSyncRemovalResolutions.get(url);
+        if (pending && pending.timeoutId === timeoutId) {
+          pendingSyncRemovalResolutions.delete(url);
+        }
+      }
+    }, SYNC_REMOVAL_RECHECK_DELAY_MS);
+
+    pendingSyncRemovalResolutions.set(url, { timeoutId });
+  };
+
   for (const key of Object.keys(changes)) {
     if (!key.startsWith(SYNC_HIGHLIGHT_PREFIX)) continue;
 
@@ -1067,23 +1149,8 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
       // Highlight was removed from sync (either eviction or user delete)
       const oldData = changes[key].oldValue;
       if (oldData && oldData.url) {
-        // Check if this was an intentional user delete by checking deletedUrls in sync_meta (Rule 4.3, M-12)
-        const meta = await getSyncMeta();
-        if (meta.deletedUrls && meta.deletedUrls[oldData.url]) {
-          debugLog('Confirmed user-initiated deletion for:', oldData.url);
-          await cleanupEmptyHighlightData(oldData.url);
-          try {
-            const tabs = await browserAPI.tabs.query({ url: oldData.url });
-            for (const tab of tabs) {
-              await browserAPI.tabs.sendMessage(tab.id, {
-                action: 'refreshHighlights',
-                highlights: []
-              });
-            }
-          } catch (e) { /* tab may not be open */ }
-        } else {
-          debugLog('Sync removal was likely an eviction. Keeping local data for:', oldData.url);
-        }
+        // Resolve intent with retries because sync item removal and sync_meta updates are not ordered.
+        scheduleRemovalResolution(oldData);
       }
     }
   }
