@@ -28,11 +28,27 @@ async function waitInBackground(background, ms) {
   }, ms);
 }
 
+async function waitForSyncReady(background) {
+  await expect.poll(async () => {
+    return await background.evaluate(async () => {
+      const result = await chrome.storage.local.get('syncMigrationDone');
+      return !!result.syncMigrationDone;
+    });
+  }, {
+    message: 'Wait for sync migration to complete',
+    timeout: 10000,
+  }).toBe(true);
+}
+
 function testFileUrl(fileName) {
   return pathToFileURL(path.join(__dirname, fileName)).href;
 }
 
 test.describe('Sync scenarios', () => {
+  test.beforeEach(async ({ background }) => {
+    await waitForSyncReady(background);
+  });
+
   test('sync key removal arrives before tombstone meta update -> eventually treated as user deletion', async ({ background }) => {
     const url = testFileUrl('test-page.html');
     const syncKey = urlToSyncKey(url);
