@@ -7,7 +7,8 @@
     "test": "jest --runInBand --cacheDirectory=./.jest_cache",
     "deploy": "node ./scripts/deploy.js",
     "deploy:firefox": "node ./scripts/deploy.js firefox",
-    "version-deploy": "node ./scripts/version-deploy.js"
+    "version-deploy": "node ./scripts/version-deploy.js",
+    "postinstall": "playwright install --with-deps chrome"
   },
   "author": "",
   "license": "MIT",
