@@ -369,7 +369,8 @@ let platformInfo = { os: 'unknown' };
 
 async function initializePlatform() {
   try {
-    platformInfo = await browserAPI.runtime.getPlatformInfo();
+    const info = await browserAPI.runtime.getPlatformInfo();
+    Object.assign(platformInfo, info);
     debugLog('Platform detected:', platformInfo);
   } catch (e) {
     debugLog('Platform detection failed:', e);
@@ -1216,3 +1217,14 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
     console.error('Initialization error in background script', e);
   }
 })();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    cleanupTombstones,
+    normalizeSyncMeta,
+    urlToSyncKey,
+    mergeHighlights,
+    isMobile,
+    platformInfo
+  };
+}
