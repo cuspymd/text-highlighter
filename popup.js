@@ -215,11 +215,20 @@ document.addEventListener('DOMContentLoaded', async function () {
   const deleteCustomColorsBtn = document.getElementById('delete-custom-colors');
   const minimapToggle = document.getElementById('minimap-toggle');
   const selectionControlsToggle = document.getElementById('selection-controls-toggle');
+  const settingsTrigger = document.getElementById('settings-trigger');
+  const advancedSettings = document.getElementById('advanced-settings');
   // Set debug mode - change to true during development
   const DEBUG_MODE = false;
 
   // Debug log function
   const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
+
+  // Settings toggle logic
+  settingsTrigger.addEventListener('click', () => {
+    const isHidden = advancedSettings.style.display === 'none';
+    advancedSettings.style.display = isHidden ? 'block' : 'none';
+    settingsTrigger.classList.toggle('active', !isHidden);
+  });
 
   // Load highlight information from current active tab
   async function loadHighlights() {
@@ -245,30 +254,47 @@ document.addEventListener('DOMContentLoaded', async function () {
       highlightsContainer.innerHTML = '';
 
       highlights.forEach(group => {
-        const highlightItem = document.createElement('div');
-        highlightItem.className = 'highlight-item';
-        highlightItem.style.backgroundColor = group.color;
-        highlightItem.dataset.groupId = group.groupId;
+        const highlightCard = document.createElement('div');
+        highlightCard.className = 'highlight-card';
+        highlightCard.dataset.groupId = group.groupId;
+
+        const indicator = document.createElement('div');
+        indicator.className = 'highlight-color-indicator';
+        indicator.style.backgroundColor = group.color;
+
+        const content = document.createElement('div');
+        content.className = 'highlight-content';
 
         // Truncate text if too long
         let displayText = group.text;
-        if (displayText.length > 48) {
-          displayText = displayText.substring(0, 45) + '...';
+        if (displayText.length > 120) {
+          displayText = displayText.substring(0, 117) + '...';
         }
-        highlightItem.textContent = displayText;
+        content.textContent = displayText;
 
         // Add delete button
-        const deleteBtn = document.createElement('span');
+        const deleteBtn = document.createElement('div');
         deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = '×';
+        deleteBtn.innerHTML = '×';
         deleteBtn.title = browserAPI.i18n.getMessage('removeHighlight');
         deleteBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           deleteHighlight(group.groupId, currentUrl);
         });
 
-        highlightItem.appendChild(deleteBtn);
-        highlightsContainer.appendChild(highlightItem);
+        highlightCard.appendChild(indicator);
+        highlightCard.appendChild(content);
+        highlightCard.appendChild(deleteBtn);
+
+        // Click on card to scroll to highlight (best effort)
+        highlightCard.addEventListener('click', () => {
+          browserAPI.tabs.sendMessage(tab.id, {
+            action: 'scrollToHighlight',
+            groupId: group.groupId
+          });
+        });
+
+        highlightsContainer.appendChild(highlightCard);
       });
     } else {
       noHighlights.style.display = 'block';

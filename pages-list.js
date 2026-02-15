@@ -152,9 +152,9 @@ document.addEventListener('DOMContentLoaded', function () {
       pagesContainer.innerHTML = '';
 
       pages.forEach(page => {
-        const pageItem = document.createElement('div');
-        pageItem.className = 'page-item';
-        pageItem.dataset.url = page.url;
+        const pageCard = document.createElement('div');
+        pageCard.className = 'page-card';
+        pageCard.dataset.url = page.url;
 
         // Use saved title or try to extract title from URL
         let pageTitle = page.title || getMessage('noTitle', '(No title)');
@@ -172,17 +172,28 @@ document.addEventListener('DOMContentLoaded', function () {
         if (page.lastUpdated) {
           try {
             const date = new Date(page.lastUpdated);
-            // Determine date format based on current language
             const locale = browserAPI.i18n.getUILanguage ? browserAPI.i18n.getUILanguage() : 'en';
-            lastUpdated = date.toLocaleString(locale);
+            lastUpdated = date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
           } catch (e) {
             lastUpdated = page.lastUpdated;
           }
         }
 
-        // Build DOM safely to avoid XSS (no innerHTML)
-        const infoContainer = document.createElement('div');
-        infoContainer.className = 'page-info-container';
+        // Page Header
+        const pageHeader = document.createElement('div');
+        pageHeader.className = 'page-header';
+
+        const favicon = document.createElement('img');
+        favicon.className = 'page-favicon';
+        try {
+          favicon.src = `https://www.google.com/s2/favicons?domain=${new URL(page.url).hostname}&sz=32`;
+        } catch (e) {
+          favicon.src = 'images/icon16.png';
+        }
+        favicon.onerror = () => { favicon.src = 'images/icon16.png'; };
+
+        const titleGroup = document.createElement('div');
+        titleGroup.className = 'page-title-group';
 
         const titleDiv = document.createElement('div');
         titleDiv.className = 'page-title';
@@ -192,85 +203,83 @@ document.addEventListener('DOMContentLoaded', function () {
         urlDiv.className = 'page-url';
         urlDiv.textContent = page.url;
 
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'page-info';
-        infoDiv.textContent = `${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount} | ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}`;
+        titleGroup.appendChild(titleDiv);
+        titleGroup.appendChild(urlDiv);
 
-        infoContainer.appendChild(titleDiv);
-        infoContainer.appendChild(urlDiv);
-        infoContainer.appendChild(infoDiv);
+        const badge = document.createElement('div');
+        badge.className = 'highlight-badge';
+        badge.textContent = page.highlightCount;
+
+        pageHeader.appendChild(favicon);
+        pageHeader.appendChild(titleGroup);
+        pageHeader.appendChild(badge);
+
+        // Preview (most recent or first highlight)
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'page-preview';
+        const latestHighlight = page.highlights[0]?.text || '';
+        previewDiv.textContent = latestHighlight || getMessage('noHighlights', 'No text content.');
+
+        // Page Footer
+        const pageFooter = document.createElement('div');
+        pageFooter.className = 'page-footer';
+
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'page-meta';
+        metaDiv.textContent = lastUpdated;
 
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'page-actions';
 
-        const detailsBtn = document.createElement('button');
-        detailsBtn.className = 'btn btn-details';
-        detailsBtn.textContent = getMessage('showDetails', 'Show Details');
-        actionsDiv.appendChild(detailsBtn);
-
         const viewBtn = document.createElement('button');
         viewBtn.className = 'btn btn-view';
-        viewBtn.textContent = getMessage('openPage', 'Open Page');
+        viewBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          ${getMessage('openPage', 'Open')}
+        `;
         actionsDiv.appendChild(viewBtn);
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-delete';
-        deleteBtn.textContent = getMessage('deletePage', 'Delete');
+        deleteBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        `;
         actionsDiv.appendChild(deleteBtn);
 
-        const highlightsDiv = document.createElement('div');
-        highlightsDiv.className = 'page-highlights';
+        pageFooter.appendChild(metaDiv);
+        pageFooter.appendChild(actionsDiv);
 
-        pageItem.appendChild(infoContainer);
-        pageItem.appendChild(actionsDiv);
-        pageItem.appendChild(highlightsDiv);
+        pageCard.appendChild(pageHeader);
+        pageCard.appendChild(previewDiv);
+        pageCard.appendChild(pageFooter);
 
-        pagesContainer.appendChild(pageItem);
-
-        // Page details button event
-        pageItem.querySelector('.btn-details').addEventListener('click', function () {
-          const highlightsContainer = pageItem.querySelector('.page-highlights');
-
-          if (highlightsContainer.style.display === 'block') {
-            highlightsContainer.style.display = 'none';
-            this.textContent = getMessage('showDetails', 'Show Details');
-          } else {
-            // Display highlight data
-            highlightsContainer.innerHTML = '';
-            highlightsContainer.style.display = 'block';
-            this.textContent = getMessage('hideDetails', 'Hide');
-
-            // 그룹 구조이므로 대표 span의 position 기준 정렬
-            page.highlights.sort((a, b) => {
-              const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
-              const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
-              return posA - posB;
-            });
-
-            page.highlights.forEach(group => {
-              const highlightItem = document.createElement('div');
-              highlightItem.className = 'highlight-item';
-              highlightItem.style.backgroundColor = group.color;
-              const span = document.createElement('span');
-              span.className = 'highlight-text';
-              span.textContent = group.text;
-              highlightItem.appendChild(span);
-              highlightsContainer.appendChild(highlightItem);
-            });
-          }
-        });
+        pagesContainer.appendChild(pageCard);
 
         // Open page button event
-        pageItem.querySelector('.btn-view').addEventListener('click', function () {
+        viewBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
           browserAPI.tabs.create({ url: page.url });
         });
 
         // Delete page button event
-        pageItem.querySelector('.btn-delete').addEventListener('click', function () {
+        deleteBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
           const confirmMessage = getMessage('confirmDeletePage', 'Delete all highlights for this page?');
           if (confirm(confirmMessage)) {
             deletePageHighlights(page.url);
           }
+        });
+
+        // Click on card opens details (future implementation or just open URL)
+        pageCard.addEventListener('click', () => {
+          browserAPI.tabs.create({ url: page.url });
         });
       });
     } else {

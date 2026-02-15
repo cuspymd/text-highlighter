@@ -57,6 +57,16 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+  else if (message.action === 'scrollToHighlight') {
+    const groupId = message.groupId;
+    const highlight = document.querySelector(`.text-highlighter-extension[data-group-id="${groupId}"]`);
+    if (highlight && minimapManager) {
+      minimapManager.scrollToHighlight(highlight);
+      minimapManager.highlightTemporarily(highlight);
+    }
+    sendResponse({ success: true });
+    return true;
+  }
 });
 
 // Function to asynchronously get color information from Background Service Worker

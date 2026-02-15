@@ -28,6 +28,25 @@ async function waitInBackground(background, ms) {
   }, ms);
 }
 
+async function waitForSyncReady(background) {
+  await background.evaluate(async () => {
+    await new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      const check = async () => {
+        const result = await chrome.storage.local.get('syncMigrationDone');
+        if (result.syncMigrationDone) {
+          resolve();
+        } else if (Date.now() - startTime > 10000) {
+          reject(new Error('Timeout waiting for syncMigrationDone'));
+        } else {
+          setTimeout(check, 100);
+        }
+      };
+      check();
+    });
+  });
+}
+
 function testFileUrl(fileName) {
   return pathToFileURL(path.join(__dirname, fileName)).href;
 }
@@ -297,6 +316,7 @@ test.describe('Sync scenarios', () => {
     }, { url, highlights });
 
     await page.goto(url);
+    await waitForSyncReady(background);
 
     // Initially minimap should be visible (default, and we have highlights)
     const minimap = page.locator('.text-highlighter-minimap');
@@ -319,6 +339,7 @@ test.describe('Sync scenarios', () => {
 
   test('M-9: Custom colors propagation', async ({ page, background }) => {
     await page.goto(testFileUrl('test-page.html'));
+    await waitForSyncReady(background);
 
     // Simulate another device adding a custom color
     const customColor = { id: 'custom_123', nameKey: 'customColor', colorNumber: 1, color: '#123456' };
