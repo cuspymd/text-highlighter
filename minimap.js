@@ -4,6 +4,7 @@ const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
 class MinimapManager {
   constructor() {
     this.container = null;
+    this.tooltip = null;
     this.markers = [];
     this.resizeObserver = null;
     this.throttleTimer = null;
@@ -28,6 +29,10 @@ class MinimapManager {
     this.container.className = 'text-highlighter-minimap';
     this.container.style.pointerEvents = 'none';
     document.body.appendChild(this.container);
+
+    this.tooltip = document.createElement('div');
+    this.tooltip.className = 'minimap-tooltip';
+    document.body.appendChild(this.tooltip);
   }
 
   // Set up observers
@@ -116,11 +121,19 @@ class MinimapManager {
     marker.style.top = `${markerPosition}px`;
     marker.dataset.highlightId = highlightElement.dataset.highlightId;
 
-    // Marker click event
+    // Marker events
     marker.addEventListener('click', (e) => {
       e.stopPropagation();
       this.scrollToHighlight(highlightElement);
       this.highlightTemporarily(highlightElement);
+    });
+
+    marker.addEventListener('mouseenter', () => {
+      this.showTooltip(marker, highlightElement.textContent);
+    });
+
+    marker.addEventListener('mouseleave', () => {
+      this.hideTooltip();
     });
 
     this.container.appendChild(marker);
@@ -239,6 +252,19 @@ class MinimapManager {
     }, 1500);
 
     this.highlightTimers.set(elementKey, timerId);
+  }
+
+  showTooltip(marker, text) {
+    if (!this.tooltip) return;
+    this.tooltip.textContent = text;
+    const rect = marker.getBoundingClientRect();
+    this.tooltip.style.top = `${rect.top + rect.height / 2 - this.tooltip.offsetHeight / 2}px`;
+    this.tooltip.classList.add('visible');
+  }
+
+  hideTooltip() {
+    if (!this.tooltip) return;
+    this.tooltip.classList.remove('visible');
   }
 
   // Set minimap visibility

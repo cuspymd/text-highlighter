@@ -34,7 +34,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await openPagesList(listPage, extensionId);
 
     // 4. Verify both pages are listed
-    await expect(listPage.locator('.page-item')).toHaveCount(2);
+    await expect(listPage.locator('.page-card')).toHaveCount(2);
 
     // 5. Click deleteAllPages button
     listPage.on('dialog', async dialog => {
@@ -46,7 +46,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await deleteAllBtn.click();
 
     // 6. Verify no pages are listed
-    await expect(listPage.locator('.page-item')).toHaveCount(0);
+    await expect(listPage.locator('.page-card')).toHaveCount(0);
     await expect(listPage.locator('#no-pages')).toBeVisible();
     await listPage.close();
   });
@@ -170,7 +170,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await listPage.setInputFiles('#import-file', jsonPath);
 
     // 3. import 완료 후 페이지 아이템이 2개 이상인지 확인
-    const pageItems = listPage.locator('.page-item');
+    const pageItems = listPage.locator('.page-card');
     await expect(pageItems).toHaveCount(2);
 
     // 4. 각 페이지 URL 텍스트 포함 여부 확인
@@ -200,7 +200,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await listPage.setInputFiles('#import-file', jsonPath);
 
     // safe URL(test-page.html) 1개만 import되어야 함
-    const pageItems = listPage.locator('.page-item');
+    const pageItems = listPage.locator('.page-card');
     await expect(pageItems).toHaveCount(1);
 
     const urls = await pageItems.locator('.page-url').allTextContents();
@@ -233,7 +233,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await listPage.setInputFiles('#import-file', jsonPath);
 
     // 아무 페이지도 import되지 않아야 함
-    await expect(listPage.locator('.page-item')).toHaveCount(0);
+    await expect(listPage.locator('.page-card')).toHaveCount(0);
     await expect(listPage.locator('#no-pages')).toBeVisible();
 
     // unsafe URL 관련 alert이 2개 표시되었는지 확인 (skipped + all unsafe)

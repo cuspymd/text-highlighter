@@ -5,151 +5,261 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="popupTitle">Text Highlighter</title>
     <style>
-      /* 깜빡임 방지를 위한 초기 다크 테마 적용 */
-      @media (prefers-color-scheme: dark) {
-        html {
-          background-color: #1e1e1e;
-          color: #e0e0e0;
-        }
-      }
-      
-      body {
-        width: 300px;
-        padding: 15px;
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-          Arial, sans-serif;
+      :root {
+        --mark-accent: #007AFF;
+        --mark-accent-hover: #0056B3;
+        --mark-bg: #FFFFFF;
+        --mark-surface: #F5F5F7;
+        --mark-surface-hover: #E8E8ED;
+        --mark-text: #1D1D1F;
+        --mark-text-secondary: #86868B;
+        --mark-border: #D2D2D7;
+        --mark-shadow-s: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --mark-radius-m: 8px;
+        --mark-radius-l: 12px;
       }
 
-      h1 {
-        font-size: 18px;
-        margin-top: 0;
-        margin-bottom: 15px;
-        text-align: center;
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --mark-bg: #121212;
+          --mark-surface: #1C1C1E;
+          --mark-surface-hover: #2C2C2E;
+          --mark-text: #F5F5F7;
+          --mark-text-secondary: #86868B;
+          --mark-border: #38383A;
+        }
+      }
+
+      body {
+        width: 320px;
+        padding: 0;
+        margin: 0;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: var(--mark-bg);
+        color: var(--mark-text);
+        overflow-x: hidden;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        border-bottom: 1px solid var(--mark-border);
+      }
+
+      .header-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .header-title img {
+        width: 20px;
+        height: 20px;
+      }
+
+      .header h1 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .settings-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: var(--mark-text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+      }
+
+      .settings-btn:hover {
+        background-color: var(--mark-surface);
+        color: var(--mark-text);
+      }
+
+      .container {
+        padding: 16px;
       }
 
       .section {
-        margin-bottom: 20px;
+        margin-bottom: 24px;
       }
 
-      .color-selector {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 15px;
-      }
-
-      .color-item {
-        width: 30px;
-        height: 30px;
-        border-radius: 15px;
-        cursor: pointer;
-        border: 2px solid transparent;
-      }
-
-      .color-item.selected {
-        border-color: #000;
+      .section-title {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--mark-text-secondary);
+        margin-bottom: 12px;
       }
 
       .btn {
         width: 100%;
-        padding: 8px;
-        background-color: #f0f0f0;
-        border: 1px solid #ccc;
-        border-radius: 4px;
+        padding: 10px;
+        background-color: var(--mark-surface);
+        border: 1px solid var(--mark-border);
+        border-radius: var(--mark-radius-m);
         cursor: pointer;
         font-size: 14px;
+        font-weight: 500;
         margin-bottom: 8px;
+        color: var(--mark-text);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
       }
 
       .btn:hover {
-        background-color: #e0e0e0;
+        background-color: var(--mark-surface-hover);
+        border-color: var(--mark-text-secondary);
+      }
+
+      .btn-primary {
+        background-color: var(--mark-accent);
+        color: white;
+        border: none;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--mark-accent-hover);
       }
 
       .highlights-list {
-        max-height: 200px;
+        max-height: 180px;
         overflow-y: auto;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 8px;
-        margin-top: 10px;
+        margin-top: 8px;
+        padding-right: 4px;
       }
 
-      .highlight-item {
-        padding: 5px;
-        margin-bottom: 5px;
-        border-radius: 3px;
+      .highlights-list::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .highlights-list::-webkit-scrollbar-thumb {
+        background-color: var(--mark-border);
+        border-radius: 2px;
+      }
+
+      .highlight-card {
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        background-color: var(--mark-bg);
+        border: 1px solid var(--mark-border);
+        border-radius: var(--mark-radius-m);
         position: relative;
-        padding-right: 14px;
+        font-size: 13px;
+        line-height: 1.4;
+        display: flex;
+        gap: 10px;
+        transition: all 0.2s ease;
+        box-shadow: var(--mark-shadow-s);
+        cursor: pointer;
+      }
+
+      .highlight-card:hover {
+        border-color: var(--mark-accent);
+        transform: translateY(-1px);
+      }
+
+      .highlight-color-indicator {
+        width: 4px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+
+      .highlight-content {
+        flex: 1;
         word-break: break-all;
+        padding-right: 20px;
       }
 
       .delete-btn {
         position: absolute;
-        right: 5px;
-        top: 5px;
+        right: 8px;
+        top: 8px;
         cursor: pointer;
+        color: var(--mark-text-secondary);
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
         font-weight: bold;
-        z-index: 1;
+      }
+
+      .delete-btn:hover {
+        background-color: #fee8e8;
+        color: #d93025;
       }
 
       .toggle-container {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-top: 10px;
-        padding: 5px;
-        background-color: #f5f5f5;
-        border-radius: 4px;
+        margin-top: 8px;
+        padding: 8px 0;
       }
 
       .toggle-container label {
-        margin-right: 10px;
         font-size: 14px;
+        font-weight: 500;
       }
 
-      .toggle-container input[type="checkbox"] {
-        transform: scale(1.3);
+      /* Modern Toggle Switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 36px;
+        height: 20px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
         cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--mark-border);
+        transition: .3s;
+        border-radius: 20px;
       }
 
-      /* 다크 테마 */
-      @media (prefers-color-scheme: dark) {
-        body {
-          background-color: #1e1e1e;
-          color: #e0e0e0;
-        }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+      }
 
-        .color-item.selected {
-          border-color: #fff;
-        }
+      input:checked + .slider {
+        background-color: var(--mark-accent);
+      }
 
-        .btn {
-          background-color: #2d2d2d;
-          border-color: #404040;
-          color: #e0e0e0;
-        }
-
-        .btn:hover {
-          background-color: #3d3d3d;
-        }
-
-        .highlights-list {
-          background-color: #2d2d2d;
-          border-color: #404040;
-          color: #e0e0e0;
-        }
-
-        .toggle-container {
-          background-color: #2d2d2d;
-        }
-
-        .delete-btn {
-          color: #000;
-        }
-
-        .highlight-item {
-          color: #000 !important;
-        }
+      input:checked + .slider:before {
+        transform: translateX(16px);
       }
 
       /* Custom Modal Styles */
@@ -171,53 +281,58 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(2px);
       }
 
       .modal-content {
         position: relative;
-        background-color: white;
+        background-color: var(--mark-bg);
         padding: 20px;
-        border-radius: 8px;
-        min-width: 250px;
+        border-radius: var(--mark-radius-l);
+        min-width: 260px;
         max-width: 90%;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
         z-index: 10001;
       }
 
       .modal-content p {
-        margin: 0 0 15px 0;
+        margin: 0 0 20px 0;
         font-size: 14px;
-        line-height: 1.4;
+        line-height: 1.5;
+        font-weight: 500;
       }
 
       .modal-buttons {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         justify-content: flex-end;
       }
 
       .modal-btn {
         padding: 8px 16px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background-color: #f0f0f0;
+        border: 1px solid var(--mark-border);
+        border-radius: var(--mark-radius-m);
+        background-color: var(--mark-surface);
         cursor: pointer;
-        font-size: 14px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s;
+        color: var(--mark-text);
       }
 
       .modal-btn:hover {
-        background-color: #e0e0e0;
+        background-color: var(--mark-surface-hover);
       }
 
       .modal-confirm {
-        background-color: #007cba;
+        background-color: var(--mark-accent);
         color: white;
-        border-color: #007cba;
+        border-color: var(--mark-accent);
       }
 
       .modal-confirm:hover {
-        background-color: #005a87;
+        background-color: var(--mark-accent-hover);
       }
 
       /* Mobile / touch device styles */
@@ -229,100 +344,75 @@
 
         .btn {
           padding: 12px;
-          font-size: 16px;
           min-height: 44px;
         }
 
-        .color-item {
-          width: 38px;
-          height: 38px;
-          border-radius: 19px;
-        }
-
         .toggle-container {
-          padding: 10px;
-        }
-
-        .toggle-container label {
-          font-size: 16px;
-        }
-
-        .toggle-container input[type="checkbox"] {
-          transform: scale(1.6);
+          padding: 12px 0;
         }
 
         .modal-btn {
           padding: 12px 20px;
-          font-size: 16px;
           min-height: 44px;
-        }
-      }
-
-      /* Dark theme for modal */
-      @media (prefers-color-scheme: dark) {
-        .modal-content {
-          background-color: #2d2d2d;
-          color: #e0e0e0;
-        }
-
-        .modal-btn {
-          background-color: #404040;
-          border-color: #555;
-          color: #e0e0e0;
-        }
-
-        .modal-btn:hover {
-          background-color: #505050;
-        }
-
-        .modal-confirm {
-          background-color: #0066cc;
-          border-color: #0066cc;
-        }
-
-        .modal-confirm:hover {
-          background-color: #004499;
         }
       }
     </style>
   </head>
-  <body>
-    <h1 data-i18n="popupTitle">Text Highlighter</h1>
+  <body class="preload">
+    <header class="header">
+      <div class="header-title">
+        <img src="images/icon48.png" alt="Logo">
+        <h1 data-i18n="popupTitle">Text Highlighter</h1>
+      </div>
+      <button class="settings-btn" id="settings-trigger" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </header>
 
-    <div class="section">
-      <p data-i18n="popupDescription">
-        Select text on web pages and right-click to highlight.
-      </p>
-    </div>
-
-    <div class="section">
-      <h2 data-i18n="currentPageHighlights">Current Page Highlights</h2>
-      <div id="highlights-container" class="highlights-list">
-        <div id="no-highlights" data-i18n="noHighlights">
-          No highlighted text on this page.
+    <div class="container">
+      <div class="section">
+        <div class="section-title" data-i18n="currentPageHighlights">Highlights</div>
+        <div id="highlights-container" class="highlights-list">
+          <div id="no-highlights" style="color: var(--mark-text-secondary); font-size: 13px; text-align: center; padding: 20px 0;" data-i18n="noHighlights">
+            No highlights on this page.
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="section">
-      <button id="clear-all" class="btn" data-i18n="clearAllHighlights">
-        Clear All Highlights
-      </button>
-      <button id="view-all-pages" class="btn" data-i18n="viewAllPages">
-        Highlighted Pages List
-      </button>
-      <button id="delete-custom-colors" class="btn" data-i18n="deleteCustomColors">
-        Delete Custom Colors
-      </button>
-      
-      <div class="toggle-container">
-        <label for="minimap-toggle" data-i18n="showMinimap">Show Minimap</label>
-        <input type="checkbox" id="minimap-toggle" checked />
+      <div class="section">
+        <button id="view-all-pages" class="btn btn-primary" data-i18n="viewAllPages">
+          Dashboard
+        </button>
+        <button id="clear-all" class="btn" data-i18n="clearAllHighlights">
+          Clear All
+        </button>
       </div>
-      
-      <div class="toggle-container">
-        <label for="selection-controls-toggle" data-i18n="showControlsOnSelection">Show Control UI on Text Selection</label>
-        <input type="checkbox" id="selection-controls-toggle" />
+
+      <div id="advanced-settings" style="display: none; border-top: 1px solid var(--mark-border); padding-top: 16px; margin-top: 8px;">
+        <div class="section-title">Settings</div>
+
+        <div class="toggle-container">
+          <label for="minimap-toggle" data-i18n="showMinimap">Minimap</label>
+          <label class="switch">
+            <input type="checkbox" id="minimap-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-container">
+          <label for="selection-controls-toggle" data-i18n="showControlsOnSelection">Selection UI</label>
+          <label class="switch">
+            <input type="checkbox" id="selection-controls-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button id="delete-custom-colors" class="btn" style="margin-top: 12px; font-size: 12px;" data-i18n="deleteCustomColors">
+          Reset Colors
+        </button>
       </div>
     </div>
 

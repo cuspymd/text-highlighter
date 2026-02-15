@@ -63,7 +63,7 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
 
-    const highlightItems = popupPage.locator('.highlight-item');
+    const highlightItems = popupPage.locator('.highlight-card');
     await expect(highlightItems).toHaveCount(1);
     const highlight = await highlightItems.nth(0).textContent();
     expect(highlight.startsWith(h1Text.substring(0, 45))).toBe(true);
@@ -92,7 +92,7 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
 
-    const highlightItems = popupPage.locator('.highlight-item');
+    const highlightItems = popupPage.locator('.highlight-card');
     await expect(highlightItems).toHaveCount(1);
     const highlight0 = await highlightItems.nth(0).textContent();
     expect(highlight0.startsWith(h1Text.substring(0, 45))).toBe(true);
@@ -130,7 +130,7 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
 
-    const highlightItems = popupPage.locator('.highlight-item');
+    const highlightItems = popupPage.locator('.highlight-card');
     await expect(highlightItems).toHaveCount(1);
     await highlightItems.nth(0).locator('.delete-btn').click();
     await expect(highlightItems).toHaveCount(0);
@@ -162,7 +162,7 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
 
-    const highlightItems = popupPage.locator('.highlight-item');
+    const highlightItems = popupPage.locator('.highlight-card');
     await expect(highlightItems).toHaveCount(1);
     const highlightText = await highlightItems.nth(0).textContent();
     expect(highlightText).toContain(textToSelect);
@@ -188,8 +188,10 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
 
+    await popupPage.click('#settings-trigger');
     const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
-    await expect(selectionControlsToggle).toBeVisible();
+    await expect(popupPage.locator('.switch:has(#selection-controls-toggle)')).toBeVisible();
+
     // Wait until popup async initialization applies stored/default state.
     await popupPage.waitForFunction(async () => {
       const toggle = document.getElementById('selection-controls-toggle');
@@ -198,7 +200,10 @@ test.describe('Popup Tests', () => {
       const expected = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true;
       return toggle.checked === expected;
     });
-    await selectionControlsToggle.setChecked(true);
+    await selectionControlsToggle.evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
 
     await expect(selectionControlsToggle).toBeChecked();
 
@@ -232,9 +237,16 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
 
+    await popupPage.click('#settings-trigger');
     const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
-    await expect(selectionControlsToggle).toBeVisible();
-    await selectionControlsToggle.setChecked(false);
+    await expect(popupPage.locator('.switch:has(#selection-controls-toggle)')).toBeVisible();
+
+    // Use evaluate to avoid viewport issues with hidden inputs
+    await selectionControlsToggle.evaluate(el => {
+      el.checked = false;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
     await expect(selectionControlsToggle).not.toBeChecked();
     await popupPage.close();
 
@@ -284,6 +296,7 @@ test.describe('Popup Tests', () => {
     const tabId = await getCurrentTabId(background);
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+    await popupPage.click('#settings-trigger');
 
     await popupPage.click('#delete-custom-colors');
     
@@ -311,9 +324,15 @@ test.describe('Popup Tests', () => {
     const popupPage = await context.newPage();
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
 
+    await popupPage.click('#settings-trigger');
     const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
-    await expect(selectionControlsToggle).toBeVisible();
-    await selectionControlsToggle.check();
+    await expect(popupPage.locator('.switch:has(#selection-controls-toggle)')).toBeVisible();
+
+    await selectionControlsToggle.evaluate(el => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
     await expect(selectionControlsToggle).toBeChecked();
 
     await popupPage.close();
