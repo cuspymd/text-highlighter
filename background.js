@@ -1225,6 +1225,6 @@ if (typeof module !== 'undefined' && module.exports) {
     urlToSyncKey,
     mergeHighlights,
     isMobile,
-    platformInfo
+    initializePlatform
   };
 }

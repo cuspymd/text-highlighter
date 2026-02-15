@@ -8,7 +8,7 @@ const {
   urlToSyncKey,
   mergeHighlights,
   isMobile,
-  platformInfo
+  initializePlatform
 } = require('../background.js');
 
 describe('Background Script Unit Tests', () => {
@@ -126,15 +126,28 @@ describe('Background Script Unit Tests', () => {
     });
   });
 
-  describe('isMobile', () => {
-    it('should return true if platform is android', () => {
-      // Directly manipulate the exported object properties
-      platformInfo.os = 'android';
+  describe('isMobile and initializePlatform', () => {
+    it('should return true if platform is android', async () => {
+      chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'android' });
+      await initializePlatform();
       expect(isMobile()).toBe(true);
     });
 
-    it('should return false if platform is mac', () => {
-      platformInfo.os = 'mac';
+    it('should return false if platform is mac', async () => {
+      chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'mac' });
+      await initializePlatform();
+      expect(isMobile()).toBe(false);
+    });
+
+    it('should return false if platform is win', async () => {
+      chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'win' });
+      await initializePlatform();
+      expect(isMobile()).toBe(false);
+    });
+
+    it('should return false if platform is linux', async () => {
+      chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'linux' });
+      await initializePlatform();
       expect(isMobile()).toBe(false);
     });
   });
