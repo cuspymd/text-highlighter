@@ -1,4 +1,5 @@
 const path = require('path');
+const { pathToFileURL } = require('url');
 import { test, expect } from './fixtures';
 
 function urlToSyncKey(url) {
@@ -27,9 +28,13 @@ async function waitInBackground(background, ms) {
   }, ms);
 }
 
+function testFileUrl(fileName) {
+  return pathToFileURL(path.join(__dirname, fileName)).href;
+}
+
 test.describe('Sync scenarios', () => {
   test('sync key removal arrives before tombstone meta update -> eventually treated as user deletion', async ({ background }) => {
-    const url = `file:///${path.join(__dirname, 'test-page.html')}`;
+    const url = testFileUrl('test-page.html');
     const syncKey = urlToSyncKey(url);
     const highlights = createHighlight('g_remove_then_meta', 'remove-then-meta');
 
@@ -90,7 +95,7 @@ test.describe('Sync scenarios', () => {
   });
 
   test('M-2: Propagation of new highlights from sync to local and UI', async ({ page, background }) => {
-    const url = `file://${path.join(__dirname, 'test-page.html')}`;
+    const url = testFileUrl('test-page.html');
     await page.goto(url);
     const syncKey = urlToSyncKey(url);
     const highlights = createHighlight('g_remote_prop', 'sample paragraph');
@@ -130,7 +135,7 @@ test.describe('Sync scenarios', () => {
   });
 
   test('M-11: Live update on deletion from sync', async ({ page, background }) => {
-    const url = `file://${path.join(__dirname, 'test-page.html')}`;
+    const url = testFileUrl('test-page.html');
     const syncKey = urlToSyncKey(url);
     const highlights = createHighlight('g_to_be_deleted', 'Another paragraph');
 
@@ -185,7 +190,7 @@ test.describe('Sync scenarios', () => {
   });
 
   test('M-6: Merge of highlights (Addition merge)', async ({ page, background }) => {
-    const url = `file://${path.join(__dirname, 'test-page.html')}`;
+    const url = testFileUrl('test-page.html');
     const syncKey = urlToSyncKey(url);
     const localHighlights = createHighlight('g_local', 'Welcome to the Test Page');
     const remoteHighlights = createHighlight('g_remote', 'sample paragraph');
@@ -227,7 +232,7 @@ test.describe('Sync scenarios', () => {
   });
 
   test('M-7: Conflict resolution (Last-Write-Wins)', async ({ page, background }) => {
-    const url = `file://${path.join(__dirname, 'test-page.html')}`;
+    const url = testFileUrl('test-page.html');
     const syncKey = urlToSyncKey(url);
     const groupId = 'g_conflict';
     const text = 'Welcome to the Test Page';
@@ -285,7 +290,7 @@ test.describe('Sync scenarios', () => {
   });
 
   test('M-8: Settings propagation (Minimap visibility)', async ({ page, background }) => {
-    const url = `file://${path.join(__dirname, 'test-page.html')}`;
+    const url = testFileUrl('test-page.html');
     const highlights = createHighlight('g_minimap', 'sample paragraph');
     await background.evaluate(async ({ url, highlights }) => {
       await chrome.storage.local.set({ [url]: highlights });
@@ -313,7 +318,7 @@ test.describe('Sync scenarios', () => {
   });
 
   test('M-9: Custom colors propagation', async ({ page, background }) => {
-    await page.goto(`file://${path.join(__dirname, 'test-page.html')}`);
+    await page.goto(testFileUrl('test-page.html'));
 
     // Simulate another device adding a custom color
     const customColor = { id: 'custom_123', nameKey: 'customColor', colorNumber: 1, color: '#123456' };
@@ -337,7 +342,7 @@ test.describe('Sync scenarios', () => {
   });
 
   test('sync key removal without tombstone -> treated as eviction and local data is kept', async ({ background }) => {
-    const url = `file:///${path.join(__dirname, 'test-page2.html')}`;
+    const url = testFileUrl('test-page2.html');
     const syncKey = urlToSyncKey(url);
     const highlights = createHighlight('g_eviction', 'eviction-case');
 
@@ -386,8 +391,8 @@ test.describe('Sync scenarios', () => {
   });
 
   test('deleteAllHighlightedPages keeps deletion tombstones in sync_meta', async ({ background, context, extensionId }) => {
-    const url1 = `file:///${path.join(__dirname, 'test-page.html')}`;
-    const url2 = `file:///${path.join(__dirname, 'test-page3.html')}`;
+    const url1 = testFileUrl('test-page.html');
+    const url2 = testFileUrl('test-page3.html');
     const syncKey1 = urlToSyncKey(url1);
     const syncKey2 = urlToSyncKey(url2);
     const highlights1 = createHighlight('g_all_1', 'all-1');
