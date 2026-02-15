@@ -2,27 +2,53 @@ import { test as base, chromium } from '@playwright/test';
 import path from 'path';
 
 export const test = base.extend({
-  context: async ({ }, use) => {
+  context: [async ({ }, use) => {
     const pathToExtension = path.join(__dirname, '../');
-    const context = await chromium.launchPersistentContext('', {
+    const launchOptions = {
       //headless: false,
       channel: 'chromium',
       args: [
         `--disable-extensions-except=${pathToExtension}`,
         `--load-extension=${pathToExtension}`,
       ],
-    });
+    };
+    const maxAttempts = 3;
+    let context = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const candidate = await chromium.launchPersistentContext('', launchOptions);
+      let background = candidate.serviceWorkers()[0];
+
+      if (!background) {
+        try {
+          background = await candidate.waitForEvent('serviceworker', { timeout: 15_000 });
+        } catch {
+          background = candidate.serviceWorkers()[0];
+        }
+      }
+
+      if (background) {
+        context = candidate;
+        break;
+      }
+
+      await candidate.close();
+    }
+
+    if (!context) {
+      throw new Error(`Failed to start extension service worker after ${maxAttempts} attempts`);
+    }
+
     await use(context);
     await context.close();
-  },
-  background: async ({ context }, use) => {
-    // for manifest v3:
+  }, { timeout: 70_000 }],
+  background: [async ({ context }, use) => {
     let [background] = context.serviceWorkers();
-    if (!background)
-      background = await context.waitForEvent('serviceworker');
-
+    if (!background) {
+      background = await context.waitForEvent('serviceworker', { timeout: 30_000 });
+    }
     await use(background);
-  },
+  }, { timeout: 40_000 }],
   extensionId: async ({ background }, use) => {
     const extensionId = background.url().split('/')[2];
     await use(extensionId);
