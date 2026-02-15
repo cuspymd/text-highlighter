@@ -1,0 +1,71 @@
+Marks: Text Highlighter es una extensión de Firefox potente y respetuosa con la privacidad que permite resaltar y gestionar texto en cualquier página web. Está diseñada para aumentar la productividad, mejorar los flujos de lectura y ofrecer una forma fluida de volver a contenido importante, manteniendo siempre tus datos bajo tu control.
+
+🔍 Funciones clave
+✅ Resaltado de texto en varios colores
+Selecciona texto en cualquier sitio web y resáltalo con tu color preferido. La extensión ofrece cinco colores de resaltado distintos (amarillo, verde, azul, rosa y naranja), para que puedas organizar y clasificar contenido de forma visual.
+
+⚡️ Resaltado rápido mediante menú contextual o atajo
+Puedes resaltar texto seleccionado al instante usando:
+- El menú contextual con clic derecho
+- Atajos de teclado personalizables (Ctrl+Shift+1 hasta Ctrl+Shift+4, etc.)
+
+Estas acciones funcionan incluso entre varias pestañas y sesiones.
+
+🗂 Gestión de resaltados por página
+Cada resaltado se guarda y se asocia con su URL correspondiente. Si vuelves a abrir una página resaltada más tarde, todos tus resaltados se restauran automáticamente. Puedes:
+
+- Ver una lista de todas tus páginas resaltadas
+- Revisar, editar o eliminar resaltados individuales o grupos completos
+- Ver metadatos como títulos de página y fecha de última actualización
+
+🧭 Vista de minimapa para navegación
+Un "minimapa" integrado aparece en el borde derecho de la página y muestra marcadores para todos tus resaltados. Esto te ayuda a:
+
+- Localizar al instante secciones resaltadas en páginas largas
+- Navegar directamente a un resaltado haciendo clic en su marcador
+- Ver qué resaltados están visibles actualmente en pantalla
+
+🌐 Soporte multilingüe
+Disponible en varios idiomas. La interfaz se adapta según la configuración de idioma del navegador.
+
+🧩 Panel emergente
+Al hacer clic en el icono de la extensión, se abre una ventana emergente con acceso rápido a:
+
+- Textos resaltados en la página actual
+- Un interruptor para el minimapa
+- Botones para eliminar todos los resaltados o exportar tus datos
+- Navegación a un gestor de página completa para todos los resaltados
+
+💾 Almacenamiento local primero y privacidad
+Por defecto, todos los datos, incluidos resaltados, colores y metadatos de página, se guardan localmente en tu navegador usando la API storage.local. Si habilitas Browser Sync, los datos pueden sincronizarse entre dispositivos mediante tu cuenta del navegador. Marks no opera servidores backend propios.
+
+💯 Gratis y de código abierto
+Esta extensión es completamente gratuita y de código abierto bajo licencia MIT. Sin funciones premium. Sin seguimiento de uso. Sin recopilación de datos.
+
+🙌 ¿Por qué instalar Marks?
+- Aumenta tu productividad de lectura marcando contenido clave al vuelo
+- Estudia mejor organizando resaltados por colores
+- Vuelve a páginas útiles con tus notas visuales intactas
+- No pierdas tu posición en páginas largas gracias al minimapa intuitivo
+- Mantén el control de tus datos con almacenamiento local primero y Browser Sync opcional
+- Ahorra tiempo con atajos rápidos y menús contextuales
+- Todo sin costo, para siempre
+
+🔐 Confianza y privacidad
+Marks se creó con la privacidad como prioridad absoluta:
+
+- 🚫 Sin comunicación con servidores, excepto para Browser Sync
+- 🚫 Sin analíticas
+- 🚫 Sin necesidad de inicio de sesión ni cuenta
+
+✅ Funciona localmente por defecto
+
+Esta extensión es ideal para:
+
+- Investigadores
+- Estudiantes
+- Profesionales que leen con frecuencia artículos o documentación
+- Cualquier persona que quiera conservar y organizar información clave en la web
+
+Instala Marks hoy y empieza a resaltar la web a tu manera: rápido, privado y bellamente organizado.
+
