@@ -369,8 +369,7 @@ let platformInfo = { os: 'unknown' };
 
 async function initializePlatform() {
   try {
-    const info = await browserAPI.runtime.getPlatformInfo();
-    Object.assign(platformInfo, info);
+    platformInfo = await browserAPI.runtime.getPlatformInfo();
     debugLog('Platform detected:', platformInfo);
   } catch (e) {
     debugLog('Platform detection failed:', e);
