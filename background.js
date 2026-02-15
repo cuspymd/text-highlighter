@@ -902,14 +902,15 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const updatedHighlights = highlights.filter(g => g.groupId !== groupId);
 
         if (updatedHighlights.length > 0) {
+          const lastUpdated = new Date().toISOString();
           const saveData = {};
           saveData[url] = updatedHighlights;
-          saveData[`${url}_meta`] = { ...meta, deletedGroupIds };
+          saveData[`${url}_meta`] = { ...meta, deletedGroupIds, lastUpdated };
           await browserAPI.storage.local.set(saveData);
           debugLog('Highlight group deleted:', groupId, 'from URL:', url);
 
           // Sync updated highlights
-          await syncSaveHighlights(url, updatedHighlights, meta.title || '', meta.lastUpdated || '');
+          await syncSaveHighlights(url, updatedHighlights, meta.title || '', lastUpdated);
 
           if (message.notifyRefresh) {
             await notifyTabHighlightsRefresh(updatedHighlights, url);
