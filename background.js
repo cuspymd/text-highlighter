@@ -1216,3 +1216,14 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
     console.error('Initialization error in background script', e);
   }
 })();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    cleanupTombstones,
+    normalizeSyncMeta,
+    urlToSyncKey,
+    mergeHighlights,
+    isMobile,
+    initializePlatform
+  };
+}
