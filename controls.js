@@ -77,7 +77,7 @@ function createHighlightControls() {
   document.body.appendChild(highlightControlsContainer);
 }
 
-// colorButton 생성 (재사용 가능한 함수)
+// create colorButton (reusable function)
 function createColorButton(colorInfo) {
   const colorButton = document.createElement('div');
   colorButton.className = 'text-highlighter-control-button color-button';
@@ -92,14 +92,14 @@ function createColorButton(colorInfo) {
   
   addJellyAnimation(colorButton);
   
-  // 방금 추가된 색상에만 애니메이션 효과 추가
+  // Add animation effect only to the newly added color
   if (lastAddedColor && colorInfo.color === lastAddedColor) {
     colorButton.classList.add('new-color-animate');
-    // 애니메이션 완료 후 클래스 제거
+    // Remove class after animation completion
     colorButton.addEventListener('animationend', function(e) {
       if (e.animationName === 'pop-in-new-color') {
         colorButton.classList.remove('new-color-animate');
-        lastAddedColor = null; // 애니메이션 완료 후 초기화
+        lastAddedColor = null; // Initialize after animation completion
       }
     });
   }
@@ -107,19 +107,19 @@ function createColorButton(colorInfo) {
   return colorButton;
 }
 
-// addColorBtn 생성 (재사용 가능한 함수)
+// create addColorBtn (reusable function)
 function createAddColorButton() {
   const addColorBtn = document.createElement('div');
   addColorBtn.className = 'text-highlighter-control-button add-color-button';
   addColorBtn.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="8" y1="3" x2="8" y2="13" stroke="#999" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>`;
   addColorBtn.title = getMessage('addColor') || '+';
 
-  // 커스텀 색상 선택기 이벤트 추가
+  // Add custom color picker event
   addColorBtn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // 이미 열려있는 색상 선택기가 있으면 무시
+    // Ignore if color picker is already open
     const existingPicker = document.querySelector('.custom-color-picker');
     if (existingPicker) {
       return;
@@ -132,12 +132,12 @@ function createAddColorButton() {
   return addColorBtn;
 }
 
-// 현재 활성화된 closeHandler를 추적하기 위한 변수
+// Variable to track the currently active closeHandler
 let currentCloseHandler = null;
 
-// 공통 색상 피커 UI 생성 함수
+// Common color picker UI creation function
 function createColorPickerUI() {
-  // 색상 프리셋 배열
+  // Color preset array
   const presetColors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
     '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
@@ -145,17 +145,17 @@ function createColorPickerUI() {
     '#2ECC71', '#F1C40F', '#E67E22', '#FF90A0', '#A8E6CF'
   ];
   
-  // 커스텀 색상 선택기 생성
+  // Create custom color picker
   const customColorPicker = document.createElement('div');
   customColorPicker.className = 'custom-color-picker';
   
-  // 헤더 생성
+  // Create header
   const header = document.createElement('div');
   header.className = 'color-picker-header';
   header.textContent = browserAPI.i18n.getMessage('selectColor');
   customColorPicker.appendChild(header);
   
-  // 색상 프리셋 그리드 생성
+  // Create color preset grid
   const presetGrid = document.createElement('div');
   presetGrid.className = 'color-preset-grid';
   
@@ -169,11 +169,11 @@ function createColorPickerUI() {
   
   customColorPicker.appendChild(presetGrid);
   
-  // 커스텀 색상 섹션 생성
+  // Create custom color section
   const customSection = document.createElement('div');
   customSection.className = 'custom-color-section';
   
-  // Hue 슬라이더 컨테이너
+  // Hue slider container
   const hueContainer = document.createElement('div');
   hueContainer.className = 'hue-slider-container';
   
@@ -189,7 +189,7 @@ function createColorPickerUI() {
   hueContainer.appendChild(hueSlider);
   customSection.appendChild(hueContainer);
   
-  // Saturation-Value 피커
+  // Saturation-Value picker
   const svPicker = document.createElement('div');
   svPicker.className = 'saturation-value-picker';
   svPicker.id = 'svPicker';
@@ -201,7 +201,7 @@ function createColorPickerUI() {
   svPicker.appendChild(svHandle);
   customSection.appendChild(svPicker);
   
-  // 색상 미리보기
+  // Color preview
   const colorPreview = document.createElement('div');
   colorPreview.className = 'color-preview';
   colorPreview.id = 'colorPreview';
@@ -210,7 +210,7 @@ function createColorPickerUI() {
   
   customColorPicker.appendChild(customSection);
   
-  // 버튼 섹션 생성
+  // Create buttons section
   const buttonsSection = document.createElement('div');
   buttonsSection.className = 'color-picker-buttons';
   
@@ -230,9 +230,9 @@ function createColorPickerUI() {
   return customColorPicker;
 }
 
-// 색상 피커 공통 이벤트 처리 함수
+// Color picker common event handling function
 function setupColorPickerEvents(customColorPicker, triggerButton, onColorSelect, onClose) {
-  // 색상 선택 이벤트
+  // Color selection event
   customColorPicker.addEventListener('click', (e) => {
     if (e.target.classList.contains('color-preset')) {
       e.stopPropagation();
@@ -251,7 +251,7 @@ function setupColorPickerEvents(customColorPicker, triggerButton, onColorSelect,
     }
   });
   
-  // 외부 클릭 시 닫기
+  // Close on outside click
   setTimeout(() => {
     currentCloseHandler = function(e) {
       if (!customColorPicker.contains(e.target) && !triggerButton.contains(e.target)) {
@@ -262,25 +262,25 @@ function setupColorPickerEvents(customColorPicker, triggerButton, onColorSelect,
   }, 10);
 }
 
-// 커스텀 색상 선택기 생성 및 표시 (재사용 가능한 함수)
+// Create and display custom color picker (reusable function)
 function showCustomColorPicker(triggerButton) {
-  // 기존 색상 선택기가 있으면 제거
+  // Remove existing color picker if any
   const existingPicker = document.querySelector('.custom-color-picker');
   if (existingPicker) {
     existingPicker.remove();
   }
   
-  // 이전 closeHandler가 있으면 제거
+  // Remove previous closeHandler if any
   if (currentCloseHandler) {
     document.removeEventListener('click', currentCloseHandler);
     currentCloseHandler = null;
   }
   
-  // 색상 피커 UI 생성
+  // Create color picker UI
   const customColorPicker = createColorPickerUI();
   
-  // 위치 설정 (only dynamic positioning)
-  // triggerButton이 포함된 controls container를 찾아서 위치 설정
+  // Position setting (only dynamic positioning)
+  // Find controls container including triggerButton and set position
   const controlsContainer = triggerButton.closest('.text-highlighter-controls');
   const controlsRect = controlsContainer.getBoundingClientRect();
   customColorPicker.style.top = `${window.scrollY + controlsRect.bottom + 5}px`;
@@ -288,10 +288,10 @@ function showCustomColorPicker(triggerButton) {
   
   document.body.appendChild(customColorPicker);
   
-  // HSV 슬라이더 초기화
+  // Initialize HSV sliders
   initHSVSliders(customColorPicker);
   
-  // closeHandler 제거 및 피커 닫기 공통 함수
+  // Remove closeHandler and close picker common function
   const closeColorPicker = () => {
     customColorPicker.remove();
     colorPickerOpen = false;
@@ -301,11 +301,11 @@ function showCustomColorPicker(triggerButton) {
     }
   };
 
-  // 이벤트 설정
+  // Set events
   setupColorPickerEvents(customColorPicker, triggerButton, addCustomColor, closeColorPicker);
 }
 
-// 커스텀 색상 추가 함수
+// Custom color addition function
 function addCustomColor(color) {
   lastAddedColor = color;
   browserAPI.runtime.sendMessage({ action: 'addColor', color: color }, (response) => {
@@ -316,7 +316,7 @@ function addCustomColor(color) {
   });
 }
 
-// HSV to RGB 변환 함수
+// HSV to RGB conversion function
 function hsvToRgb(h, s, v) {
   h = h / 360;
   s = s / 100;
@@ -349,12 +349,12 @@ function hsvToRgb(h, s, v) {
   };
 }
 
-// HSV 슬라이더 초기화 (재사용 가능한 함수)
-// RGB to Hex 변환 함수  
+// Initialize HSV sliders (reusable function)
+// RGB to Hex conversion function
 function rgbToHex(rgb) {
   if (rgb.startsWith('#')) return rgb;
   
-  // HSL 형식 처리
+  // Handle HSL format
   if (rgb.startsWith('hsl')) {
     return hslToHex(rgb);
   }
@@ -372,7 +372,7 @@ function rgbToHex(rgb) {
   }).join('');
 }
 
-// HSL to Hex 변환 함수
+// HSL to Hex conversion function
 function hslToHex(hsl) {
   const match = hsl.match(/\d+/g);
   if (!match) return '#FF6B6B';
@@ -411,7 +411,7 @@ function hslToHex(hsl) {
 }
 
 function initHSVSliders(picker) {
-  // 요소들이 존재하는지 확인
+  // Check if elements exist
   const hueSlider = picker.querySelector('#hueSlider');
   const hueHandle = picker.querySelector('#hueHandle');
   const svPicker = picker.querySelector('#svPicker');
@@ -419,14 +419,14 @@ function initHSVSliders(picker) {
   const colorPreview = picker.querySelector('#colorPreview');
   
   if (!hueSlider || !hueHandle || !svPicker || !svHandle || !colorPreview) {
-    return; // 필요한 요소가 없으면 초기화하지 않음
+    return; // Do not initialize if required elements are missing
   }
   
   let currentHue = 0;
   let currentSaturation = 100;
   let currentValue = 100;
   
-  // Hue 슬라이더 이벤트
+  // Hue slider events
   let isDraggingHue = false;
 
   function updateHueAt(clientX) {
@@ -473,16 +473,16 @@ function initHSVSliders(picker) {
     document.addEventListener('touchend', hueTouchEndHandler);
   }, { passive: true });
 
-  // Saturation/Value 피커 이벤트
+  // Saturation/Value picker events
   let isDraggingSV = false;
 
   function updateSVAt(clientX, clientY) {
     const rect = svPicker.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-    // x축: 0 (왼쪽/낮은 채도) -> 100 (오른쪽/높은 채도)
+    // x-axis: 0 (left/low saturation) -> 100 (right/high saturation)
     currentSaturation = (x / rect.width) * 100;
-    // y축: 100 (위쪽/높은 명도) -> 0 (아래쪽/낮은 명도)
+    // y-axis: 100 (top/high value) -> 0 (bottom/low value)
     currentValue = 100 - (y / rect.height) * 100;
     svHandle.style.left = `${x}px`;
     svHandle.style.top = `${y}px`;
@@ -536,11 +536,11 @@ function initHSVSliders(picker) {
     colorPreview.style.backgroundColor = color;
   }
   
-  // 초기 설정
+  // Initial setup
   updateSVBackground();
   updateColorPreview();
   
-  // 초기 핸들 위치 설정 (높은 채도, 높은 명도)
+  // Initial handle position setting (high saturation, high value)
   setTimeout(() => {
     const svRect = svPicker.getBoundingClientRect();
     const initialX = svRect.width * 0.8;
@@ -596,9 +596,9 @@ function showControlUi(highlightElement, e) {
   highlightControlsContainer.style.left = isPortrait
     ? `${window.scrollX + 10}px`
     : `${window.scrollX + e.clientX - 40}px`;
-  // pop 애니메이션이 항상 재생되도록 visible 클래스를 remove/add
+  // remove/add visible class to ensure pop animation always plays
   highlightControlsContainer.classList.remove('visible');
-  void highlightControlsContainer.offsetWidth; // reflow로 강제 초기화
+  void highlightControlsContainer.offsetWidth; // Force reflow to initialize
   setTimeout(() => {
     highlightControlsContainer.classList.add('visible');
   }, 10);

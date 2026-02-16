@@ -159,7 +159,7 @@
   position: relative;
 }
 
-/* Firefox 커스텀 색상 선택기 */
+/* Firefox custom color picker */
 .custom-color-picker {
   background: white;
   border: 1px solid #ccc;
@@ -423,7 +423,7 @@
   align-items: center !important;
   justify-content: center !important;
   opacity: 0.7 !important;
-  /* CSS 리셋 */
+  /* CSS reset */
   box-sizing: border-box !important;
   font-size: inherit !important;
   font-family: inherit !important;
