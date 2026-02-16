@@ -40,7 +40,7 @@
             {
               "position": 0,
               "spanId": "1750468547989_3",
-              "text": "\n    // JavaScript로 멀티 텍스트 노드 동적 생성\n    const container = document.getElementById('dynamic-multi-text');\n    container.appendChild(document.createTextNode('first '));\n    container.appendChild(document.createTextNode('second '));\n    container.appendChild(document.createTextNode('third'));\n  "
+              "text": "\n    // Dynamically create multi-text nodes with JavaScript\n    const container = document.getElementById('dynamic-multi-text');\n    container.appendChild(document.createTextNode('first '));\n    container.appendChild(document.createTextNode('second '));\n    container.appendChild(document.createTextNode('third'));\n  "
             }
           ],
           "text": "first second third\n\n"
