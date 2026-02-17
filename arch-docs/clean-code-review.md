@@ -86,6 +86,48 @@
   - `const handlers = { getColors: handleGetColors, saveHighlights: handleSaveHighlights, ... }`
   - `if/else` 사슬 제거.
 
+#### 분리 모듈별 역할 상세 명세
+
+아래는 `background.js`에서 추출할 각 모듈의 책임 범위를 정리한 것입니다.
+
+##### `services/sync-service.js` — 동기화 엔진
+
+- **책임**: 로컬 ↔ sync 스토리지 간 하이라이트 데이터의 동기화, 충돌 해소, 용량 관리, tombstone 수명 관리를 전담합니다.
+- **범위**: sync 관련 상수(키 접두사, 쿼터, tombstone 보존 기간, 재시도 정책) 및 sync 전용 상태(삭제 의도 확인 대기 큐 등)를 소유합니다. tombstone 정리, sync_meta 정규화, URL→sync 키 변환, 양방향 하이라이트 병합 같은 **순수 함수**와, sync 스토리지 읽기/쓰기/삭제, 로컬→sync 마이그레이션 같은 **비동기 서비스 함수**, 그리고 다른 기기에서의 변경을 수신하는 `storage.onChanged` 리스너 로직을 포함합니다.
+- **의존성**: `shared/browser-api.js`, `shared/logger.js`
+
+---
+
+##### `services/settings-service.js` — 설정 및 색상 관리
+
+- **책임**: 기본/커스텀 색상 목록 관리, 사용자 설정(미니맵 가시성, 선택 컨트롤 가시성) CRUD, 설정 변경 시 전체 탭 브로드캐스트를 전담합니다.
+- **범위**: 기본 색상 정의, 런타임 색상 목록 상태, 플랫폼 감지(Firefox Android 대응)를 소유합니다. 플랫폼 초기화, 커스텀 색상 로드(sync → local 순), 설정 변경 브로드캐스트, 그리고 색상 추가/초기화/설정 저장에 대한 서비스 로직을 포함합니다.
+- **의존성**: `shared/browser-api.js`, `shared/logger.js`, `shared/tab-broadcast.js`, `services/sync-service.js`
+
+---
+
+##### `handlers/message-router.js` — 메시지 라우팅 허브
+
+- **책임**: `runtime.onMessage` 리스너를 등록하고, 수신된 `message.action`에 따라 적절한 서비스 함수로 **디스패치만** 수행합니다. 비즈니스 로직 자체를 포함하지 않습니다.
+- **범위**: 현재 `background.js`에서 12개 액션을 if/else로 분기하는 메시지 핸들러 전체를 이관합니다. 액션-핸들러 맵 구조로 전환하여, 새로운 액션 추가 시 맵에 한 줄만 추가하면 되도록 합니다. 에러 처리를 한 곳에서 일관되게 수행합니다.
+- **의존성**: `services/sync-service.js`, `services/settings-service.js`, `shared/browser-api.js`, `shared/logger.js`
+
+---
+
+##### `ui/context-menu-service.js` — 컨텍스트 메뉴 & 단축키
+
+- **책임**: 우클릭 컨텍스트 메뉴 생성/갱신, 키보드 단축키 변경 감지, 메뉴/단축키 클릭 시 content script로 하이라이트 명령 전달을 전담합니다.
+- **범위**: 단축키 정보 캐시 상태를 소유합니다. 단축키 조회, 컨텍스트 메뉴 재생성(모바일 제외), 메뉴 클릭/단축키 입력/탭 전환 이벤트 리스너를 포함합니다.
+- **의존성**: `services/settings-service.js`, `shared/browser-api.js`, `shared/logger.js`, `shared/i18n.js`
+
+---
+
+##### `background.js` (엔트리 포인트) — 초기화 & 와이어링
+
+- **책임**: 리팩터링 후 **얇은 엔트리 파일**로만 유지합니다. 비즈니스 로직 없이 각 모듈의 import와 초기화 호출만 수행합니다.
+- **범위**: 리스너 등록(메시지 라우터, 컨텍스트 메뉴, sync 스토리지)을 최상위 레벨에서 동기적으로 수행하고, 비동기 초기화(플랫폼 감지, 색상 로드, 메뉴 생성, 마이그레이션)를 순차적으로 실행합니다.
+- **핵심 원칙**: 전체 모듈 간 의존 관계를 한눈에 파악할 수 있어야 하며, 리스너 등록은 최상위 레벨에서 수행하여 서비스워커 재시작 시 이벤트 누락을 방지합니다.
+
 ---
 
 ### 4-2. 중복 코드 다수 (DRY 위반)
@@ -102,6 +144,47 @@
   - `shared/i18n.js`
 - UI 정책 통일:
   - confirm/alert를 커스텀 모달로 통일하거나, 최소 래퍼 함수로 일관화.
+
+#### 공통 유틸 모듈별 역할 상세 명세
+
+아래는 현재 여러 파일에 중복된 코드를 추출하여 단일 모듈로 통합할 때의 책임 범위를 정리한 것입니다.
+
+##### `shared/browser-api.js` — 브라우저 API 호환 레이어
+
+- **책임**: Chrome/Firefox 런타임 API 객체를 감지하여 단일 `browserAPI` 참조를 제공합니다. 확장 프로그램 전체에서 이 모듈만 참조하면 브라우저 분기를 신경 쓸 필요가 없습니다.
+- **현재 중복**: 동일한 감지 IIFE가 `background.js`, `controls.js`, `popup.js`, `pages-list.js` 4개 파일에 반복되고, `minimap.js`는 content.js 전역에 암묵적으로 의존합니다.
+
+---
+
+##### `shared/logger.js` — 통합 디버그 로거
+
+- **책임**: `DEBUG_MODE` 플래그에 따라 로깅을 활성/비활성화하며, `[모듈명]` 접두사를 포함한 통일된 로그 포맷을 제공합니다. `DEBUG_MODE`를 단일 지점에서 관리하여 배포 시 한 번만 변경하면 됩니다.
+- **현재 중복**: `DEBUG_MODE` + `debugLog` 동일 패턴이 `background.js`, `popup.js`, `pages-list.js`, `minimap.js` 4개 파일에 반복 선언되고, `controls.js`는 content.js 전역의 `debugLog`에 암묵적으로 의존합니다.
+- **확장 가능성**: 향후 `reportError(context, error, { userMessageKey })` 패턴(4-4 참조)으로 확장할 기반이 됩니다.
+
+---
+
+##### `shared/tab-broadcast.js` — 탭 메시지 브로드캐스트 유틸
+
+- **책임**: "모든 탭에 메시지 전송" 및 "특정 URL의 탭에 메시지 전송" 패턴을 캡슐화합니다. content script가 주입되지 않은 탭에 대한 에러 무시 처리도 내부에서 일관되게 수행합니다.
+- **현재 중복**: `background.js` 내에서 `tabs.query → sendMessage` 루프가 최소 7회 이상 인라인으로 반복됩니다 — `notifyTabHighlightsRefresh`, `broadcastSettingsToTabs`, `addColor` 핸들러, `clearCustomColors` 핸들러, `storage.onChanged` 내 설정 처리(×3), `applyUserDeletionFromSync` 등.
+
+---
+
+##### `shared/i18n.js` — 다국어 메시지 유틸
+
+- **책임**: `browserAPI.i18n.getMessage` 호출을 래핑하여 키 누락 시 fallback 처리를 표준화하고, HTML 요소 자동 로컬라이징(`data-i18n`, `data-i18n-title`, `data-i18n-placeholder`)을 통합 제공합니다.
+- **현재 중복 및 불일치**: `getMessage` 함수가 `background.js`, `content.js`, `pages-list.js`에 각각 다른 시그니처로 존재합니다(특히 `pages-list.js`만 `defaultValue` 파라미터를 가짐). DOM 로컬라이징 로직도 `popup.js`의 `initializeI18n()`과 `pages-list.js`의 `localizeStaticElements()`가 유사하지만 지원 속성 범위가 다릅니다.
+
+---
+
+#### Content Script 모듈 적용 시 주의사항
+
+content script(`content.js`, `controls.js`, `minimap.js`)는 현재 Chrome Manifest V3 기준 ES Module을 지원하지 않습니다. 따라서 위 shared 모듈 적용 시 다음 제약을 고려해야 합니다:
+
+- **서비스워커(`background.js`)**: ES Module import 사용 가능 (manifest의 `"type": "module"` 설정).
+- **content script**: ES Module 미지원이므로, `content_scripts[].js` 배열 순서를 활용한 전역 변수 공유 또는 IIFE 래핑 등 별도 전략이 필요합니다.
+- **popup/pages-list 같은 HTML 페이지**: `<script type="module">` 태그로 직접 import 가능합니다.
 
 ---
 
@@ -288,3 +371,4 @@ registerMessageRouter();
 - 2026-02-16: 클린 코드 리뷰 초안 작성.
 - 2026-02-16: 서비스워커 모듈 분리 가능 여부 Q&A 추가.
 - 2026-02-16: PR 등록 누락 이슈 대응을 위해 문서 이력 섹션 추가.
+- 2026-02-17: 4-1, 4-2 권장 리팩터링 섹션에 모듈별 역할 상세 명세 추가 (함수/상수 매핑, export 인터페이스, 의존성, 구현 패턴 예시 포함).
