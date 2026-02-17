@@ -1,51 +1,59 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-i18n="pagesListTitle">Dashboard</title>
+    <title data-i18n="pagesListTitle">Marks: Dashboard</title>
     <style>
       :root {
-        --mark-accent: #007AFF;
-        --mark-accent-hover: #0056B3;
-        --mark-bg: #FFFFFF;
-        --mark-surface: #F5F5F7;
-        --mark-surface-hover: #E8E8ED;
-        --mark-text: #1D1D1F;
-        --mark-text-secondary: #86868B;
-        --mark-border: #D2D2D7;
+        /* Colors */
+        --mark-accent: #007aff;
+        --mark-accent-hover: #0056b3;
+        --mark-bg: #ffffff;
+        --mark-surface: #f5f5f7;
+        --mark-surface-hover: #e8e8ed;
+        --mark-text: #1d1d1f;
+        --mark-text-secondary: #86868b;
+        --mark-border: #d2d2d7;
+
+        /* Shadows */
         --mark-shadow-s: 0 2px 8px rgba(0, 0, 0, 0.05);
         --mark-shadow-m: 0 4px 16px rgba(0, 0, 0, 0.08);
+        --mark-shadow-l: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+        /* Radii */
+        --mark-radius-s: 4px;
         --mark-radius-m: 8px;
         --mark-radius-l: 12px;
+
+        /* Transitions */
         --mark-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      /* Apply initial dark theme to prevent flickering */
       @media (prefers-color-scheme: dark) {
         :root {
           --mark-bg: #121212;
-          --mark-surface: #1C1C1E;
-          --mark-surface-hover: #2C2C2E;
-          --mark-text: #F5F5F7;
-          --mark-text-secondary: #86868B;
-          --mark-border: #38383A;
+          --mark-surface: #1c1c1e;
+          --mark-surface-hover: #2c2c2e;
+          --mark-text: #f5f5f7;
+          --mark-text-secondary: #86868b;
+          --mark-border: #38383a;
         }
-      }
-      
-      /* Disable transitions on page load */
-      .preload * {
-        transition: none !important;
       }
 
       body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background-color: var(--mark-bg);
         color: var(--mark-text);
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 40px 20px;
+        margin: 0;
+        padding: 40px;
         line-height: 1.5;
+        max-width: 1000px;
+        margin: 0 auto;
+        transition: background-color 0.3s;
+      }
+
+      body.preload * {
+        transition: none !important;
       }
 
       h1 {
@@ -293,6 +301,7 @@
         background-color: var(--mark-surface);
         border-radius: var(--mark-radius-l);
         border: 2px dashed var(--mark-border);
+        display: none;
       }
 
       @media (max-width: 600px) {
@@ -308,6 +317,19 @@
         }
       }
 
+      /* Adjust button size in mobile portrait view */
+      @media (max-width: 500px) {
+        .btn {
+          min-width: 0;
+          padding: 6px 10px;
+          font-size: 13px;
+          flex: 1;
+        }
+        .page-card {
+          padding: 20px;
+        }
+      }
+
       @media (pointer: coarse) {
         .icon-btn {
           width: 48px;
@@ -316,9 +338,6 @@
         .btn {
           padding: 12px 20px;
           min-height: 44px;
-        }
-        .page-card {
-          padding: 20px;
         }
       }
     </style>
@@ -377,11 +396,11 @@
       <input type="file" id="import-file" accept="application/json" style="display:none;" />
     </div>
 
-    <div id="pages-container" class="pages-list">
-      <div id="no-pages" class="no-pages" data-i18n="noPagesFound">
-        No highlighted pages found.
-      </div>
+    <div id="no-pages" class="no-pages" data-i18n="noPagesFound">
+      No highlighted pages found.
     </div>
+
+    <div id="pages-container" class="pages-list"></div>
 
     <script src="pages-list.js"></script>
   </body>

@@ -1,266 +1,176 @@
-// Cross-browser compatibility - use chrome API in Chrome, browser API in Firefox
-const browserAPI = (() => {
-  if (typeof browser !== 'undefined') {
-    return browser;
-  }
-  if (typeof chrome !== 'undefined') {
-    return chrome;
-  }
-  throw new Error('Neither browser nor chrome API is available');
-})();
+document.addEventListener('DOMContentLoaded', () => {
+  // Global reference to the browser API
+  const browserAPI = typeof chrome !== 'undefined' ? chrome : (typeof browser !== 'undefined' ? browser : {});
 
-// Theme change detection and handling
-function initializeThemeWatcher() {
-  const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-  // Initial theme application
-  updateTheme(darkModeQuery.matches);
-
-  // Detect theme change
-  darkModeQuery.addEventListener('change', (e) => {
-    updateTheme(e.matches);
-  });
-}
-
-function updateTheme(isDark) {
-  document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  // Initialize theme watcher
-  initializeThemeWatcher();
-
-  // Activate transition after page load completion
-  setTimeout(() => {
-    document.body.classList.remove('preload');
-  }, 50);
-
-  const pagesContainer = document.getElementById('pages-container');
-  const noPages = document.getElementById('no-pages');
-
-  // Set debug mode - change to true during development
+  // Debug logging
   const DEBUG_MODE = false;
+  function debugLog(...args) {
+    if (DEBUG_MODE) {
+      console.log('[PagesList]', ...args);
+    }
+  }
 
-  // Debug log function
-  const debugLog = DEBUG_MODE ? console.log.bind(console) : () => { };
-
-  // Function to get messages for multi-language support
-  function getMessage(key, defaultValue = '', substitutions) {
-    if (typeof chrome !== 'undefined' && browserAPI.i18n) {
-      if (substitutions) {
-        return browserAPI.i18n.getMessage(key, substitutions) || defaultValue;
-      }
-      return browserAPI.i18n.getMessage(key) || defaultValue;
+  // Load i18n messages
+  function getMessage(key, defaultValue, substitutions) {
+    if (browserAPI.i18n && browserAPI.i18n.getMessage) {
+      const message = browserAPI.i18n.getMessage(key, substitutions);
+      return message || defaultValue;
     }
     return defaultValue;
   }
 
-  function isSafeOpenUrl(urlString) {
-    if (!urlString) return false;
-    try {
-      const url = new URL(urlString);
-      return url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'file:';
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // Change text of HTML elements to multi-language
+  // Localize static elements
   function localizeStaticElements() {
-    const elementsToLocalize = document.querySelectorAll('[data-i18n]');
-    elementsToLocalize.forEach(element => {
-      const key = element.getAttribute('data-i18n');
-      element.textContent = getMessage(key, element.textContent);
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      el.textContent = getMessage(key, el.textContent);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      el.placeholder = getMessage(key, el.placeholder);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const key = el.getAttribute('data-i18n-title');
+      el.title = getMessage(key, el.title);
     });
 
-    // Handle data-i18n-title attributes
-    const elementsWithTitle = document.querySelectorAll('[data-i18n-title]');
-    elementsWithTitle.forEach(element => {
-      const key = element.getAttribute('data-i18n-title');
-      element.title = getMessage(key, element.title);
-    });
-
-    // Handle data-i18n-placeholder attributes
-    const elementsWithPlaceholder = document.querySelectorAll('[data-i18n-placeholder]');
-    elementsWithPlaceholder.forEach(element => {
-      const key = element.getAttribute('data-i18n-placeholder');
-      element.placeholder = getMessage(key, element.placeholder);
-    });
+    // Remove preload class to enable transitions after localization
+    setTimeout(() => {
+      document.body.classList.remove('preload');
+    }, 100);
   }
 
-  // Load all highlighted pages data
+  // Helper to validate if a URL is safe to open (prevent script injection)
+  function isSafeOpenUrl(url) {
+    if (!url) return false;
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.startsWith('http://') ||
+           lowerUrl.startsWith('https://') ||
+           lowerUrl.startsWith('file://') ||
+           lowerUrl.startsWith('ftp://');
+  }
+
+  // Load all highlighted pages from storage
   function loadAllHighlightedPages() {
     browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
       if (response && response.success) {
-        debugLog('Received all highlighted pages from background:', response.pages);
-        displayPages(response.pages);
+        allPages = response.pages;
+        sortAndDisplayPages();
       } else {
         debugLog('Error loading highlighted pages:', response);
-        displayPages([]);
       }
     });
   }
 
-  // Search functionality
-  function filterPages(searchTerm) {
-    if (!searchTerm.trim()) {
-      filteredPages = [...allPages];
-    } else {
-      const term = searchTerm.toLowerCase();
-      filteredPages = allPages.filter(page => {
-        // Search in page title
-        const titleMatch = (page.title || '').toLowerCase().includes(term);
-
-        // Search in highlight text
-        const highlightMatch = page.highlights && page.highlights.some(group =>
-          group.text && group.text.toLowerCase().includes(term)
-        );
-
-        return titleMatch || highlightMatch;
-      });
-    }
-
+  // Filter pages based on search input
+  function filterPages(query) {
+    const lowerQuery = query.toLowerCase();
+    filteredPages = allPages.filter(page => {
+      const titleMatch = page.title && page.title.toLowerCase().includes(lowerQuery);
+      const urlMatch = page.url && page.url.toLowerCase().includes(lowerQuery);
+      const highlightMatch = page.highlights && page.highlights.some(h =>
+        h.text && h.text.toLowerCase().includes(lowerQuery)
+      );
+      return titleMatch || urlMatch || highlightMatch;
+    });
     sortAndDisplayPages();
-  }
-
-  // Sort functionality
-  function sortPages() {
-    if (currentSortMode === 'timeDesc') {
-      filteredPages.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
-    } else {
-      filteredPages.sort((a, b) => new Date(a.lastUpdated) - new Date(b.lastUpdated));
-    }
   }
 
   // Sort and display pages
   function sortAndDisplayPages() {
-    sortPages();
-    displayFilteredPages(filteredPages);
+    const pagesToSort = filteredPages.length > 0 || (document.getElementById('search-input') && document.getElementById('search-input').value) ? filteredPages : allPages;
+
+    pagesToSort.sort((a, b) => {
+      const timeA = new Date(a.lastUpdated || 0).getTime();
+      const timeB = new Date(b.lastUpdated || 0).getTime();
+      return currentSortMode === 'timeDesc' ? timeB - timeA : timeA - timeB;
+    });
+
+    displayPages(pagesToSort);
   }
 
-  // Display page list
+  // Display pages in the UI
   function displayPages(pages) {
-    allPages = [...pages];
-    filteredPages = [...pages];
-    sortAndDisplayPages();
-  }
+    const pagesContainer = document.getElementById('pages-container');
+    const noPages = document.getElementById('no-pages');
 
-  // Display filtered pages
-  function displayFilteredPages(pages) {
     if (pages.length > 0) {
-      noPages.style.display = 'none';
+      if (noPages) noPages.style.display = 'none';
       pagesContainer.innerHTML = '';
 
       pages.forEach(page => {
         const pageCard = document.createElement('div');
         pageCard.className = 'page-card';
-        pageCard.dataset.url = page.url;
 
-        // Use saved title or try to extract title from URL
-        let pageTitle = page.title || getMessage('noTitle', '(No title)');
-        if (!pageTitle || pageTitle === '' || pageTitle === getMessage('noTitle', '(No title)')) {
-          try {
-            const urlObj = new URL(page.url);
-            pageTitle = urlObj.hostname + urlObj.pathname;
-          } catch (e) {
-            pageTitle = page.url;
-          }
-        }
-
-        // Format last updated date
-        let lastUpdated = getMessage('unknown', 'Unknown');
-        if (page.lastUpdated) {
-          try {
-            const date = new Date(page.lastUpdated);
-            const locale = browserAPI.i18n.getUILanguage ? browserAPI.i18n.getUILanguage() : 'en';
-            lastUpdated = date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
-          } catch (e) {
-            lastUpdated = page.lastUpdated;
-          }
-        }
-
-        // Page Header
-        const pageHeader = document.createElement('div');
-        pageHeader.className = 'page-header';
-
-        const favicon = document.createElement('img');
-        favicon.className = 'page-favicon';
+        // Get domain for favicon
+        let domain = '';
         try {
-          favicon.src = `https://www.google.com/s2/favicons?domain=${new URL(page.url).hostname}&sz=32`;
+          if (page.url.startsWith('file://')) {
+            domain = 'Local File';
+          } else {
+            domain = new URL(page.url).hostname;
+          }
         } catch (e) {
-          favicon.src = 'images/icon16.png';
+          domain = page.url;
         }
-        favicon.onerror = () => { favicon.src = 'images/icon16.png'; };
 
-        const titleGroup = document.createElement('div');
-        titleGroup.className = 'page-title-group';
+        const lastUpdatedDate = new Date(page.lastUpdated).toLocaleDateString(undefined, {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
 
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'page-title';
-        titleDiv.textContent = pageTitle;
+        // Use first highlight as preview if available
+        const previewText = page.highlights && page.highlights.length > 0
+          ? page.highlights[0].text
+          : 'No preview available';
 
-        const urlDiv = document.createElement('div');
-        urlDiv.className = 'page-url';
-        urlDiv.textContent = page.url;
-
-        titleGroup.appendChild(titleDiv);
-        titleGroup.appendChild(urlDiv);
-
-        const badge = document.createElement('div');
-        badge.className = 'highlight-badge';
-        badge.textContent = page.highlightCount;
-
-        pageHeader.appendChild(favicon);
-        pageHeader.appendChild(titleGroup);
-        pageHeader.appendChild(badge);
-
-        // Preview (most recent or first highlight)
-        const previewDiv = document.createElement('div');
-        previewDiv.className = 'page-preview';
-        const latestHighlight = page.highlights[0]?.text || '';
-        previewDiv.textContent = latestHighlight || getMessage('noHighlights', 'No text content.');
-
-        // Page Footer
-        const pageFooter = document.createElement('div');
-        pageFooter.className = 'page-footer';
-
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'page-meta';
-        metaDiv.textContent = lastUpdated;
-
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'page-actions';
-
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'btn btn-view';
-        viewBtn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <line x1="10" y1="14" x2="21" y2="3"></line>
-          </svg>
-          ${getMessage('openPage', 'Open')}
+        pageCard.innerHTML = `
+          <div class="page-header">
+            <img class="page-favicon" src="https://www.google.com/s2/favicons?sz=64&domain=${domain}" onerror="this.src='images/icon48.png'">
+            <div class="page-title-group">
+              <div class="page-title" title="${page.title || 'Untitled'}">${page.title || 'Untitled'}</div>
+              <div class="page-url" title="${page.url}">${page.url}</div>
+            </div>
+            <div class="highlight-badge">${page.highlights ? page.highlights.length : 0}</div>
+          </div>
+          <div class="page-preview">${previewText}</div>
+          <div class="page-footer">
+            <div class="page-meta">${lastUpdatedDate}</div>
+            <div class="page-actions">
+              <button class="btn btn-delete" title="${getMessage('delete', 'Delete')}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+              <button class="btn btn-view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span data-i18n="openPage">Open</span>
+              </button>
+            </div>
+          </div>
         `;
-        actionsDiv.appendChild(viewBtn);
 
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn btn-delete';
-        deleteBtn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-        `;
-        actionsDiv.appendChild(deleteBtn);
-
-        pageFooter.appendChild(metaDiv);
-        pageFooter.appendChild(actionsDiv);
-
-        pageCard.appendChild(pageHeader);
-        pageCard.appendChild(previewDiv);
-        pageCard.appendChild(pageFooter);
+        // Localize "Open" button text immediately since it was added via innerHTML
+        const openSpan = pageCard.querySelector('[data-i18n="openPage"]');
+        if (openSpan) openSpan.textContent = getMessage('openPage', 'Open');
 
         pagesContainer.appendChild(pageCard);
+
+        const viewBtn = pageCard.querySelector('.btn-view');
+        const deleteBtn = pageCard.querySelector('.btn-delete');
+
+        // Sort highlights within the page by their position (from origin/main)
+        if (page.highlights && page.highlights.length > 0) {
+          page.highlights.sort((a, b) => {
+            const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
+            const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
+            return posA - posB;
+          });
+        }
 
         // Open page button event
         viewBtn.addEventListener('click', function (e) {
@@ -283,9 +193,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       });
     } else {
-      noPages.style.display = 'block';
+      if (noPages) noPages.style.display = 'block';
       pagesContainer.innerHTML = '';
-      pagesContainer.appendChild(noPages);
     }
   }
 
@@ -329,7 +238,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const exportAllBtn = document.getElementById('export-all-btn');
   const importBtn = document.getElementById('import-btn');
   const importFileInput = document.getElementById('import-file');
-  const searchToggleBtn = document.getElementById('search-toggle-btn');
   const searchInput = document.getElementById('search-input');
   const sortBtn = document.getElementById('sort-btn');
 
@@ -407,32 +315,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Search toggle event
-  if (searchToggleBtn && searchInput) {
-    searchToggleBtn.addEventListener('click', function () {
-      const isVisible = searchInput.style.display !== 'none';
-      if (isVisible) {
-        searchInput.style.display = 'none';
-        searchInput.value = '';
-        filterPages(''); // Reset filter
-      } else {
-        searchInput.style.display = 'block';
-        searchInput.focus();
-      }
-    });
-
-    // Search input event
+  // Search input event
+  if (searchInput) {
     searchInput.addEventListener('input', function () {
       filterPages(this.value);
-    });
-
-    // Handle escape key to close search
-    searchInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        searchInput.style.display = 'none';
-        searchInput.value = '';
-        filterPages('');
-      }
     });
   }
 
@@ -443,17 +329,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Update button appearance and tooltip
       if (currentSortMode === 'timeAsc') {
-        sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
-          <path d="M3 6h6v2H3V6zm0 5h12v2H3v-2zm0 5h18v2H3v-2z"/>
+        sortBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="12" x2="15" y2="12"></line>
+          <line x1="3" y1="6" x2="9" y2="6"></line>
         </svg>`;
         sortBtn.title = getMessage('sortOldestFirst', 'Sort by time (oldest first)');
-        sortBtn.classList.add('sort-active');
       } else {
-        sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
-          <path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h6v2H3v-2z"/>
+        sortBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="15" y2="12"></line>
+          <line x1="3" y1="18" x2="9" y2="18"></line>
         </svg>`;
         sortBtn.title = getMessage('sortNewestFirst', 'Sort by time (newest first)');
-        sortBtn.classList.remove('sort-active');
       }
 
       sortAndDisplayPages();

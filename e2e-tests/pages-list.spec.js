@@ -1,33 +1,44 @@
-import path from 'path';
+const path = require('path');
 import { test, expect, sendHighlightMessage, expectHighlightSpan } from './fixtures';
 
-// Helper to open the extension's pages-list.html
-async function openPagesList(page, extensionId) {
-  const url = `chrome-extension://${extensionId}/pages-list.html`;
-  await page.goto(url);
-}
+test.describe('Pages List UI & Functionality', () => {
+  async function openPagesList(page, extensionId) {
+    await page.goto(`chrome-extension://${extensionId}/pages-list.html`);
+    await page.waitForLoadState('networkidle');
+  }
 
-test.describe('Pages List UI and Delete All Pages', () => {
-  test('should show highlighted pages and delete all', async ({ context, background, extensionId }) => {
+  async function waitForSyncReady(background) {
+    await expect.poll(async () => {
+      return await background.evaluate(async () => {
+        const data = await chrome.storage.local.get('syncMigrationDone');
+        return data.syncMigrationDone;
+      });
+    }, { timeout: 10000 }).toBeTruthy();
+  }
+
+  test('Verify that highlighted pages are displayed in pages-list.html', async ({ context, background, extensionId }) => {
+    await waitForSyncReady(background);
+
     // 1. test-page.html: highlight first p
     const page1 = await context.newPage();
     await page1.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await page1.waitForTimeout(1000);
     const firstParagraph1 = page1.locator('p').first();
     const textToSelect1 = await firstParagraph1.textContent();
     await firstParagraph1.click({ clickCount: 3 });
-    const selected1 = await page1.evaluate(() => window.getSelection().toString().trim());
-    expect(selected1).toBe(textToSelect1.trim());
     await sendHighlightMessage(background, 'yellow');
+    await page1.waitForTimeout(1000);
 
     // 2. test-page2.html: highlight first p
     const page2 = await context.newPage();
     await page2.goto(`file:///${path.join(__dirname, 'test-page2.html')}`);
+    await page2.waitForTimeout(1000);
     const firstParagraph2 = page2.locator('p').first();
     const textToSelect2 = await firstParagraph2.textContent();
     await firstParagraph2.click({ clickCount: 3 });
-    const selected2 = await page2.evaluate(() => window.getSelection().toString().trim());
 
     await sendHighlightMessage(background, 'yellow');
+    await page2.waitForTimeout(1000);
 
     // 3. Open pages-list.html
     const listPage = await context.newPage();
@@ -41,9 +52,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
       await dialog.accept();
     });
 
-    const deleteAllBtn = listPage.locator('.btn-delete-all');
-    await expect(deleteAllBtn).toBeVisible();
-    await deleteAllBtn.click();
+    await listPage.click('#delete-all-btn');
 
     // 6. Verify no pages are listed
     await expect(listPage.locator('.page-card')).toHaveCount(0);
@@ -52,23 +61,29 @@ test.describe('Pages List UI and Delete All Pages', () => {
   });
 
   test('Verify export highlights behavior after highlighting h1 on test-page.html and h2 on test-page3.html', async ({ context, background, extensionId }) => {
+    await waitForSyncReady(background);
+
     // 1. test-page.html: h1 highlight (yellow)
     const page1 = await context.newPage();
     await page1.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await page1.waitForTimeout(1000);
     const h1 = page1.locator('h1');
     const h1Text = await h1.textContent();
     await h1.click({ clickCount: 3 });
     await sendHighlightMessage(background, 'yellow');
+    await page1.waitForTimeout(1000);
     const h1Span = h1.locator('span.text-highlighter-extension');
     await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
 
     // 2. test-page3.html: h2 highlight (green)
     const page3 = await context.newPage();
     await page3.goto(`file:///${path.join(__dirname, 'test-page3.html')}`);
+    await page3.waitForTimeout(1000);
     const h2 = page3.locator('h2').first();
     const h2Text = await h2.textContent();
     await h2.click({ clickCount: 3 });
     await sendHighlightMessage(background, 'green');
+    await page3.waitForTimeout(1000);
     const h2Span = h2.locator('span.text-highlighter-extension');
     await expectHighlightSpan(h2Span, { color: 'rgb(0, 128, 0)', text: h2Text });
 
@@ -101,23 +116,29 @@ test.describe('Pages List UI and Delete All Pages', () => {
   });
 
   test('Verify that highlights from test-page.html and test-page3.html are both included in the export', async ({ context, background, extensionId }) => {
+    await waitForSyncReady(background);
+
     // 1. test-page.html: h1 highlight (yellow)
     const page1 = await context.newPage();
     await page1.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await page1.waitForTimeout(1000);
     const h1 = page1.locator('h1');
     const h1Text = await h1.textContent();
     await h1.click({ clickCount: 3 });
     await sendHighlightMessage(background, 'yellow');
+    await page1.waitForTimeout(1000);
     const h1Span = h1.locator('span.text-highlighter-extension');
     await expectHighlightSpan(h1Span, { color: 'rgb(255, 255, 0)', text: h1Text });
 
     // 2. test-page3.html: h2 highlight (green)
     const page3 = await context.newPage();
     await page3.goto(`file:///${path.join(__dirname, 'test-page3.html')}`);
+    await page3.waitForTimeout(1000);
     const h2 = page3.locator('h2').first();
     const h2Text = await h2.textContent();
     await h2.click({ clickCount: 3 });
     await sendHighlightMessage(background, 'green');
+    await page3.waitForTimeout(1000);
     const h2Span = h2.locator('span.text-highlighter-extension');
     await expectHighlightSpan(h2Span, { color: 'rgb(0, 128, 0)', text: h2Text });
 

@@ -1,11 +1,11 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-i18n="popupTitle">Text Highlighter</title>
+    <meta charset="UTF-8">
+    <title data-i18n="popupTitle">Marks: Text Highlighter</title>
     <style>
       :root {
+        /* Colors */
         --mark-accent: #007AFF;
         --mark-accent-hover: #0056B3;
         --mark-bg: #FFFFFF;
@@ -14,38 +14,51 @@
         --mark-text: #1D1D1F;
         --mark-text-secondary: #86868B;
         --mark-border: #D2D2D7;
+
+        /* Shadows */
         --mark-shadow-s: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --mark-shadow-m: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+        /* Radii */
+        --mark-radius-s: 4px;
         --mark-radius-m: 8px;
         --mark-radius-l: 12px;
+
+        /* Transitions */
+        --mark-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      /* Apply initial dark theme to prevent flickering */
       @media (prefers-color-scheme: dark) {
         :root {
-          --mark-bg: #121212;
-          --mark-surface: #1C1C1E;
-          --mark-surface-hover: #2C2C2E;
+          --mark-bg: #1C1C1E;
+          --mark-surface: #2C2C2E;
+          --mark-surface-hover: #3A3A3C;
           --mark-text: #F5F5F7;
-          --mark-text-secondary: #86868B;
+          --mark-text-secondary: #8E8E93;
           --mark-border: #38383A;
         }
       }
 
       body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         width: 320px;
-        padding: 0;
         margin: 0;
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        padding: 0;
         background-color: var(--mark-bg);
         color: var(--mark-text);
         overflow-x: hidden;
+        transition: background-color 0.3s;
+      }
+
+      body.preload * {
+        transition: none !important;
       }
 
       .header {
+        padding: 16px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px;
         border-bottom: 1px solid var(--mark-border);
       }
 
