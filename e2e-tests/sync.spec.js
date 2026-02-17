@@ -313,6 +313,7 @@ test.describe('Sync scenarios', () => {
     }, { url, highlights });
 
     await page.goto(url);
+    await waitForSyncReady(background);
 
     // Initially minimap should be visible (default, and we have highlights)
     const minimap = page.locator('.text-highlighter-minimap');
@@ -335,6 +336,7 @@ test.describe('Sync scenarios', () => {
 
   test('M-9: Custom colors propagation', async ({ page, background }) => {
     await page.goto(testFileUrl('test-page.html'));
+    await waitForSyncReady(background);
 
     // Simulate another device adding a custom color
     const customColor = { id: 'custom_123', nameKey: 'customColor', colorNumber: 1, color: '#123456' };
