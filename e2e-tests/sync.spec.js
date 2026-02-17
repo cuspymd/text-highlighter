@@ -29,22 +29,15 @@ async function waitInBackground(background, ms) {
 }
 
 async function waitForSyncReady(background) {
-  await background.evaluate(async () => {
-    await new Promise((resolve, reject) => {
-      const startTime = Date.now();
-      const check = async () => {
-        const result = await chrome.storage.local.get('syncMigrationDone');
-        if (result.syncMigrationDone) {
-          resolve();
-        } else if (Date.now() - startTime > 10000) {
-          reject(new Error('Timeout waiting for syncMigrationDone'));
-        } else {
-          setTimeout(check, 100);
-        }
-      };
-      check();
+  await expect.poll(async () => {
+    return await background.evaluate(async () => {
+      const result = await chrome.storage.local.get('syncMigrationDone');
+      return !!result.syncMigrationDone;
     });
-  });
+  }, {
+    message: 'Wait for sync migration to complete',
+    timeout: 10000,
+  }).toBe(true);
 }
 
 function testFileUrl(fileName) {
@@ -52,6 +45,10 @@ function testFileUrl(fileName) {
 }
 
 test.describe('Sync scenarios', () => {
+  test.beforeEach(async ({ background }) => {
+    await waitForSyncReady(background);
+  });
+
   test('sync key removal arrives before tombstone meta update -> eventually treated as user deletion', async ({ background }) => {
     const url = testFileUrl('test-page.html');
     const syncKey = urlToSyncKey(url);
@@ -316,7 +313,6 @@ test.describe('Sync scenarios', () => {
     }, { url, highlights });
 
     await page.goto(url);
-    await waitForSyncReady(background);
 
     // Initially minimap should be visible (default, and we have highlights)
     const minimap = page.locator('.text-highlighter-minimap');
@@ -339,7 +335,6 @@ test.describe('Sync scenarios', () => {
 
   test('M-9: Custom colors propagation', async ({ page, background }) => {
     await page.goto(testFileUrl('test-page.html'));
-    await waitForSyncReady(background);
 
     // Simulate another device adding a custom color
     const customColor = { id: 'custom_123', nameKey: 'customColor', colorNumber: 1, color: '#123456' };

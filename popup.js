@@ -62,14 +62,14 @@ function initializeI18n() {
   });
 }
 
-// 테마 변경 감지 및 처리
+// Theme change detection and handling
 function initializeThemeWatcher() {
   const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
   
-  // 초기 테마 적용
+  // Initial theme application
   updateTheme(darkModeQuery.matches);
   
-  // 테마 변경 감지
+  // Detect theme change
   darkModeQuery.addEventListener('change', (e) => {
     updateTheme(e.matches);
   });
@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const result = await browserAPI.storage.local.get([currentUrl]);
     let highlights = result[currentUrl] || [];
 
-    // 그룹 구조이므로 position은 대표 span의 position 사용
+    // Since it's a group structure, use the position of the representative span
     highlights.sort((a, b) => {
       const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
       const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     debugLog('Loaded highlights for popup (sorted by position):', highlights);
 
-    // Display highlight list (그룹 단위)
+    // Display highlight list (group basis)
     if (highlights.length > 0) {
       noHighlights.style.display = 'none';
       highlightsContainer.innerHTML = '';
@@ -351,12 +351,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     debugLog('Selection controls visibility saved:', isVisible);
   });
 
-  // Delete highlight (그룹 단위)
+  // Delete highlight (group basis)
   async function deleteHighlight(groupId, url) {
     const response = await browserAPI.runtime.sendMessage({
       action: 'deleteHighlight',
       url: url,
-      groupId: groupId, // groupId로 삭제
+      groupId: groupId, // Delete by groupId
       notifyRefresh: true
     });
     if (response && response.success) {

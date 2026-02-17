@@ -21,6 +21,7 @@
         --mark-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
+      /* Apply initial dark theme to prevent flickering */
       @media (prefers-color-scheme: dark) {
         :root {
           --mark-bg: #121212;
@@ -32,7 +33,7 @@
         }
       }
       
-      /* 페이지 로드 시 transition 비활성화 */
+      /* Disable transitions on page load */
       .preload * {
         transition: none !important;
       }

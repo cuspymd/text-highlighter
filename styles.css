@@ -147,6 +147,7 @@
   background-color: var(--mark-bg);
   border: 1px solid var(--mark-border);
   color: var(--mark-text-secondary);
+  position: relative;
 }
 
 .add-color-button svg {
@@ -380,6 +381,20 @@
   width: 32px !important;
   height: 32px !important;
   opacity: 0.9 !important;
+  /* CSS reset */
+  box-sizing: border-box !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  font-weight: normal !important;
+  line-height: normal !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  margin: 0 !important;
+  outline: none !important;
+  vertical-align: baseline !important;
 }
 
 .text-highlighter-selection-icon:hover {

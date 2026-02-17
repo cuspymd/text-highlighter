@@ -60,7 +60,7 @@ class MinimapManager {
   updateMarkers() {
     if (!this.container) return;
     this.clearMarkers();
-    // 그룹별로 대표 span만 마커로 표시
+    // Display only the representative span of each group as a marker
     const highlightElements = document.querySelectorAll('.text-highlighter-extension');
     if (highlightElements.length === 0) {
       this.container.style.display = 'none';
@@ -82,7 +82,7 @@ class MinimapManager {
     if (minimapHeight === 0) {
       minimapHeight = this.defaultMinimapHeight;
     }
-    // groupId별로 대표 span만 마커로 표시
+    // Display only the representative span of each groupId as a marker
     const groupMap = new Map();
     highlightElements.forEach(element => {
       const groupId = element.dataset.groupId;

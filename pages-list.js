@@ -9,14 +9,14 @@ const browserAPI = (() => {
   throw new Error('Neither browser nor chrome API is available');
 })();
 
-// 테마 변경 감지 및 처리
+// Theme change detection and handling
 function initializeThemeWatcher() {
   const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-  // 초기 테마 적용
+  // Initial theme application
   updateTheme(darkModeQuery.matches);
 
-  // 테마 변경 감지
+  // Detect theme change
   darkModeQuery.addEventListener('change', (e) => {
     updateTheme(e.matches);
   });
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initialize theme watcher
   initializeThemeWatcher();
 
-  // 페이지 로드 완료 후 transition 활성화
+  // Activate transition after page load completion
   setTimeout(() => {
     document.body.classList.remove('preload');
   }, 50);
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initialization
   localizeStaticElements();  // Localize static elements
 
-  // 버튼 DOM 요소 가져오기 (이제 HTML에서 직접 생성)
+  // Get button DOM elements (now created directly in HTML)
   const deleteAllBtn = document.getElementById('delete-all-btn');
   const refreshBtn = document.getElementById('refresh-btn');
   const exportAllBtn = document.getElementById('export-all-btn');
@@ -486,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Delete All 버튼 이벤트 연결
+  // Connect Delete All button events
   if (deleteAllBtn) {
     deleteAllBtn.addEventListener('click', function () {
       const confirmMessage = getMessage('confirmDeleteAllPages', 'Delete ALL highlighted pages?');
@@ -496,14 +496,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Refresh 버튼 이벤트 연결
+  // Connect Refresh button events
   if (refreshBtn) {
     refreshBtn.addEventListener('click', function () {
       loadAllHighlightedPages();
     });
   }
 
-  // 메시지로 페이지 목록 새로고침
+  // Refresh page list via message
   browserAPI.runtime.onMessage.addListener(function (request) {
     if (request.action === 'refreshPagesList') {
       loadAllHighlightedPages();
