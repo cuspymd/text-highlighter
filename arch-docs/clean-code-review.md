@@ -88,190 +88,45 @@
 
 #### 분리 모듈별 역할 상세 명세
 
-아래는 `background.js`에서 추출할 각 모듈의 구체적인 책임, 포함 대상 함수/상수, 그리고 외부 인터페이스를 정리한 것입니다. 실제 구현 시 이 명세를 기준으로 분리합니다.
+아래는 `background.js`에서 추출할 각 모듈의 책임 범위를 정리한 것입니다.
 
 ##### `services/sync-service.js` — 동기화 엔진
 
-**책임**: 로컬 ↔ sync 스토리지 간 하이라이트 데이터의 동기화, 충돌 해소, 용량 관리, tombstone 수명 관리를 전담합니다.
-
-**이관 대상 (현재 `background.js` 소속)**:
-| 구분 | 이름 | 설명 |
-|------|------|------|
-| 상수 | `SYNC_SETTINGS_KEY`, `SYNC_HIGHLIGHT_PREFIX`, `SYNC_META_KEY` | Sync 스토리지 키 접두사/식별자 |
-| 상수 | `SYNC_QUOTA_BYTES_PER_ITEM`, `SYNC_HIGHLIGHT_BUDGET` | 아이템별 쿼터 및 전체 예산 |
-| 상수 | `TOMBSTONE_RETENTION_MS` | Tombstone 보존 기간 (30일) |
-| 상수 | `SYNC_REMOVAL_RECHECK_DELAY_MS`, `SYNC_REMOVAL_MAX_RETRIES` | 삭제 확인 재시도 정책 |
-| 상태 | `pendingSyncRemovalResolutions` (Map) | 삭제 의도 확인 대기 큐 |
-| 함수 | `cleanupTombstones(obj)` | 만료된 tombstone 정리 (순수 함수) |
-| 함수 | `normalizeSyncMeta(rawMeta)` | sync_meta 객체 정규화 (순수 함수) |
-| 함수 | `urlToSyncKey(url)` | URL → sync 스토리지 키 해시 변환 (순수 함수) |
-| 함수 | `mergeHighlights(localData, remoteData)` | 양방향 하이라이트 병합 — 충돌 해소 Rule 4.1 (순수 함수) |
-| 함수 | `getSyncMeta()` | sync_meta 읽기 + 정규화 |
-| 함수 | `saveSettingsToSync()` | 설정(customColors, minimapVisible 등)을 sync에 저장 |
-| 함수 | `syncSaveHighlights(url, highlights, title, lastUpdated)` | 페이지 하이라이트를 sync에 머지 후 저장 (용량 관리 포함) |
-| 함수 | `syncRemoveHighlights(url)` | 페이지 하이라이트를 sync에서 제거 + tombstone 기록 |
-| 함수 | `migrateLocalToSync()` | 최초 설치 시 로컬 → sync 마이그레이션 (Rule S-9, M-1) |
-| 리스너 로직 | `storage.onChanged` 핸들러 내 sync 영역 처리 | 다른 기기에서 변경된 하이라이트/설정 수신 및 로컬 반영 |
-
-**Export 인터페이스**:
-```js
-export {
-  // 순수 함수 (단위 테스트 대상)
-  cleanupTombstones, normalizeSyncMeta, urlToSyncKey, mergeHighlights,
-  // 비동기 서비스 함수
-  getSyncMeta, saveSettingsToSync,
-  syncSaveHighlights, syncRemoveHighlights, migrateLocalToSync,
-  // 리스너 등록 함수
-  registerSyncStorageListener
-};
-```
-
-**의존성**: `shared/browser-api.js`, `shared/logger.js`
+- **책임**: 로컬 ↔ sync 스토리지 간 하이라이트 데이터의 동기화, 충돌 해소, 용량 관리, tombstone 수명 관리를 전담합니다.
+- **범위**: sync 관련 상수(키 접두사, 쿼터, tombstone 보존 기간, 재시도 정책) 및 sync 전용 상태(삭제 의도 확인 대기 큐 등)를 소유합니다. tombstone 정리, sync_meta 정규화, URL→sync 키 변환, 양방향 하이라이트 병합 같은 **순수 함수**와, sync 스토리지 읽기/쓰기/삭제, 로컬→sync 마이그레이션 같은 **비동기 서비스 함수**, 그리고 다른 기기에서의 변경을 수신하는 `storage.onChanged` 리스너 로직을 포함합니다.
+- **의존성**: `shared/browser-api.js`, `shared/logger.js`
 
 ---
 
 ##### `services/settings-service.js` — 설정 및 색상 관리
 
-**책임**: 기본/커스텀 색상 목록 관리, 사용자 설정(미니맵 가시성, 선택 컨트롤 가시성) CRUD, 설정 변경 시 전체 탭 브로드캐스트를 전담합니다.
-
-**이관 대상 (현재 `background.js` 소속)**:
-| 구분 | 이름 | 설명 |
-|------|------|------|
-| 상수 | `COLORS` | 기본 5색 정의 배열 |
-| 상태 | `currentColors` | 기본색 + 커스텀색이 합쳐진 런타임 색상 목록 |
-| 상태 | `platformInfo`, `isMobile()` | 플랫폼 감지 (Firefox Android 대응) |
-| 함수 | `initializePlatform()` | `runtime.getPlatformInfo` 호출 후 `platformInfo` 설정 |
-| 함수 | `loadCustomColors()` | sync → local 순으로 커스텀 색상 로드 후 `currentColors`에 병합 |
-| 함수 | `broadcastSettingsToTabs(changedSettings)` | 변경된 설정을 모든 열린 탭에 메시지로 전파 |
-| 메시지 핸들러 로직 | `addColor` 처리 | 새 커스텀 색상 추가 → storage 저장 → 컨텍스트 메뉴 갱신 → 전체 탭 브로드캐스트 |
-| 메시지 핸들러 로직 | `clearCustomColors` 처리 | 모든 커스텀 색상 초기화 → storage 갱신 → 컨텍스트 메뉴 갱신 → 전체 탭 브로드캐스트 |
-| 메시지 핸들러 로직 | `saveSettings` 처리 | 미니맵/선택 컨트롤 가시성 저장 → 변경 탭 브로드캐스트 → sync 저장 |
-
-**Export 인터페이스**:
-```js
-export {
-  COLORS,
-  getCurrentColors,       // () => currentColors (읽기 전용 접근자)
-  initializePlatform, isMobile,
-  loadCustomColors,
-  broadcastSettingsToTabs,
-  // 메시지 핸들러에서 호출할 서비스 함수
-  handleAddColor,         // (colorValue) => { colors }
-  handleClearCustomColors,
-  handleSaveSettings      // (settingsPayload) => { success }
-};
-```
-
-**의존성**: `shared/browser-api.js`, `shared/logger.js`, `shared/tab-broadcast.js`, `services/sync-service.js` (saveSettingsToSync 호출)
+- **책임**: 기본/커스텀 색상 목록 관리, 사용자 설정(미니맵 가시성, 선택 컨트롤 가시성) CRUD, 설정 변경 시 전체 탭 브로드캐스트를 전담합니다.
+- **범위**: 기본 색상 정의, 런타임 색상 목록 상태, 플랫폼 감지(Firefox Android 대응)를 소유합니다. 플랫폼 초기화, 커스텀 색상 로드(sync → local 순), 설정 변경 브로드캐스트, 그리고 색상 추가/초기화/설정 저장에 대한 서비스 로직을 포함합니다.
+- **의존성**: `shared/browser-api.js`, `shared/logger.js`, `shared/tab-broadcast.js`, `services/sync-service.js`
 
 ---
 
 ##### `handlers/message-router.js` — 메시지 라우팅 허브
 
-**책임**: `runtime.onMessage` 리스너를 등록하고, 수신된 `message.action`에 따라 적절한 서비스 함수로 **디스패치만** 수행합니다. 비즈니스 로직 자체를 포함하지 않습니다.
-
-**이관 대상 (현재 `background.js` 소속)**:
-| 구분 | 이름 | 설명 |
-|------|------|------|
-| 리스너 | `runtime.onMessage` 전체 핸들러 | 12개 액션을 if/else로 분기하는 현재 구조 |
-
-**구현 패턴** — 액션-핸들러 맵:
-```js
-import { handleGetColors, handleSaveSettings, ... } from '../services/settings-service.js';
-import { handleSaveHighlights, handleDeleteHighlight, ... } from './highlight-handlers.js';
-
-const handlers = {
-  getDebugMode:             (msg) => ({ debugMode: DEBUG_MODE }),
-  getPlatformInfo:          (msg) => ({ platform: platformInfo, isMobile: isMobile() }),
-  getColors:                (msg) => handleGetColors(),
-  getHighlights:            (msg) => handleGetHighlights(msg.url),
-  saveSettings:             (msg) => handleSaveSettings(msg),
-  saveHighlights:           (msg) => handleSaveHighlights(msg),
-  deleteHighlight:          (msg) => handleDeleteHighlight(msg),
-  clearAllHighlights:       (msg) => handleClearAllHighlights(msg),
-  addColor:                 (msg) => handleAddColor(msg.color),
-  clearCustomColors:        (msg) => handleClearCustomColors(),
-  getAllHighlightedPages:    (msg) => handleGetAllHighlightedPages(),
-  deleteAllHighlightedPages:(msg) => handleDeleteAllHighlightedPages()
-};
-
-export function registerMessageRouter() {
-  browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    const handler = handlers[message.action];
-    if (!handler) { sendResponse({ success: false, error: 'Unknown action' }); return true; }
-    handler(message, sender).then(sendResponse).catch(err =>
-      sendResponse({ success: false, error: err.message })
-    );
-    return true; // 비동기 응답 유지
-  });
-}
-```
-
-**핵심 원칙**:
-- 각 핸들러 함수는 서비스 계층에 위임만 하며, 직접 storage나 tabs API를 호출하지 않습니다.
-- 새로운 액션 추가 시 `handlers` 맵에 한 줄만 추가하면 되도록 합니다.
-- 에러 처리를 `catch` 한 곳에서 일관되게 수행합니다.
-
-**의존성**: `services/sync-service.js`, `services/settings-service.js`, `shared/browser-api.js`, `shared/logger.js`
+- **책임**: `runtime.onMessage` 리스너를 등록하고, 수신된 `message.action`에 따라 적절한 서비스 함수로 **디스패치만** 수행합니다. 비즈니스 로직 자체를 포함하지 않습니다.
+- **범위**: 현재 `background.js`에서 12개 액션을 if/else로 분기하는 메시지 핸들러 전체를 이관합니다. 액션-핸들러 맵 구조로 전환하여, 새로운 액션 추가 시 맵에 한 줄만 추가하면 되도록 합니다. 에러 처리를 한 곳에서 일관되게 수행합니다.
+- **의존성**: `services/sync-service.js`, `services/settings-service.js`, `shared/browser-api.js`, `shared/logger.js`
 
 ---
 
 ##### `ui/context-menu-service.js` — 컨텍스트 메뉴 & 단축키
 
-**책임**: 우클릭 컨텍스트 메뉴 생성/갱신, 키보드 단축키 변경 감지, 메뉴/단축키 클릭 시 content script로 하이라이트 명령 전달을 전담합니다.
-
-**이관 대상 (현재 `background.js` 소속)**:
-| 구분 | 이름 | 설명 |
-|------|------|------|
-| 상태 | `storedShortcuts` | 마지막으로 확인한 단축키 정보 캐시 |
-| 함수 | `getCurrentShortcuts()` | `commands.getAll()` → 단축키 맵 반환 |
-| 함수 | `createOrUpdateContextMenus()` | 전체 컨텍스트 메뉴 재생성 (모바일 제외) |
-| 리스너 | `contextMenus.onClicked` | 메뉴 클릭 → 해당 탭에 `highlight` 메시지 전송 |
-| 리스너 | `commands.onCommand` | 단축키 입력 → 활성 탭에 `highlight` 메시지 전송 |
-| 리스너 | `tabs.onActivated` | 탭 전환 시 단축키 변경 여부 확인 → 메뉴 갱신 |
-
-**Export 인터페이스**:
-```js
-export {
-  createOrUpdateContextMenus,
-  getCurrentShortcuts,
-  registerContextMenuListeners,  // onClicked + onCommand + onActivated 등록
-};
-```
-
-**의존성**: `services/settings-service.js` (getCurrentColors, isMobile), `shared/browser-api.js`, `shared/logger.js`, `shared/i18n.js` (getMessage)
+- **책임**: 우클릭 컨텍스트 메뉴 생성/갱신, 키보드 단축키 변경 감지, 메뉴/단축키 클릭 시 content script로 하이라이트 명령 전달을 전담합니다.
+- **범위**: 단축키 정보 캐시 상태를 소유합니다. 단축키 조회, 컨텍스트 메뉴 재생성(모바일 제외), 메뉴 클릭/단축키 입력/탭 전환 이벤트 리스너를 포함합니다.
+- **의존성**: `services/settings-service.js`, `shared/browser-api.js`, `shared/logger.js`, `shared/i18n.js`
 
 ---
 
 ##### `background.js` (엔트리 포인트) — 초기화 & 와이어링
 
-리팩터링 후 `background.js`는 **얇은 엔트리 파일**로만 유지합니다.
-
-```js
-// background.js (리팩터링 후)
-import { initializePlatform, loadCustomColors } from './services/settings-service.js';
-import { migrateLocalToSync, registerSyncStorageListener } from './services/sync-service.js';
-import { createOrUpdateContextMenus, registerContextMenuListeners } from './ui/context-menu-service.js';
-import { registerMessageRouter } from './handlers/message-router.js';
-
-// 1. 리스너 등록 (서비스워커 재시작 시에도 안전)
-registerMessageRouter();
-registerContextMenuListeners();
-registerSyncStorageListener();
-
-// 2. 비동기 초기화
-(async () => {
-  await initializePlatform();
-  await loadCustomColors();
-  await createOrUpdateContextMenus();
-  await migrateLocalToSync();
-})();
-```
-
-**핵심 원칙**:
-- 비즈니스 로직 없이 import + 초기화 호출만 수행합니다.
-- 전체 모듈 간 의존 관계를 한눈에 파악할 수 있습니다.
-- 리스너 등록은 최상위 레벨에서 동기적으로 수행하여 서비스워커 재시작 시 이벤트 누락을 방지합니다.
+- **책임**: 리팩터링 후 **얇은 엔트리 파일**로만 유지합니다. 비즈니스 로직 없이 각 모듈의 import와 초기화 호출만 수행합니다.
+- **범위**: 리스너 등록(메시지 라우터, 컨텍스트 메뉴, sync 스토리지)을 최상위 레벨에서 동기적으로 수행하고, 비동기 초기화(플랫폼 감지, 색상 로드, 메뉴 생성, 마이그레이션)를 순차적으로 실행합니다.
+- **핵심 원칙**: 전체 모듈 간 의존 관계를 한눈에 파악할 수 있어야 하며, 리스너 등록은 최상위 레벨에서 수행하여 서비스워커 재시작 시 이벤트 누락을 방지합니다.
 
 ---
 
@@ -292,230 +147,44 @@ registerSyncStorageListener();
 
 #### 공통 유틸 모듈별 역할 상세 명세
 
-아래는 현재 여러 파일에 중복된 코드를 추출하여 단일 모듈로 통합할 때의 구체적인 책임, 현재 중복 위치, 그리고 외부 인터페이스를 정리한 것입니다.
+아래는 현재 여러 파일에 중복된 코드를 추출하여 단일 모듈로 통합할 때의 책임 범위를 정리한 것입니다.
 
 ##### `shared/browser-api.js` — 브라우저 API 호환 레이어
 
-**책임**: Chrome/Firefox 런타임 API 객체를 감지하여 단일 `browserAPI` 참조를 제공합니다. 확장 프로그램 전체에서 이 모듈만 import하면 브라우저 분기를 신경 쓸 필요가 없습니다.
-
-**현재 중복 위치** (동일한 IIFE가 5곳에 반복):
-| 파일 | 라인 | 비고 |
-|------|------|------|
-| `background.js` | L10-18 | 서비스워커 |
-| `controls.js` | L1-10 | content script 컨텍스트 |
-| `popup.js` | L4-12 | 팝업 페이지 |
-| `pages-list.js` | L1-10 | 페이지 목록 |
-| `minimap.js` | — | 직접 사용하지 않으나 content.js 전역에 의존 |
-
-**모듈 구현**:
-```js
-// shared/browser-api.js
-const browserAPI = (() => {
-  if (typeof browser !== 'undefined') return browser;
-  if (typeof chrome !== 'undefined') return chrome;
-  throw new Error('Neither browser nor chrome API is available');
-})();
-
-export default browserAPI;
-```
-
-**사용 방식**:
-```js
-import browserAPI from '../shared/browser-api.js';
-```
-
-**주의사항**:
-- content script에서는 `manifest.json`의 `content_scripts[].js` 배열 순서를 활용하여 전역으로 주입하거나, ES Module이 지원되지 않는 컨텍스트에서는 별도 전략이 필요합니다 (manifest V3 content script는 아직 ES Module 미지원 — 아래 참고).
-- **서비스워커(`background.js`)에서는 ES Module import 사용 가능** (manifest의 `"type": "module"` 설정).
-- **content script에서는 ES Module 미지원**이므로, `content_scripts[].js` 배열에 `shared/browser-api.js`를 먼저 나열하여 전역 변수로 공유하는 방식이 현실적입니다.
-- **popup/pages-list 같은 HTML 페이지에서는** `<script type="module">` 태그로 직접 import 가능합니다.
+- **책임**: Chrome/Firefox 런타임 API 객체를 감지하여 단일 `browserAPI` 참조를 제공합니다. 확장 프로그램 전체에서 이 모듈만 참조하면 브라우저 분기를 신경 쓸 필요가 없습니다.
+- **현재 중복**: 동일한 감지 IIFE가 `background.js`, `controls.js`, `popup.js`, `pages-list.js` 4개 파일에 반복되고, `minimap.js`는 content.js 전역에 암묵적으로 의존합니다.
 
 ---
 
 ##### `shared/logger.js` — 통합 디버그 로거
 
-**책임**: `DEBUG_MODE` 플래그에 따라 로깅을 활성/비활성화하는 단일 `debugLog` 함수를 제공합니다. 로그 출력 시 `[모듈명]` 접두사를 자동으로 붙여 운영 이슈 추적 시 출처를 즉시 파악할 수 있게 합니다.
-
-**현재 중복 위치** (동일한 DEBUG_MODE + debugLog 패턴이 5곳에 반복):
-| 파일 | 현재 코드 |
-|------|-----------|
-| `background.js` | `const DEBUG_MODE = false; const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};` |
-| `popup.js` | DOMContentLoaded 내부에서 동일 패턴 선언 |
-| `pages-list.js` | DOMContentLoaded 내부에서 동일 패턴 선언 |
-| `minimap.js` | 파일 최상단에서 동일 패턴 선언 |
-| `controls.js` | content.js 전역의 debugLog에 암묵적으로 의존 |
-
-**모듈 구현**:
-```js
-// shared/logger.js
-const DEBUG_MODE = false; // 배포 시 false, 개발 시 true
-
-export function createLogger(moduleName) {
-  if (!DEBUG_MODE) return () => {};
-  return (...args) => console.log(`[${moduleName}]`, ...args);
-}
-
-export { DEBUG_MODE };
-```
-
-**사용 방식**:
-```js
-import { createLogger } from '../shared/logger.js';
-const debugLog = createLogger('sync-service');
-
-debugLog('Highlights merged for:', url); // → [sync-service] Highlights merged for: ...
-```
-
-**이점**:
-- 로그 포맷이 `[모듈명] 메시지` 형태로 통일되어, 콘솔 필터링이 쉬워집니다.
-- `DEBUG_MODE`를 한 곳에서만 관리하므로 배포 시 빌드 스크립트에서 한 번만 변경하면 됩니다.
-- 향후 `reportError(context, error, { userMessageKey })` 패턴(4-4 참조)으로 확장할 기반이 됩니다.
+- **책임**: `DEBUG_MODE` 플래그에 따라 로깅을 활성/비활성화하며, `[모듈명]` 접두사를 포함한 통일된 로그 포맷을 제공합니다. `DEBUG_MODE`를 단일 지점에서 관리하여 배포 시 한 번만 변경하면 됩니다.
+- **현재 중복**: `DEBUG_MODE` + `debugLog` 동일 패턴이 `background.js`, `popup.js`, `pages-list.js`, `minimap.js` 4개 파일에 반복 선언되고, `controls.js`는 content.js 전역의 `debugLog`에 암묵적으로 의존합니다.
+- **확장 가능성**: 향후 `reportError(context, error, { userMessageKey })` 패턴(4-4 참조)으로 확장할 기반이 됩니다.
 
 ---
 
 ##### `shared/tab-broadcast.js` — 탭 메시지 브로드캐스트 유틸
 
-**책임**: "모든 탭에 메시지 전송" 또는 "특정 URL의 탭에 메시지 전송" 패턴을 함수 하나로 캡슐화합니다. 현재 이 패턴이 `background.js` 내에서 최소 7회 이상 인라인으로 반복됩니다.
-
-**현재 중복 위치**:
-| 위치 (background.js) | 패턴 | 설명 |
-|----------------------|------|------|
-| `notifyTabHighlightsRefresh()` | `tabs.query({ url }) → sendMessage` | 특정 URL 탭에 refreshHighlights 전송 |
-| `broadcastSettingsToTabs()` | `tabs.query({}) → sendMessage` | 전체 탭에 설정 변경 전송 |
-| `addColor` 핸들러 | `tabs.query({}) → sendMessage colorsUpdated` | 전체 탭에 색상 업데이트 전송 |
-| `clearCustomColors` 핸들러 | `tabs.query({}) → sendMessage colorsUpdated` | 위와 동일 패턴 |
-| `storage.onChanged` 내 설정 처리 | `tabs.query({}) → sendMessage` × 3 | 미니맵/선택 컨트롤/색상 각각 반복 |
-| `applyUserDeletionFromSync()` | `tabs.query({ url }) → sendMessage` | 삭제 확인 후 탭 갱신 |
-
-**모듈 구현**:
-```js
-// shared/tab-broadcast.js
-import browserAPI from './browser-api.js';
-import { createLogger } from './logger.js';
-const debugLog = createLogger('tab-broadcast');
-
-/**
- * 특정 URL과 일치하는 탭에 메시지를 전송합니다.
- * @param {string} url - 대상 탭의 URL
- * @param {object} message - 전송할 메시지 객체
- */
-export async function sendToTabsByUrl(url, message) {
-  const tabs = await browserAPI.tabs.query({ url });
-  for (const tab of tabs) {
-    try {
-      await browserAPI.tabs.sendMessage(tab.id, message);
-    } catch (e) {
-      debugLog('Failed to send to tab', tab.id, e.message);
-    }
-  }
-}
-
-/**
- * 모든 열린 탭에 메시지를 전송합니다.
- * @param {object} message - 전송할 메시지 객체
- */
-export async function broadcastToAllTabs(message) {
-  const tabs = await browserAPI.tabs.query({});
-  for (const tab of tabs) {
-    try {
-      await browserAPI.tabs.sendMessage(tab.id, message);
-    } catch (e) {
-      // content script가 주입되지 않은 탭은 무시
-    }
-  }
-}
-```
-
-**사용 방식 (리팩터링 후)**:
-```js
-// 기존: 7줄의 인라인 코드
-// 변경 후:
-await sendToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
-await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
-```
+- **책임**: "모든 탭에 메시지 전송" 및 "특정 URL의 탭에 메시지 전송" 패턴을 캡슐화합니다. content script가 주입되지 않은 탭에 대한 에러 무시 처리도 내부에서 일관되게 수행합니다.
+- **현재 중복**: `background.js` 내에서 `tabs.query → sendMessage` 루프가 최소 7회 이상 인라인으로 반복됩니다 — `notifyTabHighlightsRefresh`, `broadcastSettingsToTabs`, `addColor` 핸들러, `clearCustomColors` 핸들러, `storage.onChanged` 내 설정 처리(×3), `applyUserDeletionFromSync` 등.
 
 ---
 
 ##### `shared/i18n.js` — 다국어 메시지 유틸
 
-**책임**: `browserAPI.i18n.getMessage` 호출을 래핑하여 키 누락 시 fallback 처리, HTML 요소 자동 로컬라이징(`data-i18n`, `data-i18n-title`, `data-i18n-placeholder`)을 통합 제공합니다.
-
-**현재 중복 위치**:
-| 파일 | 함수명 | 시그니처 차이 |
-|------|--------|---------------|
-| `background.js` | `getMessage(key, substitutions)` | substitutions 지원, fallback 없음 |
-| `content.js` | `getMessage(key, substitutions)` | background.js와 동일 |
-| `popup.js` | `initializeI18n()` | `data-i18n`, `data-i18n-title` 처리 |
-| `pages-list.js` | `getMessage(key, defaultValue, substitutions)` | defaultValue 파라미터 추가, 시그니처 불일치 |
-| `pages-list.js` | `localizeStaticElements()` | `data-i18n`, `data-i18n-title`, `data-i18n-placeholder` 처리 |
-
-**모듈 구현**:
-```js
-// shared/i18n.js
-import browserAPI from './browser-api.js';
-
-/**
- * i18n 메시지를 반환합니다. 키가 없으면 fallback을 반환합니다.
- * @param {string} key - 메시지 키 (_locales 기반)
- * @param {string} [fallback=''] - 키를 찾지 못했을 때 반환할 기본값
- * @param {string|string[]} [substitutions] - 치환 파라미터
- * @returns {string}
- */
-export function getMessage(key, fallback = '', substitutions = null) {
-  if (!browserAPI.i18n) return fallback;
-  const msg = substitutions
-    ? browserAPI.i18n.getMessage(key, substitutions)
-    : browserAPI.i18n.getMessage(key);
-  return msg || fallback;
-}
-
-/**
- * DOM 내 data-i18n, data-i18n-title, data-i18n-placeholder 속성이 있는
- * 요소를 자동으로 로컬라이즈합니다.
- */
-export function localizeDOM() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    const msg = getMessage(key, el.textContent);
-    if (el.tagName === 'INPUT' && el.type === 'button') el.value = msg;
-    else if (el.tagName === 'INPUT') el.placeholder = msg;
-    else if (el.tagName === 'TITLE' || el.tagName === 'META') el.content = msg;
-    else el.textContent = msg;
-  });
-  document.querySelectorAll('[data-i18n-title]').forEach(el => {
-    el.title = getMessage(el.getAttribute('data-i18n-title'), el.title);
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    el.placeholder = getMessage(el.getAttribute('data-i18n-placeholder'), el.placeholder);
-  });
-}
-```
-
-**이점**:
-- `getMessage` 시그니처가 통일되어 파일 간 호출 불일치를 제거합니다.
-- `localizeDOM()`으로 popup.js와 pages-list.js의 중복 로컬라이징 로직을 단일화합니다.
-- fallback 파라미터가 표준화되어, 키 누락 시 빈 문자열 대신 의미 있는 기본값을 제공할 수 있습니다.
+- **책임**: `browserAPI.i18n.getMessage` 호출을 래핑하여 키 누락 시 fallback 처리를 표준화하고, HTML 요소 자동 로컬라이징(`data-i18n`, `data-i18n-title`, `data-i18n-placeholder`)을 통합 제공합니다.
+- **현재 중복 및 불일치**: `getMessage` 함수가 `background.js`, `content.js`, `pages-list.js`에 각각 다른 시그니처로 존재합니다(특히 `pages-list.js`만 `defaultValue` 파라미터를 가짐). DOM 로컬라이징 로직도 `popup.js`의 `initializeI18n()`과 `pages-list.js`의 `localizeStaticElements()`가 유사하지만 지원 속성 범위가 다릅니다.
 
 ---
 
-#### Content Script 모듈 분리 전략 참고
+#### Content Script 모듈 적용 시 주의사항
 
-content script(`content.js`, `controls.js`, `minimap.js`)는 현재 Chrome Manifest V3 기준 ES Module을 지원하지 않으므로, 위 shared 모듈을 다음과 같이 적용합니다:
+content script(`content.js`, `controls.js`, `minimap.js`)는 현재 Chrome Manifest V3 기준 ES Module을 지원하지 않습니다. 따라서 위 shared 모듈 적용 시 다음 제약을 고려해야 합니다:
 
-1. **`manifest.json`의 `content_scripts[].js` 배열 순서로 전역 주입**:
-   ```json
-   "content_scripts": [{
-     "js": [
-       "shared/browser-api.js",
-       "shared/logger.js",
-       "minimap.js",
-       "controls.js",
-       "content.js"
-     ]
-   }]
-   ```
-2. shared 모듈은 전역 변수(예: `window.browserAPI`, `window.createLogger`)로 노출하되, IIFE로 감싸 네임스페이스 오염을 최소화합니다.
-3. 향후 번들러 도입 시 import/export 방식으로 자연스럽게 전환할 수 있도록, 모듈 내부 구조는 export 가능한 형태로 작성합니다.
+- **서비스워커(`background.js`)**: ES Module import 사용 가능 (manifest의 `"type": "module"` 설정).
+- **content script**: ES Module 미지원이므로, `content_scripts[].js` 배열 순서를 활용한 전역 변수 공유 또는 IIFE 래핑 등 별도 전략이 필요합니다.
+- **popup/pages-list 같은 HTML 페이지**: `<script type="module">` 태그로 직접 import 가능합니다.
 
 ---
 
