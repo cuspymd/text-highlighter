@@ -26,6 +26,7 @@ const filesToCopy = [
 const manifestFile = targetBrowser === 'firefox' ? 'manifest-firefox.json' : 'manifest.json';
 
 const directoriesToCopy = [
+  'background',
   '_locales',
   'images',
   'shared',
@@ -45,6 +46,7 @@ fs.mkdirSync(currentDeployDir);
 
 // 파일 복사 함수
 function copyFile(src, dest) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(src, dest);
   console.log(`Copied: ${path.relative(sourceDir, dest)}`);
 }
