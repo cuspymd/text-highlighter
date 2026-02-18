@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "A Chrome extension for text highlighting",
   "main": "background.js",
+  "type": "module",
   "scripts": {
-    "test": "jest --runInBand --cacheDirectory=./.jest_cache",
-    "deploy": "node ./scripts/deploy.js",
-    "deploy:firefox": "node ./scripts/deploy.js firefox",
-    "version-deploy": "node ./scripts/version-deploy.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --cacheDirectory=./.jest_cache",
+    "deploy": "node ./scripts/deploy.cjs",
+    "deploy:firefox": "node ./scripts/deploy.cjs firefox",
+    "version-deploy": "node ./scripts/version-deploy.cjs"
   },
   "author": "",
   "license": "MIT",
@@ -20,9 +21,8 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "moduleNameMapper": {
-      "^chrome$": "<rootDir>/mocks/chrome.js"
-    },
+    "transform": {},
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
     "testPathIgnorePatterns": [
       "<rootDir>/e2e-tests/"
     ]

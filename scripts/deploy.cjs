@@ -27,7 +27,9 @@ const manifestFile = targetBrowser === 'firefox' ? 'manifest-firefox.json' : 'ma
 
 const directoriesToCopy = [
   '_locales',
-  'images'
+  'images',
+  'shared',
+  'constants'
 ];
 
 // Select deployment directory based on target browser

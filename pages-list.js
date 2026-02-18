@@ -1,13 +1,5 @@
-// Cross-browser compatibility - use chrome API in Chrome, browser API in Firefox
-const browserAPI = (() => {
-  if (typeof browser !== 'undefined') {
-    return browser;
-  }
-  if (typeof chrome !== 'undefined') {
-    return chrome;
-  }
-  throw new Error('Neither browser nor chrome API is available');
-})();
+import { browserAPI } from './shared/browser-api.js';
+import { debugLog } from './shared/logger.js';
 
 // Theme change detection and handling
 function initializeThemeWatcher() {
@@ -37,12 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const pagesContainer = document.getElementById('pages-container');
   const noPages = document.getElementById('no-pages');
-
-  // Set debug mode - change to true during development
-  const DEBUG_MODE = false;
-
-  // Debug log function
-  const debugLog = DEBUG_MODE ? console.log.bind(console) : () => { };
 
   // Function to get messages for multi-language support
   function getMessage(key, defaultValue = '', substitutions) {

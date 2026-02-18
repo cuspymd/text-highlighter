@@ -1,15 +1,7 @@
-const URL_PARAMS  = new URLSearchParams(window.location.search);
+import { browserAPI } from './shared/browser-api.js';
+import { debugLog } from './shared/logger.js';
 
-// Cross-browser compatibility - use chrome API in Chrome, browser API in Firefox
-const browserAPI = (() => {
-  if (typeof browser !== 'undefined') {
-    return browser;
-  }
-  if (typeof chrome !== 'undefined') {
-    return chrome;
-  }
-  throw new Error('Neither browser nor chrome API is available');
-})();
+const URL_PARAMS  = new URLSearchParams(window.location.search);
 
 async function getActiveTab() {
   // Open popup.html?tab=5 to use tab ID 5, etc.
@@ -215,12 +207,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   const deleteCustomColorsBtn = document.getElementById('delete-custom-colors');
   const minimapToggle = document.getElementById('minimap-toggle');
   const selectionControlsToggle = document.getElementById('selection-controls-toggle');
-  // Set debug mode - change to true during development
-  const DEBUG_MODE = false;
-
-  // Debug log function
-  const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
-
   // Load highlight information from current active tab
   async function loadHighlights() {
     const tab = await getActiveTab();

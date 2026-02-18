@@ -1,3 +1,8 @@
+import { browserAPI } from './shared/browser-api.js';
+import { DEBUG_MODE, debugLog } from './shared/logger.js';
+import { STORAGE_KEYS, SYNC_KEYS } from './constants/storage-keys.js';
+import { broadcastToAllTabs, broadcastToTabsByUrl } from './shared/tab-broadcast.js';
+
 const COLORS = [
   { id: 'yellow', nameKey: 'yellowColor', color: '#FFFF00' },
   { id: 'green', nameKey: 'greenColor', color: '#AAFFAA' },
@@ -6,34 +11,22 @@ const COLORS = [
   { id: 'orange', nameKey: 'orangeColor', color: '#FFAA55' }
 ];
 
-// Cross-browser compatibility - use chrome API in Chrome, browser API in Firefox
-const browserAPI = (() => {
-  if (typeof browser !== 'undefined') {
-    return browser;
-  }
-  if (typeof chrome !== 'undefined') {
-    return chrome;
-  }
-  throw new Error('Neither browser nor chrome API is available');
-})();
-
 function getMessage(key, substitutions = null) {
   return browserAPI.i18n.getMessage(key, substitutions);
 }
 
-// Debug mode setting - change to true during development
-const DEBUG_MODE = false;
-
-// Debug log function
-const debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
+// 메시지 응답 헬퍼
+function successResponse(data = {}) { return { success: true, ...data }; }
+function errorResponse(message) { return { success: false, error: message }; }
 
 // ===================================================================
 // Storage Sync Utilities
 // ===================================================================
 
-const SYNC_SETTINGS_KEY = 'settings';
-const SYNC_HIGHLIGHT_PREFIX = 'hl_';
-const SYNC_META_KEY = 'sync_meta';
+// SYNC_KEYS 상수 로컬 alias — 하위 사용처 변경 최소화
+const SYNC_SETTINGS_KEY = SYNC_KEYS.SETTINGS;
+const SYNC_HIGHLIGHT_PREFIX = SYNC_KEYS.HIGHLIGHT_PREFIX;
+const SYNC_META_KEY = SYNC_KEYS.META;
 const SYNC_QUOTA_BYTES_PER_ITEM = 8192;
 // Reserve space for settings and sync_meta
 const SYNC_HIGHLIGHT_BUDGET = 90000;
@@ -46,7 +39,7 @@ const pendingSyncRemovalResolutions = new Map();
 /**
  * Clean up old tombstones from a metadata object.
  */
-function cleanupTombstones(obj) {
+export function cleanupTombstones(obj) {
   if (!obj) return;
   const now = Date.now();
   for (const key in obj) {
@@ -56,7 +49,7 @@ function cleanupTombstones(obj) {
   }
 }
 
-function normalizeSyncMeta(rawMeta) {
+export function normalizeSyncMeta(rawMeta) {
   const meta = rawMeta || {};
   if (!Array.isArray(meta.pages)) meta.pages = [];
   if (typeof meta.totalSize !== 'number') meta.totalSize = 0;
@@ -66,7 +59,7 @@ function normalizeSyncMeta(rawMeta) {
 }
 
 // Generate a short hash from a URL for use as sync storage key
-function urlToSyncKey(url) {
+export function urlToSyncKey(url) {
   let hash = 0;
   for (let i = 0; i < url.length; i++) {
     const ch = url.charCodeAt(i);
@@ -79,7 +72,7 @@ function urlToSyncKey(url) {
 // Save settings (customColors, minimapVisible, selectionControlsVisible) to sync
 async function saveSettingsToSync() {
   const result = await browserAPI.storage.local.get([
-    'customColors', 'minimapVisible', 'selectionControlsVisible'
+    STORAGE_KEYS.CUSTOM_COLORS, STORAGE_KEYS.MINIMAP_VISIBLE, STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE
   ]);
   const settings = {
     customColors: result.customColors || [],
@@ -102,11 +95,11 @@ async function syncSaveHighlights(url, highlights, title, lastUpdated) {
     // 1. Fetch current sync data and local metadata for merging
     const [syncResult, localMetaResult] = await Promise.all([
       browserAPI.storage.sync.get(syncKey),
-      browserAPI.storage.local.get(`${url}_meta`)
+      browserAPI.storage.local.get(`${url}${STORAGE_KEYS.META_SUFFIX}`)
     ]);
 
     const remoteData = syncResult[syncKey] || {};
-    const localMeta = localMetaResult[`${url}_meta`] || {};
+    const localMeta = localMetaResult[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
 
     // 2. Perform merge to handle concurrent edits (Rule 4.1)
     const merged = mergeHighlights(
@@ -134,7 +127,7 @@ async function syncSaveHighlights(url, highlights, title, lastUpdated) {
     // 3. Update local storage with merged result to ensure consistency
     const localData = {};
     localData[url] = merged.highlights;
-    localData[`${url}_meta`] = { ...localMeta, title, lastUpdated, deletedGroupIds: merged.deletedGroupIds };
+    localData[`${url}${STORAGE_KEYS.META_SUFFIX}`] = { ...localMeta, title, lastUpdated, deletedGroupIds: merged.deletedGroupIds };
     await browserAPI.storage.local.set(localData);
 
     // 4. Check budget and evict if needed (Rule S-10)
@@ -228,7 +221,7 @@ async function getSyncMeta() {
  * Merges two sets of highlights and deleted markers based on timestamps.
  * Implements Conflict Resolution Rule 4.1.
  */
-function mergeHighlights(localData, remoteData) {
+export function mergeHighlights(localData, remoteData) {
   const localHighlights = localData.highlights || [];
   const remoteHighlights = remoteData.highlights || [];
   const localDeleted = localData.deletedGroupIds || {};
@@ -275,7 +268,7 @@ function mergeHighlights(localData, remoteData) {
  * Satisfies Rule S-9 and M-1.
  */
 async function migrateLocalToSync() {
-  const flagResult = await browserAPI.storage.local.get('syncMigrationDone');
+  const flagResult = await browserAPI.storage.local.get(STORAGE_KEYS.SYNC_MIGRATION_DONE);
   if (flagResult.syncMigrationDone) return;
 
   debugLog('Starting initial sync migration and pull...');
@@ -285,7 +278,7 @@ async function migrateLocalToSync() {
     const syncSettings = syncSettingsResult[SYNC_SETTINGS_KEY];
     if (syncSettings) {
       debugLog('Found sync settings, applying...');
-      const localResult = await browserAPI.storage.local.get(['customColors', 'minimapVisible', 'selectionControlsVisible']);
+      const localResult = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS, STORAGE_KEYS.MINIMAP_VISIBLE, STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE]);
 
       const mergedSettings = {
         customColors: [...(localResult.customColors || [])],
@@ -320,8 +313,8 @@ async function migrateLocalToSync() {
     }
 
     const localUrls = Object.keys(allLocal).filter(k =>
-      !['customColors', 'syncMigrationDone', 'minimapVisible', 'selectionControlsVisible', 'settings'].includes(k) &&
-      !k.endsWith('_meta') && Array.isArray(allLocal[k])
+      ![STORAGE_KEYS.CUSTOM_COLORS, STORAGE_KEYS.SYNC_MIGRATION_DONE, STORAGE_KEYS.MINIMAP_VISIBLE, STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE, 'settings'].includes(k) &&
+      !k.endsWith(STORAGE_KEYS.META_SUFFIX) && Array.isArray(allLocal[k])
     );
 
     const allUrls = new Set([...localUrls, ...syncMeta.pages.map(p => p.url)]);
@@ -330,7 +323,7 @@ async function migrateLocalToSync() {
       const syncKey = urlToSyncKey(url);
       const remotePageData = syncData[syncKey] || {};
       const localHighlights = allLocal[url] || [];
-      const localMeta = allLocal[`${url}_meta`] || {};
+      const localMeta = allLocal[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
 
       // If remote has a tombstone and local is empty, skip
       if (syncMeta.deletedUrls && syncMeta.deletedUrls[url] && localHighlights.length === 0) continue;
@@ -350,7 +343,7 @@ async function migrateLocalToSync() {
 
       await browserAPI.storage.local.set({
         [url]: merged.highlights,
-        [`${url}_meta`]: metaToSave
+        [`${url}${STORAGE_KEYS.META_SUFFIX}`]: metaToSave
       });
 
       // Push merged back to sync if it's not too large
@@ -367,7 +360,7 @@ async function migrateLocalToSync() {
 // Platform detection for mobile (Firefox Android) support
 let platformInfo = { os: 'unknown' };
 
-async function initializePlatform() {
+export async function initializePlatform() {
   try {
     platformInfo = await browserAPI.runtime.getPlatformInfo();
     debugLog('Platform detected:', platformInfo);
@@ -376,7 +369,7 @@ async function initializePlatform() {
   }
 }
 
-function isMobile() {
+export function isMobile() {
   return platformInfo.os === 'android';
 }
 
@@ -421,7 +414,7 @@ async function loadCustomColors() {
     }
 
     if (customColors.length === 0) {
-      const result = await browserAPI.storage.local.get(['customColors']);
+      const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
       customColors = result.customColors || [];
     }
 
@@ -550,18 +543,7 @@ browserAPI.tabs.onActivated.addListener(async () => {
 
 // Helper function to notify tab about highlight updates
 async function notifyTabHighlightsRefresh(highlights, url) {
-  const tabs = await browserAPI.tabs.query({ url: url });
-  for (const tab of tabs) {
-    if (!tab || !tab.id) continue;
-    try {
-      await browserAPI.tabs.sendMessage(tab.id, {
-        action: 'refreshHighlights',
-        highlights: highlights
-      });
-    } catch (error) {
-      debugLog('Error notifying tab about highlight updates:', error);
-    }
-  }
+  await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights });
 }
 
 // Broadcast setting updates to all open tabs (local-first propagation).
@@ -595,7 +577,7 @@ async function cleanupEmptyHighlightData(url) {
 
   debugLog('Cleaning up empty highlight data for URL:', url);
   try {
-    await browserAPI.storage.local.remove([url, `${url}_meta`]);
+    await browserAPI.storage.local.remove([url, `${url}${STORAGE_KEYS.META_SUFFIX}`]);
     debugLog('Successfully removed empty highlight data for URL:', url);
   } catch (error) {
     debugLog('Error removing empty highlight data:', error);
@@ -605,17 +587,7 @@ async function cleanupEmptyHighlightData(url) {
 // Handle a confirmed user-driven sync deletion for a URL.
 async function applyUserDeletionFromSync(url) {
   await cleanupEmptyHighlightData(url);
-  try {
-    const tabs = await browserAPI.tabs.query({ url: url });
-    for (const tab of tabs) {
-      try {
-        await browserAPI.tabs.sendMessage(tab.id, {
-          action: 'refreshHighlights',
-          highlights: []
-        });
-      } catch (e) { /* tab may not have content script */ }
-    }
-  } catch (e) { /* tabs query may fail */ }
+  await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
 }
 
 // Context menu click handler (desktop only)
@@ -727,7 +699,7 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
         const keys = Object.keys(settings);
         if (keys.length === 0) {
-          sendResponse({ success: true });
+          sendResponse(successResponse());
           return;
         }
 
@@ -747,7 +719,7 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
 
         debugLog('Settings saved locally and broadcasted:', settings, 'changed:', changedSettings);
-        sendResponse({ success: true });
+        sendResponse(successResponse());
         return;
       }
 
@@ -762,12 +734,12 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       // Handle clearCustomColors request from popup.js
       if (message.action === 'clearCustomColors') {
         // Check if there are any custom colors to clear
-        const result = await browserAPI.storage.local.get(['customColors']);
+        const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
         const customColors = result.customColors || [];
 
         if (customColors.length === 0) {
           debugLog('No custom colors to clear');
-          sendResponse({ success: true, noCustomColors: true });
+          sendResponse(successResponse({ noCustomColors: true }));
           return;
         }
 
@@ -784,16 +756,9 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         await createOrUpdateContextMenus();
 
         // Broadcast updated colors to all tabs
-        const tabs = await browserAPI.tabs.query({});
-        for (const tab of tabs) {
-          try {
-            await browserAPI.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
-          } catch (error) {
-            debugLog('Error broadcasting colors to tab:', tab.id, error);
-          }
-        }
+        await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
 
-        sendResponse({ success: true });
+        sendResponse(successResponse());
         return;
       }
 
@@ -801,12 +766,12 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.action === 'addColor') {
         const newColorValue = message.color;
         if (!newColorValue) {
-          sendResponse({ success: false });
+          sendResponse(errorResponse('No color value provided'));
           return;
         }
 
         // Load existing custom colors from storage.sync
-        const stored = await browserAPI.storage.local.get(['customColors']);
+        const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
         let customColors = stored.customColors || [];
 
         // Check duplication by value
@@ -834,16 +799,9 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           await createOrUpdateContextMenus();
 
           // Broadcast updated colors to all tabs
-          const tabs = await browserAPI.tabs.query({});
-          for (const tab of tabs) {
-            try {
-              await browserAPI.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
-            } catch (error) {
-              debugLog('Error broadcasting colors to tab:', tab.id, error);
-            }
-          }
+          await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
         }
-        sendResponse({ success: true, colors: currentColors });
+        sendResponse(successResponse({ colors: currentColors }));
         return;
       }
 
@@ -862,13 +820,13 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           debugLog('Saved highlights for URL:', message.url, message.highlights);
 
           // Save metadata only if highlights exist
-          const result = await browserAPI.storage.local.get([`${message.url}_meta`]);
-          const metaData = result[`${message.url}_meta`] || {};
+          const result = await browserAPI.storage.local.get([`${message.url}${STORAGE_KEYS.META_SUFFIX}`]);
+          const metaData = result[`${message.url}${STORAGE_KEYS.META_SUFFIX}`] || {};
           metaData.title = currentTab.title;
           metaData.lastUpdated = new Date().toISOString();
 
           const metaSaveData = {};
-          metaSaveData[`${message.url}_meta`] = metaData;
+          metaSaveData[`${message.url}${STORAGE_KEYS.META_SUFFIX}`] = metaData;
 
           await browserAPI.storage.local.set(metaSaveData);
           debugLog('Saved page metadata:', metaData);
@@ -876,12 +834,12 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           // Sync highlights to storage.sync
           await syncSaveHighlights(message.url, message.highlights, metaData.title, metaData.lastUpdated);
 
-          sendResponse({ success: true });
+          sendResponse(successResponse());
         } else {
           // If no highlights remain, remove both data and metadata
           await cleanupEmptyHighlightData(message.url);
           await syncRemoveHighlights(message.url);
-          sendResponse({ success: true });
+          sendResponse(successResponse());
         }
         return;
       }
@@ -889,9 +847,9 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       // Handler for single highlight deletion
       if (message.action === 'deleteHighlight') {
         const { url, groupId } = message;
-        const result = await browserAPI.storage.local.get([url, `${url}_meta`]);
+        const result = await browserAPI.storage.local.get([url, `${url}${STORAGE_KEYS.META_SUFFIX}`]);
         const highlights = result[url] || [];
-        const meta = result[`${url}_meta`] || {};
+        const meta = result[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
 
         // Track deleted groupId (Rule 4.1)
         const deletedGroupIds = meta.deletedGroupIds || {};
@@ -905,7 +863,7 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           const lastUpdated = new Date().toISOString();
           const saveData = {};
           saveData[url] = updatedHighlights;
-          saveData[`${url}_meta`] = { ...meta, deletedGroupIds, lastUpdated };
+          saveData[`${url}${STORAGE_KEYS.META_SUFFIX}`] = { ...meta, deletedGroupIds, lastUpdated };
           await browserAPI.storage.local.set(saveData);
           debugLog('Highlight group deleted:', groupId, 'from URL:', url);
 
@@ -915,20 +873,14 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           if (message.notifyRefresh) {
             await notifyTabHighlightsRefresh(updatedHighlights, url);
           }
-          sendResponse({
-            success: true,
-            highlights: updatedHighlights
-          });
+          sendResponse(successResponse({ highlights: updatedHighlights }));
         } else {
           await cleanupEmptyHighlightData(url);
           await syncRemoveHighlights(url);
           if (message.notifyRefresh) {
             await notifyTabHighlightsRefresh([], url);
           }
-          sendResponse({
-            success: true,
-            highlights: []
-          });
+          sendResponse(successResponse({ highlights: [] }));
         }
         return;
       }
@@ -946,7 +898,7 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           await notifyTabHighlightsRefresh([], url);
         }
 
-        sendResponse({ success: true });
+        sendResponse(successResponse());
         return;
       }
 
@@ -956,12 +908,12 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const pages = [];
 
         // Filter items with URLs as keys from storage (exclude metadata, settings, and internal keys)
-        const skipKeys = new Set(['customColors', 'syncMigrationDone', 'minimapVisible', 'selectionControlsVisible']);
+        const skipKeys = new Set([STORAGE_KEYS.CUSTOM_COLORS, STORAGE_KEYS.SYNC_MIGRATION_DONE, STORAGE_KEYS.MINIMAP_VISIBLE, STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE]);
         for (const key in result) {
           if (skipKeys.has(key)) continue;
-          if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
+          if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith(STORAGE_KEYS.META_SUFFIX)) {
             const url = key;
-            const metaKey = `${url}_meta`;
+            const metaKey = `${url}${STORAGE_KEYS.META_SUFFIX}`;
             const metadata = result[metaKey] || {};
 
             pages.push({
@@ -986,7 +938,7 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           return new Date(b.lastUpdated) - new Date(a.lastUpdated);
         });
 
-        sendResponse({ success: true, pages: pages });
+        sendResponse(successResponse({ pages }));
         return;
       }
 
@@ -996,11 +948,11 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const keysToDelete = [];
 
         // Find all highlight data and metadata keys
-        const skipKeysDelete = new Set(['customColors', 'syncMigrationDone', 'minimapVisible', 'selectionControlsVisible']);
+        const skipKeysDelete = new Set([STORAGE_KEYS.CUSTOM_COLORS, STORAGE_KEYS.SYNC_MIGRATION_DONE, STORAGE_KEYS.MINIMAP_VISIBLE, STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE]);
         for (const key in result) {
           if (skipKeysDelete.has(key)) continue;
-          if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith('_meta')) {
-            keysToDelete.push(key, `${key}_meta`);
+          if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith(STORAGE_KEYS.META_SUFFIX)) {
+            keysToDelete.push(key, `${key}${STORAGE_KEYS.META_SUFFIX}`);
           }
         }
 
@@ -1038,12 +990,12 @@ browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           }
         }
 
-        sendResponse({ success: true, deletedCount: keysToDelete.length / 2 });
+        sendResponse(successResponse({ deletedCount: keysToDelete.length / 2 }));
         return;
       }
     } catch (error) {
       debugLog('Error in message handler:', error);
-      sendResponse({ success: false, error: error.message });
+      sendResponse(errorResponse(error.message));
     }
   })();
 
@@ -1077,40 +1029,19 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
       await createOrUpdateContextMenus();
 
       // Broadcast to all tabs
-      const tabs = await browserAPI.tabs.query({});
-      for (const tab of tabs) {
-        try {
-          await browserAPI.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: currentColors });
-        } catch (e) { /* tab may not have content script */ }
-      }
+      await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
     }
 
     // Update minimap visibility
     if (newSettings.minimapVisible !== undefined) {
       await browserAPI.storage.local.set({ minimapVisible: newSettings.minimapVisible });
-      const tabs = await browserAPI.tabs.query({});
-      for (const tab of tabs) {
-        try {
-          await browserAPI.tabs.sendMessage(tab.id, {
-            action: 'setMinimapVisibility',
-            visible: newSettings.minimapVisible
-          });
-        } catch (e) { /* tab may not have content script */ }
-      }
+      await broadcastToAllTabs({ action: 'setMinimapVisibility', visible: newSettings.minimapVisible });
     }
 
     // Update selection controls visibility
     if (newSettings.selectionControlsVisible !== undefined) {
       await browserAPI.storage.local.set({ selectionControlsVisible: newSettings.selectionControlsVisible });
-      const tabs = await browserAPI.tabs.query({});
-      for (const tab of tabs) {
-        try {
-          await browserAPI.tabs.sendMessage(tab.id, {
-            action: 'setSelectionControlsVisibility',
-            visible: newSettings.selectionControlsVisible
-          });
-        } catch (e) { /* tab may not have content script */ }
-      }
+      await broadcastToAllTabs({ action: 'setSelectionControlsVisibility', visible: newSettings.selectionControlsVisible });
     }
   }
 
@@ -1160,9 +1091,9 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
     if (newData && newData.url) {
       const url = newData.url;
       // 1. Fetch current local data for merging
-      const localResult = await browserAPI.storage.local.get([url, `${url}_meta`]);
+      const localResult = await browserAPI.storage.local.get([url, `${url}${STORAGE_KEYS.META_SUFFIX}`]);
       const localHighlights = localResult[url] || [];
-      const localMeta = localResult[`${url}_meta`] || {};
+      const localMeta = localResult[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
 
       // 2. Perform merge (Rule 4.1, M-6)
       const merged = mergeHighlights(
@@ -1173,7 +1104,7 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
       // 3. Update local storage
       const saveData = {};
       saveData[url] = merged.highlights;
-      saveData[`${url}_meta`] = {
+      saveData[`${url}${STORAGE_KEYS.META_SUFFIX}`] = {
         ...localMeta,
         title: newData.title || localMeta.title || '',
         lastUpdated: newData.lastUpdated || localMeta.lastUpdated || '',
@@ -1184,15 +1115,7 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
       debugLog('Synced highlights merged and applied for:', url);
 
       // 4. Refresh tab if open
-      try {
-        const tabs = await browserAPI.tabs.query({ url: url });
-        for (const tab of tabs) {
-          await browserAPI.tabs.sendMessage(tab.id, {
-            action: 'refreshHighlights',
-            highlights: merged.highlights
-          });
-        }
-      } catch (e) { /* tab may not be open */ }
+      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: merged.highlights });
     } else if (!newData) {
       // Highlight was removed from sync (either eviction or user delete)
       const oldData = changes[key].oldValue;
@@ -1217,13 +1140,3 @@ browserAPI.storage.onChanged.addListener(async (changes, areaName) => {
   }
 })();
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    cleanupTombstones,
-    normalizeSyncMeta,
-    urlToSyncKey,
-    mergeHighlights,
-    isMobile,
-    initializePlatform
-  };
-}

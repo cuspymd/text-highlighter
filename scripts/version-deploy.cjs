@@ -46,10 +46,8 @@ try {
 // 2. DEBUG_MODE를 false로 변경
 console.log('\n2. Setting DEBUG_MODE to false in JS files...');
 const jsFiles = [
-  'background.js',
-  'content.js',
-  'popup.js',
-  'pages-list.js'
+  'shared/logger.js',  // background.js, popup.js, pages-list.js의 DEBUG_MODE 단일 소스
+  'minimap.js',        // content script 인라인 복사본
 ];
 
 for (const file of jsFiles) {
@@ -78,7 +76,7 @@ for (const file of jsFiles) {
 // 3. deploy.js 실행
 console.log('\n3. Running deploy script...');
 try {
-  execSync(`node scripts/deploy.js ${browser}`, {
+  execSync(`node scripts/deploy.cjs ${browser}`, {
     cwd: sourceDir,
     stdio: 'inherit'
   });

@@ -1,5 +1,7 @@
-const path = require('path');
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { test, expect, sendHighlightMessage, expectHighlightSpan, selectTextInElement } from './fixtures';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test.describe('Chrome Extension Tests', () => {
   test('Apply yellow highlight via context menu after text selection', async ({page, background}) => {
