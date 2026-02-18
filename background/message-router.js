@@ -205,7 +205,6 @@ async function handleGetAllHighlightedPages(_message) {
 async function handleDeleteAllHighlightedPages(_message) {
   const result = await browserAPI.storage.local.get(null);
   const keysToDelete = [];
-  const urlsToDelete = [];
 
   const skipKeys = new Set([
     STORAGE_KEYS.CUSTOM_COLORS,
@@ -218,14 +217,13 @@ async function handleDeleteAllHighlightedPages(_message) {
     if (skipKeys.has(key)) continue;
     if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith(STORAGE_KEYS.META_SUFFIX)) {
       keysToDelete.push(key, `${key}${STORAGE_KEYS.META_SUFFIX}`);
-      urlsToDelete.push(key);
     }
   }
 
   if (keysToDelete.length > 0) {
     await browserAPI.storage.local.remove(keysToDelete);
     debugLog('All highlighted pages deleted:', keysToDelete);
-    await clearAllSyncedHighlights(urlsToDelete);
+    await clearAllSyncedHighlights();
   }
 
   return successResponse({ deletedCount: keysToDelete.length / 2 });

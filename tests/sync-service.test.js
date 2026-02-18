@@ -6,6 +6,7 @@ import {
   mergeHighlights,
   saveSettingsToSync,
   cleanupEmptyHighlightData,
+  clearAllSyncedHighlights,
   initSyncListener,
 } from '../background/sync-service.js';
 
@@ -209,6 +210,58 @@ describe('sync-service', () => {
     it('should do nothing if url is falsy', async () => {
       await cleanupEmptyHighlightData(null);
       expect(chrome.storage.local.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('clearAllSyncedHighlights', () => {
+    it('should add tombstones only for URLs tracked in sync meta and then clear pages', async () => {
+      const now = 1700000000000;
+      jest.spyOn(Date, 'now').mockReturnValue(now);
+
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        sync_meta: {
+          pages: [
+            { syncKey: 'hl_1', url: 'https://synced-1.test', size: 10 },
+            { syncKey: 'hl_2', url: 'https://synced-2.test', size: 20 },
+          ],
+          totalSize: 30,
+          deletedUrls: {},
+        },
+      });
+
+      await clearAllSyncedHighlights();
+
+      expect(chrome.storage.sync.remove).toHaveBeenCalledWith(['hl_1', 'hl_2']);
+
+      expect(chrome.storage.sync.set).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          sync_meta: expect.objectContaining({
+            pages: expect.any(Array),
+            totalSize: 30,
+            deletedUrls: {
+              'https://synced-1.test': now,
+              'https://synced-2.test': now,
+            },
+          }),
+        }),
+      );
+
+      expect(chrome.storage.sync.set).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          sync_meta: expect.objectContaining({
+            pages: [],
+            totalSize: 0,
+            deletedUrls: {
+              'https://synced-1.test': now,
+              'https://synced-2.test': now,
+            },
+          }),
+        }),
+      );
+
+      Date.now.mockRestore();
     });
   });
 

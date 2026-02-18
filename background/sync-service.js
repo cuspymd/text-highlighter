@@ -221,9 +221,11 @@ async function applyUserDeletionFromSync(url) {
 }
 
 /**
- * Clear all synced highlights and mark all URLs as user-deleted.
+ * Clear all synced highlights and mark synced URLs as user-deleted.
+ * Tombstones are written only for URLs currently tracked in sync_meta.pages
+ * to keep the sync_meta item within per-item quota.
  */
-export async function clearAllSyncedHighlights(urlsToDelete = []) {
+export async function clearAllSyncedHighlights() {
   try {
     const meta = await getSyncMeta();
     const syncKeysToRemove = meta.pages.map(p => p.syncKey);
@@ -231,9 +233,6 @@ export async function clearAllSyncedHighlights(urlsToDelete = []) {
     const now = Date.now();
     for (const page of meta.pages) {
       if (page.url) meta.deletedUrls[page.url] = now;
-    }
-    for (const url of urlsToDelete) {
-      meta.deletedUrls[url] = now;
     }
 
     await browserAPI.storage.sync.set({ [SYNC_META_KEY]: meta });
