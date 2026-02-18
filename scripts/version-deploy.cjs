@@ -76,7 +76,7 @@ for (const file of jsFiles) {
 // 3. deploy.js 실행
 console.log('\n3. Running deploy script...');
 try {
-  execSync(`node scripts/deploy.js ${browser}`, {
+  execSync(`node scripts/deploy.cjs ${browser}`, {
     cwd: sourceDir,
     stdio: 'inherit'
   });

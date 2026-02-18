@@ -1,15 +1,12 @@
-const chrome = require('../mocks/chrome.js');
-global.chrome = chrome;
-
-// Mock the global Date.now() if needed, but for now we can just use offsets
-const {
+import chrome from '../mocks/chrome.js';
+import {
   cleanupTombstones,
   normalizeSyncMeta,
   urlToSyncKey,
   mergeHighlights,
   isMobile,
   initializePlatform
-} = require('../background.js');
+} from '../background.js';
 
 describe('Background Script Unit Tests', () => {
   const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;

@@ -1,4 +1,6 @@
-module.exports = {
+import { jest } from '@jest/globals';
+
+export default {
   runtime: {
     sendMessage: jest.fn((message, callback) => {
       if (message.action === 'saveHighlights') {

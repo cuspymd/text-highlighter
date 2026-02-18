@@ -39,7 +39,7 @@ const pendingSyncRemovalResolutions = new Map();
 /**
  * Clean up old tombstones from a metadata object.
  */
-function cleanupTombstones(obj) {
+export function cleanupTombstones(obj) {
   if (!obj) return;
   const now = Date.now();
   for (const key in obj) {
@@ -49,7 +49,7 @@ function cleanupTombstones(obj) {
   }
 }
 
-function normalizeSyncMeta(rawMeta) {
+export function normalizeSyncMeta(rawMeta) {
   const meta = rawMeta || {};
   if (!Array.isArray(meta.pages)) meta.pages = [];
   if (typeof meta.totalSize !== 'number') meta.totalSize = 0;
@@ -59,7 +59,7 @@ function normalizeSyncMeta(rawMeta) {
 }
 
 // Generate a short hash from a URL for use as sync storage key
-function urlToSyncKey(url) {
+export function urlToSyncKey(url) {
   let hash = 0;
   for (let i = 0; i < url.length; i++) {
     const ch = url.charCodeAt(i);
@@ -221,7 +221,7 @@ async function getSyncMeta() {
  * Merges two sets of highlights and deleted markers based on timestamps.
  * Implements Conflict Resolution Rule 4.1.
  */
-function mergeHighlights(localData, remoteData) {
+export function mergeHighlights(localData, remoteData) {
   const localHighlights = localData.highlights || [];
   const remoteHighlights = remoteData.highlights || [];
   const localDeleted = localData.deletedGroupIds || {};
@@ -360,7 +360,7 @@ async function migrateLocalToSync() {
 // Platform detection for mobile (Firefox Android) support
 let platformInfo = { os: 'unknown' };
 
-async function initializePlatform() {
+export async function initializePlatform() {
   try {
     platformInfo = await browserAPI.runtime.getPlatformInfo();
     debugLog('Platform detected:', platformInfo);
@@ -369,7 +369,7 @@ async function initializePlatform() {
   }
 }
 
-function isMobile() {
+export function isMobile() {
   return platformInfo.os === 'android';
 }
 
