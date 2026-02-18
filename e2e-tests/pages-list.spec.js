@@ -1,5 +1,8 @@
 import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { test, expect, sendHighlightMessage, expectHighlightSpan } from './fixtures';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Helper to open the extension's pages-list.html
 async function openPagesList(page, extensionId) {
@@ -79,7 +82,6 @@ test.describe('Pages List UI and Delete All Pages', () => {
       listPage.waitForEvent('download'),
       listPage.click('#export-all-btn'),
     ]);
-    const fs = require('fs');
     const downloadPath = await download.path();
     const exported = JSON.parse(fs.readFileSync(downloadPath, 'utf-8'));
 
@@ -128,7 +130,6 @@ test.describe('Pages List UI and Delete All Pages', () => {
       listPage.waitForEvent('download'),
       listPage.click('#export-all-btn'),
     ]);
-    const fs = require('fs');
     const downloadPath = await download.path();
     const exported = JSON.parse(fs.readFileSync(downloadPath, 'utf-8'));
 

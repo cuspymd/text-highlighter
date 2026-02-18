@@ -1,6 +1,7 @@
-const path = require('path');
-const { pathToFileURL } = require('url');
+import path from 'path';
+import { pathToFileURL, fileURLToPath } from 'url';
 import { test, expect } from './fixtures';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function urlToSyncKey(url) {
   let hash = 0;

@@ -1,5 +1,7 @@
-const path = require('path');
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { test, expect, sendHighlightMessage, expectHighlightSpan, selectTextInElement } from './fixtures';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function getCurrentTabId(background) {
   return await background.evaluate(async () => {
