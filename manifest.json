@@ -61,7 +61,9 @@
         "<all_urls>"
       ],
       "js": [
+        "content-common.js",
         "minimap.js",
+        "content-core.js",
         "controls.js",
         "content.js"
       ],

@@ -26,6 +26,43 @@ let currentSelection = null;
 // Mobile platform detection
 let isMobilePlatform = false;
 
+function getContentApi() {
+  return window.TextHighlighterContentAPI || null;
+}
+
+function removeHighlightViaApi(element) {
+  const contentApi = getContentApi();
+  if (contentApi && typeof contentApi.removeHighlightByElement === 'function') {
+    contentApi.removeHighlightByElement(element);
+    return;
+  }
+  if (typeof removeHighlight === 'function') {
+    removeHighlight(element);
+  }
+}
+
+function changeHighlightColorViaApi(element, color) {
+  const contentApi = getContentApi();
+  if (contentApi && typeof contentApi.changeHighlightColor === 'function') {
+    contentApi.changeHighlightColor(element, color);
+    return;
+  }
+  if (typeof changeHighlightColor === 'function') {
+    changeHighlightColor(element, color);
+  }
+}
+
+function highlightSelectionViaApi(color) {
+  const contentApi = getContentApi();
+  if (contentApi && typeof contentApi.highlightSelection === 'function') {
+    contentApi.highlightSelection(color);
+    return;
+  }
+  if (typeof highlightSelectedText === 'function') {
+    highlightSelectedText(color);
+  }
+}
+
 // Helper function for jelly animation
 function addJellyAnimation(btn) {
   btn.addEventListener('click', function () {
@@ -51,7 +88,7 @@ function createHighlightControls() {
   deleteButton.title = getMessage('deleteHighlight');
   deleteButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
-      removeHighlight(activeHighlightElement);
+      removeHighlightViaApi(activeHighlightElement);
     }
     e.stopPropagation();
   });
@@ -85,7 +122,7 @@ function createColorButton(colorInfo) {
   colorButton.title = getMessage(colorInfo.nameKey);
   colorButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
-      changeHighlightColor(activeHighlightElement, colorInfo.color);
+      changeHighlightColorViaApi(activeHighlightElement, colorInfo.color);
     }
     e.stopPropagation();
   });
@@ -912,7 +949,7 @@ function showSelectionControls(mouseX, mouseY) {
           // Get the color from the button's background color
           const colorInfo = currentColors[idx];
           if (colorInfo) {
-            highlightSelectedText(colorInfo.color);
+            highlightSelectionViaApi(colorInfo.color);
           }
           
           hideSelectionControls();
@@ -982,7 +1019,7 @@ function createHighlightWithColor(color) {
         selection.addRange(currentSelection.selection.getRangeAt(0));
       }
       
-      highlightSelectedText(color);
+      highlightSelectionViaApi(color);
       hideSelectionControls();
       hideSelectionIcon();
       currentSelection = null;
