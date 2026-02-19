@@ -7,11 +7,6 @@ const contentCore = window.TextHighlighterCore;
 // Minimap manager instance
 let minimapManager = null;
 
-// i18n support function
-function getMessage(key, substitutions = null) {
-  return browserAPI.i18n.getMessage(key, substitutions);
-}
-
 window.TextHighlighterState = {
   get() {
     return {

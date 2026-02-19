@@ -1,14 +1,3 @@
-// Cross-browser compatibility - use chrome API in Chrome, browser API in Firefox
-const browserAPI = (() => {
-  if (typeof browser !== 'undefined') {
-    return browser;
-  }
-  if (typeof chrome !== 'undefined') {
-    return chrome;
-  }
-  throw new Error('Neither browser nor chrome API is available');
-})();
-
 // Highlight controller UI container
 let highlightControlsContainer = null;
 let activeHighlightElement = null;

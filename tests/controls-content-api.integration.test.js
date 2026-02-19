@@ -1,5 +1,6 @@
 import fs from 'fs';
 
+const commonSource = fs.readFileSync(new URL('../content-scripts/content-common.js', import.meta.url), 'utf8');
 const controlsSource = fs.readFileSync(new URL('../content-scripts/controls.js', import.meta.url), 'utf8');
 
 describe('controls -> content API integration', () => {
@@ -15,7 +16,6 @@ describe('controls -> content API integration', () => {
       { color: '#ffff00', nameKey: 'yellow' },
       { color: '#aaffaa', nameKey: 'green' },
     ];
-    window.getMessage = () => '';
     window.debugLog = () => {};
     window.TextHighlighterContentAPI = api;
 
@@ -41,6 +41,7 @@ describe('controls -> content API integration', () => {
       },
     };
 
+    window.eval(commonSource);
     window.eval(controlsSource);
     window.createHighlightControls();
   });
