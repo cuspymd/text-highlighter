@@ -244,4 +244,38 @@ test.describe('Pages List UI and Delete All Pages', () => {
 
     await listPage.close();
   });
+
+  test('Verify that import partially succeeds when JSON includes schema-invalid pages', async ({ context, extensionId }) => {
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    const importBtn = listPage.locator('#import-btn');
+    await expect(importBtn).toBeVisible();
+
+    // Capture and verify alert messages (schema warning + import success)
+    const dialogMessages = [];
+    listPage.on('dialog', async (dialog) => {
+      dialogMessages.push(dialog.message());
+      await dialog.accept();
+    });
+
+    const jsonPath = path.join(__dirname, 'import-mixed-schema-invalid.json');
+    await importBtn.click();
+    await listPage.setInputFiles('#import-file', jsonPath);
+
+    // Only valid page should be imported
+    const pageItems = listPage.locator('.page-item');
+    await expect(pageItems).toHaveCount(1);
+
+    const urls = await pageItems.locator('.page-url').allTextContents();
+    expect(urls.some(u => u.includes('test-page.html'))).toBeTruthy();
+    expect(urls.some(u => u.includes('test-page2.html'))).toBeFalsy();
+
+    // Schema warning + success alerts
+    await expect(async () => {
+      expect(dialogMessages.length).toBe(2);
+    }).toPass();
+
+    await listPage.close();
+  });
 });

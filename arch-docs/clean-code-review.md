@@ -333,7 +333,7 @@ content script(`content.js`, `controls.js`, `minimap.js`)는 현재 Chrome Manif
 ### 4주차: 테스트 강화 + 문서화
 - import/export 스키마 검증 테스트.
 - 메시지 라우팅 매트릭스 문서화.
-- 유지보수 가이드(신규 액션 추가 방법) 작성.
+- 유지보수 가이드(신규 액션 추가 방법) 작성은 현재 범위에서 제외.
 
 ---
 

@@ -1,0 +1,43 @@
+{
+  "exportedAt": "2026-02-19T00:00:00.000Z",
+  "pages": [
+    {
+      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page.html",
+      "title": "Valid Page",
+      "lastUpdated": "2026-02-19T00:00:00.000Z",
+      "highlights": [
+        {
+          "color": "#FFFF00",
+          "groupId": "valid_1",
+          "spans": [
+            {
+              "position": 12,
+              "spanId": "valid_1_0",
+              "text": "Valid highlight text"
+            }
+          ],
+          "text": "Valid highlight text"
+        }
+      ]
+    },
+    {
+      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page2.html",
+      "title": "Invalid Schema Page",
+      "lastUpdated": "2026-02-19T00:00:00.000Z",
+      "highlights": [
+        {
+          "color": "#AAFFAA",
+          "groupId": "invalid_1",
+          "spans": [
+            {
+              "position": 42,
+              "spanId": "invalid_1_0",
+              "text": ""
+            }
+          ],
+          "text": ""
+        }
+      ]
+    }
+  ]
+}

@@ -73,6 +73,12 @@
   "importAllUnsafeUrl": {
     "message": "모든 URL이 유효하지 않거나 안전하지 않아 가져올 수 있는 페이지가 없습니다."
   },
+  "importAllInvalidSchema": {
+    "message": "모든 데이터가 스키마 검증에 실패하여 가져올 수 있는 페이지가 없습니다."
+  },
+  "importSchemaInvalidItemsSkipped": {
+    "message": "가져오기 중 유효하지 않은 항목 $1개를 건너뛰었습니다."
+  },
   "importSuccess": {
     "message": "가져오기가 완료되었습니다."
   },

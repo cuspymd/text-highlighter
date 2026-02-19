@@ -73,6 +73,12 @@
   "importAllUnsafeUrl": {
     "message": "No pages could be imported because all URLs are invalid or unsafe."
   },
+  "importAllInvalidSchema": {
+    "message": "No pages could be imported because all data failed schema validation."
+  },
+  "importSchemaInvalidItemsSkipped": {
+    "message": "$1 invalid item(s) were skipped during import."
+  },
   "importSuccess": {
     "message": "Import completed."
   },
