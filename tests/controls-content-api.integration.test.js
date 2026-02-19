@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-const controlsSource = fs.readFileSync(new URL('../controls.js', import.meta.url), 'utf8');
+const controlsSource = fs.readFileSync(new URL('../content-scripts/controls.js', import.meta.url), 'utf8');
 
 describe('controls -> content API integration', () => {
   const api = {

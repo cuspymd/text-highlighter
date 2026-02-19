@@ -1,4 +1,4 @@
-import '../content-core.js';
+import '../content-scripts/content-core.js';
 
 describe('content-core', () => {
   const core = window.TextHighlighterCore;

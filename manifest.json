@@ -61,11 +61,11 @@
         "<all_urls>"
       ],
       "js": [
-        "content-common.js",
-        "minimap.js",
-        "content-core.js",
-        "controls.js",
-        "content.js"
+        "content-scripts/content-common.js",
+        "content-scripts/minimap.js",
+        "content-scripts/content-core.js",
+        "content-scripts/controls.js",
+        "content-scripts/content.js"
       ],
       "css": [
         "styles.css"

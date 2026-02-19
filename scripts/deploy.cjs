@@ -11,15 +11,11 @@ const targetBrowser = process.argv[2] || 'chrome';
 // 배포에 필요한 파일 목록
 const filesToCopy = [
   'background.js',
-  'content.js',
-  'minimap.js',
   'popup.html',
   'popup.js',
   'styles.css',
   'pages-list.html',
   'pages-list.js',
-  'constants.js',
-  'controls.js'
 ];
 
 // Manifest file selection based on target browser
@@ -27,6 +23,7 @@ const manifestFile = targetBrowser === 'firefox' ? 'manifest-firefox.json' : 'ma
 
 const directoriesToCopy = [
   'background',
+  'content-scripts',
   '_locales',
   'images',
   'shared',
