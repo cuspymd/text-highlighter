@@ -14,6 +14,10 @@ function toIsoStringOrNow(value) {
   return new Date().toISOString();
 }
 
+function toTimestampOrNow(value) {
+  return Number.isFinite(value) && value > 0 ? value : Date.now();
+}
+
 function normalizeSpan(span) {
   if (!isPlainObject(span)) {
     return { ok: false, reason: 'span must be an object' };
@@ -68,6 +72,7 @@ function normalizeHighlightGroup(group, groupIdFallback) {
       groupId: isNonEmptyString(group.groupId) ? group.groupId : groupIdFallback,
       color: group.color,
       text: isNonEmptyString(group.text) ? group.text : spans.map(span => span.text).join(''),
+      updatedAt: toTimestampOrNow(group.updatedAt),
       spans,
     },
     rejectedSpans,

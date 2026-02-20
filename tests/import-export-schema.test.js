@@ -8,6 +8,7 @@ describe('import-export schema validation', () => {
   });
 
   it('should accept a valid payload', () => {
+    const updatedAt = 1700000000000;
     const result = validateImportPayload({
       pages: [
         {
@@ -19,6 +20,7 @@ describe('import-export schema validation', () => {
               groupId: 'g1',
               color: 'yellow',
               text: 'hello',
+              updatedAt,
               spans: [{ spanId: 's1', text: 'hello', position: 10 }],
             },
           ],
@@ -29,6 +31,7 @@ describe('import-export schema validation', () => {
     expect(result.valid).toBe(true);
     expect(result.pages).toHaveLength(1);
     expect(result.pages[0].highlights).toHaveLength(1);
+    expect(result.pages[0].highlights[0].updatedAt).toBe(updatedAt);
     expect(result.stats.acceptedPages).toBe(1);
     expect(result.stats.rejectedPages).toBe(0);
   });
@@ -99,5 +102,30 @@ describe('import-export schema validation', () => {
     expect(result.pages[0].lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(result.pages[0].highlights[0].groupId).toBe('import-0-0');
     expect(result.pages[0].highlights[0].text).toBe('abc');
+    expect(typeof result.pages[0].highlights[0].updatedAt).toBe('number');
+  });
+
+  it('should fallback invalid highlight updatedAt to current time', () => {
+    const now = 1700000001234;
+    jest.spyOn(Date, 'now').mockReturnValue(now);
+
+    const result = validateImportPayload({
+      pages: [
+        {
+          url: 'https://example.com',
+          highlights: [
+            {
+              groupId: 'g1',
+              color: '#ffff00',
+              updatedAt: 'not-a-number',
+              spans: [{ text: 'abc' }],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.pages[0].highlights[0].updatedAt).toBe(now);
+    Date.now.mockRestore();
   });
 });
