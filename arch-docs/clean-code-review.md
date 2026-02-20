@@ -295,13 +295,45 @@ content script(`content.js`, `controls.js`, `minimap.js`)는 현재 Chrome Manif
 - 기존 동작 동일성 유지 회귀 테스트 추가.
 
 ### 3주차: Content/Controls 경계 재설계
-- 하이라이트 알고리즘을 순수 로직 모듈로 분리.
-- DOM 조작 어댑터 계층 추가.
+- 실행 전략: **점진 분리(기능 동작 유지 우선)**.
+- content script 로드 순서 정리:
+  - `minimap.js` → `content-core.js` → `controls.js` → `content.js`
+- 핵심 변경 항목:
+  - `content-core.js` 신설 및 알고리즘 분리
+    - `convertSelectionRange`
+    - `processSelectionRange`
+    - 하이라이트 그룹 생성 유틸
+  - `content.js`를 오케스트레이션 레이어로 축소
+    - 메시지 라우팅
+    - storage I/O
+    - 초기화 및 minimap 연계
+    - `TextHighlighterCore` 호출
+  - `controls.js`는 content 내부 함수 직접 호출 제거
+    - `window.TextHighlighterContentAPI`를 통해서만 하이라이트 생성/삭제/색상변경 호출
+- 신규 전역 계약(문서화 대상):
+  - `window.TextHighlighterContentAPI.highlightSelection(color)`
+  - `window.TextHighlighterContentAPI.removeHighlightByElement(el)`
+  - `window.TextHighlighterContentAPI.changeHighlightColor(el, color)`
+  - `window.TextHighlighterContentAPI.refreshColors(colors)`
+  - `window.TextHighlighterState.get()/set()`
+- 타입 계약(JSDoc):
+  - `HighlightGroup`
+  - `HighlightSpan`
+  - `SelectionSnapshot`
+- 검증 체크리스트:
+  - Unit(Jest): range 변환, selection 처리, group 생성 규칙
+  - Integration(JSDOM): controls -> ContentAPI -> content 저장 호출 경계
+  - E2E(Playwright): 생성/삭제/색상변경/새로고침 복원/선택 컨트롤/미니맵
+- 리스크 및 완화:
+  - 리스크: content script 간 전역 공유 순서 의존성 증가
+  - 완화: manifest 로드 순서 고정 + API 폴백 경로 유지(점진 전환)
+  - 리스크: DOM 조작 알고리즘 분리 시 미세한 선택 범위 회귀
+  - 완화: 기존 회귀 시나리오 유지 + range 경계 테스트 추가
 
 ### 4주차: 테스트 강화 + 문서화
 - import/export 스키마 검증 테스트.
 - 메시지 라우팅 매트릭스 문서화.
-- 유지보수 가이드(신규 액션 추가 방법) 작성.
+- 유지보수 가이드(신규 액션 추가 방법) 작성은 현재 범위에서 제외.
 
 ---
 

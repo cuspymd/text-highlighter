@@ -73,6 +73,12 @@
   "importAllUnsafeUrl": {
     "message": "すべてのURLが無効または安全でないため、インポートできるページがありません。"
   },
+  "importAllInvalidSchema": {
+    "message": "すべてのデータがスキーマ検証に失敗したため、インポートできるページがありません。"
+  },
+  "importSchemaInvalidItemsSkipped": {
+    "message": "インポート中に無効な項目$1件をスキップしました。"
+  },
   "importSuccess": {
     "message": "インポートが完了しました。"
   },

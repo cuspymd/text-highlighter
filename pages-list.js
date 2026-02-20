@@ -1,5 +1,6 @@
 import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
+import { validateImportPayload } from './shared/import-export-schema.js';
 
 // Theme change detection and handling
 function initializeThemeWatcher() {
@@ -343,11 +344,36 @@ document.addEventListener('DOMContentLoaded', function () {
             alert(getMessage('importAllUnsafeUrl', 'No pages could be imported because all URLs are invalid or unsafe.'));
             return;
           }
+
+          // Validate and normalize schema before writing to storage.
+          const validation = validateImportPayload({ pages: safePages });
+          if (!validation.valid) {
+            alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+            return;
+          }
+
+          if (validation.pages.length === 0) {
+            alert(getMessage('importAllInvalidSchema', 'No pages could be imported because all data failed schema validation.'));
+            return;
+          }
+
+          const schemaDrops = validation.stats.rejectedPages + validation.stats.rejectedHighlights + validation.stats.rejectedSpans;
+          if (schemaDrops > 0) {
+            const schemaWarning = getMessage(
+              'importSchemaInvalidItemsSkipped',
+              '$1 invalid item(s) were skipped during import.',
+              [String(schemaDrops)],
+            );
+            alert(schemaWarning);
+          }
+
+          const validatedPages = validation.pages;
+
           // Get all current storage to check for overlap
           browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
             if (response && response.success) {
               const existingUrls = response.pages.map(p => p.url);
-              const importUrls = safePages.map(p => p.url);
+              const importUrls = validatedPages.map(p => p.url);
               const overlap = importUrls.filter(url => existingUrls.includes(url));
               let proceed = true;
               if (overlap.length > 0) {
@@ -361,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 ops[url] = null;
                 ops[`${url}_meta`] = null;
               });
-              safePages.forEach(page => {
+              validatedPages.forEach(page => {
                 ops[page.url] = page.highlights || [];
                 ops[`${page.url}_meta`] = {
                   title: page.title || '',

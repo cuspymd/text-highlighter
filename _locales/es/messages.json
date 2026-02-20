@@ -73,6 +73,12 @@
   "importAllUnsafeUrl": {
     "message": "No se pudo importar ninguna página porque todas las URLs son inválidas o inseguras."
   },
+  "importAllInvalidSchema": {
+    "message": "No se pudo importar ninguna página porque todos los datos fallaron la validación de esquema."
+  },
+  "importSchemaInvalidItemsSkipped": {
+    "message": "Se omitieron $1 elemento(s) inválido(s) durante la importación."
+  },
   "importSuccess": {
     "message": "Importación completada."
   },

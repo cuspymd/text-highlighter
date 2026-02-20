@@ -2,14 +2,47 @@ let highlights = [];
 const currentUrl = window.location.href;
 
 let currentColors = [];
+const contentCore = window.TextHighlighterCore;
 
 // Minimap manager instance
 let minimapManager = null;
 
-// i18n support function
-function getMessage(key, substitutions = null) {
-  return browserAPI.i18n.getMessage(key, substitutions);
-}
+window.TextHighlighterState = {
+  get() {
+    return {
+      highlights,
+      currentColors,
+      activeHighlightId: activeHighlightElement?.dataset?.groupId || null,
+    };
+  },
+  set(nextState = {}) {
+    if (Array.isArray(nextState.highlights)) {
+      highlights = nextState.highlights;
+    }
+    if (Array.isArray(nextState.currentColors)) {
+      currentColors = nextState.currentColors;
+    }
+    if (Object.prototype.hasOwnProperty.call(nextState, 'activeHighlightId') && !nextState.activeHighlightId) {
+      activeHighlightElement = null;
+    }
+  },
+};
+
+window.TextHighlighterContentAPI = {
+  highlightSelection(color) {
+    highlightSelectedText(color);
+  },
+  removeHighlightByElement(element) {
+    removeHighlight(element);
+  },
+  changeHighlightColor(element, color) {
+    changeHighlightColor(element, color);
+  },
+  refreshColors(colors) {
+    currentColors = colors || currentColors;
+    refreshHighlightControlsColors();
+  },
+};
 
 debugLog('Content script loaded for:', currentUrl);
 
@@ -453,36 +486,10 @@ function updateMinimapMarkers() {
 
 // Convert selection range when all containers are the same node
 function convertSelectionRange(range) {
-  const commonAncestor = range.commonAncestorContainer;
-  const startContainer = range.startContainer;
-  const endContainer = range.endContainer;
-  
-  // Check if common ancestor and start container are the same node
-  if (commonAncestor === startContainer) {
-    // Find the child node at start offset
-    if (commonAncestor.childNodes && range.startOffset < commonAncestor.childNodes.length) {
-      const childNode = commonAncestor.childNodes[range.startOffset];
-      
-      // Check if child node is a text node
-      if (childNode && childNode.nodeType === Node.TEXT_NODE) {
-        const convertedRange = document.createRange();
-        convertedRange.setStart(childNode, 0);
-        convertedRange.setEnd(range.endContainer, range.endOffset);
-        
-        debugLog('Converted Range:', {
-          commonAncestorContainer: convertedRange.commonAncestorContainer,
-          startContainer: convertedRange.startContainer,
-          endContainer: convertedRange.endContainer,
-          startOffset: convertedRange.startOffset,
-          endOffset: convertedRange.endOffset
-        });
-        
-        return convertedRange;
-      }
-    }
+  if (!contentCore || typeof contentCore.convertSelectionRange !== 'function') {
+    return range;
   }
-  
-  return range;
+  return contentCore.convertSelectionRange(range, debugLog);
 }
 
 // Refactored highlightSelectedText function with tree traversal algorithm
@@ -493,14 +500,14 @@ function highlightSelectedText(color) {
 
   // Check if the selection overlaps with an existing highlight to prevent nesting.
   const rangeToCheck = selection.getRangeAt(0);
-  const existingHighlights = document.querySelectorAll('.text-highlighter-extension');
-  for (const hl of existingHighlights) {
-    // intersectsNode returns true if any part of the node is inside the range.
-    if (rangeToCheck.intersectsNode(hl)) {
-      debugLog('Selection overlaps with an existing highlight. Aborting highlight creation.');
-      selection.removeAllRanges();
-      return;
-    }
+  if (
+    contentCore
+    && typeof contentCore.selectionOverlapsHighlight === 'function'
+    && contentCore.selectionOverlapsHighlight(rangeToCheck)
+  ) {
+    debugLog('Selection overlaps with an existing highlight. Aborting highlight creation.');
+    selection.removeAllRanges();
+    return;
   }
 
   const range = selection.getRangeAt(0);
@@ -519,25 +526,29 @@ function highlightSelectedText(color) {
     const groupId = Date.now().toString();
     const highlightSpans = processSelectionRange(convertedRange, color, groupId);
     if (highlightSpans.length > 0) {
-      // Create group information
-      const group = {
-        groupId,
-        color,
-        text: selectedText,
-        updatedAt: Date.now(),
-        spans: []
-      };
+      const group = (
+        contentCore
+        && typeof contentCore.buildHighlightGroup === 'function'
+      )
+        ? contentCore.buildHighlightGroup({ groupId, color, selectedText, highlightSpans })
+        : {
+            groupId,
+            color,
+            text: selectedText,
+            updatedAt: Date.now(),
+            spans: [],
+          };
+
       highlightSpans.forEach((span, index) => {
-        const rect = span.getBoundingClientRect();
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        const spanId = `${groupId}_${index}`;
-        span.dataset.groupId = groupId;
-        span.dataset.spanId = spanId;
-        group.spans.push({
-          spanId,
-          text: span.textContent,
-          position: rect.top + scrollTop
-        });
+        if (!group.spans[index]) {
+          const rect = span.getBoundingClientRect();
+          const scrollTop = window.scrollY || document.documentElement.scrollTop;
+          group.spans.push({
+            spanId: `${groupId}_${index}`,
+            text: span.textContent,
+            position: rect.top + scrollTop,
+          });
+        }
         addHighlightEventListeners(span);
       });
       highlights.push(group);
@@ -558,226 +569,10 @@ function highlightSelectedText(color) {
  * @returns {Array} Array of created highlight spans
  */
 function processSelectionRange(range, color, groupId) {
-  const commonAncestor = range.commonAncestorContainer;
-  const startContainer = range.startContainer;
-  const endContainer = range.endContainer;
-  const startOffset = range.startOffset;
-  const endOffset = range.endOffset;
-  
-  const highlightSpans = [];
-  let currentSpan = null;
-  let processingStarted = false;
-  let spanCounter = 0;
-  
-  // Helper function to create a new span
-  function createNewSpan() {
-    const span = document.createElement('span');
-    span.className = 'text-highlighter-extension';
-    span.style.backgroundColor = color;
-    span.dataset.groupId = groupId;
-    span.dataset.spanId = `${groupId}_${spanCounter++}`;
-    return span;
+  if (!contentCore || typeof contentCore.processSelectionRange !== 'function') {
+    return [];
   }
-  
-  // Helper function to finalize current span
-  function finalizeCurrentSpan() {
-    if (currentSpan && currentSpan.textContent.trim() !== '') {
-      highlightSpans.push(currentSpan);
-    }
-    currentSpan = null;
-  }
-  
-  // Helper function to check if node is a block element
-  function isBlockElement(node) {
-    if (node.nodeType !== Node.ELEMENT_NODE) return false;
-    
-    const blockTags = ['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 
-                      'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'NAV', 
-                      'ASIDE', 'MAIN', 'BLOCKQUOTE', 'PRE', 'UL', 'OL', 
-                      'LI', 'TABLE', 'TR', 'TD', 'TH', 'TBODY', 'THEAD', 
-                      'TFOOT', 'FORM', 'FIELDSET', 'ADDRESS'];
-    
-    return blockTags.includes(node.tagName);
-  }
-  
-  // Helper function to check if we should skip this node
-  function shouldSkipNode(node) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const skipTags = ['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'];
-      if (skipTags.includes(node.tagName)) return true;
-      
-      // Skip if already highlighted
-      if (node.classList && node.classList.contains('text-highlighter-extension')) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  // Tree traversal function
-  function traverseNode(node) {
-    // Check if we've reached the end
-    if (processingStarted && node === endContainer) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        // Handle end text node
-        if (!currentSpan) {
-          currentSpan = createNewSpan();
-        }
-        
-        const textContent = node.textContent;
-        const selectedText = textContent.substring(0, endOffset);
-        
-        if (selectedText.trim() !== '') {
-          const newTextNode = document.createTextNode(selectedText);
-          currentSpan.appendChild(newTextNode);
-          
-          // Split the text node properly
-          const remainingText = textContent.substring(endOffset);
-          const parent = node.parentNode;
-          
-          if (remainingText) {
-            const remainingTextNode = document.createTextNode(remainingText);
-            parent.insertBefore(currentSpan, node);
-            parent.insertBefore(remainingTextNode, node);
-            parent.removeChild(node); // Remove the original node
-          } else {
-            parent.replaceChild(currentSpan, node);
-          }
-          
-          finalizeCurrentSpan();
-        } else {
-          // If no valid text to highlight, just finalize current span
-          finalizeCurrentSpan();
-        }
-      }
-      return true; // Signal to stop processing
-    }
-    
-    // Check if we've reached the start
-    if (!processingStarted && node === startContainer) {
-      processingStarted = true;
-      
-      if (node.nodeType === Node.TEXT_NODE) {
-        // Handle start text node
-        const textContent = node.textContent;
-        
-        if (startContainer === endContainer) {
-          // Same text node case
-          const selectedText = textContent.substring(startOffset, endOffset);
-          
-          if (selectedText.trim() !== '') {
-            currentSpan = createNewSpan();
-            const newTextNode = document.createTextNode(selectedText);
-            currentSpan.appendChild(newTextNode);
-            
-            // Split the text node
-            const beforeText = textContent.substring(0, startOffset);
-            const afterText = textContent.substring(endOffset);
-            
-            const parent = node.parentNode;
-            if (beforeText) {
-              const beforeTextNode = document.createTextNode(beforeText);
-              parent.insertBefore(beforeTextNode, node);
-            }
-            
-            parent.insertBefore(currentSpan, node);
-            
-            if (afterText) {
-              const afterTextNode = document.createTextNode(afterText);
-              parent.insertBefore(afterTextNode, node);
-            }
-            
-            parent.removeChild(node);
-            finalizeCurrentSpan();
-          }
-          return true; // Signal to stop processing
-        } else {
-          // Multi-node selection start
-          const selectedText = textContent.substring(startOffset);
-          
-          if (selectedText.trim() !== '') {
-            currentSpan = createNewSpan();
-            const newTextNode = document.createTextNode(selectedText);
-            currentSpan.appendChild(newTextNode);
-            
-            // Split the text node
-            const beforeText = textContent.substring(0, startOffset);
-            const parent = node.parentNode;
-            
-            if (beforeText) {
-              const beforeTextNode = document.createTextNode(beforeText);
-              parent.insertBefore(beforeTextNode, node);
-            }
-            
-            parent.replaceChild(currentSpan, node);
-            finalizeCurrentSpan();
-            currentSpan = createNewSpan();
-          }
-        }
-      }
-      return false; // Continue processing
-    }
-    
-    // Process nodes between start and end
-    if (processingStarted) {
-      if (shouldSkipNode(node)) {
-        return false; // Skip but continue
-      }
-
-      if (range.comparePoint(node, 0) === 1) {
-        debugLog('Stop traversing over range', node);
-        return true;
-      }
-      
-      if (node.nodeType === Node.TEXT_NODE) {
-        const textContent = node.textContent;
-        if (textContent.trim() !== '') {
-          if (!currentSpan) {
-            currentSpan = createNewSpan();
-          }
-          
-          const newTextNode = document.createTextNode(textContent);
-          currentSpan.appendChild(newTextNode);
-          
-          // Replace the original text node
-          node.parentNode.replaceChild(currentSpan, node);
-          finalizeCurrentSpan();
-          currentSpan = createNewSpan();
-        }
-      } else if (node.nodeType === Node.ELEMENT_NODE && isBlockElement(node)) {
-        // Block element encountered - finalize current span
-        finalizeCurrentSpan();
-        currentSpan = null;
-      }
-    }
-    
-    return false; // Continue processing
-  }
-  
-  // Perform depth-first traversal
-  function depthFirstTraversal(node) {
-    if (traverseNode(node)) {
-      return true; // Stop signal received
-    }
-    
-    // Process child nodes
-    const children = Array.from(node.childNodes);
-    for (const child of children) {
-      if (depthFirstTraversal(child)) {
-        return true; // Stop signal received
-      }
-    }
-    
-    return false;
-  }
-  
-  // Start traversal from common ancestor
-  depthFirstTraversal(commonAncestor);
-  
-  // Finalize any remaining span
-  finalizeCurrentSpan();
-  
-  return highlightSpans;
+  return contentCore.processSelectionRange(range, color, groupId);
 }
 
 // Selection controls functionality is now handled in controls.js

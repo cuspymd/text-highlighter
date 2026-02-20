@@ -73,6 +73,12 @@
   "importAllUnsafeUrl": {
     "message": "由于所有URL无效或不安全，没有可导入的页面。"
   },
+  "importAllInvalidSchema": {
+    "message": "由于所有数据都未通过模式校验，没有可导入的页面。"
+  },
+  "importSchemaInvalidItemsSkipped": {
+    "message": "导入时已跳过$1个无效项。"
+  },
   "importSuccess": {
     "message": "导入完成。"
   },
