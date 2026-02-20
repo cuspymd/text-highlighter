@@ -112,6 +112,10 @@ class MinimapManager {
     marker.style.backgroundColor = highlightElement.style.backgroundColor;
     marker.style.top = `${markerPosition}px`;
     marker.dataset.highlightId = highlightElement.dataset.highlightId;
+    const snippet = (highlightElement.textContent || '').trim().replace(/\s+/g, ' ');
+    const tooltipText = snippet.length > 60 ? `${snippet.slice(0, 57)}...` : snippet;
+    marker.dataset.tooltip = tooltipText || 'Highlight';
+    marker.title = tooltipText || 'Highlight';
 
     // Marker click event
     marker.addEventListener('click', (e) => {

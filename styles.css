@@ -1,3 +1,13 @@
+.text-highlighter-root,
+:root {
+  --th-surface: rgba(255, 255, 255, 0.7);
+  --th-surface-border: rgba(255, 255, 255, 0.35);
+  --th-stroke: rgba(28, 28, 33, 0.15);
+  --th-shadow-1: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --th-shadow-2: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --th-accent: #007aff;
+}
+
 .text-highlighter-extension {
   display: inline;
   border-radius: 2px;
@@ -18,15 +28,17 @@
   display: none;
   align-items: center;
   z-index: 9999;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 15px;
-  padding: 3px 6px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  background: var(--th-surface);
+  border: 1px solid var(--th-surface-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 5px 8px;
+  box-shadow: var(--th-shadow-2);
   opacity: 0;
-  transform: scale(0.8);
+  transform: translateY(6px) scale(0.96);
   pointer-events: none;
-  transition: opacity 0.35s cubic-bezier(.4,1.4,.6,1), transform 0.35s cubic-bezier(.4,1.4,.6,1);
+  transition: opacity 0.25s ease, transform 0.25s ease;
   /* Firefox color picker positioning fix */
   contain: layout;
   isolation: isolate;
@@ -35,30 +47,26 @@
 .text-highlighter-controls.visible {
   display: flex;
   opacity: 1;
-  transform: scale(1);
+  transform: translateY(0) scale(1);
   pointer-events: auto;
-  animation: pop-in-highlight 0.38s cubic-bezier(.22,1.6,.42,1.01) both;
+  animation: slide-fade-in 0.24s ease both;
 }
 
-@keyframes pop-in-highlight {
+@keyframes slide-fade-in {
   0% {
     opacity: 0;
-    transform: scale(0.8);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.12);
+    transform: translateY(8px) scale(0.95);
   }
   100% {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
 
 .text-highlighter-control-button {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -112,10 +120,10 @@
 }
 
 .delete-highlight {
-  background-color: #ff4444;
+  background-color: #ff4d4f;
   color: white;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,11 +141,11 @@
 }
 
 .add-color-button {
-  background-color: white;
-  border: 1px solid #ccc;
+  background-color: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--th-stroke);
   color: #999;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,16 +341,18 @@
   transform: translateY(-50%);
   width: 12px;
   height: 60%;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.12);
   border-radius: 6px;
   z-index: 9998;
   display: flex;
   flex-direction: column;
-  transition: opacity 0.3s;
+  transition: opacity 0.25s ease, width 0.2s ease, right 0.2s ease;
 }
 
 .text-highlighter-minimap:hover {
   opacity: 1;
+  width: 16px;
+  right: 13px;
 }
 
 .text-highlighter-minimap-marker {
@@ -357,6 +367,26 @@
   transition: transform 0.2s, box-shadow 0.2s, left 0.2s;
 }
 
+.text-highlighter-minimap-marker::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: rgba(20, 20, 24, 0.88);
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
 .text-highlighter-minimap-marker.visible {
   border: 2px solid white;
   left: -1px;
@@ -367,8 +397,12 @@
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
+.text-highlighter-minimap:hover .text-highlighter-minimap-marker:hover::after {
+  opacity: 1;
+}
+
 .text-highlighter-minimap {
-  opacity: 0.6;
+  opacity: 0.28;
 }
 
 .text-highlighter-minimap:hover {
@@ -414,15 +448,17 @@
   position: absolute !important;
   z-index: 9999 !important;
   cursor: pointer !important;
-  background-color: white !important;
-  border: 1px solid #ccc !important;
-  border-radius: 20% !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.36) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--th-shadow-2) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  opacity: 0.7 !important;
+  opacity: 0.78 !important;
   /* CSS reset */
   box-sizing: border-box !important;
   font-size: inherit !important;
@@ -472,6 +508,19 @@
   position: absolute;
   z-index: 10000;
   display: flex;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .text-highlighter-controls.visible {
+    opacity: 0.82;
+    transform: translateY(0) scale(0.96);
+  }
+
+  .text-highlighter-controls.visible:hover,
+  .text-highlighter-controls.visible:focus-within {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ========== Mobile / touch device styles ========== */

@@ -233,26 +233,36 @@ document.addEventListener('DOMContentLoaded', async function () {
       highlights.forEach(group => {
         const highlightItem = document.createElement('div');
         highlightItem.className = 'highlight-item';
-        highlightItem.style.backgroundColor = group.color;
         highlightItem.dataset.groupId = group.groupId;
+        highlightItem.style.setProperty('--highlight-color', group.color);
 
         // Truncate text if too long
         let displayText = group.text;
-        if (displayText.length > 48) {
-          displayText = displayText.substring(0, 45) + '...';
+        if (displayText.length > 80) {
+          displayText = displayText.substring(0, 77) + '...';
         }
-        highlightItem.textContent = displayText;
+
+        const textSpan = document.createElement('div');
+        textSpan.className = 'highlight-text';
+        textSpan.textContent = displayText;
 
         // Add delete button
         const deleteBtn = document.createElement('span');
         deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = '×';
-        deleteBtn.title = browserAPI.i18n.getMessage('removeHighlight');
+        const removeLabel = browserAPI.i18n.getMessage('removeHighlight');
+        deleteBtn.title = removeLabel;
+        deleteBtn.setAttribute('aria-label', removeLabel);
+
+        const deleteIcon = document.createElement('span');
+        deleteIcon.className = 'delete-icon';
+        deleteIcon.textContent = 'x';
+        deleteBtn.appendChild(deleteIcon);
         deleteBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           deleteHighlight(group.groupId, currentUrl);
         });
 
+        highlightItem.appendChild(textSpan);
         highlightItem.appendChild(deleteBtn);
         highlightsContainer.appendChild(highlightItem);
       });
@@ -368,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   // View list of highlighted pages
-  viewAllPagesBtn.addEventListener('click', function () {
+  function openPagesList() {
     debugLog('Opening all pages list');
     const targetUrl = browserAPI.runtime.getURL('pages-list.html');
 
@@ -411,7 +421,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         window.close();
       });
     }
-  });
+  }
+
+  viewAllPagesBtn.addEventListener('click', openPagesList);
 
   // Initialization
   await loadHighlights();
