@@ -178,35 +178,25 @@
         background: var(--surface);
         box-shadow: var(--shadow-1);
         padding: 12px;
-      }
-
-      .page-top {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: flex-start;
-      }
-
-      .page-main {
         min-width: 0;
+      }
+
+      .page-info-container {
+        margin-bottom: 10px;
+      }
+
+      .page-title-row {
         display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        flex: 1;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
       }
 
       .page-favicon {
-        width: 20px;
-        height: 20px;
-        border-radius: 6px;
-        background: var(--surface-strong);
-        border: 1px solid var(--border);
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
         flex-shrink: 0;
-      }
-
-      .page-meta {
-        min-width: 0;
-        flex: 1;
       }
 
       .page-title {
@@ -215,13 +205,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 2px;
-        color: var(--accent);
-        cursor: pointer;
-      }
-
-      .page-title:hover {
-        text-decoration: underline;
+        margin-bottom: 5px;
       }
 
       .page-url {
@@ -230,106 +214,83 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 8px;
+        margin-bottom: 5px;
       }
 
-      .meta-line {
-        display: flex;
-        align-items: center;
-        gap: 6px;
+      .page-info {
         font-size: 12px;
         color: var(--muted);
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
-      .count-badge {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        border: 1px solid rgba(139, 92, 246, 0.45);
-        color: var(--accent);
-        padding: 2px 8px;
-        font-weight: 600;
-      }
-
-      .top-controls {
+      .page-actions {
         display: flex;
-        gap: 6px;
-        align-items: center;
-        flex-shrink: 0;
+        gap: 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
       }
 
-      .page-action-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 9px;
-        border: 1px solid var(--border);
+      .btn {
+        padding: 6px 16px;
         background: var(--surface-strong);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
         cursor: pointer;
-        transition: all 0.18s ease;
+        font-size: 14px;
+        height: 36px;
+        min-width: 120px;
+        box-sizing: border-box;
+        transition: background 0.15s;
       }
 
-      .page-action-btn svg {
-        width: 16px;
-        height: 16px;
-        fill: currentColor;
+      .btn:hover {
+        background: var(--surface);
       }
 
-      .page-action-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-1);
+      .btn-view {
+        color: var(--accent);
+        border-color: rgba(139, 92, 246, 0.45);
+        background: rgba(139, 92, 246, 0.08);
+      }
+
+      .btn-view:hover {
+        background: rgba(139, 92, 246, 0.14);
       }
 
       .btn-delete {
         color: var(--danger);
         border-color: rgba(212, 58, 47, 0.35);
+        background: rgba(212, 58, 47, 0.08);
+      }
+
+      .btn-delete:hover {
+        background: rgba(212, 58, 47, 0.14);
       }
 
       .page-highlights {
         margin-top: 8px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--surface-strong);
-        padding: 8px;
-        max-height: 180px;
-        overflow: auto;
-        scrollbar-width: thin;
-        scrollbar-color: #8d94a1 transparent;
-      }
-
-      .page-highlights::-webkit-scrollbar {
-        width: 7px;
-      }
-
-      .page-highlights::-webkit-scrollbar-button {
-        display: none;
-        width: 0;
-        height: 0;
-      }
-
-      .page-highlights::-webkit-scrollbar-track {
+        border: none;
+        border-radius: 0;
         background: transparent;
-      }
-
-      .page-highlights::-webkit-scrollbar-thumb {
-        background: #8d94a1;
-        border-radius: 8px;
-      }
-
-      .page-highlights::-webkit-scrollbar-thumb:hover {
-        background: #6f7786;
+        padding: 8px;
+        max-height: none;
+        overflow: visible;
+        width: 100%;
+        min-width: 0;
       }
 
       .highlight-item {
         position: relative;
         margin-bottom: 6px;
         border-radius: 8px;
-        background: var(--surface);
+        background: var(--surface-strong);
         border: 1px solid var(--border);
         padding: 7px 9px 7px 13px;
         overflow: hidden;
+        width: 100%;
+        max-width: 100%;
       }
 
       .highlight-item::before {
@@ -350,6 +311,8 @@
       .highlight-text {
         color: var(--text);
         font-size: 12px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
       #import-btn svg {
@@ -377,6 +340,24 @@
 
         .page-grid {
           grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 500px) {
+        .btn {
+          min-width: 0;
+          padding: 6px 10px;
+          font-size: 13px;
+          flex: 1 1 0;
+          white-space: normal;
+          line-height: 1.2;
+          height: auto;
+          min-height: 36px;
+        }
+
+        .page-actions {
+          gap: 6px;
+          align-items: stretch;
         }
       }
     </style>

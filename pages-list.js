@@ -167,99 +167,109 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
 
-        const topRow = document.createElement('div');
-        topRow.className = 'page-top';
+        // Build DOM safely to avoid XSS (no innerHTML)
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'page-info-container';
 
-        const pageMain = document.createElement('div');
-        pageMain.className = 'page-main';
+        const titleRow = document.createElement('div');
+        titleRow.className = 'page-title-row';
 
         const favicon = document.createElement('img');
         favicon.className = 'page-favicon';
         favicon.alt = '';
         favicon.src = `https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(page.url)}`;
 
-        const metaWrap = document.createElement('div');
-        metaWrap.className = 'page-meta';
-
         const titleDiv = document.createElement('div');
         titleDiv.className = 'page-title';
         titleDiv.textContent = pageTitle;
-        titleDiv.title = page.url;
 
         const urlDiv = document.createElement('div');
         urlDiv.className = 'page-url';
         urlDiv.textContent = page.url;
 
         const infoDiv = document.createElement('div');
-        infoDiv.className = 'meta-line';
+        infoDiv.className = 'page-info';
+        infoDiv.textContent = `${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount ?? 0} | ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}`;
 
-        const updatedText = document.createElement('span');
-        updatedText.textContent = `${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}`;
-        infoDiv.appendChild(updatedText);
+        titleRow.appendChild(favicon);
+        titleRow.appendChild(titleDiv);
+        infoContainer.appendChild(titleRow);
+        infoContainer.appendChild(urlDiv);
+        infoContainer.appendChild(infoDiv);
 
-        metaWrap.appendChild(titleDiv);
-        metaWrap.appendChild(urlDiv);
-        metaWrap.appendChild(infoDiv);
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'page-actions';
 
-        pageMain.appendChild(favicon);
-        pageMain.appendChild(metaWrap);
+        const detailsBtn = document.createElement('button');
+        detailsBtn.className = 'btn btn-details';
+        detailsBtn.textContent = getMessage('showDetails', 'Show Details');
+        actionsDiv.appendChild(detailsBtn);
 
-        const topControls = document.createElement('div');
-        topControls.className = 'top-controls';
-
-        const countBadge = document.createElement('span');
-        countBadge.className = 'count-badge';
-        countBadge.textContent = String(page.highlightCount ?? 0);
-        countBadge.title = `${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount ?? 0}`;
-
-        topControls.appendChild(countBadge);
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'btn btn-view';
+        viewBtn.textContent = getMessage('openPage', 'Open Page');
+        actionsDiv.appendChild(viewBtn);
 
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'page-action-btn btn-delete';
-        deleteBtn.title = getMessage('deletePage', 'Delete');
-        deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12Zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4Z"/></svg>';
-        topControls.appendChild(deleteBtn);
-
-        topRow.appendChild(pageMain);
-        topRow.appendChild(topControls);
+        deleteBtn.className = 'btn btn-delete';
+        deleteBtn.textContent = getMessage('deletePage', 'Delete');
+        actionsDiv.appendChild(deleteBtn);
 
         const highlightsDiv = document.createElement('div');
         highlightsDiv.className = 'page-highlights';
+        highlightsDiv.style.display = 'none';
 
-        const sortedHighlights = [...(page.highlights || [])].sort((a, b) => {
-          const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
-          const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
-          return posA - posB;
-        });
-
-        if (sortedHighlights.length === 0) {
-          const emptyHighlight = document.createElement('div');
-          emptyHighlight.className = 'highlight-item';
-          const emptyText = document.createElement('span');
-          emptyText.className = 'highlight-text';
-          emptyText.textContent = getMessage('noHighlights', 'No highlighted text on this page.');
-          emptyHighlight.appendChild(emptyText);
-          highlightsDiv.appendChild(emptyHighlight);
-        } else {
-          sortedHighlights.forEach(group => {
-            const highlightItem = document.createElement('div');
-            highlightItem.className = 'highlight-item';
-            highlightItem.style.setProperty('--highlight-color', group.color);
-            const span = document.createElement('span');
-            span.className = 'highlight-text';
-            span.textContent = group.text;
-            highlightItem.appendChild(span);
-            highlightsDiv.appendChild(highlightItem);
-          });
-        }
-
-        pageItem.appendChild(topRow);
+        pageItem.appendChild(infoContainer);
+        pageItem.appendChild(actionsDiv);
         pageItem.appendChild(highlightsDiv);
 
         pagesContainer.appendChild(pageItem);
 
-        // Open page by clicking title
-        pageItem.querySelector('.page-title').addEventListener('click', function () {
+        // Page details button event
+        pageItem.querySelector('.btn-details').addEventListener('click', function () {
+          const highlightsContainer = pageItem.querySelector('.page-highlights');
+
+          if (highlightsContainer.style.display === 'block') {
+            highlightsContainer.style.display = 'none';
+            this.textContent = getMessage('showDetails', 'Show Details');
+          } else {
+            // Display highlight data
+            highlightsContainer.innerHTML = '';
+            highlightsContainer.style.display = 'block';
+            this.textContent = getMessage('hideDetails', 'Hide');
+
+            const sortedHighlights = [...(page.highlights || [])].sort((a, b) => {
+              const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
+              const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
+              return posA - posB;
+            });
+
+            if (sortedHighlights.length === 0) {
+              const emptyHighlight = document.createElement('div');
+              emptyHighlight.className = 'highlight-item';
+              const emptyText = document.createElement('span');
+              emptyText.className = 'highlight-text';
+              emptyText.textContent = getMessage('noHighlights', 'No highlighted text on this page.');
+              emptyHighlight.appendChild(emptyText);
+              highlightsContainer.appendChild(emptyHighlight);
+              return;
+            }
+
+            sortedHighlights.forEach(group => {
+              const highlightItem = document.createElement('div');
+              highlightItem.className = 'highlight-item';
+              highlightItem.style.setProperty('--highlight-color', group.color);
+              const span = document.createElement('span');
+              span.className = 'highlight-text';
+              span.textContent = group.text;
+              highlightItem.appendChild(span);
+              highlightsContainer.appendChild(highlightItem);
+            });
+          }
+        });
+
+        // Open page button event
+        pageItem.querySelector('.btn-view').addEventListener('click', function () {
           browserAPI.tabs.create({ url: page.url });
         });
 
