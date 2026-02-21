@@ -115,7 +115,6 @@ class MinimapManager {
     const snippet = (highlightElement.textContent || '').trim().replace(/\s+/g, ' ');
     const tooltipText = snippet.length > 60 ? `${snippet.slice(0, 57)}...` : snippet;
     marker.dataset.tooltip = tooltipText || 'Highlight';
-    marker.title = tooltipText || 'Highlight';
 
     // Marker click event
     marker.addEventListener('click', (e) => {
