@@ -169,11 +169,13 @@
 
 /* Firefox custom color picker */
 .custom-color-picker {
-  background: white;
-  border: 1px solid #ccc;
+  background: var(--th-surface);
+  border: 1px solid var(--th-surface-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 8px;
   padding: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--th-shadow-2);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   width: 240px;
   opacity: 0;
