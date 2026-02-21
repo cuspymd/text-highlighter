@@ -403,15 +403,6 @@
   left: -1px;
 }
 
-.text-highlighter-minimap-marker:hover {
-  transform: scale(1.3);
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-}
-
-.text-highlighter-minimap:hover .text-highlighter-minimap-marker:hover::after {
-  opacity: 1;
-}
-
 .text-highlighter-minimap {
   opacity: 0.28;
 }
@@ -422,6 +413,17 @@
 
 .text-highlighter-minimap-marker.visible {
   border: 2px solid white;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .text-highlighter-minimap-marker:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-highlighter-minimap:hover .text-highlighter-minimap-marker:hover::after {
+    opacity: 1;
+  }
 }
 
 .text-highlighter-minimap-toggle {
@@ -578,11 +580,27 @@
   .text-highlighter-minimap {
     width: 16px;
     right: 5px;
+    opacity: 0.45;
+    transition: width 0.18s ease, right 0.18s ease, background-color 0.18s ease, opacity 0.18s ease;
   }
 
   .text-highlighter-minimap-marker {
     width: 14px;
     height: 14px;
+  }
+
+  .text-highlighter-minimap.touch-expanded {
+    width: 24px;
+    right: 8px;
+    border-radius: 10px;
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.22);
+  }
+
+  .text-highlighter-minimap.touch-expanded .text-highlighter-minimap-marker {
+    width: 18px;
+    height: 18px;
+    left: 2px;
   }
 
   .text-highlighter-minimap-marker.visible {
@@ -673,8 +691,8 @@
   }
 
   .text-highlighter-minimap-marker:active {
-    transform: scale(1.3);
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    transform: none;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
   }
 
   .color-button:hover,
@@ -685,5 +703,12 @@
   .color-button:active,
   .delete-highlight:active {
     transform: scale(1.1);
+  }
+}
+
+@media (pointer: coarse) {
+  .text-highlighter-minimap-marker::after {
+    display: none;
+    opacity: 0 !important;
   }
 }

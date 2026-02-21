@@ -9,6 +9,8 @@ class MinimapManager {
     this.highlightTimers = new Map();
     // Default minimap height (used when container is hidden)
     this.defaultMinimapHeight = 300;
+    this.touchExpandTimer = null;
+    this.touchExpandDuration = 2200;
   }
 
   // Initialize minimap
@@ -24,6 +26,17 @@ class MinimapManager {
     this.container = document.createElement('div');
     this.container.className = 'text-highlighter-minimap';
     this.container.style.pointerEvents = 'none';
+    this.container.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch') return;
+      if (!this.container.classList.contains('touch-expanded')) {
+        this.expandTouchMinimap();
+        // First touch only expands minimap on mobile.
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      this.startTouchExpandTimer();
+    });
     document.body.appendChild(this.container);
   }
 
@@ -119,6 +132,13 @@ class MinimapManager {
     // Marker click event
     marker.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (window.matchMedia('(pointer: coarse)').matches && !this.container.classList.contains('touch-expanded')) {
+        this.expandTouchMinimap();
+        return;
+      }
+      if (window.matchMedia('(pointer: coarse)').matches) {
+        this.startTouchExpandTimer();
+      }
       this.scrollToHighlight(highlightElement);
       this.highlightTemporarily(highlightElement);
     });
@@ -265,8 +285,33 @@ class MinimapManager {
       this.container.style.display = 'flex';
       this.container.style.pointerEvents = 'auto';
     } else {
+      this.collapseTouchMinimap();
       this.container.style.display = 'none';
     }
+  }
+
+  expandTouchMinimap() {
+    if (!this.container) return;
+    this.container.classList.add('touch-expanded');
+    this.startTouchExpandTimer();
+  }
+
+  startTouchExpandTimer() {
+    if (this.touchExpandTimer) {
+      clearTimeout(this.touchExpandTimer);
+    }
+    this.touchExpandTimer = setTimeout(() => {
+      this.collapseTouchMinimap();
+    }, this.touchExpandDuration);
+  }
+
+  collapseTouchMinimap() {
+    if (this.touchExpandTimer) {
+      clearTimeout(this.touchExpandTimer);
+      this.touchExpandTimer = null;
+    }
+    if (!this.container) return;
+    this.container.classList.remove('touch-expanded');
   }
 
   // Throttling helper function (performance optimization)
@@ -304,6 +349,8 @@ class MinimapManager {
       clearTimeout(this.throttleTimer);
       this.throttleTimer = null;
     }
+
+    this.collapseTouchMinimap();
 
     // Clean up remaining highlight effects
     const highlightedElements = document.querySelectorAll('[data-highlighted="true"]');
