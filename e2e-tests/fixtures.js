@@ -87,16 +87,38 @@ export async function expectHighlightSpan(spanLocator, { color, text }) {
  */
 export async function selectTextInElement(locator, textToSelect) {
   await locator.evaluate((element, text) => {
-    const textNode = Array.from(element.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.includes(text));
-    if (textNode) {
-      const range = document.createRange();
-      const startIndex = textNode.textContent.indexOf(text);
-      range.setStart(textNode, startIndex);
-      range.setEnd(textNode, startIndex + text.length);
-      window.getSelection().removeAllRanges();
-      window.getSelection().addRange(range);
-    } else {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let fullText = '';
+
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const nodeText = node.textContent || '';
+      if (nodeText.length > 0) {
+        textNodes.push({ node, start: fullText.length, end: fullText.length + nodeText.length });
+        fullText += nodeText;
+      }
+    }
+
+    const startOffset = fullText.indexOf(text);
+    if (startOffset === -1) {
       throw new Error(`Text "${text}" not found in element for selection.`);
     }
+
+    const endOffset = startOffset + text.length;
+    const startInfo = textNodes.find(info => startOffset >= info.start && startOffset < info.end);
+    const endInfo = textNodes.find(info => endOffset > info.start && endOffset <= info.end);
+
+    if (!startInfo || !endInfo) {
+      throw new Error(`Unable to map "${text}" to text nodes for selection.`);
+    }
+
+    const range = document.createRange();
+    range.setStart(startInfo.node, startOffset - startInfo.start);
+    range.setEnd(endInfo.node, endOffset - endInfo.start);
+
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
   }, textToSelect);
 }

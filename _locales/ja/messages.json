@@ -47,7 +47,7 @@
     "message": "テキストハイライター"
   },
   "popupDescription": {
-    "message": "ウェブページでテキストを選択し、右クリックでハイライトできます。"
+    "message": "ウェブページでテキストを選択し、コントロールUIを使ってハイライトできます。"
   },
   "exportAll": {
     "message": "エクスポート"
@@ -88,7 +88,7 @@
   "noHighlights": {
     "message": "このページにはハイライトされたテキストがありません。"
   },
-  "clearAllHighlights": {
+  "deleteAllHighlights": {
     "message": "すべてのハイライトを削除"
   },
   "viewAllPages": {
@@ -102,6 +102,9 @@
   },
   "confirmClearAll": {
     "message": "現在のページのすべてのハイライトを削除してよろしいですか？"
+  },
+  "confirmDeleteHighlight": {
+    "message": "このハイライトを削除してよろしいですか？"
   },
   "pagesListTitle": {
     "message": "ハイライトしたページ一覧"

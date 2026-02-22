@@ -1,5 +1,6 @@
 import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
+import { createLocalizedModalHelpers } from './shared/modal.js';
 
 const URL_PARAMS  = new URLSearchParams(window.location.search);
 
@@ -71,127 +72,9 @@ function updateTheme(isDark) {
   document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
 }
 
-// Custom modal functions to replace alert/confirm for Firefox compatibility
-function showConfirmModal(message) {
-  return new Promise((resolve) => {
-    const modal = createModal();
-    const content = modal.querySelector('.modal-content');
-    
-    // Clear content
-    content.replaceChildren();
-    
-    // Create paragraph
-    const p = document.createElement('p');
-    p.textContent = message;
-    content.appendChild(p);
-    
-    // Create button container
-    const buttonsDiv = document.createElement('div');
-    buttonsDiv.className = 'modal-buttons';
-    
-    // Create confirm button
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'modal-btn modal-confirm';
-    confirmBtn.textContent = browserAPI.i18n.getMessage('ok') || 'OK';
-    
-    // Create cancel button
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'modal-btn modal-cancel';
-    cancelBtn.textContent = browserAPI.i18n.getMessage('cancel') || 'Cancel';
-    
-    buttonsDiv.appendChild(confirmBtn);
-    buttonsDiv.appendChild(cancelBtn);
-    content.appendChild(buttonsDiv);
-    
-    confirmBtn.addEventListener('click', () => {
-      removeModal(modal);
-      resolve(true);
-    });
-    
-    cancelBtn.addEventListener('click', () => {
-      removeModal(modal);
-      resolve(false);
-    });
-    
-    // ESC key to cancel
-    document.addEventListener('keydown', function escHandler(e) {
-      if (e.key === 'Escape') {
-        document.removeEventListener('keydown', escHandler);
-        removeModal(modal);
-        resolve(false);
-      }
-    });
-  });
-}
-
-function showAlertModal(message) {
-  return new Promise((resolve) => {
-    const modal = createModal();
-    const content = modal.querySelector('.modal-content');
-    
-    // Clear content
-    content.replaceChildren();
-    
-    // Create paragraph
-    const p = document.createElement('p');
-    p.textContent = message;
-    content.appendChild(p);
-    
-    // Create button container
-    const buttonsDiv = document.createElement('div');
-    buttonsDiv.className = 'modal-buttons';
-    
-    // Create confirm button
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'modal-btn modal-confirm';
-    confirmBtn.textContent = browserAPI.i18n.getMessage('ok') || 'OK';
-    
-    buttonsDiv.appendChild(confirmBtn);
-    content.appendChild(buttonsDiv);
-    
-    confirmBtn.addEventListener('click', () => {
-      removeModal(modal);
-      resolve();
-    });
-    
-    // ESC key to close
-    document.addEventListener('keydown', function escHandler(e) {
-      if (e.key === 'Escape') {
-        document.removeEventListener('keydown', escHandler);
-        removeModal(modal);
-        resolve();
-      }
-    });
-  });
-}
-
-function createModal() {
-  const modal = document.createElement('div');
-  modal.className = 'custom-modal';
-  
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  
-  const content = document.createElement('div');
-  content.className = 'modal-content';
-  
-  modal.appendChild(overlay);
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-  
-  // Close on overlay click
-  overlay.addEventListener('click', () => {
-    removeModal(modal);
-  });
-  
-  return modal;
-}
-
-function removeModal(modal) {
-  if (modal && modal.parentNode) {
-    modal.parentNode.removeChild(modal);
-  }
-}
+const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(
+  (key, defaultValue) => browserAPI.i18n.getMessage(key) || defaultValue
+);
 
 document.addEventListener('DOMContentLoaded', async function () {
   // Initialize internationalization first
@@ -233,26 +116,43 @@ document.addEventListener('DOMContentLoaded', async function () {
       highlights.forEach(group => {
         const highlightItem = document.createElement('div');
         highlightItem.className = 'highlight-item';
-        highlightItem.style.backgroundColor = group.color;
         highlightItem.dataset.groupId = group.groupId;
+        highlightItem.style.setProperty('--highlight-color', group.color);
 
         // Truncate text if too long
         let displayText = group.text;
-        if (displayText.length > 48) {
-          displayText = displayText.substring(0, 45) + '...';
+        if (displayText.length > 80) {
+          displayText = displayText.substring(0, 77) + '...';
         }
-        highlightItem.textContent = displayText;
+
+        const textSpan = document.createElement('div');
+        textSpan.className = 'highlight-text';
+        textSpan.textContent = displayText;
 
         // Add delete button
         const deleteBtn = document.createElement('span');
         deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = '×';
-        deleteBtn.title = browserAPI.i18n.getMessage('removeHighlight');
-        deleteBtn.addEventListener('click', function (e) {
+        const removeLabel = browserAPI.i18n.getMessage('removeHighlight');
+        deleteBtn.title = removeLabel;
+        deleteBtn.setAttribute('aria-label', removeLabel);
+
+        const deleteIcon = document.createElement('span');
+        deleteIcon.className = 'delete-icon';
+        deleteIcon.textContent = 'x';
+        deleteBtn.appendChild(deleteIcon);
+        deleteBtn.addEventListener('click', async function (e) {
           e.stopPropagation();
-          deleteHighlight(group.groupId, currentUrl);
+          const confirmMessage =
+            browserAPI.i18n.getMessage('confirmDeleteHighlight') ||
+            browserAPI.i18n.getMessage('confirmDeletePage') ||
+            'Delete this highlight?';
+          const confirmed = await showConfirmModal(confirmMessage);
+          if (confirmed) {
+            await deleteHighlight(group.groupId, currentUrl);
+          }
         });
 
+        highlightItem.appendChild(textSpan);
         highlightItem.appendChild(deleteBtn);
         highlightsContainer.appendChild(highlightItem);
       });
@@ -368,7 +268,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   // View list of highlighted pages
-  viewAllPagesBtn.addEventListener('click', function () {
+  function openPagesList() {
     debugLog('Opening all pages list');
     const targetUrl = browserAPI.runtime.getURL('pages-list.html');
 
@@ -411,7 +311,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         window.close();
       });
     }
-  });
+  }
+
+  viewAllPagesBtn.addEventListener('click', openPagesList);
 
   // Initialization
   await loadHighlights();

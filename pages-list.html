@@ -4,469 +4,402 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="pagesListTitle">Highlighted Pages List</title>
+    <link rel="stylesheet" href="shared/modal.css" />
     <style>
-      /* Apply initial dark theme to prevent flickering */
+      :root {
+        --bg: #ffffff;
+        --surface: #f5f5f7;
+        --surface-strong: #ffffff;
+        --text: #1b1b1f;
+        --muted: #666772;
+        --border: #e1e1e8;
+        --accent: #8b5cf6;
+        --danger: #d43a2f;
+        --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.12);
+      }
+
       @media (prefers-color-scheme: dark) {
-        html {
-          background-color: #1e1e1e !important;
-          color: #e0e0e0 !important;
-        }
-        body {
-          background-color: #1e1e1e !important;
-          color: #e0e0e0 !important;
+        :root {
+          --bg: #121212;
+          --surface: #1c1c1e;
+          --surface-strong: #242428;
+          --text: #f4f4f5;
+          --muted: #a9a9b4;
+          --border: #383842;
+          --accent: #a78bfa;
+          --danger: #ff6b63;
+          --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.25);
+          --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.42);
         }
       }
-      
-      /* Disable transitions on page load */
+
+      * {
+        box-sizing: border-box;
+      }
+
       .preload * {
         transition: none !important;
       }
+
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-          Arial, sans-serif;
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 20px;
+        font-family: Inter, "Segoe UI Variable", "Segoe UI", -apple-system, sans-serif;
+        margin: 0;
+        color: var(--text);
+        background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.12), transparent 35%), var(--bg);
+      }
+
+      .page-wrap {
+        width: min(1120px, 100% - 28px);
+        margin: 20px auto 26px;
+      }
+
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
       }
 
       h1 {
+        margin: 0;
         font-size: 24px;
-        margin-bottom: 20px;
-        text-align: center;
-      }
-
-      .pages-list {
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        overflow: hidden;
-      }
-
-      .page-item {
-        padding: 15px;
-        border-bottom: 1px solid #ddd;
-        position: relative;
-      }
-
-      .page-item:last-child {
-        border-bottom: none;
-      }
-
-      .page-item:hover {
-        background-color: #f5f5f5;
-      }
-
-      .page-info-container {
-        margin-bottom: 10px;
-      }
-
-      .page-title {
-        font-weight: bold;
-        margin-bottom: 5px;
-      }
-
-      .page-url {
-        color: #666;
-        font-size: 14px;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        margin-bottom: 5px;
-      }
-
-      .page-info {
-        color: #666;
-        font-size: 12px;
-      }
-
-      .page-actions {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 10px;
-      }
-
-      .btn {
-        padding: 6px 16px;
-        background-color: #f0f0f0;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        height: 36px; /* Reduced by 4px from the original 40px */
-        min-width: 120px;
-        box-sizing: border-box;
-        vertical-align: middle;
-        transition: background 0.15s;
-      }
-
-      .btn:hover {
-        background-color: #e0e0e0;
-      }
-
-      .btn-view {
-        background-color: #e8f0fe;
-        color: #1a73e8;
-        border-color: #d2e3fc;
-      }
-
-      .btn-view:hover {
-        background-color: #d2e3fc;
-      }
-
-      .btn-delete {
-        background-color: #fee8e8;
-        color: #d93025;
-        border-color: #fcd2d2;
-      }
-
-      .btn-delete:hover {
-        background-color: #fcd2d2;
-      }
-
-      .btn-delete-all {
-        background-color: #d93025;
-        color: #fff;
-        border-color: #d93025;
-      }
-
-      .btn-delete-all:hover {
-        background-color: #b71c1c;
-      }
-
-      .btn-refresh {
-        background-color: #1a73e8;
-        color: #fff;
-        border-color: #1a73e8;
-      }
-
-      .btn-refresh:hover {
-        background-color: #1558b0;
-      }
-
-      .no-pages {
-        padding: 30px;
-        text-align: center;
-        color: #666;
-      }
-
-      .page-highlights {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #f9f9f9;
-        border-radius: 4px;
-        display: none;
-        width: 100%;
-      }
-
-      .highlight-item {
-        padding: 5px;
-        margin-bottom: 5px;
-        border-radius: 3px;
-      }
-
-      .highlight-text {
-        margin-left: 5px;
-      }
-
-      .back-btn {
-        margin-bottom: 20px;
+        font-weight: 600;
       }
 
       .toolbar {
-        margin-bottom: 18px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow-1);
+        padding: 10px;
         display: flex;
-        align-items: center;
-        gap: 12px;
+        gap: 8px;
         flex-wrap: wrap;
+        margin-bottom: 16px;
       }
 
       .search-section {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        position: relative;
         flex: 1;
-        min-width: 200px;
+        min-width: 220px;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        color: var(--muted);
+        pointer-events: none;
+      }
+
+      .search-input {
+        width: 100%;
+        height: 38px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        background: var(--surface-strong);
+        padding: 0 12px 0 34px;
+        color: var(--text);
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
       }
 
       .action-buttons {
         display: flex;
-        gap: 4px;
+        gap: 6px;
+        align-items: center;
       }
 
       .icon-btn {
-        width: 32px;
-        height: 32px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        background-color: #f0f0f0;
+        height: 36px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface-strong);
+        color: var(--text);
         cursor: pointer;
+        transition: all 0.18s ease;
+      }
+
+      .icon-btn {
+        width: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.15s ease;
         padding: 0;
-        box-sizing: border-box;
       }
 
       .icon-btn svg {
         width: 16px;
         height: 16px;
         fill: currentColor;
-        pointer-events: none;
       }
 
       .icon-btn:hover {
-        background-color: #e0e0e0;
-        transform: scale(1.05);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-1);
       }
 
-      .icon-btn:active {
-        transform: scale(0.95);
+      .btn-delete-all {
+        color: var(--danger);
+        border-color: rgba(212, 58, 47, 0.35);
       }
 
-      .icon-btn.btn-delete-all {
-        background-color: #fee8e8;
-        color: #d93025;
-        border-color: #fcd2d2;
+      .btn-refresh {
+        color: var(--accent);
+        border-color: rgba(139, 92, 246, 0.45);
       }
 
-      .icon-btn.btn-delete-all:hover {
-        background-color: #fcd2d2;
+      .sort-active,
+      .active {
+        background: rgba(139, 92, 246, 0.16);
+        border-color: rgba(139, 92, 246, 0.62);
+        color: var(--accent);
       }
 
-      .icon-btn.btn-refresh {
-        background-color: #e8f0fe;
-        color: #1a73e8;
-        border-color: #d2e3fc;
+      .page-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
       }
 
-      .icon-btn.btn-refresh:hover {
-        background-color: #d2e3fc;
+      .page-item {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow-1);
+        padding: 12px;
+        min-width: 0;
       }
 
-      .search-input {
-        flex: 1;
-        height: 32px;
-        padding: 0 12px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
+      .page-info-container {
+        margin-bottom: 10px;
+      }
+
+      .page-title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .page-favicon {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+
+      .page-title {
         font-size: 14px;
-        transition: all 0.15s ease;
-        background-color: #fff;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 5px;
+      }
+
+      .page-url {
+        font-size: 12px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 5px;
+      }
+
+      .page-info {
+        font-size: 12px;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .page-actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 6px 16px;
+        background: var(--surface-strong);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        height: 36px;
+        min-width: 120px;
         box-sizing: border-box;
+        transition: background 0.15s;
       }
 
-      .search-input:focus {
-        outline: none;
-        border-color: #1a73e8;
-        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+      .btn:hover {
+        background: var(--surface);
       }
 
-      .sort-active {
-        background-color: #e8f0fe !important;
-        border-color: #1a73e8 !important;
+      .btn-view {
+        color: var(--accent);
+        border-color: rgba(139, 92, 246, 0.45);
+        background: rgba(139, 92, 246, 0.08);
       }
 
-      /* Dark Theme */
-      @media (prefers-color-scheme: dark) {
-        body {
-          background-color: #1e1e1e;
-          color: #e0e0e0;
+      .btn-view:hover {
+        background: rgba(139, 92, 246, 0.14);
+      }
+
+      .btn-delete {
+        color: var(--danger);
+        border-color: rgba(212, 58, 47, 0.35);
+        background: rgba(212, 58, 47, 0.08);
+      }
+
+      .btn-delete:hover {
+        background: rgba(212, 58, 47, 0.14);
+      }
+
+      .page-highlights {
+        margin-top: 8px;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        padding: 8px;
+        max-height: none;
+        overflow: visible;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .highlight-item {
+        position: relative;
+        margin-bottom: 6px;
+        border-radius: 8px;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        padding: 7px 9px 7px 13px;
+        overflow: hidden;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .highlight-item::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        background: var(--highlight-color, var(--accent));
+        border-radius: 8px 0 0 8px;
+      }
+
+      .highlight-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .highlight-text {
+        color: var(--text);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      #import-btn svg {
+        transform: rotate(180deg);
+      }
+
+      .no-pages {
+        border: 1px dashed var(--border);
+        border-radius: 14px;
+        padding: 32px;
+        text-align: center;
+        color: var(--muted);
+        background: var(--surface);
+      }
+
+      @media (max-width: 760px) {
+        .page-wrap {
+          width: min(100% - 16px, 1120px);
+          margin-top: 12px;
         }
 
-        .pages-list {
-          border-color: #404040;
-          background-color: #2d2d2d;
+        .toolbar {
+          gap: 10px;
         }
 
-        .page-item {
-          border-bottom-color: #404040;
-        }
-
-        .page-item:hover {
-          background-color: #3d3d3d;
-        }
-
-        .page-url {
-          color: #a0a0a0;
-        }
-
-        .page-info {
-          color: #a0a0a0;
-        }
-
-        .btn {
-          background-color: #2d2d2d;
-          border-color: #404040;
-          color: #e0e0e0;
-        }
-
-        .btn:hover {
-          background-color: #3d3d3d;
-        }
-
-        .btn-view {
-          background-color: #2d5a8a;
-          color: #a8d0ff;
-          border-color: #4a7bb8;
-        }
-
-        .btn-view:hover {
-          background-color: #4a7bb8;
-        }
-
-        .btn-delete {
-          background-color: #8a2d2d;
-          color: #ff8888;
-          border-color: #b84a4a;
-        }
-
-        .btn-delete:hover {
-          background-color: #b84a4a;
-        }
-
-        .btn-delete-all {
-          background-color: #d93025;
-          color: #fff;
-        }
-
-        .btn-delete-all:hover {
-          background-color: #b71c1c;
-        }
-
-        .btn-refresh {
-          background-color: #1a73e8;
-          color: #fff;
-        }
-
-        .btn-refresh:hover {
-          background-color: #1558b0;
-        }
-
-        .no-pages {
-          color: #a0a0a0;
-        }
-
-        .page-highlights {
-          background-color: #1a1a1a;
-        }
-
-        .highlight-item {
-          color: #000 !important;
-        }
-
-        .highlight-text {
-          color: #000 !important;
-        }
-
-        .icon-btn {
-          background-color: #2d2d2d;
-          border-color: #404040;
-          color: #e0e0e0;
-        }
-
-        .icon-btn:hover {
-          background-color: #3d3d3d;
-        }
-
-        .icon-btn.btn-delete-all {
-          background-color: #8a2d2d;
-          color: #ff8888;
-          border-color: #b84a4a;
-        }
-
-        .icon-btn.btn-delete-all:hover {
-          background-color: #b84a4a;
-        }
-
-        .icon-btn.btn-refresh {
-          background-color: #2d5a8a;
-          color: #a8d0ff;
-          border-color: #4a7bb8;
-        }
-
-        .icon-btn.btn-refresh:hover {
-          background-color: #4a7bb8;
-        }
-
-        .search-input {
-          background-color: #2d2d2d;
-          border-color: #404040;
-          color: #e0e0e0;
-        }
-
-        .search-input:focus {
-          border-color: #1a73e8;
-          box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3);
-        }
-
-        .sort-active {
-          background-color: #2d5a8a !important;
-          border-color: #4a7bb8 !important;
+        .page-grid {
+          grid-template-columns: 1fr;
         }
       }
 
-      /* Adjust button size in mobile portrait view */
       @media (max-width: 500px) {
         .btn {
           min-width: 0;
           padding: 6px 10px;
           font-size: 13px;
-          flex: 1;
+          flex: 1 1 0;
+          white-space: normal;
+          line-height: 1.2;
+          height: auto;
+          min-height: 36px;
         }
 
         .page-actions {
           gap: 6px;
+          align-items: stretch;
         }
       }
     </style>
   </head>
   <body class="preload">
-    <h1 data-i18n="pagesListTitle">Highlighted Pages List</h1>
-
-    <div class="toolbar">
-      <div class="search-section">
-        <button id="search-toggle-btn" class="icon-btn" data-i18n-title="searchTooltip" title="Search highlights">
-          <svg viewBox="0 0 24 24">
-            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-          </svg>
-        </button>
-        <input id="search-input" class="search-input" type="text" data-i18n-placeholder="searchPlaceholder" placeholder="Search..." style="display:none;" />
+    <div class="page-wrap">
+      <div class="header-row">
+        <h1 data-i18n="pagesListTitle">Highlighted Pages List</h1>
       </div>
-      <div class="action-buttons">
-        <button id="sort-btn" class="icon-btn" data-i18n-title="sortNewestFirst" title="Sort by time (newest first)">
-          <svg viewBox="0 0 24 24">
-            <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/>
-          </svg>
-        </button>
-        <button id="refresh-btn" class="icon-btn btn-refresh" data-i18n-title="refresh" title="Refresh">
-          <svg viewBox="0 0 24 24">
-            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-          </svg>
-        </button>
-        <button id="delete-all-btn" class="icon-btn btn-delete-all" data-i18n-title="deleteAllPages" title="Delete All Pages">
-          <svg viewBox="0 0 24 24">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
-        </button>
-        <button id="export-all-btn" class="icon-btn" data-i18n-title="exportAllTooltip" title="Export">
-          <svg viewBox="0 0 24 24">
-            <path d="M9 16v-6H5l7-7 7 7h-4v6H9zm-4 4h14v2H5v-2z"/>
-          </svg>
-        </button>
-        <button id="import-btn" class="icon-btn" data-i18n-title="importHighlightsTooltip" title="Import">
-          <svg viewBox="0 0 24 24">
-            <path d="M15 4v6h4l-7 7-7-7h4V4h6zm-4 16H5v2h14v-2H11z"/>
-          </svg>
-        </button>
-      </div>
-      <input type="file" id="import-file" accept="application/json" style="display:none;" />
-    </div>
 
-    <div id="pages-container" class="pages-list">
-      <div id="no-pages" class="no-pages" data-i18n="noPagesFound">
-        No highlighted pages found.
+      <div class="toolbar">
+        <div class="search-section">
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 14 15.5l.27.28v.79L19 21.5 20.5 20l-5-6Zm-6 0A4.5 4.5 0 1 1 9.5 5a4.5 4.5 0 0 1 0 9Z"/>
+          </svg>
+          <input id="search-input" class="search-input" type="text" data-i18n-placeholder="searchPlaceholder" placeholder="Search..." />
+        </div>
+
+        <div class="action-buttons">
+          <button id="sort-btn" class="icon-btn" data-i18n-title="sortNewestFirst" title="Sort by time (newest first)">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h6v2H3v-2z"/></svg>
+          </button>
+          <button id="refresh-btn" class="icon-btn btn-refresh" data-i18n-title="refresh" title="Refresh">
+            <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.9 6.8h-2.05A6 6 0 1 1 12 6c1.3 0 2.5.42 3.47 1.15L13 9.6h7V3l-2.35 3.35Z"/></svg>
+          </button>
+          <button id="delete-all-btn" class="icon-btn btn-delete-all" data-i18n-title="deleteAllPages" title="Delete All Pages">
+            <svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12Zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4Z"/></svg>
+          </button>
+          <button id="export-all-btn" class="icon-btn" data-i18n-title="exportAllTooltip" title="Export">
+            <svg viewBox="0 0 24 24"><path d="M12 3 5 10h4v6h6v-6h4l-7-7Zm-7 15h14v3H5v-3Z"/></svg>
+          </button>
+          <button id="import-btn" class="icon-btn" data-i18n-title="importHighlightsTooltip" title="Import">
+            <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2Zm7-16L5 11h4v5h6v-5h4L12 4Z"/></svg>
+          </button>
+        </div>
+
+        <input type="file" id="import-file" accept="application/json" style="display:none;" />
+      </div>
+
+      <div id="pages-container" class="page-grid">
+        <div id="no-pages" class="no-pages" data-i18n="noPagesFound">No highlighted pages found.</div>
       </div>
     </div>
 

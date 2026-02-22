@@ -507,7 +507,36 @@ test.describe('Chrome Extension Tests', () => {
     await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: initialText });
 
     // 3. Re-select "sample" text inside the existing highlight
-    await selectTextInElement(highlightedSpan, overlappingText);
+    await paragraph.evaluate((element, text) => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      let targetNode = null;
+      let targetOffset = -1;
+
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const nodeText = node.textContent || '';
+        const idx = nodeText.indexOf(text);
+        if (idx === -1) continue;
+
+        const parentElement = node.parentElement;
+        if (parentElement && parentElement.closest('.text-highlighter-extension')) {
+          targetNode = node;
+          targetOffset = idx;
+          break;
+        }
+      }
+
+      if (!targetNode) {
+        throw new Error(`Text "${text}" not found inside existing highlight.`);
+      }
+
+      const range = document.createRange();
+      range.setStart(targetNode, targetOffset);
+      range.setEnd(targetNode, targetOffset + text.length);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }, overlappingText);
 
     // 4. Run highlight command again (in green)
     await sendHighlightMessage(background, 'green');

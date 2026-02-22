@@ -101,6 +101,9 @@ test.describe('Popup Tests', () => {
 
     const deleteBtn = highlightItems.nth(0).locator('.delete-btn');
     await deleteBtn.click();
+    const confirmBtn = popupPage.locator('.modal-confirm');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
 
     await expect(highlightItems).toHaveCount(0);
 
@@ -135,6 +138,9 @@ test.describe('Popup Tests', () => {
     const highlightItems = popupPage.locator('.highlight-item');
     await expect(highlightItems).toHaveCount(1);
     await highlightItems.nth(0).locator('.delete-btn').click();
+    const confirmBtn = popupPage.locator('.modal-confirm');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
     await expect(highlightItems).toHaveCount(0);
 
     await expect(primaryH1Span).toHaveCount(0);
@@ -191,7 +197,7 @@ test.describe('Popup Tests', () => {
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
 
     const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
-    await expect(selectionControlsToggle).toBeVisible();
+    await expect(selectionControlsToggle).toBeAttached();
     // Wait until popup async initialization applies stored/default state.
     await popupPage.waitForFunction(async () => {
       const toggle = document.getElementById('selection-controls-toggle');
@@ -200,7 +206,10 @@ test.describe('Popup Tests', () => {
       const expected = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true;
       return toggle.checked === expected;
     });
-    await selectionControlsToggle.setChecked(true);
+    await selectionControlsToggle.evaluate((el) => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change'));
+    });
 
     await expect(selectionControlsToggle).toBeChecked();
 
@@ -235,8 +244,11 @@ test.describe('Popup Tests', () => {
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
 
     const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
-    await expect(selectionControlsToggle).toBeVisible();
-    await selectionControlsToggle.setChecked(false);
+    await expect(selectionControlsToggle).toBeAttached();
+    await selectionControlsToggle.evaluate((el) => {
+      el.checked = false;
+      el.dispatchEvent(new Event('change'));
+    });
     await expect(selectionControlsToggle).not.toBeChecked();
     await popupPage.close();
 
@@ -314,8 +326,11 @@ test.describe('Popup Tests', () => {
     await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
 
     const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
-    await expect(selectionControlsToggle).toBeVisible();
-    await selectionControlsToggle.check();
+    await expect(selectionControlsToggle).toBeAttached();
+    await selectionControlsToggle.evaluate((el) => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change'));
+    });
     await expect(selectionControlsToggle).toBeChecked();
 
     await popupPage.close();

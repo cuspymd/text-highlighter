@@ -1,6 +1,7 @@
 import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { validateImportPayload } from './shared/import-export-schema.js';
+import { createLocalizedModalHelpers } from './shared/modal.js';
 
 // Theme change detection and handling
 function initializeThemeWatcher() {
@@ -40,6 +41,39 @@ document.addEventListener('DOMContentLoaded', function () {
       return browserAPI.i18n.getMessage(key) || defaultValue;
     }
     return defaultValue;
+  }
+
+  const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(getMessage);
+  const webProtocols = new Set(['http:', 'https:']);
+  const fallbackWebFavicon = `data:image/svg+xml;utf8,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#e5e7eb" stroke="#9ca3af"/><path d="M2 8h12M8 1a11 11 0 0 0 0 14M8 1a11 11 0 0 1 0 14" stroke="#6b7280" stroke-width="1" fill="none"/></svg>'
+  )}`;
+  const fallbackFileFavicon = `data:image/svg+xml;utf8,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 1.5h5l3 3V14.5H4z" fill="#dbeafe" stroke="#60a5fa"/><path d="M9 1.5v3h3" fill="#bfdbfe" stroke="#60a5fa"/><path d="M5.5 8.5h5M5.5 10.5h5M5.5 12.5h3.5" stroke="#3b82f6" stroke-width="1"/></svg>'
+  )}`;
+  const fallbackGenericFavicon = `data:image/svg+xml;utf8,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="#f3f4f6" stroke="#9ca3af"/><path d="M5 6h6M5 8h6M5 10h4" stroke="#6b7280" stroke-width="1.2"/></svg>'
+  )}`;
+
+  function getPageFaviconConfig(urlString) {
+    try {
+      const parsed = new URL(urlString);
+
+      if (webProtocols.has(parsed.protocol) && parsed.hostname) {
+        return {
+          src: `https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(parsed.hostname)}`,
+          fallbackSrc: fallbackWebFavicon,
+        };
+      }
+
+      if (parsed.protocol === 'file:') {
+        return { src: fallbackFileFavicon, fallbackSrc: fallbackFileFavicon };
+      }
+
+      return { src: fallbackGenericFavicon, fallbackSrc: fallbackGenericFavicon };
+    } catch (e) {
+      return { src: fallbackGenericFavicon, fallbackSrc: fallbackGenericFavicon };
+    }
   }
 
   function isSafeOpenUrl(urlString) {
@@ -171,6 +205,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const infoContainer = document.createElement('div');
         infoContainer.className = 'page-info-container';
 
+        const titleRow = document.createElement('div');
+        titleRow.className = 'page-title-row';
+
+        const favicon = document.createElement('img');
+        favicon.className = 'page-favicon';
+        favicon.alt = '';
+        const faviconConfig = getPageFaviconConfig(page.url);
+        favicon.src = faviconConfig.src;
+        favicon.addEventListener('error', () => {
+          if (favicon.src !== faviconConfig.fallbackSrc) {
+            favicon.src = faviconConfig.fallbackSrc;
+          }
+        }, { once: true });
+
         const titleDiv = document.createElement('div');
         titleDiv.className = 'page-title';
         titleDiv.textContent = pageTitle;
@@ -181,9 +229,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const infoDiv = document.createElement('div');
         infoDiv.className = 'page-info';
-        infoDiv.textContent = `${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount} | ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}`;
+        infoDiv.textContent = `${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount ?? 0} | ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}`;
 
-        infoContainer.appendChild(titleDiv);
+        titleRow.appendChild(favicon);
+        titleRow.appendChild(titleDiv);
+        infoContainer.appendChild(titleRow);
         infoContainer.appendChild(urlDiv);
         infoContainer.appendChild(infoDiv);
 
@@ -207,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const highlightsDiv = document.createElement('div');
         highlightsDiv.className = 'page-highlights';
+        highlightsDiv.style.display = 'none';
 
         pageItem.appendChild(infoContainer);
         pageItem.appendChild(actionsDiv);
@@ -227,17 +278,27 @@ document.addEventListener('DOMContentLoaded', function () {
             highlightsContainer.style.display = 'block';
             this.textContent = getMessage('hideDetails', 'Hide');
 
-            // Since it's a group structure, sort by the position of the representative span
-            page.highlights.sort((a, b) => {
+            const sortedHighlights = [...(page.highlights || [])].sort((a, b) => {
               const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
               const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
               return posA - posB;
             });
 
-            page.highlights.forEach(group => {
+            if (sortedHighlights.length === 0) {
+              const emptyHighlight = document.createElement('div');
+              emptyHighlight.className = 'highlight-item';
+              const emptyText = document.createElement('span');
+              emptyText.className = 'highlight-text';
+              emptyText.textContent = getMessage('noHighlights', 'No highlighted text on this page.');
+              emptyHighlight.appendChild(emptyText);
+              highlightsContainer.appendChild(emptyHighlight);
+              return;
+            }
+
+            sortedHighlights.forEach(group => {
               const highlightItem = document.createElement('div');
               highlightItem.className = 'highlight-item';
-              highlightItem.style.backgroundColor = group.color;
+              highlightItem.style.setProperty('--highlight-color', group.color);
               const span = document.createElement('span');
               span.className = 'highlight-text';
               span.textContent = group.text;
@@ -253,9 +314,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Delete page button event
-        pageItem.querySelector('.btn-delete').addEventListener('click', function () {
+        pageItem.querySelector('.btn-delete').addEventListener('click', async function () {
           const confirmMessage = getMessage('confirmDeletePage', 'Delete all highlights for this page?');
-          if (confirm(confirmMessage)) {
+          const confirmed = await showConfirmModal(confirmMessage);
+          if (confirmed) {
             deletePageHighlights(page.url);
           }
         });
@@ -307,7 +369,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const exportAllBtn = document.getElementById('export-all-btn');
   const importBtn = document.getElementById('import-btn');
   const importFileInput = document.getElementById('import-file');
-  const searchToggleBtn = document.getElementById('search-toggle-btn');
   const searchInput = document.getElementById('search-input');
   const sortBtn = document.getElementById('sort-btn');
 
@@ -327,33 +388,33 @@ document.addEventListener('DOMContentLoaded', function () {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function (e) {
+      reader.onload = async function (e) {
         try {
           const json = JSON.parse(e.target.result);
           if (!json.pages || !Array.isArray(json.pages)) {
-            alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+            await showAlertModal(getMessage('importInvalidFormat', 'Invalid import file format.'));
             return;
           }
           // Filter out pages with unsafe URLs
           const safePages = json.pages.filter(page => isSafeOpenUrl(page.url));
           const skippedCount = json.pages.length - safePages.length;
           if (skippedCount > 0) {
-            alert(getMessage('importUnsafeUrlSkipped', `${skippedCount} page(s) with invalid or unsafe URLs were skipped.`, [skippedCount]));
+            await showAlertModal(getMessage('importUnsafeUrlSkipped', `${skippedCount} page(s) with invalid or unsafe URLs were skipped.`, [skippedCount]));
           }
           if (safePages.length === 0) {
-            alert(getMessage('importAllUnsafeUrl', 'No pages could be imported because all URLs are invalid or unsafe.'));
+            await showAlertModal(getMessage('importAllUnsafeUrl', 'No pages could be imported because all URLs are invalid or unsafe.'));
             return;
           }
 
           // Validate and normalize schema before writing to storage.
           const validation = validateImportPayload({ pages: safePages });
           if (!validation.valid) {
-            alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+            await showAlertModal(getMessage('importInvalidFormat', 'Invalid import file format.'));
             return;
           }
 
           if (validation.pages.length === 0) {
-            alert(getMessage('importAllInvalidSchema', 'No pages could be imported because all data failed schema validation.'));
+            await showAlertModal(getMessage('importAllInvalidSchema', 'No pages could be imported because all data failed schema validation.'));
             return;
           }
 
@@ -364,13 +425,13 @@ document.addEventListener('DOMContentLoaded', function () {
               '$1 invalid item(s) were skipped during import.',
               [String(schemaDrops)],
             );
-            alert(schemaWarning);
+            await showAlertModal(schemaWarning);
           }
 
           const validatedPages = validation.pages;
 
           // Get all current storage to check for overlap
-          browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+          browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, async (response) => {
             if (response && response.success) {
               const existingUrls = response.pages.map(p => p.url);
               const importUrls = validatedPages.map(p => p.url);
@@ -378,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
               let proceed = true;
               if (overlap.length > 0) {
                 const confirmMsg = getMessage('importOverwriteConfirm', 'Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?');
-                proceed = confirm(confirmMsg);
+                proceed = await showConfirmModal(confirmMsg);
               }
               if (!proceed) return;
               // Prepare operations: delete old, add new
@@ -394,45 +455,30 @@ document.addEventListener('DOMContentLoaded', function () {
                   lastUpdated: page.lastUpdated || new Date().toISOString()
                 };
               });
-              browserAPI.storage.local.set(ops, () => {
-                alert(getMessage('importSuccess', 'Import completed.'));
+              browserAPI.storage.local.set(ops, async () => {
+                await showAlertModal(getMessage('importSuccess', 'Import completed.'));
                 loadAllHighlightedPages();
               });
             } else {
-              alert(getMessage('importError', 'Error checking existing highlights.'));
+              await showAlertModal(getMessage('importError', 'Error checking existing highlights.'));
             }
           });
         } catch (err) {
-          alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+          await showAlertModal(getMessage('importInvalidFormat', 'Invalid import file format.'));
         }
       };
       reader.readAsText(file);
     });
   }
 
-  // Search toggle event
-  if (searchToggleBtn && searchInput) {
-    searchToggleBtn.addEventListener('click', function () {
-      const isVisible = searchInput.style.display !== 'none';
-      if (isVisible) {
-        searchInput.style.display = 'none';
-        searchInput.value = '';
-        filterPages(''); // Reset filter
-      } else {
-        searchInput.style.display = 'block';
-        searchInput.focus();
-      }
-    });
-
-    // Search input event
+  // Search input event
+  if (searchInput) {
     searchInput.addEventListener('input', function () {
       filterPages(this.value);
     });
 
-    // Handle escape key to close search
     searchInput.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
-        searchInput.style.display = 'none';
         searchInput.value = '';
         filterPages('');
       }
@@ -466,11 +512,11 @@ document.addEventListener('DOMContentLoaded', function () {
   // Export all highlights event
   if (exportAllBtn) {
     exportAllBtn.addEventListener('click', function () {
-      browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+      browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, async (response) => {
         if (response && response.success) {
           const exportData = response.pages;
           if (exportData.length === 0) {
-            alert(getMessage('noHighlightsToExport', 'No highlights to export.'));
+            await showAlertModal(getMessage('noHighlightsToExport', 'No highlights to export.'));
             return;
           }
           const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), pages: exportData }, null, 2)], { type: 'application/json' });
@@ -483,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         } else {
-          alert(getMessage('exportError', 'Error exporting highlights.'));
+          await showAlertModal(getMessage('exportError', 'Error exporting highlights.'));
         }
       });
     });
@@ -491,9 +537,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Connect Delete All button events
   if (deleteAllBtn) {
-    deleteAllBtn.addEventListener('click', function () {
+    deleteAllBtn.addEventListener('click', async function () {
       const confirmMessage = getMessage('confirmDeleteAllPages', 'Delete ALL highlighted pages?');
-      if (confirm(confirmMessage)) {
+      const confirmed = await showConfirmModal(confirmMessage);
+      if (confirmed) {
         deleteAllPages();
       }
     });

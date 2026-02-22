@@ -10,6 +10,14 @@ async function openPagesList(page, extensionId) {
   await page.goto(url);
 }
 
+async function acceptModalAndGetMessage(page) {
+  const modal = page.locator('.custom-modal');
+  await expect(modal).toBeVisible();
+  const message = ((await page.locator('.modal-content p').textContent()) || '').trim();
+  await page.locator('.modal-confirm').click();
+  return message;
+}
+
 test.describe('Pages List UI and Delete All Pages', () => {
   test('should show highlighted pages and delete all', async ({ context, background, extensionId }) => {
     // 1. test-page.html: highlight first p
@@ -39,18 +47,56 @@ test.describe('Pages List UI and Delete All Pages', () => {
     // 4. Verify both pages are listed
     await expect(listPage.locator('.page-item')).toHaveCount(2);
 
-    // 5. Click deleteAllPages button
-    listPage.on('dialog', async dialog => {
-      await dialog.accept();
-    });
-
+    // 5. Click deleteAllPages button and confirm in custom modal
     const deleteAllBtn = listPage.locator('.btn-delete-all');
     await expect(deleteAllBtn).toBeVisible();
     await deleteAllBtn.click();
+    const confirmBtn = listPage.locator('.modal-confirm');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
 
     // 6. Verify no pages are listed
     await expect(listPage.locator('.page-item')).toHaveCount(0);
     await expect(listPage.locator('#no-pages')).toBeVisible();
+    await listPage.close();
+  });
+
+  test('should show custom confirm modal when deleting a single page and delete only after confirm', async ({ context, background, extensionId }) => {
+    const page1 = await context.newPage();
+    await page1.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    const firstParagraph1 = page1.locator('p').first();
+    await firstParagraph1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+
+    const page2 = await context.newPage();
+    await page2.goto(`file:///${path.join(__dirname, 'test-page2.html')}`);
+    const firstParagraph2 = page2.locator('p').first();
+    await firstParagraph2.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    const pageItems = listPage.locator('.page-item');
+    await expect(pageItems).toHaveCount(2);
+
+    const firstDeleteBtn = pageItems.first().locator('.btn-delete');
+    await firstDeleteBtn.click();
+
+    const modal = listPage.locator('.custom-modal');
+    await expect(modal).toBeVisible();
+    const cancelBtn = listPage.locator('.modal-cancel');
+    await expect(cancelBtn).toBeVisible();
+    await cancelBtn.click();
+    await expect(modal).toHaveCount(0);
+    await expect(pageItems).toHaveCount(2);
+
+    await firstDeleteBtn.click();
+    const confirmBtn = listPage.locator('.modal-confirm');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
+
+    await expect(pageItems).toHaveCount(1);
     await listPage.close();
   });
 
@@ -159,16 +205,12 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const importBtn = listPage.locator('#import-btn');
     await expect(importBtn).toBeVisible();
 
-    // Automatically accept dialog (Import success alert)
-    listPage.on('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
     const jsonPath = path.join(__dirname, 'all-highlights-test.json');
 
     // Set file after opening file input by clicking importBtn
     await importBtn.click();
     await listPage.setInputFiles('#import-file', jsonPath);
+    await acceptModalAndGetMessage(listPage);
 
     // 3. Verify that there are 2 or more page items after import is complete
     const pageItems = listPage.locator('.page-item');
@@ -189,16 +231,13 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const importBtn = listPage.locator('#import-btn');
     await expect(importBtn).toBeVisible();
 
-    // Capture and verify alert messages
-    const dialogMessages = [];
-    listPage.on('dialog', async (dialog) => {
-      dialogMessages.push(dialog.message());
-      await dialog.accept();
-    });
-
     const jsonPath = path.join(__dirname, 'import-mixed-unsafe-urls.json');
     await importBtn.click();
     await listPage.setInputFiles('#import-file', jsonPath);
+    const modalMessages = [
+      await acceptModalAndGetMessage(listPage),
+      await acceptModalAndGetMessage(listPage),
+    ];
 
     // Only 1 safe URL (test-page.html) should be imported
     const pageItems = listPage.locator('.page-item');
@@ -208,9 +247,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     expect(urls.some(u => u.includes('test-page.html'))).toBeTruthy();
 
     // Check if unsafe URL skip alert was displayed
-    await expect(async () => {
-      expect(dialogMessages.some(m => m.includes('2'))).toBeTruthy();
-    }).toPass();
+    expect(modalMessages.some(m => m.includes('2'))).toBeTruthy();
 
     await listPage.close();
   });
@@ -222,25 +259,20 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const importBtn = listPage.locator('#import-btn');
     await expect(importBtn).toBeVisible();
 
-    // Capture and verify alert messages
-    const dialogMessages = [];
-    listPage.on('dialog', async (dialog) => {
-      dialogMessages.push(dialog.message());
-      await dialog.accept();
-    });
-
     const jsonPath = path.join(__dirname, 'import-all-unsafe-urls.json');
     await importBtn.click();
     await listPage.setInputFiles('#import-file', jsonPath);
+    const modalMessages = [
+      await acceptModalAndGetMessage(listPage),
+      await acceptModalAndGetMessage(listPage),
+    ];
 
     // No pages should be imported
     await expect(listPage.locator('.page-item')).toHaveCount(0);
     await expect(listPage.locator('#no-pages')).toBeVisible();
 
     // Check if 2 unsafe URL related alerts were displayed (skipped + all unsafe)
-    await expect(async () => {
-      expect(dialogMessages.length).toBe(2);
-    }).toPass();
+    expect(modalMessages.length).toBe(2);
 
     await listPage.close();
   });
@@ -252,16 +284,13 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const importBtn = listPage.locator('#import-btn');
     await expect(importBtn).toBeVisible();
 
-    // Capture and verify alert messages (schema warning + import success)
-    const dialogMessages = [];
-    listPage.on('dialog', async (dialog) => {
-      dialogMessages.push(dialog.message());
-      await dialog.accept();
-    });
-
     const jsonPath = path.join(__dirname, 'import-mixed-schema-invalid.json');
     await importBtn.click();
     await listPage.setInputFiles('#import-file', jsonPath);
+    const modalMessages = [
+      await acceptModalAndGetMessage(listPage),
+      await acceptModalAndGetMessage(listPage),
+    ];
 
     // Only valid page should be imported
     const pageItems = listPage.locator('.page-item');
@@ -272,9 +301,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     expect(urls.some(u => u.includes('test-page2.html'))).toBeFalsy();
 
     // Schema warning + success alerts
-    await expect(async () => {
-      expect(dialogMessages.length).toBe(2);
-    }).toPass();
+    expect(modalMessages.length).toBe(2);
 
     await listPage.close();
   });
