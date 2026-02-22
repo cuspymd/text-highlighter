@@ -3,156 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marks: Text Highlighter - ウェブページのテキストをハイライトする拡張機能</title>
+    <title>Text Highlighter - 強力でシームレスなハイライトツール</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/png" href="image.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
-        <!-- nav removed -->
+        <div class="container">
+            <nav>
+                <a href="index.ja.html" class="logo">
+                    <img src="image.png" alt="Logo">
+                    Text Highlighter
+                </a>
+                <ul class="nav-links">
+                    <li><a href="#features">機能</a></li>
+                    <li><a href="#how-it-works">使い方</a></li>
+                    <li><a href="#sync">同期</a></li>
+                    <li><a href="#install" class="btn btn-primary" style="padding: 10px 20px; color: white;">インストール</a></li>
+                </ul>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        <section class="hero">
-            <div class="container">
-                <div class="hero-content">
-                    <h1>ウェブページのテキストをスマートにハイライト</h1>
-                    <p>Marksは、ウェブページの重要なテキストを色分けして効率的に管理できるChrome・Firefox拡張機能です。</p>
-                    <div class="hero-buttons">
-                        <a href="#install" class="btn-primary">インストール</a>
-                        <a href="#demo" class="btn-secondary">デモを見る</a>
-                    </div>
-                    <div class="language-selector">
-                        <a href="index.html" class="lang-link">한국어</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.en.html" class="lang-link">English</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.ja.html" class="lang-link active">日本語</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.zh.html" class="lang-link">中文</a>
-                    </div>
+    <section class="hero">
+        <div class="container">
+            <div class="hero-icon-container">
+                <img src="image.png" alt="Text Highlighter Icon">
+            </div>
+            <h1>Webをスマートに、<br>シームレスに彩る。</h1>
+            <p>Chrome と Firefox のための、最も洗練されたテキストハイライター。美しいUI、カスタムカラー、そしてデバイス間の即時同期を提供します。</p>
+            <div class="hero-buttons">
+                <a href="#install" class="btn btn-primary">無料で始める</a>
+                <a href="#features" class="btn btn-secondary">機能を見る</a>
+            </div>
+            <div class="language-selector">
+                <a href="index.html" class="lang-link">한국어</a>
+                <span>•</span>
+                <a href="index.en.html" class="lang-link">English</a>
+                <span>•</span>
+                <a href="index.ja.html" class="lang-link active">日本語</a>
+                <span>•</span>
+                <a href="index.zh.html" class="lang-link">中文</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>生産性を高める設計</h2>
+                <p>読んだ内容を整理しRegistry、記憶に定着させるためのシンプルで強力なツールです。</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">✨</span>
+                    <h3>スマートコントロール</h3>
+                    <p>テキストを選択するだけで、直感的なフローティングUIが表示。余計なクリックなしで即座にハイライトできます。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎨</span>
+                    <h3>カスタムカラー</h3>
+                    <p>無限のカスタムカラーで個性を表現。高度なカラーピッカーを使用して、理想の色合いを見つけましょう。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">☁️</span>
+                    <h3>クラウド同期</h3>
+                    <p>ハイライトはどこへでも。すべてのデバイスとブラウザ間で自動的に同期されます。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🗺️</span>
+                    <h3>ミニマップ</h3>
+                    <p>画面端のミニマップでハイライト箇所を一目で把握。長い記事のナビゲーションもスムーズです。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📋</span>
+                    <h3>ダッシュボード</h3>
+                    <p>異なるWebサイトのハイライトを一つの美しいダッシュボードで集中管理できます。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📱</span>
+                    <h3>モバイル対応</h3>
+                    <p>Firefox Androidなどのモバイルブラウザに最適化。外出先でも快適にハイライト可能です。</p>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section class="features" id="features">
-            <div class="container">
-                <h2 class="section-title">サポート機能</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <span class="feature-icon">🎨</span>
-                        <h3>複数色のハイライト</h3>
-                        <p>5色（黄色、緑、青、ピンク、オレンジ）の基本色とカスタム色でテキストを分類してハイライトできます。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">⚡</span>
-                        <h3>キーボードショートカット</h3>
-                        <p>Ctrl+Shift+数字キーで素早くハイライトを適用できます。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">🗺️</span>
-                        <h3>ミニマップ機能</h3>
-                        <p>ページ右側にミニマップを表示し、ハイライト位置を一目で確認できます。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">💾</span>
-                        <h3>自動保存</h3>
-                        <p>ハイライトした内容は自動で保存され、次回訪問時もそのまま維持されます。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">🌍</span>
-                        <h3>多言語対応</h3>
-                        <p>様々な言語をサポートし、より多くのユーザーが便利に利用できます。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">✨</span>
-                        <h3>簡単管理</h3>
-                        <p>右クリックコンテキストメニューとハイライトコントローラーで簡単に編集・削除できます。</p>
-                    </div>
+    <section class="detail-section" id="how-it-works">
+        <div class="container">
+            <div class="detail-row">
+                <div class="detail-content">
+                    <span class="feature-tag">直感的なワークフロー</span>
+                    <h3>最新のコントロールUI</h3>
+                    <p>メニューを探し回る必要はありません。Webページ上のテキストを選択するだけで、カーソルのそばに洗練されたアイコンが表示されます。</p>
+                    <p>アイコンをクリックしてお気に入りの色を選んだり、既存のハイライトをタップして色を変更・削除したり、すべてが直感的に行えます。</p>
                 </div>
-            </div>
-        </section>
-
-        <section class="demo" id="demo">
-            <div class="container">
-                <div class="demo-container">
-                    <div class="demo-content">
-                        <h2>実際の使用例</h2>
-                        <p>テキストを選択して右クリックするか、キーボードショートカットを使用して希望の色でハイライトできます。</p>
-                        <ul class="demo-features">
-                            <li>テキスト選択後、右クリックで色を選択</li>
-                            <li>テキスト選択後に表示されるアイコンをクリックしてハイライト適用</li>
-                            <li>Ctrl+Shift+1〜4のキーボードショートカット対応</li>
-                            <li>ハイライトをクリックして色変更/追加や削除</li>
-                            <li>ページごとにハイライトを自動保存</li>
-                            <li>ミニマップでハイライト位置を確認</li>
-                        </ul>
-                    </div>
-                    <div class="demo-visual">
-                        <div class="highlight-demo">
-                            <p>これは<span class="highlight-yellow">重要な情報</span>です。ウェブページで<span class="highlight-green">核心内容</span>を簡単に区別できます。</p>
-                            <p>研究資料や<span class="highlight-blue">学習内容</span>を整理するのに非常に便利で、後で<span class="highlight-yellow">再訪問</span>してもハイライトはそのまま維持されます。</p>
+                <div class="detail-visual">
+                    <div style="padding: 20px; background: white; border-radius: 12px; border: 1px solid #eee;">
+                        <p style="margin-bottom: 15px; border-bottom: 2px solid #8b5cf6; display: inline; padding-bottom: 2px;">これはハイライトされた文章です...</p>
+                        <div class="mock-control-ui">
+                            <div class="mock-color" style="background: #ff6b6b;"></div>
+                            <div class="mock-color" style="background: #4ecdc4;"></div>
+                            <div class="mock-color" style="background: #ffeaa7;"></div>
+                            <div class="mock-color" style="background: #8b5cf6;"></div>
+                            <div class="mock-btn-plus">+</div>
+                            <div style="width: 1px; height: 20px; background: #eee; margin: 0 4px;"></div>
+                            <div style="color: #ff4d4f; font-weight: bold; cursor: pointer;">✕</div>
                         </div>
                     </div>
                 </div>
-                <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-top: 2rem;">
-                    <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://www.youtube.com/embed/IRV3s1VPRIY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                </div>
             </div>
-        </section>
 
-        <section class="install" id="install">
-            <div class="container">
-                <h2>簡単なインストール手順</h2>
-                <p>3ステップでMarksをインストールしてすぐに使用できます。</p>
-                <div class="install-buttons">
-                    <a href="https://chrome.google.com/webstore/detail/bkmhconhbggfffbcahaokpljcppmlgeg" class="btn-secondary">Chromeウェブストアからインストール</a>
-                    <a href="https://addons.mozilla.org/ja/firefox/addon/marks-text-highlighter/" class="btn-secondary">Firefoxアドオンからインストール</a>
+            <div class="detail-row">
+                <div class="detail-content">
+                    <span class="feature-tag">パーソナライズ</span>
+                    <h3>あなただけの色を</h3>
+                    <p>デフォルトの色だけに縛られません。高度なカラーピッカーを使って、どんな色でもパレットに追加できます。</p>
+                    <p>色相、彩度、明度を調整して、学習ノートやリサーチに最適なテーマを作成しましょう。カスタムカラーはポップアップから簡単に管理できます。</p>
                 </div>
-                <div class="install-steps">
-                    <div class="install-step">
-                        <h3>ステップ1</h3>
-                        <p>ChromeウェブストアまたはFirefoxアドオンで「Marks: Text Highlighter」を検索してください。</p>
-                    </div>
-                    <div class="install-step">
-                        <h3>ステップ2</h3>
-                        <p>「Chromeに追加」または「Firefoxに追加」ボタンをクリックして拡張機能をインストールしてください。</p>
-                    </div>
-                    <div class="install-step">
-                        <h3>ステップ3</h3>
-                        <p>ウェブページでテキストを選択してすぐにハイライトを始めましょう！</p>
+                <div class="detail-visual">
+                    <div style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px;">カスタムカラーを選択</div>
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 10px;">
+                            <div style="height: 15px; border-radius: 2px; background: #FF6B6B;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #4ECDC4;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #45B7D1;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #96CEB4;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #FFEAA7;"></div>
+                        </div>
+                        <div style="height: 8px; border-radius: 4px; background: linear-gradient(to right, red, yellow, green, cyan, blue, magenta, red); margin-bottom: 8px;"></div>
+                        <div style="height: 40px; border-radius: 4px; background: linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, #8b5cf6);"></div>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
 
-    <footer id="contact">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>Marks: Text Highlighter</h3>
-                    <p>ウェブページテキストハイライトの新しい基準を提示します。学習、研究、業務効率を高めましょう。</p>
+            <div class="detail-row" id="sync">
+                <div class="detail-content">
+                    <span class="feature-tag">コネクティビティ</span>
+                    <h3>シームレスなクラウド同期</h3>
+                    <p>データの紛失を心配する必要はありません。Text Highlighterはすべてのデバイス間でデータを自動的に同期します。</p>
+                    <p>職場のPCでハイライトを開始し、自宅のPCやモバイルデバイスで続きを確認できます。ChromeとFirefoxの両方でクロスブラウザ対応しています。</p>
                 </div>
-                <div class="footer-section">
-                    <h3>主な機能</h3>
-                    <p><a href="#features">複数色のハイライト</a></p>
-                    <p><a href="#features">キーボードショートカット</a></p>
-                    <p><a href="#features">ミニマップ機能</a></p>
-                    <p><a href="#features">自動保存</a></p>
+                <div class="detail-visual">
+                    <div class="sync-visual">
+                        <div class="device-icon">💻</div>
+                        <div class="sync-arrow">↔️</div>
+                        <div class="device-icon">📱</div>
+                    </div>
                 </div>
-                <div class="footer-section">
-                    <h3>サポート</h3>
-                    <p><a href="#">ユーザーガイド</a></p>
-                    <p><a href="#">FAQ</a></p>
-                    <p><a href="https://github.com/cuspymd/text-highlighter" target="_blank">Github</a></p>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 Marks: Text Highlighter. MIT License.</p>
             </div>
         </div>
-    </footer>
+    </section>
 
+    <section class="install" id="install">
+        <div class="container">
+            <h2>今すぐ始めましょう</h2>
+            <p>Webリサーチを効率化している数千人のユーザーの仲間入りをしましょう。</p>
+            <div class="install-buttons">
+                <a href="https://chrome.google.com/webstore/detail/bkmhconhbggfffbcahaokpljcppmlgeg" class="btn btn-white">
+                    Chrome に追加
+                </a>
+                <a href="https://addons.mozilla.org/firefox/addon/marks-text-highlighter/" class="btn btn-outline">
+                    Firefox に追加
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="#features">機能</a>
+                <a href="https://github.com/cuspymd/text-highlighter">GitHub</a>
+                <a href="#">プライバシーポリシー</a>
+                <a href="#">サポート</a>
+            </div>
+            <p class="copyright">&copy; 2025 Text Highlighter. MITライセンスの下でオープンソースとして公開されています。</p>
+        </div>
+    </footer>
     <script src="docs-common.js"></script>
 </body>
 </html>

@@ -3,156 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marks: Text Highlighter - Web Page Text Highlighting Extension</title>
+    <title>Text Highlighter - Powerful & Seamless Highlighting</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/png" href="image.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
-        <!-- nav removed -->
+        <div class="container">
+            <nav>
+                <a href="index.en.html" class="logo">
+                    <img src="image.png" alt="Logo">
+                    Text Highlighter
+                </a>
+                <ul class="nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How it Works</a></li>
+                    <li><a href="#sync">Sync</a></li>
+                    <li><a href="#install" class="btn btn-primary" style="padding: 10px 20px; color: white;">Install</a></li>
+                </ul>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        <section class="hero">
-            <div class="container">
-                <div class="hero-content">
-                    <h1>Highlight Webpage Text Smartly</h1>
-                    <p>Marks is a Chrome and Firefox extension that allows you to highlight and efficiently manage important text on webpages.</p>
-                    <div class="hero-buttons">
-                        <a href="#install" class="btn-primary">Install Now</a>
-                        <a href="#demo" class="btn-secondary">View Demo</a>
-                    </div>
-                    <div class="language-selector">
-                        <a href="index.html" class="lang-link">한국어</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.en.html" class="lang-link active">English</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.ja.html" class="lang-link">日本語</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.zh.html" class="lang-link">中文</a>
-                    </div>
+    <section class="hero">
+        <div class="container">
+            <div class="hero-icon-container">
+                <img src="image.png" alt="Text Highlighter Icon">
+            </div>
+            <h1>Highlight the Web,<br>Seamlessly.</h1>
+            <p>The most sophisticated text highlighting extension for Chrome and Firefox. Beautiful UI, custom colors, and instant synchronization.</p>
+            <div class="hero-buttons">
+                <a href="#install" class="btn btn-primary">Get Started for Free</a>
+                <a href="#features" class="btn btn-secondary">Explore Features</a>
+            </div>
+            <div class="language-selector">
+                <a href="index.html" class="lang-link">한국어</a>
+                <span>•</span>
+                <a href="index.en.html" class="lang-link active">English</a>
+                <span>•</span>
+                <a href="index.ja.html" class="lang-link">日本語</a>
+                <span>•</span>
+                <a href="index.zh.html" class="lang-link">中文</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Built for Productivity</h2>
+                <p>Simple yet powerful tools to help you remember and organize what you read.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">✨</span>
+                    <h3>Smart Controls</h3>
+                    <p>Select text and highlight instantly with our intuitive floating control UI. No extra clicks needed.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎨</span>
+                    <h3>Custom Colors</h3>
+                    <p>Express yourself with unlimited custom colors. Use our advanced picker to find the perfect shade.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">☁️</span>
+                    <h3>Cloud Sync</h3>
+                    <p>Your highlights follow you. Automatic synchronization across all your devices and browsers.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🗺️</span>
+                    <h3>Mini-map</h3>
+                    <p>Navigate long articles with ease using the highlight mini-map on the edge of your screen.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📋</span>
+                    <h3>Dashboard</h3>
+                    <p>Manage all your highlights across different websites in one centralized, beautiful dashboard.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📱</span>
+                    <h3>Mobile Ready</h3>
+                    <p>Optimized for mobile browsers on Firefox Android. Highlight on the go.</p>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section class="features" id="features">
-            <div class="container">
-                <h2 class="section-title">Supported Features</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <span class="feature-icon">🎨</span>
-                        <h3>Multi-Color Highlighting</h3>
-                        <p>Highlight text with 5 default colors (yellow, green, blue, pink, orange) and custom colors to categorize your content.</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">⚡</span>
-                        <h3>Keyboard Shortcuts</h3>
-                        <p>Use Ctrl+Shift+number keys to quickly apply highlights.</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">🗺️</span>
-                        <h3>Minimap Feature</h3>
-                        <p>Display a minimap on the right side of the page to easily locate highlighted areas.</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">💾</span>
-                        <h3>Auto-Save</h3>
-                        <p>Highlights are automatically saved and remain intact on your next visit.</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">🌍</span>
-                        <h3>Multi-Language Support</h3>
-                        <p>Supports various languages for a wider user base.</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">✨</span>
-                        <h3>Easy Management</h3>
-                        <p>Edit and delete highlights easily with right-click context menu and highlight controller.</p>
-                    </div>
+    <section class="detail-section" id="how-it-works">
+        <div class="container">
+            <div class="detail-row">
+                <div class="detail-content">
+                    <span class="feature-tag">Intuitive Workflow</span>
+                    <h3>Modern Control UI</h3>
+                    <p>Gone are the days of digging through menus. Simply select any text on a web page, and a refined highlighter icon appears near your cursor.</p>
+                    <p>Click it to reveal your favorite colors, or tap an existing highlight to change its color or remove it instantly.</p>
                 </div>
-            </div>
-        </section>
-
-        <section class="demo" id="demo">
-            <div class="container">
-                <div class="demo-container">
-                    <div class="demo-content">
-                        <h2>Live Demo</h2>
-                        <p>Select text and right-click or use keyboard shortcuts to highlight with your desired color.</p>
-                        <ul class="demo-features">
-                            <li>Select text and right-click to choose a color</li>
-                            <li>Click the icon that appears after text selection to apply highlights</li>
-                            <li>Use Ctrl+Shift+1~4 keyboard shortcuts</li>
-                            <li>Click on highlights to change/add colors and delete</li>
-                            <li>Highlights are automatically saved per page</li>
-                            <li>Check highlight locations with the minimap</li>
-                        </ul>
-                    </div>
-                    <div class="demo-visual">
-                        <div class="highlight-demo">
-                            <p>This is <span class="highlight-yellow">important information</span>. You can easily distinguish <span class="highlight-green">key content</span> on webpages.</p>
-                            <p>Very useful for organizing research or <span class="highlight-blue">learning materials</span>, and highlights remain intact when you <span class="highlight-yellow">visit again</span>.</p>
+                <div class="detail-visual">
+                    <div style="padding: 20px; background: white; border-radius: 12px; border: 1px solid #eee;">
+                        <p style="margin-bottom: 15px; border-bottom: 2px solid #8b5cf6; display: inline; padding-bottom: 2px;">This is a highlighted sentence...</p>
+                        <div class="mock-control-ui">
+                            <div class="mock-color" style="background: #ff6b6b;"></div>
+                            <div class="mock-color" style="background: #4ecdc4;"></div>
+                            <div class="mock-color" style="background: #ffeaa7;"></div>
+                            <div class="mock-color" style="background: #8b5cf6;"></div>
+                            <div class="mock-btn-plus">+</div>
+                            <div style="width: 1px; height: 20px; background: #eee; margin: 0 4px;"></div>
+                            <div style="color: #ff4d4f; font-weight: bold; cursor: pointer;">✕</div>
                         </div>
                     </div>
                 </div>
-                <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-top: 2rem;">
-                    <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://www.youtube.com/embed/IRV3s1VPRIY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                </div>
             </div>
-        </section>
 
-        <section class="install" id="install">
-            <div class="container">
-                <h2>Simple Installation Process</h2>
-                <p>Install Marks in just 3 steps and start using it right away.</p>
-                <div class="install-buttons">
-                    <a href="https://chrome.google.com/webstore/detail/bkmhconhbggfffbcahaokpljcppmlgeg" class="btn-secondary">Install from Chrome Web Store</a>
-                    <a href="https://addons.mozilla.org/en-US/firefox/addon/marks-text-highlighter/" class="btn-secondary">Install from Firefox Add-ons</a>
+            <div class="detail-row">
+                <div class="detail-content">
+                    <span class="feature-tag">Personalization</span>
+                    <h3>Your Colors, Your Way</h3>
+                    <p>Don't settle for defaults. Our advanced color picker allows you to add any shade to your palette.</p>
+                    <p>Adjust Hue, Saturation, and Value to create the perfect theme for your study notes or research. Manage your custom colors easily from the extension popup.</p>
                 </div>
-                <div class="install-steps">
-                    <div class="install-step">
-                        <h3>Step 1</h3>
-                        <p>Search for "Marks: Text Highlighter" in the Chrome Web Store or Firefox Add-ons.</p>
-                    </div>
-                    <div class="install-step">
-                        <h3>Step 2</h3>
-                        <p>Click "Add to Chrome" or "Add to Firefox" to install the extension.</p>
-                    </div>
-                    <div class="install-step">
-                        <h3>Step 3</h3>
-                        <p>Select text on any webpage and start highlighting!</p>
+                <div class="detail-visual">
+                    <div style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px;">Select Custom Color</div>
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 10px;">
+                            <div style="height: 15px; border-radius: 2px; background: #FF6B6B;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #4ECDC4;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #45B7D1;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #96CEB4;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #FFEAA7;"></div>
+                        </div>
+                        <div style="height: 8px; border-radius: 4px; background: linear-gradient(to right, red, yellow, green, cyan, blue, magenta, red); margin-bottom: 8px;"></div>
+                        <div style="height: 40px; border-radius: 4px; background: linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, #8b5cf6);"></div>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
 
-    <footer id="contact">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>Marks: Text Highlighter</h3>
-                    <p>Setting a new standard for webpage text highlighting. Enhance your learning, research, and work efficiency.</p>
+            <div class="detail-row" id="sync">
+                <div class="detail-content">
+                    <span class="feature-tag">Connectivity</span>
+                    <h3>Seamless Cloud Sync</h3>
+                    <p>Stop worrying about losing your marks. Text Highlighter automatically syncs your data across all your devices.</p>
+                    <p>Start highlighting on your laptop at work and find them ready on your home computer or mobile device. Cross-browser support for Chrome and Firefox included.</p>
                 </div>
-                <div class="footer-section">
-                    <h3>Key Features</h3>
-                    <p><a href="#features">Multi-Color Highlighting</a></p>
-                    <p><a href="#features">Keyboard Shortcuts</a></p>
-                    <p><a href="#features">Minimap Feature</a></p>
-                    <p><a href="#features">Auto-Save</a></p>
+                <div class="detail-visual">
+                    <div class="sync-visual">
+                        <div class="device-icon">💻</div>
+                        <div class="sync-arrow">↔️</div>
+                        <div class="device-icon">📱</div>
+                    </div>
                 </div>
-                <div class="footer-section">
-                    <h3>Support</h3>
-                    <p><a href="#">User Guide</a></p>
-                    <p><a href="#">FAQ</a></p>
-                    <p><a href="https://github.com/cuspymd/text-highlighter" target="_blank">Github</a></p>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 Marks: Text Highlighter. MIT License.</p>
             </div>
         </div>
-    </footer>
+    </section>
 
+    <section class="install" id="install">
+        <div class="container">
+            <h2>Start Highlighting Today</h2>
+            <p>Join thousands of users who are organizing their web research more effectively.</p>
+            <div class="install-buttons">
+                <a href="https://chrome.google.com/webstore/detail/bkmhconhbggfffbcahaokpljcppmlgeg" class="btn btn-white">
+                    Add to Chrome
+                </a>
+                <a href="https://addons.mozilla.org/firefox/addon/marks-text-highlighter/" class="btn btn-outline">
+                    Add to Firefox
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="#features">Features</a>
+                <a href="https://github.com/cuspymd/text-highlighter">GitHub</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Support</a>
+            </div>
+            <p class="copyright">&copy; 2025 Text Highlighter. Open source under MIT License.</p>
+        </div>
+    </footer>
     <script src="docs-common.js"></script>
 </body>
 </html>

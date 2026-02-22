@@ -3,156 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marks: Text Highlighter - 网页文本高亮扩展程序</title>
+    <title>Text Highlighter - 强大且无缝的网页高亮工具</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/png" href="image.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
-        <!-- nav removed -->
+        <div class="container">
+            <nav>
+                <a href="index.zh.html" class="logo">
+                    <img src="image.png" alt="Logo">
+                    Text Highlighter
+                </a>
+                <ul class="nav-links">
+                    <li><a href="#features">功能</a></li>
+                    <li><a href="#how-it-works">使用方法</a></li>
+                    <li><a href="#sync">同步</a></li>
+                    <li><a href="#install" class="btn btn-primary" style="padding: 10px 20px; color: white;">安装</a></li>
+                </ul>
+            </nav>
+        </div>
     </header>
 
-    <main>
-        <section class="hero">
-            <div class="container">
-                <div class="hero-content">
-                    <h1>智能高亮网页文本</h1>
-                    <p>Marks是一款Chrome和Firefox扩展程序，让您能够高效地高亮和管理网页上的重要文本。</p>
-                    <div class="hero-buttons">
-                        <a href="#install" class="btn-primary">立即安装</a>
-                        <a href="#demo" class="btn-secondary">查看演示</a>
-                    </div>
-                    <div class="language-selector">
-                        <a href="index.html" class="lang-link">한국어</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.en.html" class="lang-link">English</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.ja.html" class="lang-link">日本語</a>
-                        <span class="lang-divider">|</span>
-                        <a href="index.zh.html" class="lang-link active">中文</a>
-                    </div>
+    <section class="hero">
+        <div class="container">
+            <div class="hero-icon-container">
+                <img src="image.png" alt="Text Highlighter Icon">
+            </div>
+            <h1>让网页阅读，<br>更无缝、更精彩。</h1>
+            <p>专为 Chrome 和 Firefox 打造的最先进文本高亮扩展。拥有精美的 UI、自定义颜色以及即时多端同步。</p>
+            <div class="hero-buttons">
+                <a href="#install" class="btn btn-primary">免费开始使用</a>
+                <a href="#features" class="btn btn-secondary">查看功能</a>
+            </div>
+            <div class="language-selector">
+                <a href="index.html" class="lang-link">한국어</a>
+                <span>•</span>
+                <a href="index.en.html" class="lang-link">English</a>
+                <span>•</span>
+                <a href="index.ja.html" class="lang-link">日本語</a>
+                <span>•</span>
+                <a href="index.zh.html" class="lang-link active">中文</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>为效率而生</h2>
+                <p>简单而强大的工具，助您整理并记住阅读内容。</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">✨</span>
+                    <h3>智能控制</h3>
+                    <p>只需选择文本，直观的悬浮 UI 即刻显现。无需额外点击，即可快速高亮。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎨</span>
+                    <h3>自定义颜色</h3>
+                    <p>用无限的自定义颜色表达个性。使用高级调色盘找到最完美的色调。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">☁️</span>
+                    <h3>云端同步</h3>
+                    <p>您的高亮随处可见。在所有设备和浏览器之间自动同步数据。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🗺️</span>
+                    <h3>迷你地图</h3>
+                    <p>通过屏幕边缘的高亮迷你地图，轻松浏览长篇文章。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📋</span>
+                    <h3>仪表板</h3>
+                    <p>在美观的中心化仪表板中管理跨越不同网站的所有高亮内容。</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📱</span>
+                    <h3>移动端适配</h3>
+                    <p>针对 Firefox Android 等移动浏览器进行了优化。随时随地进行高亮。</p>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section class="features" id="features">
-            <div class="container">
-                <h2 class="section-title">支持的功能</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <span class="feature-icon">🎨</span>
-                        <h3>多色高亮</h3>
-                        <p>使用5种默认颜色（黄色、绿色、蓝色、粉色、橙色）和自定义颜色对文本进行分类高亮。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">⚡</span>
-                        <h3>键盘快捷键</h3>
-                        <p>使用Ctrl+Shift+数字键快速应用高亮。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">🗺️</span>
-                        <h3>小地图功能</h3>
-                        <p>在页面右侧显示小地图，轻松定位高亮区域。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">💾</span>
-                        <h3>自动保存</h3>
-                        <p>高亮内容自动保存，下次访问时保持不变。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">🌍</span>
-                        <h3>多语言支持</h3>
-                        <p>支持多种语言，让更多用户方便使用。</p>
-                    </div>
-                    <div class="feature-card">
-                        <span class="feature-icon">✨</span>
-                        <h3>轻松管理</h3>
-                        <p>通过右键菜单和高亮控制器轻松编辑和删除高亮。</p>
-                    </div>
+    <section class="detail-section" id="how-it-works">
+        <div class="container">
+            <div class="detail-row">
+                <div class="detail-content">
+                    <span class="feature-tag">直观工作流</span>
+                    <h3>现代控制 UI</h3>
+                    <p>不再需要四处寻找菜单。只需在网页上选择任何文本，光标附近就会出现精致的高亮图标。</p>
+                    <p>点击图标选择您喜爱的颜色，或点击已有的高亮部分即刻更改颜色或删除。</p>
                 </div>
-            </div>
-        </section>
-
-        <section class="demo" id="demo">
-            <div class="container">
-                <div class="demo-container">
-                    <div class="demo-content">
-                        <h2>实际使用示例</h2>
-                        <p>选择文本后右键点击或使用键盘快捷键，即可用您喜欢的颜色进行高亮。</p>
-                        <ul class="demo-features">
-                            <li>选择文本后右键点击选择颜色</li>
-                            <li>点击选择文本后出现的图标应用高亮</li>
-                            <li>使用Ctrl+Shift+1~4键盘快捷键</li>
-                            <li>点击高亮可更改/添加颜色或删除</li>
-                            <li>每页高亮自动保存</li>
-                            <li>通过小地图查看高亮位置</li>
-                        </ul>
-                    </div>
-                    <div class="demo-visual">
-                        <div class="highlight-demo">
-                            <p>这是<span class="highlight-yellow">重要信息</span>。您可以轻松区分网页上的<span class="highlight-green">核心内容</span>。</p>
-                            <p>非常适合整理研究或<span class="highlight-blue">学习材料</span>，当您<span class="highlight-yellow">再次访问</span>时，高亮内容保持不变。</p>
+                <div class="detail-visual">
+                    <div style="padding: 20px; background: white; border-radius: 12px; border: 1px solid #eee;">
+                        <p style="margin-bottom: 15px; border-bottom: 2px solid #8b5cf6; display: inline; padding-bottom: 2px;">这是一段被高亮的句子...</p>
+                        <div class="mock-control-ui">
+                            <div class="mock-color" style="background: #ff6b6b;"></div>
+                            <div class="mock-color" style="background: #4ecdc4;"></div>
+                            <div class="mock-color" style="background: #ffeaa7;"></div>
+                            <div class="mock-color" style="background: #8b5cf6;"></div>
+                            <div class="mock-btn-plus">+</div>
+                            <div style="width: 1px; height: 20px; background: #eee; margin: 0 4px;"></div>
+                            <div style="color: #ff4d4f; font-weight: bold; cursor: pointer;">✕</div>
                         </div>
                     </div>
                 </div>
-                <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-top: 2rem;">
-                    <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://www.youtube.com/embed/IRV3s1VPRIY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                </div>
             </div>
-        </section>
 
-        <section class="install" id="install">
-            <div class="container">
-                <h2>简单的安装步骤</h2>
-                <p>只需3步即可安装Marks并立即使用。</p>
-                <div class="install-buttons">
-                    <a href="https://chrome.google.com/webstore/detail/bkmhconhbggfffbcahaokpljcppmlgeg" class="btn-secondary">从Chrome网上应用店安装</a>
-                    <a href="https://addons.mozilla.org/zh-CN/firefox/addon/marks-text-highlighter/" class="btn-secondary">从Firefox附加组件安装</a>
+            <div class="detail-row">
+                <div class="detail-content">
+                    <span class="feature-tag">个性化</span>
+                    <h3>你的颜色，由你定义</h3>
+                    <p>不满足于默认色彩？我们的高级拾色器允许您将任何色调添加到调色盘中。</p>
+                    <p>调整色相、饱和度和明度，为您的学习笔记或研究项目打造完美的主题。通过扩展程序的弹出窗口轻松管理您的自定义颜色。</p>
                 </div>
-                <div class="install-steps">
-                    <div class="install-step">
-                        <h3>步骤1</h3>
-                        <p>在Chrome网上应用店或Firefox附加组件搜索"Marks: Text Highlighter"。</p>
-                    </div>
-                    <div class="install-step">
-                        <h3>步骤2</h3>
-                        <p>点击"添加到Chrome"或"添加到Firefox"安装扩展程序。</p>
-                    </div>
-                    <div class="install-step">
-                        <h3>步骤3</h3>
-                        <p>在任何网页上选择文本并开始高亮！</p>
+                <div class="detail-visual">
+                    <div style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px;">选择自定义颜色</div>
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 10px;">
+                            <div style="height: 15px; border-radius: 2px; background: #FF6B6B;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #4ECDC4;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #45B7D1;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #96CEB4;"></div>
+                            <div style="height: 15px; border-radius: 2px; background: #FFEAA7;"></div>
+                        </div>
+                        <div style="height: 8px; border-radius: 4px; background: linear-gradient(to right, red, yellow, green, cyan, blue, magenta, red); margin-bottom: 8px;"></div>
+                        <div style="height: 40px; border-radius: 4px; background: linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, #8b5cf6);"></div>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
 
-    <footer id="contact">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>Marks: Text Highlighter</h3>
-                    <p>为网页文本高亮设定新标准。提升您的学习、研究和工作效率。</p>
+            <div class="detail-row" id="sync">
+                <div class="detail-content">
+                    <span class="feature-tag">互联性</span>
+                    <h3>无缝云端同步</h3>
+                    <p>不再担心数据丢失。Text Highlighter 会在您的所有设备之间自动同步数据。</p>
+                    <p>在办公室的电脑上开始高亮，回到家或在移动设备上即可立即查看。支持 Chrome 和 Firefox 跨浏览器同步。</p>
                 </div>
-                <div class="footer-section">
-                    <h3>主要功能</h3>
-                    <p><a href="#features">多色高亮</a></p>
-                    <p><a href="#features">键盘快捷键</a></p>
-                    <p><a href="#features">小地图功能</a></p>
-                    <p><a href="#features">自动保存</a></p>
+                <div class="detail-visual">
+                    <div class="sync-visual">
+                        <div class="device-icon">💻</div>
+                        <div class="sync-arrow">↔️</div>
+                        <div class="device-icon">📱</div>
+                    </div>
                 </div>
-                <div class="footer-section">
-                    <h3>支持</h3>
-                    <p><a href="#">用户指南</a></p>
-                    <p><a href="#">常见问题</a></p>
-                    <p><a href="https://github.com/cuspymd/text-highlighter" target="_blank">Github</a></p>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 Marks: Text Highlighter. MIT License.</p>
             </div>
         </div>
-    </footer>
+    </section>
 
+    <section class="install" id="install">
+        <div class="container">
+            <h2>即刻开始高亮</h2>
+            <p>加入成千上万用户的行列，更高效地整理您的网页研究。</p>
+            <div class="install-buttons">
+                <a href="https://chrome.google.com/webstore/detail/bkmhconhbggfffbcahaokpljcppmlgeg" class="btn btn-white">
+                    添加到 Chrome
+                </a>
+                <a href="https://addons.mozilla.org/firefox/addon/marks-text-highlighter/" class="btn btn-outline">
+                    添加到 Firefox
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="#features">功能</a>
+                <a href="https://github.com/cuspymd/text-highlighter">GitHub</a>
+                <a href="#">隐私政策</a>
+                <a href="#">支持</a>
+            </div>
+            <p class="copyright">&copy; 2025 Text Highlighter. 在 MIT 许可证下开源。</p>
+        </div>
+    </footer>
     <script src="docs-common.js"></script>
 </body>
 </html>
