@@ -6,6 +6,7 @@ A cross-browser extension that allows you to highlight and manage text on web pa
 
 - Text Highlighting: Select and highlight text on web pages with multiple colors
 - Highlight Management: Manage and review highlighted text per page
+- Cross-Device Sync: Sync highlights across devices using browser `storage.sync`
 - Minimap: View highlighted positions at a glance with a minimap on the right side of the page
 - Multilingual Support: Available in English, Korean, Japanese, and Chinese
 - Cross-Browser Support: Works on Chrome, Firefox, and Firefox for Android
@@ -43,6 +44,7 @@ On Firefox for Android, the following desktop-only APIs are unavailable and hand
 - **Context Menus** (`contextMenus`): Not supported. Use the Selection Controls UI instead (enabled by default on mobile).
 - **Keyboard Shortcuts** (`commands`): Not supported. Use the Selection Controls UI instead.
 - **Windows API** (`windows`): Not supported. The extension uses the Tabs API as a fallback.
+- **Sync Storage** (`storage.sync`): Sync currently works between Firefox desktop devices, but Firefox for Android does not sync highlight data.
 
 The Selection Controls feature (floating highlight icon on text selection) is automatically enabled on mobile devices, providing a touch-friendly alternative to context menus and keyboard shortcuts.
 
