@@ -1,0 +1,20 @@
+Marks: Text Highlighter is built for people who read, research, and organize information on the web.
+Mark key lines instantly, keep highlights structured by page, and return to important context without friction.
+
+Key features
+- Highlight from the in-page control UI: Select text and use the on-page control to apply a color in one click.
+- Multi-color system with custom colors: Start with 5 default colors (yellow, green, blue, pink, orange), then add custom colors to match your own workflow.
+- Fast actions your way: Use right-click context menu actions or keyboard shortcuts, depending on how you work.
+- Page-based organization: Highlights are tied to each URL and are automatically restored when you revisit the page.
+- Minimap navigation: Scan and jump between highlights quickly, especially on long pages.
+
+Sync and privacy
+- Local-first storage with `storage.local`
+- Cross-device sync support via `storage.sync` when browser sync is enabled
+- No dedicated backend server, no analytics tracking, no account required
+
+Great for
+- Researchers, students, and knowledge workers
+- Anyone who wants clearer reading workflows and reusable web notes
+
+Use Marks to turn everyday web reading into a cleaner, faster review process.
