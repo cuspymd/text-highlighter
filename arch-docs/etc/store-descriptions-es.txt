@@ -1,0 +1,20 @@
+Marks: Text Highlighter está pensado para quienes leen, investigan y organizan información en la web.
+Te permite marcar ideas clave al instante, gestionar resaltados por página y volver al contexto importante sin fricción.
+
+Funciones principales
+- Resaltado desde la interfaz de control en la página: Selecciona texto y aplica color en un clic desde el control integrado.
+- Sistema multicolor con colores personalizados: Incluye 5 colores base (amarillo, verde, azul, rosa y naranja) y permite añadir colores personalizados para tu propio método de organización.
+- Acciones rápidas a tu manera: Usa el menú contextual con clic derecho o atajos de teclado según tu flujo de trabajo.
+- Organización por página: Los resaltados se guardan por URL y se restauran automáticamente cuando vuelves a abrir la página.
+- Navegación con minimapa: Localiza y recorre resaltados rápidamente, incluso en páginas largas.
+
+Sincronización y privacidad
+- Almacenamiento local primero con `storage.local`
+- Sincronización entre dispositivos mediante `storage.sync` si activas la sincronización del navegador
+- Sin servidor backend propio, sin analíticas de seguimiento y sin necesidad de cuenta
+
+Ideal para
+- Investigadores, estudiantes y profesionales que leen mucho
+- Personas que quieren una lectura más ordenada y notas web reutilizables
+
+Con Marks, convertirás la lectura web diaria en un proceso más claro, rápido y eficiente.
