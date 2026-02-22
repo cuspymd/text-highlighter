@@ -44,6 +44,37 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(getMessage);
+  const webProtocols = new Set(['http:', 'https:']);
+  const fallbackWebFavicon = `data:image/svg+xml;utf8,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#e5e7eb" stroke="#9ca3af"/><path d="M2 8h12M8 1a11 11 0 0 0 0 14M8 1a11 11 0 0 1 0 14" stroke="#6b7280" stroke-width="1" fill="none"/></svg>'
+  )}`;
+  const fallbackFileFavicon = `data:image/svg+xml;utf8,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 1.5h5l3 3V14.5H4z" fill="#dbeafe" stroke="#60a5fa"/><path d="M9 1.5v3h3" fill="#bfdbfe" stroke="#60a5fa"/><path d="M5.5 8.5h5M5.5 10.5h5M5.5 12.5h3.5" stroke="#3b82f6" stroke-width="1"/></svg>'
+  )}`;
+  const fallbackGenericFavicon = `data:image/svg+xml;utf8,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="#f3f4f6" stroke="#9ca3af"/><path d="M5 6h6M5 8h6M5 10h4" stroke="#6b7280" stroke-width="1.2"/></svg>'
+  )}`;
+
+  function getPageFaviconConfig(urlString) {
+    try {
+      const parsed = new URL(urlString);
+
+      if (webProtocols.has(parsed.protocol) && parsed.hostname) {
+        return {
+          src: `https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(parsed.hostname)}`,
+          fallbackSrc: fallbackWebFavicon,
+        };
+      }
+
+      if (parsed.protocol === 'file:') {
+        return { src: fallbackFileFavicon, fallbackSrc: fallbackFileFavicon };
+      }
+
+      return { src: fallbackGenericFavicon, fallbackSrc: fallbackGenericFavicon };
+    } catch (e) {
+      return { src: fallbackGenericFavicon, fallbackSrc: fallbackGenericFavicon };
+    }
+  }
 
   function isSafeOpenUrl(urlString) {
     if (!urlString) return false;
@@ -180,7 +211,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const favicon = document.createElement('img');
         favicon.className = 'page-favicon';
         favicon.alt = '';
-        favicon.src = `https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(page.url)}`;
+        const faviconConfig = getPageFaviconConfig(page.url);
+        favicon.src = faviconConfig.src;
+        favicon.addEventListener('error', () => {
+          if (favicon.src !== faviconConfig.fallbackSrc) {
+            favicon.src = faviconConfig.fallbackSrc;
+          }
+        }, { once: true });
 
         const titleDiv = document.createElement('div');
         titleDiv.className = 'page-title';
