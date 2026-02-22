@@ -101,6 +101,9 @@ test.describe('Popup Tests', () => {
 
     const deleteBtn = highlightItems.nth(0).locator('.delete-btn');
     await deleteBtn.click();
+    const confirmBtn = popupPage.locator('.modal-confirm');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
 
     await expect(highlightItems).toHaveCount(0);
 
@@ -135,6 +138,9 @@ test.describe('Popup Tests', () => {
     const highlightItems = popupPage.locator('.highlight-item');
     await expect(highlightItems).toHaveCount(1);
     await highlightItems.nth(0).locator('.delete-btn').click();
+    const confirmBtn = popupPage.locator('.modal-confirm');
+    await expect(confirmBtn).toBeVisible();
+    await confirmBtn.click();
     await expect(highlightItems).toHaveCount(0);
 
     await expect(primaryH1Span).toHaveCount(0);

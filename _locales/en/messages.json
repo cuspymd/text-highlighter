@@ -47,7 +47,7 @@
     "message": "Text Highlighter"
   },
   "popupDescription": {
-    "message": "Select text on web pages and right-click to highlight."
+    "message": "Select text on web pages and use the control UI to highlight."
   },
   "exportAll": {
     "message": "Export"
@@ -88,8 +88,8 @@
   "noHighlights": {
     "message": "No highlighted text on this page."
   },
-  "clearAllHighlights": {
-    "message": "Clear All Highlights"
+  "deleteAllHighlights": {
+    "message": "Delete All Highlights"
   },
   "viewAllPages": {
     "message": "Highlighted Pages List"
@@ -102,6 +102,9 @@
   },
   "confirmClearAll": {
     "message": "Really delete all highlights on this page?"
+  },
+  "confirmDeleteHighlight": {
+    "message": "Delete this highlight?"
   },
   "pagesListTitle": {
     "message": "Highlighted Pages List"

@@ -47,7 +47,7 @@
     "message": "Resaltador de Texto"
   },
   "popupDescription": {
-    "message": "Selecciona texto en páginas web y haz clic derecho para resaltar."
+    "message": "Selecciona texto en páginas web y usa la interfaz de control para resaltar."
   },
   "exportAll": {
     "message": "Exportar"
@@ -88,7 +88,7 @@
   "noHighlights": {
     "message": "No hay texto resaltado en esta página."
   },
-  "clearAllHighlights": {
+  "deleteAllHighlights": {
     "message": "Limpiar Todos los Resaltados"
   },
   "viewAllPages": {
@@ -97,8 +97,14 @@
   "showMinimap": {
     "message": "Mostrar Minimapa"
   },
+  "showControlsOnSelection": {
+    "message": "Mostrar interfaz de control al seleccionar texto"
+  },
   "confirmClearAll": {
     "message": "¿Realmente eliminar todos los resaltados en esta página?"
+  },
+  "confirmDeleteHighlight": {
+    "message": "¿Eliminar este resaltado?"
   },
   "pagesListTitle": {
     "message": "Lista de Páginas Resaltadas"

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="popupTitle">Text Highlighter</title>
+    <link rel="stylesheet" href="shared/modal.css" />
     <style>
       :root {
         --bg: #ffffff;
@@ -256,7 +257,7 @@
 
       .toggle-container {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 10px;
         border: 1px solid var(--border);
@@ -265,17 +266,22 @@
         padding: 8px 10px;
       }
 
-      .toggle-container label {
+      .toggle-container > label:not(.toggle-switch) {
         margin: 0;
         color: var(--text);
         font-size: 13px;
         font-weight: 500;
+        line-height: 1.25;
+        flex: 1 1 auto;
+        min-width: 0;
       }
 
       .toggle-switch {
         position: relative;
         width: 42px;
         height: 24px;
+        flex: 0 0 42px;
+        align-self: center;
       }
 
       .toggle-switch input {
@@ -314,61 +320,6 @@
         transform: translateX(18px);
       }
 
-      .custom-modal {
-        position: fixed;
-        inset: 0;
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .modal-overlay {
-        position: absolute;
-        inset: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-      }
-
-      .modal-content {
-        position: relative;
-        background: var(--surface-strong);
-        color: var(--text);
-        padding: 18px;
-        border-radius: 12px;
-        min-width: 250px;
-        max-width: 90%;
-        box-shadow: var(--shadow-2);
-        border: 1px solid var(--border);
-        z-index: 10001;
-      }
-
-      .modal-content p {
-        margin: 0 0 14px;
-        font-size: 14px;
-        line-height: 1.45;
-      }
-
-      .modal-buttons {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-      }
-
-      .modal-btn {
-        padding: 8px 14px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-        color: var(--text);
-        cursor: pointer;
-      }
-
-      .modal-confirm {
-        background: var(--accent);
-        color: #fff;
-        border-color: var(--accent);
-      }
-
       @media (pointer: coarse) {
         body {
           width: auto;
@@ -395,7 +346,7 @@
         </div>
       </header>
 
-      <p class="description" data-i18n="popupDescription">Select text on web pages and right-click to highlight.</p>
+      <p class="description" data-i18n="popupDescription">Select text on web pages and use the control UI to highlight.</p>
 
       <section class="section-card">
         <h2 class="section-title" data-i18n="currentPageHighlights">Current Page Highlights</h2>
@@ -406,7 +357,7 @@
 
       <section class="section-card actions">
         <button id="view-all-pages" class="btn btn-primary" data-i18n="viewAllPages">Highlighted Pages List</button>
-        <button id="clear-all" class="btn" data-i18n="clearAllHighlights">Clear All Highlights</button>
+        <button id="clear-all" class="btn" data-i18n="deleteAllHighlights">Delete All Highlights</button>
         <button id="delete-custom-colors" class="btn" data-i18n="deleteCustomColors">Delete Custom Colors</button>
 
         <div class="toggle-container">
@@ -420,7 +371,7 @@
         <div class="toggle-container">
           <label for="selection-controls-toggle" data-i18n="showControlsOnSelection">Show Control UI on Text Selection</label>
           <label class="toggle-switch">
-            <input type="checkbox" id="selection-controls-toggle" />
+            <input type="checkbox" id="selection-controls-toggle" checked />
             <span class="toggle-slider"></span>
           </label>
         </div>

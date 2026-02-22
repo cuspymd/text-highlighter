@@ -47,7 +47,7 @@
     "message": "文本高亮器"
   },
   "popupDescription": {
-    "message": "在网页上选择文本后，点击鼠标右键即可高亮显示。"
+    "message": "在网页上选择文本后，可使用控制UI进行高亮。"
   },
   "exportAll": {
     "message": "导出"
@@ -88,7 +88,7 @@
   "noHighlights": {
     "message": "当前页面没有高亮的文本。"
   },
-  "clearAllHighlights": {
+  "deleteAllHighlights": {
     "message": "清除所有高亮"
   },
   "viewAllPages": {
@@ -102,6 +102,9 @@
   },
   "confirmClearAll": {
     "message": "确定要删除当前页面的所有高亮吗？"
+  },
+  "confirmDeleteHighlight": {
+    "message": "确定要删除此高亮吗？"
   },
   "pagesListTitle": {
     "message": "已高亮页面列表"

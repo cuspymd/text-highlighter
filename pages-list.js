@@ -1,6 +1,7 @@
 import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { validateImportPayload } from './shared/import-export-schema.js';
+import { createLocalizedModalHelpers } from './shared/modal.js';
 
 // Theme change detection and handling
 function initializeThemeWatcher() {
@@ -41,6 +42,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     return defaultValue;
   }
+
+  const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(getMessage);
 
   function isSafeOpenUrl(urlString) {
     if (!urlString) return false;
@@ -274,9 +277,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Delete page button event
-        pageItem.querySelector('.btn-delete').addEventListener('click', function () {
+        pageItem.querySelector('.btn-delete').addEventListener('click', async function () {
           const confirmMessage = getMessage('confirmDeletePage', 'Delete all highlights for this page?');
-          if (confirm(confirmMessage)) {
+          const confirmed = await showConfirmModal(confirmMessage);
+          if (confirmed) {
             deletePageHighlights(page.url);
           }
         });
@@ -347,33 +351,33 @@ document.addEventListener('DOMContentLoaded', function () {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function (e) {
+      reader.onload = async function (e) {
         try {
           const json = JSON.parse(e.target.result);
           if (!json.pages || !Array.isArray(json.pages)) {
-            alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+            await showAlertModal(getMessage('importInvalidFormat', 'Invalid import file format.'));
             return;
           }
           // Filter out pages with unsafe URLs
           const safePages = json.pages.filter(page => isSafeOpenUrl(page.url));
           const skippedCount = json.pages.length - safePages.length;
           if (skippedCount > 0) {
-            alert(getMessage('importUnsafeUrlSkipped', `${skippedCount} page(s) with invalid or unsafe URLs were skipped.`, [skippedCount]));
+            await showAlertModal(getMessage('importUnsafeUrlSkipped', `${skippedCount} page(s) with invalid or unsafe URLs were skipped.`, [skippedCount]));
           }
           if (safePages.length === 0) {
-            alert(getMessage('importAllUnsafeUrl', 'No pages could be imported because all URLs are invalid or unsafe.'));
+            await showAlertModal(getMessage('importAllUnsafeUrl', 'No pages could be imported because all URLs are invalid or unsafe.'));
             return;
           }
 
           // Validate and normalize schema before writing to storage.
           const validation = validateImportPayload({ pages: safePages });
           if (!validation.valid) {
-            alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+            await showAlertModal(getMessage('importInvalidFormat', 'Invalid import file format.'));
             return;
           }
 
           if (validation.pages.length === 0) {
-            alert(getMessage('importAllInvalidSchema', 'No pages could be imported because all data failed schema validation.'));
+            await showAlertModal(getMessage('importAllInvalidSchema', 'No pages could be imported because all data failed schema validation.'));
             return;
           }
 
@@ -384,13 +388,13 @@ document.addEventListener('DOMContentLoaded', function () {
               '$1 invalid item(s) were skipped during import.',
               [String(schemaDrops)],
             );
-            alert(schemaWarning);
+            await showAlertModal(schemaWarning);
           }
 
           const validatedPages = validation.pages;
 
           // Get all current storage to check for overlap
-          browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+          browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, async (response) => {
             if (response && response.success) {
               const existingUrls = response.pages.map(p => p.url);
               const importUrls = validatedPages.map(p => p.url);
@@ -398,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function () {
               let proceed = true;
               if (overlap.length > 0) {
                 const confirmMsg = getMessage('importOverwriteConfirm', 'Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?');
-                proceed = confirm(confirmMsg);
+                proceed = await showConfirmModal(confirmMsg);
               }
               if (!proceed) return;
               // Prepare operations: delete old, add new
@@ -414,16 +418,16 @@ document.addEventListener('DOMContentLoaded', function () {
                   lastUpdated: page.lastUpdated || new Date().toISOString()
                 };
               });
-              browserAPI.storage.local.set(ops, () => {
-                alert(getMessage('importSuccess', 'Import completed.'));
+              browserAPI.storage.local.set(ops, async () => {
+                await showAlertModal(getMessage('importSuccess', 'Import completed.'));
                 loadAllHighlightedPages();
               });
             } else {
-              alert(getMessage('importError', 'Error checking existing highlights.'));
+              await showAlertModal(getMessage('importError', 'Error checking existing highlights.'));
             }
           });
         } catch (err) {
-          alert(getMessage('importInvalidFormat', 'Invalid import file format.'));
+          await showAlertModal(getMessage('importInvalidFormat', 'Invalid import file format.'));
         }
       };
       reader.readAsText(file);
@@ -471,11 +475,11 @@ document.addEventListener('DOMContentLoaded', function () {
   // Export all highlights event
   if (exportAllBtn) {
     exportAllBtn.addEventListener('click', function () {
-      browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
+      browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, async (response) => {
         if (response && response.success) {
           const exportData = response.pages;
           if (exportData.length === 0) {
-            alert(getMessage('noHighlightsToExport', 'No highlights to export.'));
+            await showAlertModal(getMessage('noHighlightsToExport', 'No highlights to export.'));
             return;
           }
           const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), pages: exportData }, null, 2)], { type: 'application/json' });
@@ -488,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function () {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         } else {
-          alert(getMessage('exportError', 'Error exporting highlights.'));
+          await showAlertModal(getMessage('exportError', 'Error exporting highlights.'));
         }
       });
     });
@@ -496,9 +500,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Connect Delete All button events
   if (deleteAllBtn) {
-    deleteAllBtn.addEventListener('click', function () {
+    deleteAllBtn.addEventListener('click', async function () {
       const confirmMessage = getMessage('confirmDeleteAllPages', 'Delete ALL highlighted pages?');
-      if (confirm(confirmMessage)) {
+      const confirmed = await showConfirmModal(confirmMessage);
+      if (confirmed) {
         deleteAllPages();
       }
     });
