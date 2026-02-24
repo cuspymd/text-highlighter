@@ -20,7 +20,7 @@ header {
 
 .docs-container {
     display: flex;
-    max-width: 1400px;
+    max-width: 1100px; /* Reduced from 1400px to reduce empty space on the right */
     margin: 0 auto;
     padding-top: 0; /* Removed extra padding as sticky header already occupies space */
     min-height: 100vh;
@@ -32,7 +32,7 @@ header {
     position: fixed;
     top: 80px; /* Below header */
     bottom: 0;
-    left: max(0px, calc((100vw - 1400px) / 2)); /* Center with container */
+    left: max(0px, calc((100vw - 1100px) / 2)); /* Center with container (updated for 1100px width) */
     overflow-y: auto;
     background: white;
     border-right: 1px solid #eee;
@@ -89,7 +89,7 @@ header {
 
 /* Limit content width for better readability */
 .content > * {
-    max-width: 900px;
+    max-width: 750px; /* Further reduced from 900px */
 }
 
 .content section {
