@@ -18,6 +18,14 @@ header {
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
+/*
+   Match the header container width to the docs-container width (1100px)
+   so the logo and nav links align with the content boundaries.
+*/
+header .container {
+    max-width: 1100px;
+}
+
 .docs-container {
     display: flex;
     max-width: 1100px; /* Reduced from 1400px to reduce empty space on the right */
