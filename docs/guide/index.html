@@ -24,19 +24,19 @@
             <h3>목차</h3>
             <ul class="toc-list">
                 <li><a href="#intro">소개</a></li>
-                <li><a href="#add-highlights">하이라이트 추가</a>
+                <li><a href="#add-highlights">하이라이트 추가 방법</a>
                     <ul class="toc-sublist">
-                        <li><a href="#add-control-ui">컨트롤 UI 이용</a></li>
-                        <li><a href="#add-context-menu">우클릭 메뉴 이용</a></li>
-                        <li><a href="#add-shortcuts">단축키 이용</a></li>
+                        <li><a href="#add-control-ui">1. 컨트롤 UI 이용 (모든 버전)</a></li>
+                        <li><a href="#add-context-menu">2. 컨텍스트 메뉴 이용</a></li>
+                        <li><a href="#add-shortcuts">3. 단축키 사용</a></li>
                     </ul>
                 </li>
-                <li><a href="#delete-highlights">하이라이트 삭제</a></li>
-                <li><a href="#custom-colors">사용자 정의 색상</a></li>
-                <li><a href="#minimap">미니맵</a></li>
-                <li><a href="#popup-menu">Popup 메뉴 기능</a></li>
-                <li><a href="#pages-list">하이라이트 목록 (Pages List)</a></li>
-                <li><a href="#sync">동기화 기능</a></li>
+                <li><a href="#delete-highlights">하이라이트 삭제 방법</a></li>
+                <li><a href="#custom-colors">사용자 정의 색상 설정</a></li>
+                <li><a href="#minimap">미니맵 (Minimap)</a></li>
+                <li><a href="#popup-menu">Popup 메뉴 설명</a></li>
+                <li><a href="#pages-list">하이라이트 목록 (Pages List) 화면</a></li>
+                <li><a href="#sync">동기화 (Synchronization)</a></li>
                 <li><a href="#import-export">가져오기 및 내보내기</a></li>
             </ul>
         </aside>
@@ -175,21 +175,34 @@
     <!-- Active TOC Highlight Script -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    const id = entry.target.getAttribute('id');
-                    if (entry.intersectionRatio > 0) {
-                        document.querySelector(`.sidebar a[href="#${id}"]`)?.classList.add('active');
-                    } else {
-                        document.querySelector(`.sidebar a[href="#${id}"]`)?.classList.remove('active');
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.sidebar a');
+
+            function onScroll() {
+                let current = '';
+                // Offset for header height + some buffer
+                const headerOffset = 150;
+
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    // Check if the section is currently active based on scroll position
+                    if (window.scrollY >= (sectionTop - headerOffset)) {
+                        current = section.getAttribute('id');
                     }
                 });
-            });
 
-            // Track all sections that have an ID
-            document.querySelectorAll('section[id]').forEach((section) => {
-                observer.observe(section);
-            });
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes('#' + current)) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', onScroll);
+            // Initial call to highlight correct section on load
+            onScroll();
         });
     </script>
 </body>
