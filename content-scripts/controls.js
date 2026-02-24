@@ -15,6 +15,7 @@ let uiMountRoot = null;
 
 // Mobile platform detection
 let isMobilePlatform = false;
+const CONTROL_DRAG_PADDING = 10;
 
 function getUiMountRoot() {
   if (uiMountRoot && uiMountRoot.isConnected) {
@@ -28,6 +29,107 @@ function getUiMountRoot() {
   document.documentElement.appendChild(root);
   uiMountRoot = root;
   return root;
+}
+
+function enableTouchDragForControls(container) {
+  if (!container || container.dataset.touchDragEnabled === 'true') return;
+  container.dataset.touchDragEnabled = 'true';
+  container.style.touchAction = 'none';
+
+  let dragging = false;
+  let moved = false;
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  container.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+
+    dragging = true;
+    moved = false;
+    pointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    const rect = container.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop = rect.top;
+
+    if (typeof container.setPointerCapture === 'function') {
+      container.setPointerCapture(pointerId);
+    }
+  }, { passive: true });
+
+  container.addEventListener('pointermove', (e) => {
+    if (!dragging || e.pointerId !== pointerId) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      moved = true;
+    }
+    if (!moved) return;
+
+    const rect = container.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    let minLeft = CONTROL_DRAG_PADDING;
+    let maxLeft = window.innerWidth - width - CONTROL_DRAG_PADDING;
+    if (maxLeft < minLeft) {
+      minLeft = maxLeft;
+      maxLeft = CONTROL_DRAG_PADDING;
+    }
+
+    const minTop = CONTROL_DRAG_PADDING;
+    const maxTop = Math.max(CONTROL_DRAG_PADDING, window.innerHeight - height - CONTROL_DRAG_PADDING);
+
+    const nextLeft = clamp(startLeft + dx, Math.min(minLeft, maxLeft), Math.max(minLeft, maxLeft));
+    const nextTop = clamp(startTop + dy, minTop, maxTop);
+
+    container.style.left = `${nextLeft}px`;
+    container.style.top = `${nextTop}px`;
+    e.preventDefault();
+  }, { passive: false });
+
+  const finishDrag = (e) => {
+    if (!dragging || e.pointerId !== pointerId) return;
+
+    if (moved) {
+      container.dataset.justDragged = 'true';
+      setTimeout(() => {
+        if (container.dataset.justDragged === 'true') {
+          delete container.dataset.justDragged;
+        }
+      }, 180);
+    }
+
+    dragging = false;
+    moved = false;
+
+    if (typeof container.releasePointerCapture === 'function') {
+      try {
+        container.releasePointerCapture(pointerId);
+      } catch (err) {
+        // Ignore release errors when capture state changed externally.
+      }
+    }
+    pointerId = null;
+  };
+
+  container.addEventListener('pointerup', finishDrag);
+  container.addEventListener('pointercancel', finishDrag);
+
+  container.addEventListener('click', (e) => {
+    if (container.dataset.justDragged === 'true') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
 }
 
 function getContentApi() {
@@ -116,6 +218,7 @@ function createHighlightControls() {
   const addColorBtn = createAddColorButton();
   colorButtonsContainer.appendChild(addColorBtn);
   getUiMountRoot().appendChild(highlightControlsContainer);
+  enableTouchDragForControls(highlightControlsContainer);
 }
 
 // create colorButton (reusable function)
@@ -949,6 +1052,7 @@ function showSelectionControls(mouseX, mouseY) {
   selectionControlsContainer.style.left = `${leftPosition}px`;
   selectionControlsContainer.style.top = `${topPosition}px`;
   selectionControlsContainer.style.visibility = 'visible';
+  enableTouchDragForControls(selectionControlsContainer);
   
   // Update event listeners for color buttons to create highlights instead of changing existing ones
   const colorButtons = selectionControlsContainer.querySelectorAll('.color-button');
