@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户指南 - Marks: Text Highlighter</title>
+    <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Marks: Text Highlighter</div>
+                <ul class="nav-links">
+                    <li><a href="../index.html">首页</a></li>
+                    <li><a href="index.html">한국어</a></li>
+                    <li><a href="index.en.html">English</a></li>
+                    <li><a href="index.ja.html">日本語</a></li>
+                    <li><a href="index.zh.html" class="active">中文</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <h3>目录</h3>
+            <ul class="toc-list">
+                <li><a href="#intro">简介</a></li>
+                <li><a href="#add-highlights">添加高亮</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#add-control-ui">1. 使用控制界面</a></li>
+                        <li><a href="#add-context-menu">2. 使用右键菜单</a></li>
+                        <li><a href="#add-shortcuts">3. 使用快捷键</a></li>
+                    </ul>
+                </li>
+                <li><a href="#delete-highlights">删除高亮</a></li>
+                <li><a href="#custom-colors">自定义颜色</a></li>
+                <li><a href="#minimap">缩略图 (Minimap)</a></li>
+                <li><a href="#popup-menu">弹出菜单说明</a></li>
+                <li><a href="#pages-list">高亮页面列表 (Pages List)</a></li>
+                <li><a href="#sync">同步功能 (Synchronization)</a></li>
+                <li><a href="#import-export">导入与导出</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            <section id="intro">
+                <h1>Marks: Text Highlighter 用户指南</h1>
+                <p>感谢您使用 Marks: Text Highlighter。该扩展允许您轻松快速地高亮网页文本，并保存和管理这些内容。</p>
+            </section>
+
+            <section id="add-highlights">
+                <h2>添加高亮</h2>
+                <p>您可以通过三种方式为网页上的文本添加高亮。</p>
+
+                <h3 id="add-control-ui">1. 使用控制界面</h3>
+                <p>当您选中文本时，选择区域附近会出现一个高亮图标（笔形）。点击此图标或将鼠标悬停在上面，即可显示包含调色板的<strong>控制界面 (Control UI)</strong>。点击您想要的颜色即可应用高亮。</p>
+                <div class="note">
+                    <span class="note-title">注意</span>
+                    此功能在移动设备上或在设置中开启“选中文本时显示控制界面”时有效。
+                </div>
+
+                <h3 id="add-context-menu">2. 使用右键菜单</h3>
+                <p>选中文本后点击鼠标右键打开上下文菜单。在<strong>“Marks: Text Highlighter”</strong>菜单下选择颜色进行高亮。</p>
+                <div class="warning">
+                    <span class="warning-title">限制</span>
+                    Firefox Android 版本不支持通过右键菜单添加高亮。
+                </div>
+
+                <h3 id="add-shortcuts">3. 使用快捷键</h3>
+                <p>选中文本后，按下键盘快捷键即可快速应用颜色。</p>
+                <ul>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : 第1种颜色 (默认: 黄色)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : 第2种颜色 (默认: 青色)</li>
+                    <li>... 数字键 1-5 对应默认颜色。</li>
+                </ul>
+                <div class="warning">
+                    <span class="warning-title">限制</span>
+                    Firefox Android 版本不支持快捷键功能。
+                </div>
+            </section>
+
+            <section id="delete-highlights">
+                <h2>删除高亮</h2>
+                <p>您可以通过以下方式删除不需要的高亮。</p>
+                <ul>
+                    <li><strong>单个删除 (控制界面):</strong> 点击已高亮的文本，会出现控制界面。点击其中的<strong>垃圾桶图标</strong>进行删除。</li>
+                    <li><strong>单个删除 (Popup):</strong> 点击浏览器工具栏的扩展图标打开弹出菜单。在“当前页面高亮”列表中，点击要删除项目旁边的<strong>X按钮</strong>。</li>
+                    <li><strong>清空页面 (Popup):</strong> 点击弹出菜单底部的<strong>“删除所有高亮”</strong>按钮，即可删除当前页面上的所有高亮。</li>
+                    <li><strong>删除页面 (Pages List):</strong> 在高亮列表页面中，点击特定页面卡片的<strong>“删除”</strong>按钮，即可删除该页面的所有数据。</li>
+                    <li><strong>删除所有数据 (Pages List):</strong> 点击列表页面顶部的<strong>垃圾桶图标 (删除所有页面)</strong>，即可删除所有已保存的高亮数据。</li>
+                </ul>
+            </section>
+
+            <section id="custom-colors">
+                <h2>自定义颜色</h2>
+
+                <h3>添加和更改颜色</h3>
+                <p>除了5种默认颜色外，您还可以添加自己的颜色。</p>
+                <ol>
+                    <li>点击已高亮的文本打开控制界面。</li>
+                    <li>点击颜色列表末尾的<strong>+按钮</strong>。</li>
+                    <li>从颜色选择器中选择您喜欢的颜色，然后点击“应用”。</li>
+                </ol>
+                <div class="note">
+                    <span class="note-title">注意</span>
+                    在为新文本添加高亮时，控制界面中不会显示 + 按钮。只有在点击<strong>已创建的高亮</strong>时，才会显示添加颜色按钮。
+                </div>
+
+                <h3>删除颜色</h3>
+                <p>目前不支持删除单个自定义颜色。要重置所有自定义颜色，请使用以下方法。</p>
+                <ul>
+                    <li>打开弹出菜单，点击<strong>“删除自定义颜色”</strong>按钮。（除默认的5种颜色外，所有添加的颜色都将被删除。）</li>
+                </ul>
+            </section>
+
+            <section id="minimap">
+                <h2>缩略图 (Minimap)</h2>
+                <p>在有高亮的网页右侧会显示<strong>缩略图</strong>。</p>
+                <ul>
+                    <li>缩略图直观地显示了高亮在整个页面长度中的位置。</li>
+                    <li>点击缩略图上的标记，页面会立即<strong>滚动</strong>到相应的高亮位置。</li>
+                    <li>您可以在弹出菜单中关闭“显示缩略图”开关来隐藏它。</li>
+                </ul>
+            </section>
+
+            <section id="popup-menu">
+                <h2>弹出菜单说明</h2>
+                <p>点击浏览器工具栏中的 Marks 图标时出现的菜单。</p>
+                <ul>
+                    <li><strong>当前页面高亮:</strong> 显示当前页面已保存的高亮列表。点击可跳转到相应位置。</li>
+                    <li><strong>高亮页面列表 (Highlighted Pages List):</strong> 打开管理所有已保存页面的仪表板屏幕。</li>
+                    <li><strong>删除所有高亮:</strong> 清除当前页面的所有高亮。</li>
+                    <li><strong>删除自定义颜色:</strong> 清除用户添加的所有颜色，只保留默认颜色。</li>
+                    <li><strong>显示缩略图:</strong> 设置是否在页面右侧显示缩略图。</li>
+                    <li><strong>选中文本时显示控制界面:</strong> 开启或关闭拖动文本时自动显示高亮按钮的功能。</li>
+                </ul>
+            </section>
+
+            <section id="pages-list">
+                <h2>高亮页面列表 (Pages List)</h2>
+                <p>可以一目了然地查看和管理所有已保存高亮信息的仪表板。</p>
+                <ul>
+                    <li><strong>搜索:</strong> 按页面标题或 URL 搜索已保存的记录。</li>
+                    <li><strong>排序:</strong> 按最新、最旧等顺序对列表进行排序。</li>
+                    <li><strong>删除:</strong> 删除单个页面，或使用顶部工具栏的删除按钮清空所有数据。</li>
+                    <li><strong>导出/导入:</strong> 备份或恢复数据。</li>
+                </ul>
+            </section>
+
+            <section id="sync">
+                <h2>同步功能 (Synchronization)</h2>
+                <p>通过登录的 Google (Chrome) 或 Firefox 账户，在多个设备间同步高亮数据。</p>
+
+                <h3>工作原理</h3>
+                <p>在一个设备上添加或删除高亮，会自动反映到使用同一账户登录的其他设备上。如果数据发生冲突，将保留最近修改的内容。</p>
+
+                <h3>限制</h3>
+                <ul>
+                    <li><strong>容量限制:</strong> 同步存储的<strong>总容量限制为 100KB</strong>，单个高亮项目不能超过 <strong>8KB</strong>。</li>
+                    <li><strong>清理旧数据:</strong> 当容量已满时，最久未更新页面的同步数据将被自动删除以腾出空间。（本地数据将保留。）</li>
+                    <li><strong>移动端不支持:</strong> Firefox Android 版本不支持同步功能。</li>
+                </ul>
+            </section>
+
+            <section id="import-export">
+                <h2>导入与导出</h2>
+                <p>用于安全备份数据或迁移到其他浏览器。</p>
+                <ul>
+                    <li><strong>导出 (Export):</strong> 将当前保存的所有高亮数据作为 JSON 文件下载。</li>
+                    <li><strong>导入 (Import):</strong> 选择之前导出的 JSON 文件以恢复数据。</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Active TOC Highlight Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.sidebar a');
+
+            function onScroll() {
+                let current = '';
+                // Offset for header height + some buffer
+                const headerOffset = 150;
+
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    // Check if the section is currently active based on scroll position
+                    if (window.scrollY >= (sectionTop - headerOffset)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes('#' + current)) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', onScroll);
+            // Initial call to highlight correct section on load
+            onScroll();
+        });
+    </script>
+</body>
+</html>

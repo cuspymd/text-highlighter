@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide - Marks: Text Highlighter</title>
+    <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Marks: Text Highlighter</div>
+                <ul class="nav-links">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="index.html">한국어</a></li>
+                    <li><a href="index.en.html" class="active">English</a></li>
+                    <li><a href="index.ja.html">日本語</a></li>
+                    <li><a href="index.zh.html">中文</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <h3>Table of Contents</h3>
+            <ul class="toc-list">
+                <li><a href="#intro">Introduction</a></li>
+                <li><a href="#add-highlights">How to Add Highlights</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#add-control-ui">1. Using Control UI</a></li>
+                        <li><a href="#add-context-menu">2. Using Context Menu</a></li>
+                        <li><a href="#add-shortcuts">3. Using Shortcuts</a></li>
+                    </ul>
+                </li>
+                <li><a href="#delete-highlights">How to Delete Highlights</a></li>
+                <li><a href="#custom-colors">Custom Colors</a></li>
+                <li><a href="#minimap">Minimap</a></li>
+                <li><a href="#popup-menu">Popup Menu</a></li>
+                <li><a href="#pages-list">Highlighted Pages List</a></li>
+                <li><a href="#sync">Synchronization</a></li>
+                <li><a href="#import-export">Import & Export</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            <section id="intro">
+                <h1>Marks: Text Highlighter User Guide</h1>
+                <p>Thank you for using Marks: Text Highlighter. This extension allows you to easily highlight, save, and manage text on web pages.</p>
+            </section>
+
+            <section id="add-highlights">
+                <h2>How to Add Highlights</h2>
+                <p>There are three ways to add highlights to selected text on a web page.</p>
+
+                <h3 id="add-control-ui">1. Using Control UI</h3>
+                <p>When you select text, a highlight icon (pen shape) appears near the selection. Click this icon or hover over it to reveal the <strong>Control UI</strong> with a color palette. Click a color to apply the highlight.</p>
+                <div class="note">
+                    <span class="note-title">Note</span>
+                    This works when 'Show Control UI on text selection' is enabled in settings. It is also the primary method for mobile devices.
+                </div>
+
+                <h3 id="add-context-menu">2. Using Context Menu</h3>
+                <p>Select text and right-click to open the context menu. Navigate to <strong>"Marks: Text Highlighter"</strong> and select a color to highlight.</p>
+                <div class="warning">
+                    <span class="warning-title">Limitation</span>
+                    Context menu highlighting is not supported on Firefox for Android.
+                </div>
+
+                <h3 id="add-shortcuts">3. Using Shortcuts</h3>
+                <p>Select text and use keyboard shortcuts to quickly apply colors.</p>
+                <ul>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : 1st Color (Default: Yellow)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : 2nd Color (Default: Cyan)</li>
+                    <li>... Number keys 1-5 correspond to the default colors.</li>
+                </ul>
+                <div class="warning">
+                    <span class="warning-title">Limitation</span>
+                    Shortcuts are not supported on Firefox for Android.
+                </div>
+            </section>
+
+            <section id="delete-highlights">
+                <h2>How to Delete Highlights</h2>
+                <p>You can remove unnecessary highlights using the following methods:</p>
+                <ul>
+                    <li><strong>Individual Delete (Control UI):</strong> Click on an existing highlight to open the Control UI. Click the <strong>Trash icon</strong> to delete it.</li>
+                    <li><strong>Individual Delete (Popup):</strong> Click the extension icon in the toolbar to open the Popup menu. In the "Current Page Highlights" list, click the <strong>X button</strong> next to the item you want to remove.</li>
+                    <li><strong>Clear Page (Popup):</strong> Click the <strong>"Remove all highlights"</strong> button at the bottom of the Popup menu to remove all highlights on the current page.</li>
+                    <li><strong>Delete Page (Pages List):</strong> In the Highlighted Pages List dashboard, click the <strong>"Delete"</strong> button on a specific page card to remove all data for that page.</li>
+                    <li><strong>Delete All Data (Pages List):</strong> Click the <strong>Trash icon (Delete All Pages)</strong> in the top toolbar of the dashboard to delete all saved highlight data.</li>
+                </ul>
+            </section>
+
+            <section id="custom-colors">
+                <h2>Custom Colors</h2>
+
+                <h3>Adding and Changing Colors</h3>
+                <p>You can add your own colors in addition to the 5 default ones.</p>
+                <ol>
+                    <li>Click on an existing highlight to open the Control UI.</li>
+                    <li>Click the <strong>+ button</strong> at the end of the color list.</li>
+                    <li>Pick a color from the selector and click "Apply".</li>
+                </ol>
+                <div class="note">
+                    <span class="note-title">Note</span>
+                    The + button does not appear in the Control UI when highlighting new text. It only appears when you click on an <strong>already created highlight</strong>.
+                </div>
+
+                <h3>Deleting Colors</h3>
+                <p>Deleting individual custom colors is currently not supported. To reset all custom colors:</p>
+                <ul>
+                    <li>Open the Popup menu and click the <strong>"Remove custom colors"</strong> button. (This will delete all custom colors except the default 5.)</li>
+                </ul>
+            </section>
+
+            <section id="minimap">
+                <h2>Minimap</h2>
+                <p>A <strong>Minimap</strong> is displayed on the right side of web pages that have highlights.</p>
+                <ul>
+                    <li>The minimap visually indicates the location of highlights relative to the entire page length.</li>
+                    <li>Clicking a marker on the minimap instantly <strong>scrolls</strong> to that highlight's position.</li>
+                    <li>You can hide it by turning off the "Show Minimap" switch in the Popup menu.</li>
+                </ul>
+            </section>
+
+            <section id="popup-menu">
+                <h2>Popup Menu</h2>
+                <p>The menu that appears when you click the Marks icon in the browser toolbar.</p>
+                <ul>
+                    <li><strong>Current Page Highlights:</strong> Shows a list of highlights saved on the current page. Click to jump to the location.</li>
+                    <li><strong>Highlighted Pages List:</strong> Opens the dashboard screen to manage all saved pages.</li>
+                    <li><strong>Remove all highlights:</strong> Deletes all highlights on the current page.</li>
+                    <li><strong>Remove custom colors:</strong> Deletes all user-added colors, leaving only the defaults.</li>
+                    <li><strong>Show Minimap:</strong> Toggles the display of the minimap on the right side of the page.</li>
+                    <li><strong>Show Control UI on text selection:</strong> Toggles whether the highlight button automatically appears when selecting text.</li>
+                </ul>
+            </section>
+
+            <section id="pages-list">
+                <h2>Highlighted Pages List</h2>
+                <p>A dashboard where you can view and manage all saved highlight information at a glance.</p>
+                <ul>
+                    <li><strong>Search:</strong> Search saved records by page title or URL.</li>
+                    <li><strong>Sort:</strong> Sort the list by newest, oldest, etc.</li>
+                    <li><strong>Delete:</strong> Delete individual pages or use the top toolbar button to clear all data.</li>
+                    <li><strong>Export/Import:</strong> Backup or restore your data.</li>
+                </ul>
+            </section>
+
+            <section id="sync">
+                <h2>Synchronization</h2>
+                <p>Syncs highlight data across devices via your logged-in Google (Chrome) or Firefox account.</p>
+
+                <h3>How it Works</h3>
+                <p>Adding or deleting highlights on one device automatically reflects on other devices logged in with the same account. In case of data conflicts, the most recent change is preserved.</p>
+
+                <h3>Limitations</h3>
+                <ul>
+                    <li><strong>Storage Limit:</strong> Sync storage has a <strong>total limit of 100KB</strong>, and a single highlight item cannot exceed <strong>8KB</strong>.</li>
+                    <li><strong>Eviction Policy:</strong> When storage is full, sync data for the oldest updated pages is automatically removed to make space. (Local data is preserved.)</li>
+                    <li><strong>Mobile Unsupported:</strong> Sync is not supported on Firefox for Android.</li>
+                </ul>
+            </section>
+
+            <section id="import-export">
+                <h2>Import & Export</h2>
+                <p>Useful for safely backing up data or moving to another browser.</p>
+                <ul>
+                    <li><strong>Export:</strong> Download all currently saved highlight data as a JSON file.</li>
+                    <li><strong>Import:</strong> Restore data by selecting a previously exported JSON file.</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Active TOC Highlight Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.sidebar a');
+
+            function onScroll() {
+                let current = '';
+                // Offset for header height + some buffer
+                const headerOffset = 150;
+
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    // Check if the section is currently active based on scroll position
+                    if (window.scrollY >= (sectionTop - headerOffset)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes('#' + current)) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', onScroll);
+            // Initial call to highlight correct section on load
+            onScroll();
+        });
+    </script>
+</body>
+</html>
