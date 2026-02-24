@@ -22,7 +22,7 @@ header {
     display: flex;
     max-width: 1400px;
     margin: 0 auto;
-    padding-top: 80px; /* Header height offset */
+    padding-top: 0; /* Removed extra padding as sticky header already occupies space */
     min-height: 100vh;
 }
 
@@ -85,6 +85,11 @@ header {
     padding: 2rem 3rem 4rem;
     background: white;
     box-shadow: -5px 0 20px rgba(0,0,0,0.02);
+}
+
+/* Limit content width for better readability */
+.content > * {
+    max-width: 900px;
 }
 
 .content section {
