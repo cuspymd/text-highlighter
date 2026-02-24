@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザーガイド - Marks: Text Highlighter</title>
+    <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Marks: Text Highlighter</div>
+                <ul class="nav-links">
+                    <li><a href="../index.html">ホーム</a></li>
+                    <li><a href="index.html">한국어</a></li>
+                    <li><a href="index.en.html">English</a></li>
+                    <li><a href="index.ja.html" class="active">日本語</a></li>
+                    <li><a href="index.zh.html">中文</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <h3>目次</h3>
+            <ul class="toc-list">
+                <li><a href="#intro">はじめに</a></li>
+                <li><a href="#add-highlights">ハイライトの追加方法</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#add-control-ui">1. コントロールUIを使用</a></li>
+                        <li><a href="#add-context-menu">2. コンテキストメニューを使用</a></li>
+                        <li><a href="#add-shortcuts">3. ショートカットキーを使用</a></li>
+                    </ul>
+                </li>
+                <li><a href="#delete-highlights">ハイライトの削除方法</a></li>
+                <li><a href="#custom-colors">カスタム色の設定</a></li>
+                <li><a href="#minimap">ミニマップ (Minimap)</a></li>
+                <li><a href="#popup-menu">Popupメニューの説明</a></li>
+                <li><a href="#pages-list">ハイライト一覧画面 (Pages List)</a></li>
+                <li><a href="#sync">同期機能 (Synchronization)</a></li>
+                <li><a href="#import-export">インポートとエクスポート</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            <section id="intro">
+                <h1>Marks: Text Highlighter ユーザーガイド</h1>
+                <p>Marks: Text Highlighterをご利用いただきありがとうございます。この拡張機能を使えば、Webページのテキストを簡単かつ迅速にハイライトし、保存・管理することができます。</p>
+            </section>
+
+            <section id="add-highlights">
+                <h2>ハイライトの追加方法</h2>
+                <p>Webページのテキストを選択してハイライトを追加するには、3つの方法があります。</p>
+
+                <h3 id="add-control-ui">1. コントロールUIを使用</h3>
+                <p>テキストを選択すると、選択範囲の近くにハイライトアイコン（ペンの形）が表示されます。このアイコンをクリックするかマウスを重ねると、カラーパレットを含む<strong>コントロールUI</strong>が表示されます。希望の色をクリックしてハイライトを適用します。</p>
+                <div class="note">
+                    <span class="note-title">注意</span>
+                    モバイル環境や、設定で「テキスト選択時にコントロールUIを表示」がオンになっている場合に動作します。
+                </div>
+
+                <h3 id="add-context-menu">2. コンテキストメニューを使用</h3>
+                <p>テキストを選択して右クリックし、コンテキストメニューを開きます。<strong>「Marks: Text Highlighter」</strong>メニューから色を選択してハイライトします。</p>
+                <div class="warning">
+                    <span class="warning-title">制限事項</span>
+                    Firefox Android版では、コンテキストメニューからのハイライト追加はサポートされていません。
+                </div>
+
+                <h3 id="add-shortcuts">3. ショートカットキーを使用</h3>
+                <p>テキストを選択した後、キーボードショートカットを押して素早く色を適用できます。</p>
+                <ul>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : 1番目の色 (デフォルト: 黄色)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : 2番目の色 (デフォルト: シアン)</li>
+                    <li>... 数字キー1〜4までがデフォルト色に対応しています。</li>
+                </ul>
+                <div class="warning">
+                    <span class="warning-title">制限事項</span>
+                    Firefox Android版では、ショートカット機能はサポートされていません。
+                </div>
+            </section>
+
+            <section id="delete-highlights">
+                <h2>ハイライトの削除方法</h2>
+                <p>不要なハイライトは以下の方法で削除できます。</p>
+                <ul>
+                    <li><strong>個別削除 (コントロールUI):</strong> 既にハイライトされたテキストをクリックするとコントロールUIが表示されます。ここで<strong>ゴミ箱アイコン</strong>をクリックして削除します。</li>
+                    <li><strong>個別削除 (Popup):</strong> ブラウザのツールバーにある拡張機能アイコンをクリックしてPopupメニューを開きます。「現在のページのハイライト」リストで、削除したい項目の横にある<strong>Xボタン</strong>を押します。</li>
+                    <li><strong>ページ内全削除 (Popup):</strong> Popupメニュー下部の<strong>「すべてのハイライトを削除」</strong>ボタンを押すと、現在表示しているページのすべてのハイライトが削除されます。</li>
+                    <li><strong>ページ単位での削除 (Pages List):</strong> ハイライト一覧画面で特定のページカードの<strong>「削除」</strong>ボタンを押すと、そのページのすべてのデータが削除されます。</li>
+                    <li><strong>全データ削除 (Pages List):</strong> ハイライト一覧画面上部の<strong>ゴミ箱アイコン（全ページ削除）</strong>を押すと、保存されているすべてのハイライトデータが削除されます。</li>
+                </ul>
+            </section>
+
+            <section id="custom-colors">
+                <h2>カスタム色の設定</h2>
+
+                <h3>色の追加と変更</h3>
+                <p>デフォルトの5色以外に、自分の好みの色を追加できます。</p>
+                <ol>
+                    <li>既にハイライトされたテキストをクリックしてコントロールUIを開きます。</li>
+                    <li>色リストの最後にある<strong>+ボタン</strong>をクリックします。</li>
+                    <li>カラーピッカーから好きな色を選び、「適用」を押します。</li>
+                </ol>
+                <div class="note">
+                    <span class="note-title">注意</span>
+                    新しいテキストをハイライトする際に表示されるコントロールUIには+ボタンが表示されません。<strong>既に作成されたハイライト</strong>をクリックした時のみ、色追加ボタンが表示されます。
+                </div>
+
+                <h3>色の削除</h3>
+                <p>現在、個別のカスタム色削除機能はサポートしていません。すべてのカスタム色を初期化するには、以下の方法を使用してください。</p>
+                <ul>
+                    <li>Popupメニューを開き、<strong>「ユーザー色を削除」</strong>ボタンをクリックします。（デフォルトの5色を除く追加色がすべて削除されます。）</li>
+                </ul>
+            </section>
+
+            <section id="minimap">
+                <h2>ミニマップ (Minimap)</h2>
+                <p>ハイライトがあるWebページの右側には<strong>ミニマップ</strong>が表示されます。</p>
+                <ul>
+                    <li>ミニマップは、ページ全体の長さに対するハイライトの位置を視覚的に表示します。</li>
+                    <li>ミニマップのマーカーをクリックすると、そのハイライトの位置に即座に<strong>スクロール</strong>します。</li>
+                    <li>Popupメニューで「ミニマップを表示」スイッチをオフにして非表示にすることができます。</li>
+                </ul>
+            </section>
+
+            <section id="popup-menu">
+                <h2>Popupメニューの説明</h2>
+                <p>ブラウザツールバーのMarksアイコンをクリックすると表示されるメニューです。</p>
+                <ul>
+                    <li><strong>現在のページのハイライト:</strong> 現在見ているページに保存されたハイライト一覧を表示します。クリックするとその位置に移動します。</li>
+                    <li><strong>ハイライト一覧 (Highlighted Pages List):</strong> 保存されたすべてのページを管理するダッシュボード画面を開きます。</li>
+                    <li><strong>すべてのハイライトを削除:</strong> 現在のページのハイライトをすべて消去します。</li>
+                    <li><strong>ユーザー色を削除:</strong> ユーザーが追加したカスタム色をすべて消去し、デフォルト色のみ残します。</li>
+                    <li><strong>ミニマップを表示:</strong> ページ右側のミニマップの表示/非表示を設定します。</li>
+                    <li><strong>テキスト選択時にコントロールUIを表示:</strong> テキストをドラッグしたときにハイライトボタンが自動的に現れる機能をオン/オフします。</li>
+                </ul>
+            </section>
+
+            <section id="pages-list">
+                <h2>ハイライト一覧画面 (Pages List)</h2>
+                <p>保存されたすべてのハイライト情報を一目で確認し管理できるダッシュボードです。</p>
+                <ul>
+                    <li><strong>検索:</strong> ページのタイトルやURLで保存された記録を検索できます。</li>
+                    <li><strong>並べ替え:</strong> 最新順、古い順などでリストを並べ替えます。</li>
+                    <li><strong>削除:</strong> 個別のページを削除したり、上部ツールバーの削除ボタンで全データを初期化できます。</li>
+                    <li><strong>エクスポート/インポート:</strong> データのバックアップや復元が可能です。</li>
+                </ul>
+            </section>
+
+            <section id="sync">
+                <h2>同期機能 (Synchronization)</h2>
+                <p>ログインしているGoogleアカウント(Chrome)またはFirefoxアカウントを通じて、複数のデバイス間でハイライトデータを同期します。</p>
+
+                <h3>動作の仕組み</h3>
+                <p>あるデバイスでハイライトを追加または削除すると、同じアカウントでログインしている他のデバイスにも自動的に反映されます。データの競合が発生した場合、最も最近修正された内容が維持されます。</p>
+
+                <h3>制限事項</h3>
+                <ul>
+                    <li><strong>容量制限:</strong> 同期ストレージには<strong>合計100KB</strong>の容量制限があり、ハイライト項目1つにつき<strong>8KB</strong>を超えることはできません。</li>
+                    <li><strong>古いデータの整理:</strong> 容量がいっぱいになると、最も古くに更新されたページの同期データから自動的に削除されます。（ローカルデータは維持されます。）</li>
+                    <li><strong>モバイル未対応:</strong> Firefox Android版では同期機能はサポートされていません。</li>
+                </ul>
+            </section>
+
+            <section id="import-export">
+                <h2>インポートとエクスポート</h2>
+                <p>データを安全にバックアップしたり、他のブラウザに移行する際に便利です。</p>
+                <ul>
+                    <li><strong>エクスポート (Export):</strong> 現在保存されているすべてのハイライトデータをJSONファイルとしてダウンロードします。</li>
+                    <li><strong>インポート (Import):</strong> 以前にエクスポートしたJSONファイルを選択してデータを復元します。</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Active TOC Highlight Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.sidebar a');
+
+            function onScroll() {
+                let current = '';
+                // Offset for header height + some buffer
+                const headerOffset = 150;
+
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    // Check if the section is currently active based on scroll position
+                    if (window.scrollY >= (sectionTop - headerOffset)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes('#' + current)) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', onScroll);
+            // Initial call to highlight correct section on load
+            onScroll();
+        });
+    </script>
+</body>
+</html>
