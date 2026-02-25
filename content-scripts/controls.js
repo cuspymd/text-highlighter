@@ -993,6 +993,10 @@ function showSelectionControls(mouseX, mouseY) {
   // Clone the existing controls container but modify it for selection mode
   selectionControlsContainer = highlightControlsContainer.cloneNode(true);
   selectionControlsContainer.className = 'text-highlighter-controls text-highlighter-selection-controls';
+  // cloneNode copies data attributes, but not event listeners.
+  // Clear drag flags so selection controls can bind fresh pointer handlers.
+  delete selectionControlsContainer.dataset.touchDragEnabled;
+  delete selectionControlsContainer.dataset.justDragged;
   
   // Remove the delete button from the cloned container
   const deleteButton = selectionControlsContainer.querySelector('.delete-highlight');
