@@ -422,15 +422,38 @@ function showCustomColorPicker(triggerButton) {
   
   // Create color picker UI
   const customColorPicker = createColorPickerUI();
-  
-  // Position setting (only dynamic positioning)
-  // Find controls container including triggerButton and set position
-  const controlsContainer = triggerButton.closest('.text-highlighter-controls');
-  const controlsRect = controlsContainer.getBoundingClientRect();
-  customColorPicker.style.top = `${controlsRect.bottom + 5}px`;
-  customColorPicker.style.left = `${controlsRect.left}px`;
-  
+
   getUiMountRoot().appendChild(customColorPicker);
+
+  // Position setting: align picker to the right edge of controls by default,
+  // then clamp inside viewport to keep it fully reachable on small screens.
+  const controlsContainer = triggerButton.closest('.text-highlighter-controls');
+  const anchorRect = controlsContainer
+    ? controlsContainer.getBoundingClientRect()
+    : triggerButton.getBoundingClientRect();
+  const pickerWidth = customColorPicker.offsetWidth;
+  const pickerHeight = customColorPicker.offsetHeight;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const viewportPadding = 8;
+  const gap = 5;
+
+  const belowTop = anchorRect.bottom + gap;
+  const aboveTop = anchorRect.top - pickerHeight - gap;
+  const canPlaceBelow = belowTop + pickerHeight <= viewportHeight - viewportPadding;
+  const preferredTop = canPlaceBelow ? belowTop : aboveTop;
+  const topPosition = Math.min(
+    Math.max(preferredTop, viewportPadding),
+    viewportHeight - pickerHeight - viewportPadding
+  );
+  const rightAlignedLeft = anchorRect.right - pickerWidth;
+  const clampedLeft = Math.min(
+    Math.max(rightAlignedLeft, viewportPadding),
+    viewportWidth - pickerWidth - viewportPadding
+  );
+
+  customColorPicker.style.top = `${topPosition}px`;
+  customColorPicker.style.left = `${clampedLeft}px`;
   
   // Initialize HSV sliders
   initHSVSliders(customColorPicker);
