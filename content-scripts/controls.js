@@ -933,8 +933,8 @@ function showSelectionIcon(mouseX, mouseY) {
   selectionIcon.title = getMessage('highlightText');
   
   // Position the icon with viewport boundary checking
-  const iconWidth = 19; // Width of the icon
-  const iconHeight = 19; // Height of the icon
+  const iconWidth = isMobilePlatform ? 48 : 29;
+  const iconHeight = isMobilePlatform ? 48 : 29;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   
@@ -987,8 +987,21 @@ function showSelectionIcon(mouseX, mouseY) {
   selectionIcon.style.left = `${leftPosition}px`;
   selectionIcon.style.top = `${topPosition}px`;
   
-  // Add click event to show controls
+  let pointerHandled = false;
+  // Use pointerdown so we open controls before selection can collapse on click.
+  selectionIcon.addEventListener('pointerdown', function(e) {
+    pointerHandled = true;
+    e.preventDefault();
+    e.stopPropagation();
+    showSelectionControls(e.clientX, e.clientY);
+  });
+
+  // Keep click as a fallback for environments where pointer events are limited.
   selectionIcon.addEventListener('click', function(e) {
+    if (pointerHandled) {
+      pointerHandled = false;
+      return;
+    }
     e.stopPropagation();
     showSelectionControls(e.clientX, e.clientY);
   });
