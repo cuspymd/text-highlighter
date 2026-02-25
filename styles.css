@@ -468,6 +468,9 @@
   position: fixed !important;
   z-index: 2147483647 !important;
   cursor: pointer !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
   background: rgba(255, 255, 255, 0.8) !important;
   border: 1px solid rgba(255, 255, 255, 0.36) !important;
   border-radius: 10px !important;
@@ -493,12 +496,19 @@
   margin: 0 !important;
   outline: none !important;
   vertical-align: baseline !important;
-  width: 27px !important;
-  height: 27px !important;
-  min-width: 27px !important;
-  min-height: 27px !important;
-  max-width: 27px !important;
-  max-height: 27px !important;
+  width: 29px !important;
+  height: 29px !important;
+  min-width: 29px !important;
+  min-height: 29px !important;
+  max-width: 29px !important;
+  max-height: 29px !important;
+}
+
+.text-highlighter-selection-icon img {
+  display: block !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
 }
 
 .text-highlighter-selection-icon:hover {

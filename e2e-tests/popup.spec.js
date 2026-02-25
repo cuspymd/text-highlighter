@@ -350,8 +350,8 @@ test.describe('Popup Tests', () => {
     const selectionIcon = page.locator('.text-highlighter-selection-icon');
     await expect(selectionIcon).toBeVisible();
 
-    // Click selection icon (click img tag inside div)
-    await selectionIcon.locator('img').click();
+    // Click selection icon container (img uses pointer-events: none)
+    await selectionIcon.click();
 
     // Verify control UI display (select element with selection-controls class)
     const controls = page.locator('.text-highlighter-controls.text-highlighter-selection-controls');
