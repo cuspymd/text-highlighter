@@ -24,10 +24,10 @@
 }
 
 .text-highlighter-controls {
-  position: absolute;
+  position: fixed;
   display: none;
   align-items: center;
-  z-index: 9999;
+  z-index: 2147483647;
   background: var(--th-surface);
   border: 1px solid var(--th-surface-border);
   backdrop-filter: blur(10px);
@@ -345,9 +345,10 @@
   height: 60%;
   background-color: rgba(0, 0, 0, 0.12);
   border-radius: 6px;
-  z-index: 9998;
+  z-index: 2147483647;
   display: flex;
   flex-direction: column;
+  overflow: visible;
   transition: opacity 0.25s ease;
 }
 
@@ -363,6 +364,7 @@
   left: 1px;
   cursor: pointer;
   box-sizing: content-box;
+  overflow: visible;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s, box-shadow 0.2s, left 0.2s;
 }
@@ -372,11 +374,13 @@
   content: attr(data-tooltip);
   display: block;
   position: absolute;
-  right: 16px;
+  left: -8px;
+  right: auto;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-100%, -50%);
   box-sizing: border-box;
-  max-width: 220px;
+  width: max-content;
+  max-width: min(52vw, 260px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -395,6 +399,7 @@
   border-radius: 8px;
   background: rgba(20, 20, 24, 0.88);
   color: #fff;
+  z-index: 2147483647;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.18s ease;
@@ -460,8 +465,8 @@
 
 /* Selection controls styles */
 .text-highlighter-selection-icon {
-  position: absolute !important;
-  z-index: 9999 !important;
+  position: fixed !important;
+  z-index: 2147483647 !important;
   cursor: pointer !important;
   background: rgba(255, 255, 255, 0.8) !important;
   border: 1px solid rgba(255, 255, 255, 0.36) !important;
@@ -514,14 +519,14 @@
 
 /* Custom color picker positioning */
 .custom-color-picker {
-  position: absolute;
-  z-index: 10000;
+  position: fixed;
+  z-index: 2147483647;
 }
 
 /* Selection controls positioning */
 .text-highlighter-selection-controls {
-  position: absolute;
-  z-index: 10000;
+  position: fixed;
+  z-index: 2147483647;
   display: flex;
 }
 

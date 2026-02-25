@@ -11,9 +11,126 @@ let selectionControlsEnabled = false;
 let selectionIcon = null;
 let selectionControlsContainer = null;
 let currentSelection = null;
+let uiMountRoot = null;
 
 // Mobile platform detection
 let isMobilePlatform = false;
+const CONTROL_DRAG_PADDING = 10;
+
+function getUiMountRoot() {
+  if (uiMountRoot && uiMountRoot.isConnected) {
+    return uiMountRoot;
+  }
+
+  const root = document.createElement('div');
+  root.className = 'text-highlighter-ui-root';
+  root.style.all = 'initial';
+  root.style.display = 'contents';
+  document.documentElement.appendChild(root);
+  uiMountRoot = root;
+  return root;
+}
+
+function enableTouchDragForControls(container) {
+  if (!container || container.dataset.touchDragEnabled === 'true') return;
+  container.dataset.touchDragEnabled = 'true';
+  container.style.touchAction = 'none';
+
+  let dragging = false;
+  let moved = false;
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  container.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+
+    dragging = true;
+    moved = false;
+    pointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    const rect = container.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop = rect.top;
+
+    if (typeof container.setPointerCapture === 'function') {
+      container.setPointerCapture(pointerId);
+    }
+  }, { passive: true });
+
+  container.addEventListener('pointermove', (e) => {
+    if (!dragging || e.pointerId !== pointerId) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      moved = true;
+    }
+    if (!moved) return;
+
+    const rect = container.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    let minLeft = CONTROL_DRAG_PADDING;
+    let maxLeft = window.innerWidth - width - CONTROL_DRAG_PADDING;
+    if (maxLeft < minLeft) {
+      minLeft = maxLeft;
+      maxLeft = CONTROL_DRAG_PADDING;
+    }
+
+    const minTop = CONTROL_DRAG_PADDING;
+    const maxTop = Math.max(CONTROL_DRAG_PADDING, window.innerHeight - height - CONTROL_DRAG_PADDING);
+
+    const nextLeft = clamp(startLeft + dx, Math.min(minLeft, maxLeft), Math.max(minLeft, maxLeft));
+    const nextTop = clamp(startTop + dy, minTop, maxTop);
+
+    container.style.left = `${nextLeft}px`;
+    container.style.top = `${nextTop}px`;
+    e.preventDefault();
+  }, { passive: false });
+
+  const finishDrag = (e) => {
+    if (!dragging || e.pointerId !== pointerId) return;
+
+    if (moved) {
+      container.dataset.justDragged = 'true';
+      setTimeout(() => {
+        if (container.dataset.justDragged === 'true') {
+          delete container.dataset.justDragged;
+        }
+      }, 180);
+    }
+
+    dragging = false;
+    moved = false;
+
+    if (typeof container.releasePointerCapture === 'function') {
+      try {
+        container.releasePointerCapture(pointerId);
+      } catch (err) {
+        // Ignore release errors when capture state changed externally.
+      }
+    }
+    pointerId = null;
+  };
+
+  container.addEventListener('pointerup', finishDrag);
+  container.addEventListener('pointercancel', finishDrag);
+
+  container.addEventListener('click', (e) => {
+    if (container.dataset.justDragged === 'true') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+}
 
 function getContentApi() {
   return window.TextHighlighterContentAPI || null;
@@ -100,7 +217,8 @@ function createHighlightControls() {
   // -------------- '+' button (add new color) --------------
   const addColorBtn = createAddColorButton();
   colorButtonsContainer.appendChild(addColorBtn);
-  document.body.appendChild(highlightControlsContainer);
+  getUiMountRoot().appendChild(highlightControlsContainer);
+  enableTouchDragForControls(highlightControlsContainer);
 }
 
 // create colorButton (reusable function)
@@ -304,15 +422,38 @@ function showCustomColorPicker(triggerButton) {
   
   // Create color picker UI
   const customColorPicker = createColorPickerUI();
-  
-  // Position setting (only dynamic positioning)
-  // Find controls container including triggerButton and set position
+
+  getUiMountRoot().appendChild(customColorPicker);
+
+  // Position setting: align picker to the right edge of controls by default,
+  // then clamp inside viewport to keep it fully reachable on small screens.
   const controlsContainer = triggerButton.closest('.text-highlighter-controls');
-  const controlsRect = controlsContainer.getBoundingClientRect();
-  customColorPicker.style.top = `${window.scrollY + controlsRect.bottom + 5}px`;
-  customColorPicker.style.left = `${window.scrollX + controlsRect.left}px`;
-  
-  document.body.appendChild(customColorPicker);
+  const anchorRect = controlsContainer
+    ? controlsContainer.getBoundingClientRect()
+    : triggerButton.getBoundingClientRect();
+  const pickerWidth = customColorPicker.offsetWidth;
+  const pickerHeight = customColorPicker.offsetHeight;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const viewportPadding = 8;
+  const gap = 5;
+
+  const belowTop = anchorRect.bottom + gap;
+  const aboveTop = anchorRect.top - pickerHeight - gap;
+  const canPlaceBelow = belowTop + pickerHeight <= viewportHeight - viewportPadding;
+  const preferredTop = canPlaceBelow ? belowTop : aboveTop;
+  const topPosition = Math.min(
+    Math.max(preferredTop, viewportPadding),
+    viewportHeight - pickerHeight - viewportPadding
+  );
+  const rightAlignedLeft = anchorRect.right - pickerWidth;
+  const clampedLeft = Math.min(
+    Math.max(rightAlignedLeft, viewportPadding),
+    viewportWidth - pickerWidth - viewportPadding
+  );
+
+  customColorPicker.style.top = `${topPosition}px`;
+  customColorPicker.style.left = `${clampedLeft}px`;
   
   // Initialize HSV sliders
   initHSVSliders(customColorPicker);
@@ -617,11 +758,31 @@ function showControlUi(highlightElement, e) {
   if (!highlightControlsContainer) createHighlightControls();
 
   activeHighlightElement = highlightElement;
-  highlightControlsContainer.style.top = `${window.scrollY + e.clientY - 40}px`;
+  const controlsHeight = 44;
+  const controlsWidth = 320;
+  const viewportPadding = 10;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  let topPosition = e.clientY - 40;
   const isPortrait = isMobilePlatform && window.innerWidth < window.innerHeight;
-  highlightControlsContainer.style.left = isPortrait
-    ? `${window.scrollX + 10}px`
-    : `${window.scrollX + e.clientX - 40}px`;
+
+  if (topPosition + controlsHeight > viewportHeight - viewportPadding) {
+    topPosition = viewportHeight - controlsHeight - viewportPadding;
+  }
+  if (topPosition < viewportPadding) {
+    topPosition = viewportPadding;
+  }
+
+  let leftPosition = isPortrait ? viewportPadding : e.clientX - 40;
+  if (leftPosition < viewportPadding) {
+    leftPosition = viewportPadding;
+  }
+  if (leftPosition + controlsWidth > viewportWidth - viewportPadding) {
+    leftPosition = Math.max(viewportPadding, viewportWidth - controlsWidth - viewportPadding);
+  }
+
+  highlightControlsContainer.style.top = `${topPosition}px`;
+  highlightControlsContainer.style.left = `${leftPosition}px`;
   // remove/add visible class to ensure pop animation always plays
   highlightControlsContainer.classList.remove('visible');
   void highlightControlsContainer.offsetWidth; // Force reflow to initialize
@@ -781,21 +942,21 @@ function showSelectionIcon(mouseX, mouseY) {
   let leftPosition;
   if (isMobilePlatform) {
     // On mobile, position to the left of selection to avoid right selection handle
-    leftPosition = window.scrollX + mouseX - iconWidth - 10;
+    leftPosition = mouseX - iconWidth - 10;
 
     // If beyond left edge, position to the right instead
-    if (leftPosition < window.scrollX + 10) {
-      leftPosition = window.scrollX + mouseX + 20;
+    if (leftPosition < 10) {
+      leftPosition = mouseX + 20;
     }
   } else {
-    leftPosition = window.scrollX + mouseX + 10;
+    leftPosition = mouseX + 10;
 
     // Check if mouse is in the right 30% of the viewport (70% threshold)
     if (mouseX > viewportWidth * 0.7) {
-      leftPosition = window.scrollX + mouseX - iconWidth - 10;
+      leftPosition = mouseX - iconWidth - 10;
 
-      if (leftPosition < window.scrollX + 10) {
-        leftPosition = window.scrollX + 10;
+      if (leftPosition < 10) {
+        leftPosition = 10;
       }
     }
   }
@@ -804,21 +965,21 @@ function showSelectionIcon(mouseX, mouseY) {
   let topPosition;
   if (isMobilePlatform) {
     // On mobile, position below selection to avoid overlap with native popup menu
-    topPosition = window.scrollY + mouseY + 10;
+    topPosition = mouseY + 10;
 
     // If beyond bottom edge, position above instead
-    if (topPosition + iconHeight > window.scrollY + viewportHeight - 10) {
-      topPosition = window.scrollY + mouseY - iconHeight - 40;
+    if (topPosition + iconHeight > viewportHeight - 10) {
+      topPosition = mouseY - iconHeight - 40;
     }
   } else {
-    topPosition = window.scrollY + mouseY - 30;
+    topPosition = mouseY - 30;
 
     // Check if icon would go beyond top edge of viewport
     if (mouseY - 30 < 0) {
-      topPosition = window.scrollY + mouseY + 10;
+      topPosition = mouseY + 10;
 
-      if (topPosition + iconHeight > window.scrollY + viewportHeight - 10) {
-        topPosition = window.scrollY + viewportHeight - iconHeight - 10;
+      if (topPosition + iconHeight > viewportHeight - 10) {
+        topPosition = viewportHeight - iconHeight - 10;
       }
     }
   }
@@ -832,7 +993,7 @@ function showSelectionIcon(mouseX, mouseY) {
     showSelectionControls(e.clientX, e.clientY);
   });
   
-  document.body.appendChild(selectionIcon);
+  getUiMountRoot().appendChild(selectionIcon);
 }
 
 // Hide selection icon
@@ -855,6 +1016,10 @@ function showSelectionControls(mouseX, mouseY) {
   // Clone the existing controls container but modify it for selection mode
   selectionControlsContainer = highlightControlsContainer.cloneNode(true);
   selectionControlsContainer.className = 'text-highlighter-controls text-highlighter-selection-controls';
+  // cloneNode copies data attributes, but not event listeners.
+  // Clear drag flags so selection controls can bind fresh pointer handlers.
+  delete selectionControlsContainer.dataset.touchDragEnabled;
+  delete selectionControlsContainer.dataset.justDragged;
   
   // Remove the delete button from the cloned container
   const deleteButton = selectionControlsContainer.querySelector('.delete-highlight');
@@ -866,7 +1031,7 @@ function showSelectionControls(mouseX, mouseY) {
   selectionControlsContainer.style.left = '-9999px';
   selectionControlsContainer.style.top = '-9999px';
   selectionControlsContainer.style.visibility = 'hidden';
-  document.body.appendChild(selectionControlsContainer);
+  getUiMountRoot().appendChild(selectionControlsContainer);
   
   // Position the controls with viewport boundary checking
   const controlsRect = selectionControlsContainer.getBoundingClientRect();
@@ -879,31 +1044,34 @@ function showSelectionControls(mouseX, mouseY) {
 
   if (isPortrait) {
     // In portrait mode, always align to left edge
-    leftPosition = window.scrollX + 10;
+    leftPosition = 10;
   } else {
-    leftPosition = window.scrollX + mouseX + 10;
+    leftPosition = mouseX + 10;
 
     // Check if mouse is in the right 30% of the viewport (70% threshold)
     if (mouseX > viewportWidth * 0.7) {
-      leftPosition = window.scrollX + mouseX - controlsRect.width - 10;
+      leftPosition = mouseX - controlsRect.width - 10;
 
-      if (leftPosition < window.scrollX + 10) {
-        leftPosition = window.scrollX + 10;
+      if (leftPosition < 10) {
+        leftPosition = 10;
       }
     }
   }
+  if (leftPosition + controlsRect.width > viewportWidth - 10) {
+    leftPosition = Math.max(10, viewportWidth - controlsRect.width - 10);
+  }
   
   // Calculate vertical position
-  let topPosition = window.scrollY + mouseY - 20;
+  let topPosition = mouseY - 20;
   
   // Check if controls would go beyond bottom edge of viewport
   if (mouseY + controlsRect.height - 20 > viewportHeight) {
     // Position above mouse cursor instead
-    topPosition = window.scrollY + mouseY - controlsRect.height - 10;
+    topPosition = mouseY - controlsRect.height - 10;
     
     // If still beyond top edge, align to top edge with some padding
-    if (topPosition < window.scrollY + 10) {
-      topPosition = window.scrollY + 10;
+    if (topPosition < 10) {
+      topPosition = 10;
     }
   }
   
@@ -911,6 +1079,7 @@ function showSelectionControls(mouseX, mouseY) {
   selectionControlsContainer.style.left = `${leftPosition}px`;
   selectionControlsContainer.style.top = `${topPosition}px`;
   selectionControlsContainer.style.visibility = 'visible';
+  enableTouchDragForControls(selectionControlsContainer);
   
   // Update event listeners for color buttons to create highlights instead of changing existing ones
   const colorButtons = selectionControlsContainer.querySelectorAll('.color-button');
