@@ -182,6 +182,7 @@ The extension uses a `browserAPI` compatibility layer to support Chrome and Fire
 | API | Chrome | Firefox Desktop | Firefox Android |
 |-----|--------|----------------|-----------------|
 | Storage | O | O | O |
+| Sync Storage | O | O | X |
 | Tabs | O | O | O |
 | Runtime | O | O | O |
 | Internationalization | O | O | O |
