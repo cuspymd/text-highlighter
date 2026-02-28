@@ -72,7 +72,8 @@ describe('tab-broadcast', () => {
 
       chrome.tabs.sendMessage.mockRejectedValue(new Error('Failed'));
 
-      await expect(broadcastToTabsByUrl(url, message)).resolves.not.toThrow();
+      // The function should not throw, we just await it
+      await broadcastToTabsByUrl(url, message);
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(1, message);
     });
   });
