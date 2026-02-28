@@ -414,25 +414,6 @@ function addHighlightEventListeners(highlightElement) {
   });
 }
 
-// Find text node by content
-function findTextNodeByContent(element, text) {
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
-
-  let node;
-  while ((node = walker.nextNode())) {
-    if (node.textContent.includes(text)) {
-      return node;
-    }
-  }
-
-  return null;
-}
-
 // Get position of the first text node in highlight element
 function getFirstTextNodePosition(element) {
   let firstTextNode = null;
