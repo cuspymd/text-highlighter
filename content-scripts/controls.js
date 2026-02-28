@@ -1104,34 +1104,9 @@ function showSelectionControls(mouseX, mouseY) {
     // Add new event listener for creating highlights
     newColorButton.addEventListener('click', function(e) {
       e.stopPropagation();
-      // Create highlight with selected color
-      if (currentSelection && (currentSelection.range || currentSelection.selection)) {
-        // Restore the selection using the stored range
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        
-        try {
-          if (currentSelection.range) {
-            selection.addRange(currentSelection.range);
-          } else if (currentSelection.selection.getRangeAt) {
-            selection.addRange(currentSelection.selection.getRangeAt(0));
-          }
-          
-          // Get the color from the button's background color
-          const colorInfo = currentColors[idx];
-          if (colorInfo) {
-            highlightSelectionViaApi(colorInfo.color);
-          }
-          
-          hideSelectionControls();
-          hideSelectionIcon();
-          currentSelection = null;
-        } catch (error) {
-          debugLog('Could not restore selection:', error);
-          hideSelectionControls();
-          hideSelectionIcon();
-          currentSelection = null;
-        }
+      const colorInfo = currentColors[idx];
+      if (colorInfo) {
+        createHighlightWithColor(colorInfo.color);
       }
     });
   });
@@ -1176,7 +1151,7 @@ function setSelectionControlsVisibility(visible) {
 }
 
 
-// Helper function to create highlight with selected color from color picker
+// Helper function to create highlight with selected color
 function createHighlightWithColor(color) {
   if (currentSelection && (currentSelection.range || currentSelection.selection)) {
     // Restore the selection using the stored range
