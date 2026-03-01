@@ -1098,11 +1098,13 @@ function showSelectionControls(mouseX, mouseY) {
   // pointerdown coordinates even after preventDefault(), hitting color buttons that
   // now occupy the same position as the former selection icon. Ignore clicks for
   // 300 ms after the controls appear.
-  selectionControlsContainer.dataset.justShown = 'true';
+  // Capture the current container instance so the timer always clears the flag
+  // on this specific container, not whatever selectionControlsContainer points
+  // to when the timeout fires (which may be a newer instance).
+  const thisContainer = selectionControlsContainer;
+  thisContainer.dataset.justShown = 'true';
   setTimeout(() => {
-    if (selectionControlsContainer) {
-      delete selectionControlsContainer.dataset.justShown;
-    }
+    delete thisContainer.dataset.justShown;
   }, 300);
 
   // Update event listeners for color buttons to create highlights instead of changing existing ones
@@ -1115,7 +1117,7 @@ function showSelectionControls(mouseX, mouseY) {
     // Add new event listener for creating highlights
     newColorButton.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (selectionControlsContainer && selectionControlsContainer.dataset.justShown) {
+      if (thisContainer.dataset.justShown) {
         return;
       }
       const colorInfo = currentColors[idx];
