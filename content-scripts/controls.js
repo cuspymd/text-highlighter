@@ -1093,17 +1093,31 @@ function showSelectionControls(mouseX, mouseY) {
   selectionControlsContainer.style.top = `${topPosition}px`;
   selectionControlsContainer.style.visibility = 'visible';
   enableTouchDragForControls(selectionControlsContainer);
-  
+
+  // Guard against ghost clicks: on Firefox Mobile, a synthetic click fires at the
+  // pointerdown coordinates even after preventDefault(), hitting color buttons that
+  // now occupy the same position as the former selection icon. Ignore clicks for
+  // 300 ms after the controls appear.
+  selectionControlsContainer.dataset.justShown = 'true';
+  setTimeout(() => {
+    if (selectionControlsContainer) {
+      delete selectionControlsContainer.dataset.justShown;
+    }
+  }, 300);
+
   // Update event listeners for color buttons to create highlights instead of changing existing ones
   const colorButtons = selectionControlsContainer.querySelectorAll('.color-button');
   colorButtons.forEach((colorButton, idx) => {
     // Remove existing event listeners by cloning the node
     const newColorButton = colorButton.cloneNode(true);
     colorButton.parentNode.replaceChild(newColorButton, colorButton);
-    
+
     // Add new event listener for creating highlights
     newColorButton.addEventListener('click', function(e) {
       e.stopPropagation();
+      if (selectionControlsContainer && selectionControlsContainer.dataset.justShown) {
+        return;
+      }
       const colorInfo = currentColors[idx];
       if (colorInfo) {
         createHighlightWithColor(colorInfo.color);
