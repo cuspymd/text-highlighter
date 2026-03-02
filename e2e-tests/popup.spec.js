@@ -357,6 +357,9 @@ test.describe('Popup Tests', () => {
     const controls = page.locator('.text-highlighter-controls.text-highlighter-selection-controls');
     await expect(controls).toBeVisible();
 
+    // Wait for the ghost-click prevention timeout (300ms) in controls.js
+    await page.waitForTimeout(350);
+
     // Click the first yellow color icon
     const yellowColorButton = controls.locator('.color-button').first();
     await yellowColorButton.click();

@@ -34,6 +34,8 @@ test.describe('Selection Controls Tests', () => {
     await expect(selectionControls).toBeVisible();
 
     // 5. Click the yellow color button (first button)
+    // Wait for the ghost-click prevention timeout (300ms) in controls.js
+    await page.waitForTimeout(350);
     const yellowButton = selectionControls.locator('.text-highlighter-control-button.color-button').nth(0);
     await yellowButton.click();
 
