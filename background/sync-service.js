@@ -150,15 +150,21 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
       delete meta.deletedUrls[url];
     }
 
+    const keysToRemove = [];
     while (totalSize + dataSize > SYNC_HIGHLIGHT_BUDGET && meta.pages.length > 0) {
       meta.pages.sort((a, b) => (a.lastUpdated || '').localeCompare(b.lastUpdated || ''));
       const oldest = meta.pages.shift();
+      keysToRemove.push(oldest.syncKey);
+      totalSize -= (oldest.size || 0);
+      debugLog('Evicted oldest sync page:', oldest.syncKey, oldest.url);
+    }
+
+    if (keysToRemove.length > 0) {
       try {
-        await browserAPI.storage.sync.remove(oldest.syncKey);
-        totalSize -= (oldest.size || 0);
-        debugLog('Evicted oldest sync page:', oldest.syncKey, oldest.url);
+        await browserAPI.storage.sync.remove(keysToRemove);
+        debugLog(`Removed ${keysToRemove.length} evicted pages from sync.`);
       } catch (e) {
-        debugLog('Error evicting sync page:', e.message);
+        debugLog('Error evicting sync pages:', e.message);
       }
     }
 
