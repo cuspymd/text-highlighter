@@ -2,7 +2,7 @@
   "exportedAt": "2026-02-19T00:00:00.000Z",
   "pages": [
     {
-      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page.html",
+      "url": "https://example.com/test-page.html",
       "title": "Valid Page",
       "lastUpdated": "2026-02-19T00:00:00.000Z",
       "highlights": [
@@ -21,7 +21,7 @@
       ]
     },
     {
-      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page2.html",
+      "url": "https://example.com/test-page2.html",
       "title": "Invalid Schema Page",
       "lastUpdated": "2026-02-19T00:00:00.000Z",
       "highlights": [

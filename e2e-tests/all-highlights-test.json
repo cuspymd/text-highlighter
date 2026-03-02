@@ -2,7 +2,7 @@
   "exportedAt": "2025-06-21T01:16:34.521Z",
   "pages": [
     {
-      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page.html",
+      "url": "https://example.com/test-page.html",
       "title": "Test Page for Text Highlighter",
       "lastUpdated": "2025-06-21T01:15:47.993Z",
       "highlights": [
@@ -48,7 +48,7 @@
       ]
     },
     {
-      "url": "file:///E:/work/text-highlighter/e2e-tests/test-page2.html",
+      "url": "https://example.com/test-page2.html",
       "title": "Test Page for Text Highlighter",
       "lastUpdated": "2025-06-21T01:16:10.700Z",
       "highlights": [
