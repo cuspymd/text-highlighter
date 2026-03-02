@@ -1,5 +1,5 @@
 import { browserAPI } from './shared/browser-api.js';
-import { debugLog } from './shared/logger.js';
+import { debugLog, DEBUG_MODE } from './shared/logger.js';
 import { validateImportPayload } from './shared/import-export-schema.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 
@@ -80,7 +80,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!urlString) return false;
     try {
       const url = new URL(urlString);
-      return url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'file:';
+      if (DEBUG_MODE) {
+        return url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'file:';
+      }
+      return url.protocol === 'http:' || url.protocol === 'https:';
     } catch (e) {
       return false;
     }
