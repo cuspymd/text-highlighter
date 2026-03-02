@@ -1,229 +1,201 @@
 # 북마크 기반 동기화 설계안
 
-- Source PDF: `북마크 기반 동기화 설계안.pdf`
-- Converted: 2026-03-02 (Asia/Seoul)
+## 배경 및 목표
+
+text-highlighter는 현재 `storage.sync` API를 사용해 하이라이트와 확장 설정을 동기화한다. 현 구조는 항목당 8KB 제한, 전체 90KB 예산 관리, 삭제 tombstone 유지, 다중 탭 브로드캐스트 등 다양한 예외 처리까지 포함해 요구사항을 충족한다.
+
+다만 Firefox Android에서 `storage.sync`가 지원되지 않아, Android 기기 간 동기화가 불가능하다는 한계가 있다. 반면 북마크는 Chrome/Firefox 데스크톱·Android 전반에서 동기화되며, 개별 항목 수십 KB 수준 저장과 충분한 전체 저장 한도를 제공한다.
+
+이 문서는 기존 동기화 구조를 분석하고, 북마크의 `title`/`url` 필드만으로 동작하는 북마크 기반 동기화 구조와 실행 시퀀스를 제안한다.
 
 ---
 
-북마크 기반 동기화 설계안
-배경 및 목표
-text‑highlighter 는 현재 storage.sync API를 사용하여 하이라이트와 확장 설정을 동기화한다. 이 방식은
-항목당 8 KB 제한과 전체 90 KB 예산을 관리하고, 삭제 tombstone 유지, 다중 탭 브로드캐스트 등 다양한 예외 처리를
-구현하여 요구 사항을 만족한다 1 2 . 그러나 Firefox Android에서 storage.sync 가 지원되지 않아 안드로이
-드 기기 간 동기화가 불가능하다. 북마크는 Chrome·Firefox 데스크톱/Android 모두에서 동기화되며, 개별 항목의 용
-량이 수십 KB를 지원하고 전체 5 천 개(파이어폭스 Android)~10만 개(크롬)까지 저장할 수 있어 현 동기화 구조를 대
-체할 수 있다. 이 문서는 기존 코드의 데이터 구조와 예외 처리 흐름을 분석한 후, title과 url 필드만 사용하는 북마크
-기반 동기화 구조와 동작 시퀀스를 제안한다.
+## 1) 기존 동기화 구조 분석
 
-기존 동기화 구조 분석
+### 데이터 구조
 
-데이터 구조
+1. **페이지 하이라이트 데이터**
+   - `syncKey`(URL 해시 문자열)를 키로 사용
+   - 값 구조:
+     ```json
+     {
+       "url": "...",
+       "title": "...",
+       "lastUpdated": 0,
+       "highlights": [],
+       "deletedGroupIds": {}
+     }
+     ```
+   - `highlights`는 그룹 단위 배열이며 각 그룹은 `groupId`, `color`, `ranges`, `updatedAt` 필드를 가짐
+   - 삭제 그룹은 `deletedGroupIds`에 `{ groupId: deletedAt }` 형태 tombstone으로 기록
 
-   1. 페이지 하이라이트 데이터 – syncKey (URL을 해시한 문자열)로 저장되며, 내용은 { url, title,
-    lastUpdated, highlights, deletedGroupIds } 형식이다. highlights 는 그룹별 객체 배열
-    로 각 그룹이 groupId , color , ranges , updatedAt 필드를 가진다. 삭제된 그룹은
-     deletedGroupIds 에 { groupId: deletedAt } 로 tombstone을 기록한다          3   .
-   2. 메타 데이터(sync_meta) – 전체 동기화 예산을 관리하기 위해 { pages: [ { syncKey, url,
-    lastUpdated, size } ], deletedUrls, totalSize } 를 저장한다         4   . deletedUrls 는 페
-    이지 단위 tombstone(삭제 시간)을 저장하며 30 일 후에 정리된다          5   .
-   3. 설정 데이터(settings) – { customColors, minimapVisible,
-    selectionControlsVisible } 형식이며, 변경 시 로컬 우선으로 적용하고 전체 탭에 브로드캐스트한
-    뒤 동기화한다     6   .
+2. **메타 데이터(`sync_meta`)**
+   - 전체 동기화 예산 관리용 데이터
+   - 구조: `{ pages, deletedUrls, totalSize }`
+   - `pages` 항목: `{ syncKey, url, lastUpdated, size }`
+   - `deletedUrls`는 페이지 단위 tombstone(삭제 시각)을 저장하며 30일 후 정리
 
-동기화 작업
+3. **설정 데이터(`settings`)**
+   - 구조: `{ customColors, minimapVisible, selectionControlsVisible }`
+   - 변경 시 로컬 우선 적용 후 전체 탭 브로드캐스트, 이후 동기화
 
-   1. syncSaveHighlights – 로컬/원격 하이라이트를 mergeHighlights 로 병합하고, JSON 크기가 8 KB를
-    넘으면 동기화를 건너뛴다. 총 크기가 90 KB를 넘는 경우 메타의 pages 를 시간순으로 정렬해 가장 오래된
-    항목을 제거한다        7   . 삭제 항목은 eviction으로 처리하되, deletedUrls 에 기록하지 않는다.
-   2. syncRemoveHighlights – 사용자가 특정 페이지의 하이라이트를 삭제하면 deletedUrls[url] 에
-    timestamp를 기록한 뒤 해당 syncKey를 제거한다          8   .
-   3. clearAllSyncedHighlights – 전체 삭제 시 메타의 pages 에 있는 URL을 모두 tombstone으로 기록하고,
-    모든 syncKey를 제거한 뒤 pages 와 totalSize 만 초기화한다            9   .
-   4. migrateLocalToSync – 초기 실행 시 로컬과 원격 데이터를 병합하여 sync에 저장하고, 설정을 병합한다
-       10 .
+### 동기화 작업
 
-   5. initSyncListener – storage.sync 변경 이벤트를 구독하여 원격 변경을 로컬에 병합하거나 삭제 이벤트
-    를 재시도 로직으로 처리한다. 삭제 tombstone이 있으면 사용자 삭제로 판단하여 로컬 데이터를 제거하고 탭
-    에 브로드캐스트한다; 없으면 eviction으로 보고 로컬 데이터를 유지한다【865246199359333†L168-
-    L200】.
+1. **`syncSaveHighlights`**
+   - 로컬/원격 하이라이트를 `mergeHighlights`로 병합
+   - JSON 크기가 8KB를 초과하면 동기화 건너뜀
+   - 총 크기 90KB 초과 시 `pages`를 오래된 순으로 정렬해 eviction
+   - eviction 항목은 `deletedUrls` tombstone에 기록하지 않음
 
-                                           1
+2. **`syncRemoveHighlights`**
+   - 특정 페이지 삭제 시 `deletedUrls[url] = timestamp` 기록
+   - 해당 `syncKey` 데이터 제거
 
-북마크 동기화 데이터 구조 제안
-크롬과 파이어폭스 모두 북마크에는 폴더, 타이틀(title), URL(url)만 있으며 description 필드는 공통 API가 제공되지
-않는다. 따라서 데이터를 url 필드에 base64 또는 URL 인코딩된 JSON으로 저장하고, title 필드에는 페이지
-식별자(해시)와 메타 정보를 넣어 인덱싱한다. 모든 북마크는 최상위 폴더 "Text Highlighter Sync"(이하 root) 안에 저
-장한다.
+3. **`clearAllSyncedHighlights`**
+   - 전체 삭제 시 `pages`의 모든 URL을 tombstone 처리
+   - 모든 `syncKey` 제거 후 `pages`, `totalSize` 초기화
 
-구조 요약
+4. **`migrateLocalToSync`**
+   - 초기 실행 시 로컬/원격 데이터 병합 후 sync 저장
+   - 설정도 병합
 
- 항목            설명             구현 세부 사항
+5. **`initSyncListener`**
+   - `storage.sync` 변경 이벤트 수신
+   - tombstone 존재 시 사용자 삭제로 판단해 로컬 제거 + 탭 브로드캐스트
+   - tombstone이 없으면 eviction으로 판단해 로컬 유지
 
-               모든 동기화 데이
- Root
-               터를 보관하는 북      이름을 고정("Text Highlighter Sync")하여 존재하지 않으면 생성한다.
- 폴더
-               마크 폴더.
+---
 
-                              title은 hl_ 접두사 + SHA-256(url)을 사용하여 기존 해시 충돌 문제를 개선
-               각 URL별 하이라     한다. url에는 data:application/json;base64,<encoded> 형식의
- 페이지
-               이트 데이터를 저      JSON을 저장한다. JSON 내용은 기존 구조 { url, title,
- 북마크
-               장하는 북마크.       lastUpdated, highlights, deletedGroupIds } 를 그대로 사용하
-                              여 mergeHighlights 로직을 재사용할 수 있다.
+## 2) 북마크 기반 동기화 데이터 구조 제안
 
-                              title을 "meta", url을 data URL로 하며 { pages, deletedUrls,
-               전체 예산·삭제
- 메타 북                         totalSize } 구조를 유지한다. pages 배열의 각 항목은 { syncKey,
-               tombstone·페이
- 마크                           url, lastUpdated, size } . size는 url 문자열의 바이트 길이로 계산한
-               지 목록을 관리.
-                              다.
+Chrome/Firefox 공통 북마크 API는 폴더, `title`, `url`만 안정적으로 사용 가능하다. 따라서 payload는 `url` 필드(인코딩된 JSON)에 저장하고, `title`은 인덱싱/식별 용도로 사용한다.
 
-                              title을 "settings", url에 JSON
- 설정 북          사용자 설정을 동
-                               { customColors, minimapVisible,
- 마크            기화.
-                              selectionControlsVisible } 를 저장한다.
+모든 동기화 데이터는 최상위 폴더 **"Text Highlighter Sync"**(이하 `root`) 아래에 저장한다.
 
- 마이그
-               동기화 방식 전환      로컬 storage.local에 bookmarkMigrationDone: true 를 저장해 반복
- 레이션
-               여부.            마이그레이션을 방지한다.
- 플래그
+### 구조 요약
 
-동기화 작업 설계
-북마크 API( browser.bookmarks )는 각 항목의 추가/변경/삭제 이벤트를 제공한다. 아래 시퀀스는 기존 동기화 코
-드의 예외 처리 규칙을 준수하면서 북마크 구조로 변경하는 방법을 설명한다.
+| 항목 | 설명 | 구현 세부 사항 |
+|---|---|---|
+| Root 폴더 | 모든 동기화 데이터 보관 폴더 | 이름을 `Text Highlighter Sync`로 고정. 없으면 생성 |
+| 페이지 북마크 | URL별 하이라이트 데이터 | `title`: `hl_` + `SHA-256(url)` / `url`: `data:application/json;base64,<encoded>` |
+| 메타 북마크 | 예산·삭제 tombstone·페이지 목록 관리 | `title`: `meta` / payload: `{ pages, deletedUrls, totalSize }` |
+| 설정 북마크 | 사용자 설정 동기화 | `title`: `settings` / payload: `{ customColors, minimapVisible, selectionControlsVisible }` |
+| 마이그레이션 플래그 | 전환 완료 여부 | `storage.local.bookmarkMigrationDone = true` |
 
-1. 초기화 및 마이그레이션
+> 페이지 payload는 기존 구조 `{ url, title, lastUpdated, highlights, deletedGroupIds }`를 유지해 `mergeHighlights` 재사용 가능.
 
-   1. Root 폴더 준비: 확장 로딩 시 browser.bookmarks.search({ title:
-        "Text Highlighter Sync" }) 로 폴더 존재 여부를 확인하고, 없으면 최상위에 생성한다. 폴더 ID를 전
-      역 변수로 보관한다.
-   2. 마이그레이션 체크: storage.local.get('bookmarkMigrationDone') 가 없으면
-        migrateLocalToBookmarks() 를 수행한다. 이 과정은 기존 migrateLocalToSync 를 참고한다
-        10 .
+---
 
-   3. 메타 북마크, 설정 북마크, 페이지 북마크들을 모두 읽어 원격(북마크) 데이터를 구성한다.
-   4. 로컬 저장소(storage.local)의 모든 페이지 하이라이트와 메타를 읽어 로컬 데이터를 얻는다.
-   5. 모든 URL 집합을 합한 후, 각 URL에 대해 기존 mergeHighlights 함수를 사용해 로컬/원격 하이라이트
-        를 병합한다      3   .
+## 3) 동기화 작업 설계
 
-                                              2
+### 3.1 초기화 및 마이그레이션
 
-   6. 병합 결과를 로컬 저장소와 북마크 양쪽에 저장하고, 메타 북마크의 pages 목록을 업데이트한다(크기 계산 포
-      함).
-   7. 설정 데이터는 원격/로컬 데이터를 병합하여 적용하고 북마크에 저장한다 10 .
-   8. 완료 후 bookmarkMigrationDone: true 를 storage.local에 저장한다.
+1. 확장 로딩 시 `root` 폴더 존재 확인(`browser.bookmarks.search`) 후 없으면 생성
+2. `storage.local.get('bookmarkMigrationDone')` 확인
+3. 미완료 시 `migrateLocalToBookmarks()` 수행
+   - 메타/설정/페이지 북마크로 원격 데이터 구성
+   - 로컬 저장소 데이터 로드
+   - URL 합집합 기준 `mergeHighlights` 병합
+   - 병합 결과를 로컬 + 북마크 양쪽에 저장
+   - 메타 `pages`/`totalSize` 재계산
+   - 설정도 로컬/원격 병합 후 저장
+4. 완료 시 `bookmarkMigrationDone: true` 저장
 
-2. 하이라이트 저장 (saveHighlightsToBookmarks)
+### 3.2 하이라이트 저장 (`saveHighlightsToBookmarks`)
 
-syncSaveHighlights 를 바탕으로 북마크 버전을 구현한다. 이 함수는 하이라이트 UI에서 호출하여 로컬 저장소
-와 북마크 모두를 갱신한다.
+1. 입력 데이터와 로컬 메타/원격 북마크 데이터를 읽어 `mergeHighlights` 수행
+2. 병합 결과를 직렬화(JSON) 후 base64 인코딩하여 data URL 생성
+3. `newSize`(바이트 길이) 계산
+   - 8KB 초과 시 북마크 동기화는 건너뛰고 로컬만 갱신
+4. 예산 검사
+   - `meta.totalSize + newSize`가 예산(기본 90KB) 초과 시 오래된 페이지부터 eviction
+   - eviction 항목은 tombstone에 기록하지 않음
+5. 페이지 북마크 upsert
+   - 있으면 `browser.bookmarks.update`
+   - 없으면 `browser.bookmarks.create`
+6. `meta` 북마크 갱신(`pages`, `totalSize`)
+7. 로컬 저장소 갱신
+8. 동일 URL 탭 전체에 하이라이트 갱신 브로드캐스트(실패 탭은 무시)
 
-   1. 로컬 데이터 병합: 인자로 받은 { url, title, highlights, lastUpdated } 와 로컬 메타(삭제
-     그룹 정보) 및 원격 북마크 데이터를 읽어 mergeHighlights 로 병합한다.
-   2. 직렬화 및 크기 계산: 병합된 데이터 객체를 JSON.stringify 후 base64 인코딩하여 data URL을 만든다.
-      newSize는 문자열 바이트 길이로 계산한다. 크기가 8 KB를 초과하면 동기화 작업을 건너뛰고 로컬 저장소만
-      갱신한다 11 .
-   3. 예산 검사 및 Eviction: 메타 북마크를 읽어 meta.totalSize + newSize 가 예산(기본 90 KB)을 넘으
-     면 meta.pages 를 lastUpdated 기준으로 오름차순 정렬하여 오래된 페이지를 순차적으로 제거한다. 제거
-     시 북마크 항목을 삭제하고, meta.pages에서 항목을 제거하여 meta.totalSize를 갱신한다. 제거된 URL은
-     tombstone에 기록하지 않는다 12 .
-   4. 북마크 저장:
-   5. SHA-256(url) 값을 사용해 페이지 북마크를 검색한다. 있으면 browser.bookmarks.update 로 url/
-     title을 갱신하고 meta.pages의 해당 항목을 업데이트한다. 없으면 browser.bookmarks.create 로 새
-      로 만들고 meta.pages에 추가한다.
-   6. meta 북마크의 url 데이터(meta)를 갱신한다.
-   7. 로컬 저장: 로컬 저장소에 하이라이트 배열과 메타 정보(제목, 마지막 업데이트, 삭제 그룹)를 저장한다.
-   8. 브로드캐스트: 새 하이라이트를 모든 탭에 브로드캐스트한다. 기존 코드의
-      notifyTabHighlightsRefresh 처럼 동일 URL을 가진 모든 탭에 메시지를 전송해야 하며, 실패한 탭을
-     무시하고 반복한다 13 .
+### 3.3 하이라이트 삭제 (`removeHighlightsFromBookmarks`)
 
-3. 하이라이트 삭제 (removeHighlightsFromBookmarks)
+1. `meta.deletedUrls[url] = Date.now()` 기록
+2. `meta.pages`에서 해당 항목 제거 및 `totalSize` 갱신
+3. 페이지 북마크 삭제
+4. 갱신된 `meta` 저장
+5. 로컬 저장소에서 페이지 데이터 제거
+6. 해당 URL 탭에 빈 하이라이트 브로드캐스트
 
-사용자가 페이지 하이라이트를 삭제할 때 syncRemoveHighlights 를 북마크 버전으로 재작성한다.
+### 3.4 전체 삭제 (`clearAllBookmarksHighlights`)
 
-   1. 메타 업데이트: meta 북마크를 읽어 deletedUrls[url] = Date.now() 로 tombstone을 기록하고,
-      meta.pages에서 해당 페이지 항목을 제거하여 totalSize를 갱신한다.
-   2. 북마크 제거: 페이지 북마크를 찾아 browser.bookmarks.remove 로 삭제한다.
-   3. 메타 저장: 변경된 meta를 meta 북마크에 저장한다.
-   4. 로컬 저장: 로컬 저장소에서 페이지 데이터를 제거한다.
-   5. 브로드캐스트: 해당 URL을 가진 모든 탭에 refreshHighlights 메시지를 보내 빈 배열을 전달한다 14 .
+1. `meta.pages`의 모든 URL을 `deletedUrls` tombstone으로 기록
+2. 모든 페이지 북마크 삭제
+3. `meta.pages = []`, `meta.totalSize = 0`으로 초기화 (`deletedUrls`는 유지)
+4. `meta` 저장
+5. 로컬 저장소 페이지 데이터 제거 및 UI 초기화
 
-4. 전체 삭제 (clearAllBookmarksHighlights)
+### 3.5 설정 저장/동기화 (`saveSettingsToBookmarks`)
 
-clearAllSyncedHighlights 와 동일한 동작을 북마크로 수행한다.
+1. 사용자 설정 변경 시 로컬에 즉시 반영
+2. 변경 필드를 전체 탭에 브로드캐스트
+3. 설정 북마크에 JSON 저장(없으면 생성)
+4. 북마크 저장 실패 시 로깅만 수행하고 로컬 상태는 유지
 
-   1. meta 북마크를 읽어 모든 meta.pages의 URL을 반복하며 각 URL을 deletedUrls에 현재 시각으로 기록한다.
-   2. 모든 페이지 북마크를 일괄 삭제한다.
-   3. meta.pages를 비우고 meta.totalSize를 0으로 설정하지만 deletedUrls는 유지한다 15 .
-   4. meta 북마크를 저장하고 로컬 저장소의 모든 페이지 데이터를 제거한다.
-   5. 하이라이트 목록 UI를 초기화한다.
+### 3.6 동기화 이벤트 리스너 (`initBookmarkSyncListener`)
 
-                                         3
+- `browser.bookmarks.onChanged`, `onRemoved`를 구독
 
-5. 설정 저장 및 동기화 (saveSettingsToBookmarks)
+1. **설정 변경 감지**
+   - `title === "settings"` 변경 시 payload 파싱 후 로컬 적용 + 탭 브로드캐스트
 
-설정은 별도의 북마크에 저장한다.
+2. **페이지 변경 감지**
+   - `title`이 `hl_` 접두사면 payload 파싱
+   - `{ url, highlights, deletedGroupIds, lastUpdated }`를 로컬과 병합 후 저장
+   - 모든 탭에 업데이트 전송
 
-      1. 로컬 우선 적용: 사용자가 설정을 변경하면 즉시 storage.local에 저장하고, 변경된 필드를 모든 탭에 브로드캐
-         스트한다 16 .
-      2. 북마크 저장: 설정 북마크를 찾아 { customColors, minimapVisible,
-        selectionControlsVisible } 를 JSON으로 직렬화해 url에 저장한다. 북마크가 없으면 새로 생성한
-         다.
-      3. 오류 허용: 북마크 저장 실패 시 로깅만 하고 로컬 적용은 유지한다.
+3. **페이지 삭제 감지**
+   - tombstone(`meta.deletedUrls[url]`) 존재 시 사용자 삭제로 판정 → 로컬 제거 + 브로드캐스트
+   - tombstone 미존재 시 eviction으로 판정 → 로컬 유지
+   - tombstone은 30일 유지
+   - 삭제 직후 tombstone 미확인 시 재시도 로직 적용
+     (`SYNC_REMOVAL_RECHECK_DELAY_MS`, `SYNC_REMOVAL_MAX_RETRIES` 재사용)
 
-6. 동기화 이벤트 리스너 (initBookmarkSyncListener)
+---
 
-browser.bookmarks.onChanged 와 onRemoved 를 이용해 북마크 변경을 감지하고 원격 변경을 로컬에 반영
-한다.
+## 4) 기타 고려 사항
 
-      1. 설정 변경 감지: title이 "settings"인 북마크가 변경되면 JSON을 파싱하여 로컬 설정에 적용하고 탭에 브로드
-         캐스트한다.
-      2. 페이지 변경 감지: title이 hl_ 접두사인 북마크가 추가되거나 수정되면 JSON을 파싱해 { url,
-        highlights, deletedGroupIds, lastUpdated } 를 얻는다. 로컬 하이라이트와 병합
-        ( mergeHighlights ) 후 저장하고 모든 탭에 업데이트를 전송한다 17 .
-      3. 페이지 삭제 감지: onRemoved 이벤트에서 title이 hl_ 접두사인 북마크가 삭제되면 다음을 수행한다.
-      4. tombstone을 확인한다. meta 북마크의 deletedUrls에 url 값이 존재하면 사용자 삭제로 판단하여 로컬 데이
-         터를 제거하고 탭에 브로드캐스트한다【865246199359333†L168-L200】.
-      5. tombstone이 없으면 eviction으로 판단하여 로컬 하이라이트를 유지한다.
-      6. 위 판정을 위해 deletedUrls는 tombstone retention 기간(30 일) 동안 유지한다 5 .
-      7. 삭제 이벤트 직후 tombstone을 찾지 못한 경우 일정 시간 후 재확인하는 retry 로직을 구현한다. 기존 코드의
-         SYNC_REMOVAL_RECHECK_DELAY_MS와 SYNC_REMOVAL_MAX_RETRIES 값을 그대로 사용하여 재검
-         사한다 18 .
+1. **해시 충돌 방지**
+   - 기존 `urlToSyncKey`의 32-bit 해시 대신 `SHA-256(url)`(base36 인코딩) 사용
+   - 마이그레이션 호환을 위해 구버전 키도 탐색 가능하도록 메타에 보조 정보 유지
 
-7. 기타 고려 사항
+2. **데이터 크기 제한**
+   - 북마크 `url` 필드는 수십 KB 저장 가능하더라도 기존 8KB 제한 유지
+   - 초과 시 북마크 동기화 skip + 로컬만 저장
 
-      1. 해시 충돌 방지: 현재 urlToSyncKey는 32‑bit 해시를 사용하며 충돌 가능성이 있다. 북마크 키에는
-         SHA-256(url)을 base36으로 인코딩해 사용한다. 이전 키를 사용하는 기기와의 호환을 위해 meta 북마크에
-         구 버전 키 목록을 저장하고, 첫 마이그레이션 시 두 키를 모두 탐색한다 6 .
-      2. 데이터 크기 제한: 북마크의 url 필드는 약 수십 KB까지 지원된다. 페이지 하이라이트가 거대해지는 것을 방지
-         하기 위해 기존 8 KB 제한을 유지하고 초과 시 북마크 동기화를 건너뛴다 11 .
-      3. 예산 관리: Android Firefox는 북마크가 5 천개를 초과하면 동기화하지 않으므로, 전체 예산(페이지 수)도 5 천
-         개 이하로 제한해야 한다. meta.pages 길이를 검사하여 초과 시 오래된 페이지를 순차적으로 삭제한다.
-      4. 다국어 지원 및 코드 분리: 북마크 로직은 기존 sync-service.js를 대체하는 새로운 bookmark-sync-
-         service.js로 구현하고, settings-service.js에서 saveSettingsToSync를 saveSettingsToBookmarks로 교
-         체한다.
-      5. 테스트: 기존 E2E 테스트를 업데이트하여 북마크 기반 동기화에서 tombstone 유지, 다중 탭 브로드캐스트, 설
-         정 로컬우선 적용 등을 검증한다.
+3. **예산/개수 관리**
+   - Firefox Android의 동기화 한계를 고려해 페이지 수 상한(예: 5,000) 관리
+   - 초과 시 오래된 페이지부터 제거
 
-결론
-북마크 기반 동기화는 Firefox Android의 동기화 부재를 해결하면서도 기존 storage.sync 구현에서 중요하게 다루었
-던 예외 사항을 모두 유지할 수 있다. 페이지별 북마크와 메타·설정 북마크를 사용하여 하이라이트와 설정을 저장하고,
-기존 mergeHighlights 와 tombstone 로직을 그대로 적용함으로써 충돌 해결과 삭제 판정 문제를 해결한다. 예
+4. **코드 분리**
+   - `sync-service.js` 대체용 `bookmark-sync-service.js` 신설
+   - `settings-service.js`의 `saveSettingsToSync`를 `saveSettingsToBookmarks`로 교체
 
-                                               4
+5. **테스트**
+   - E2E 테스트 보강: tombstone 유지, 다중 탭 브로드캐스트, 설정 로컬 우선 적용, 삭제 재시도
 
-산·크기 제한과 삭제 재시도 로직을 따라 Chrome/Firefox(데스크톱·Android) 간 일관된 동기화 경험을 제공할 수 있
-다.
+---
 
- 1   2    3    4    5   7   8   9   10   11   12   14   17   18   raw.githubusercontent.com
-https://raw.githubusercontent.com/cuspymd/text-highlighter/main/background/sync-service.js
+## 결론
 
- 6   13   15   16   raw.githubusercontent.com
-https://raw.githubusercontent.com/cuspymd/text-highlighter/main/arch-docs/sync-review-issues-and-fixes.md
+북마크 기반 동기화는 Firefox Android의 `storage.sync` 미지원 문제를 해소하면서도, 기존 구현이 해결해온 핵심 예외 처리(충돌 병합, tombstone 기반 삭제 판정, eviction 구분, 다중 탭 반영)를 유지할 수 있다.
 
-                                                                    5
+즉, 페이지/메타/설정 북마크로 역할을 분리하고 기존 병합 로직을 재사용하면 Chrome/Firefox(데스크톱·Android) 전반에서 일관된 동기화 경험을 제공할 수 있다.
+
+---
+
+## 참고
+
+- `background/sync-service.js`  
+  https://raw.githubusercontent.com/cuspymd/text-highlighter/main/background/sync-service.js
+- `arch-docs/sync-review-issues-and-fixes.md`  
+  https://raw.githubusercontent.com/cuspymd/text-highlighter/main/arch-docs/sync-review-issues-and-fixes.md
