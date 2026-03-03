@@ -2,23 +2,7 @@ import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { validateImportPayload } from './shared/import-export-schema.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
-
-// Theme change detection and handling
-function initializeThemeWatcher() {
-  const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-  // Initial theme application
-  updateTheme(darkModeQuery.matches);
-
-  // Detect theme change
-  darkModeQuery.addEventListener('change', (e) => {
-    updateTheme(e.matches);
-  });
-}
-
-function updateTheme(isDark) {
-  document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
-}
+import { initializeThemeWatcher } from './shared/theme.js';
 
 document.addEventListener('DOMContentLoaded', function () {
   // Initialize theme watcher

@@ -1,6 +1,7 @@
 import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
+import { initializeThemeWatcher } from './shared/theme.js';
 
 const URL_PARAMS  = new URLSearchParams(window.location.search);
 
@@ -53,23 +54,6 @@ function initializeI18n() {
       element.title = message;
     }
   });
-}
-
-// Theme change detection and handling
-function initializeThemeWatcher() {
-  const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  
-  // Initial theme application
-  updateTheme(darkModeQuery.matches);
-  
-  // Detect theme change
-  darkModeQuery.addEventListener('change', (e) => {
-    updateTheme(e.matches);
-  });
-}
-
-function updateTheme(isDark) {
-  document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
 }
 
 const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(
