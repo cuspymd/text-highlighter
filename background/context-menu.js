@@ -49,12 +49,9 @@ export function initContextMenus() {
 
       if (activeTab) {
         let targetColor = null;
-        switch (command) {
-          case 'highlight_yellow': targetColor = getCurrentColors().find(c => c.id === 'yellow')?.color; break;
-          case 'highlight_green':  targetColor = getCurrentColors().find(c => c.id === 'green')?.color;  break;
-          case 'highlight_blue':   targetColor = getCurrentColors().find(c => c.id === 'blue')?.color;   break;
-          case 'highlight_pink':   targetColor = getCurrentColors().find(c => c.id === 'pink')?.color;   break;
-          case 'highlight_orange': targetColor = getCurrentColors().find(c => c.id === 'orange')?.color; break;
+        if (command.startsWith('highlight_')) {
+          const colorId = command.replace('highlight_', '');
+          targetColor = getCurrentColors().find(c => c.id === colorId)?.color;
         }
 
         if (targetColor) {
