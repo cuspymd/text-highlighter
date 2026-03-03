@@ -34,9 +34,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const page2 = await context.newPage();
     await page2.goto(`file:///${path.join(__dirname, 'test-page2.html')}`);
     const firstParagraph2 = page2.locator('p').first();
-    const textToSelect2 = await firstParagraph2.textContent();
     await firstParagraph2.click({ clickCount: 3 });
-    const selected2 = await page2.evaluate(() => window.getSelection().toString().trim());
 
     await sendHighlightMessage(background, 'yellow');
 
