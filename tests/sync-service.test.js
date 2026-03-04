@@ -268,16 +268,13 @@ describe('sync-service (bookmark-based)', () => {
   });
 
 
-  describe('migration legacy compatibility', () => {
-    it('backfills legacy syncMigrationDone when bookmarkMigrationDone is already true', async () => {
-      chrome.storage.local.get.mockResolvedValueOnce({
-        bookmarkMigrationDone: true,
-        syncMigrationDone: false,
-      });
+  describe('migration bookmark flag', () => {
+    it('returns early when bookmarkMigrationDone is already true', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ bookmarkMigrationDone: true });
 
       await migrateLocalToSync();
 
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({ syncMigrationDone: true });
+      expect(chrome.storage.local.set).not.toHaveBeenCalled();
     });
   });
 

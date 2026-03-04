@@ -32,8 +32,8 @@ async function waitInBackground(background, ms) {
 async function waitForSyncReady(background) {
   await expect.poll(async () => {
     return await background.evaluate(async () => {
-      const result = await chrome.storage.local.get('syncMigrationDone');
-      return !!result.syncMigrationDone;
+      const result = await chrome.storage.local.get('bookmarkMigrationDone');
+      return !!result.bookmarkMigrationDone;
     });
   }, {
     message: 'Wait for sync migration to complete',
