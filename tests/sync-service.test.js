@@ -166,6 +166,41 @@ describe('sync-service (bookmark-based)', () => {
     });
   });
 
+
+  describe('UTF-8 safe highlight bookmark payload encoding', () => {
+    it('saves multilingual highlight title/content without throwing under strict Latin-1 btoa/atob', async () => {
+      const originalBtoa = globalThis.btoa;
+      const originalAtob = globalThis.atob;
+
+      try {
+        globalThis.btoa = (str) => {
+          for (let i = 0; i < str.length; i++) {
+            if (str.charCodeAt(i) > 255) {
+              throw new Error('InvalidCharacterError');
+            }
+          }
+          return Buffer.from(str, 'binary').toString('base64');
+        };
+        globalThis.atob = (b64) => Buffer.from(b64, 'base64').toString('binary');
+
+        const url = 'https://utf8-highlight.test';
+        const highlights = [{ groupId: 'g1', updatedAt: Date.now(), text: '하이라이트😀', ranges: [] }];
+
+        chrome.storage.local.get.mockResolvedValueOnce({ [`${url}_meta`]: {} });
+        chrome.storage.local.set.mockResolvedValue(undefined);
+        chrome.bookmarks.search.mockResolvedValue([{ id: 'root-folder', title: 'Text Highlighter Sync' }]);
+        chrome.bookmarks.getChildren.mockResolvedValue([]);
+
+        await expect(syncSaveHighlights(url, highlights, '문서 제목😀', new Date().toISOString())).resolves.toBeUndefined();
+
+        expect(chrome.storage.local.set).toHaveBeenCalled();
+      } finally {
+        globalThis.btoa = originalBtoa;
+        globalThis.atob = originalAtob;
+      }
+    });
+  });
+
   describe('bookmark API availability guard', () => {
     it('returns safely when bookmarks API is unavailable', async () => {
       const originalBookmarks = chrome.bookmarks;
