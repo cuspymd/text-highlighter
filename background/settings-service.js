@@ -1,8 +1,8 @@
 import { browserAPI } from '../shared/browser-api.js';
 import { debugLog } from '../shared/logger.js';
 import { broadcastToAllTabs } from '../shared/tab-broadcast.js';
-import { STORAGE_KEYS, SYNC_KEYS } from '../constants/storage-keys.js';
-import { saveSettingsToSync } from './sync-service.js';
+import { STORAGE_KEYS } from '../constants/storage-keys.js';
+import { saveSettingsToBookmarks, getSettingsFromBookmarks } from './bookmark-sync-service.js';
 
 const COLORS = [
   { id: 'yellow', nameKey: 'yellowColor', color: '#FFFF00' },
@@ -111,14 +111,14 @@ export async function loadCustomColors() {
   try {
     let customColors = [];
     try {
-      const syncResult = await browserAPI.storage.sync.get(SYNC_KEYS.SETTINGS);
-      if (syncResult[SYNC_KEYS.SETTINGS] && syncResult[SYNC_KEYS.SETTINGS].customColors) {
-        customColors = syncResult[SYNC_KEYS.SETTINGS].customColors;
+      const bookmarkSettings = await getSettingsFromBookmarks();
+      if (bookmarkSettings && bookmarkSettings.customColors && bookmarkSettings.customColors.length > 0) {
+        customColors = bookmarkSettings.customColors;
         await browserAPI.storage.local.set({ customColors });
-        debugLog('Loaded custom colors from storage.sync');
+        debugLog('Loaded custom colors from bookmarks');
       }
     } catch (e) {
-      debugLog('Failed to read sync settings, falling back to local:', e.message);
+      debugLog('Failed to read bookmark settings, falling back to local:', e.message);
     }
 
     if (customColors.length === 0) {
@@ -178,7 +178,7 @@ export async function addCustomColor(newColorValue) {
   await browserAPI.storage.local.set({ customColors });
   debugLog('Added custom color:', newColorObj);
 
-  await saveSettingsToSync();
+  await saveSettingsToBookmarks();
   return { exists: false, colors: currentColors };
 }
 
@@ -199,7 +199,7 @@ export async function clearCustomColors() {
   currentColors = currentColors.filter(c => !c.id.startsWith('custom_'));
   debugLog('Cleared all custom colors');
 
-  await saveSettingsToSync();
+  await saveSettingsToBookmarks();
   return { hadColors: true, colors: currentColors };
 }
 

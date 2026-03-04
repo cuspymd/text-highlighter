@@ -3,13 +3,13 @@ import { DEBUG_MODE, debugLog } from '../shared/logger.js';
 import { broadcastToAllTabs, broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
 import { STORAGE_KEYS } from '../constants/storage-keys.js';
 import {
-  syncSaveHighlights,
-  syncRemoveHighlights,
-  clearAllSyncedHighlights,
+  saveHighlightsToBookmarks,
+  removeHighlightsFromBookmarks,
+  clearAllBookmarkHighlights,
   cleanupEmptyHighlightData,
   cleanupTombstones,
-  saveSettingsToSync,
-} from './sync-service.js';
+  saveSettingsToBookmarks,
+} from './bookmark-sync-service.js';
 import {
   getPlatformInfo,
   getCurrentColors,
@@ -56,8 +56,8 @@ async function handleSaveSettings(message) {
   await browserAPI.storage.local.set(settings);
   await broadcastSettingsToTabs(changedSettings);
 
-  saveSettingsToSync().catch(e => {
-    debugLog('Failed to save settings to sync (local already applied):', e.message);
+  saveSettingsToBookmarks().catch(e => {
+    debugLog('Failed to save settings to bookmarks (local already applied):', e.message);
   });
 
   debugLog('Settings saved locally and broadcasted:', settings, 'changed:', changedSettings);
@@ -110,11 +110,11 @@ async function handleSaveHighlights(message) {
     await browserAPI.storage.local.set(metaSaveData);
     debugLog('Saved page metadata:', metaData);
 
-    await syncSaveHighlights(message.url, message.highlights, metaData.title, metaData.lastUpdated);
+    await saveHighlightsToBookmarks(message.url, message.highlights, metaData.title, metaData.lastUpdated);
     return successResponse();
   } else {
     await cleanupEmptyHighlightData(message.url);
-    await syncRemoveHighlights(message.url);
+    await removeHighlightsFromBookmarks(message.url);
     return successResponse();
   }
 }
@@ -139,7 +139,7 @@ async function handleDeleteHighlight(message) {
     await browserAPI.storage.local.set(saveData);
     debugLog('Highlight group deleted:', groupId, 'from URL:', url);
 
-    await syncSaveHighlights(url, updatedHighlights, meta.title || '', lastUpdated);
+    await saveHighlightsToBookmarks(url, updatedHighlights, meta.title || '', lastUpdated);
 
     if (message.notifyRefresh) {
       await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: updatedHighlights });
@@ -147,7 +147,7 @@ async function handleDeleteHighlight(message) {
     return successResponse({ highlights: updatedHighlights });
   } else {
     await cleanupEmptyHighlightData(url);
-    await syncRemoveHighlights(url);
+    await removeHighlightsFromBookmarks(url);
     if (message.notifyRefresh) {
       await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
     }
@@ -158,7 +158,7 @@ async function handleDeleteHighlight(message) {
 async function handleClearAllHighlights(message) {
   const { url } = message;
   await cleanupEmptyHighlightData(url);
-  await syncRemoveHighlights(url);
+  await removeHighlightsFromBookmarks(url);
   if (message.notifyRefresh) {
     await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
   }
@@ -223,7 +223,7 @@ async function handleDeleteAllHighlightedPages(_message) {
   if (keysToDelete.length > 0) {
     await browserAPI.storage.local.remove(keysToDelete);
     debugLog('All highlighted pages deleted:', keysToDelete);
-    await clearAllSyncedHighlights();
+    await clearAllBookmarkHighlights();
   }
 
   return successResponse({ deletedCount: keysToDelete.length / 2 });

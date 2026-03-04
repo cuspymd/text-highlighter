@@ -8,7 +8,7 @@ import {
 } from './background/settings-service.js';
 import { initContextMenus } from './background/context-menu.js';
 import { registerMessageRouter } from './background/message-router.js';
-import { initSyncListener, migrateLocalToSync } from './background/sync-service.js';
+import { initBookmarkSyncListener, migrateLocalToBookmarks } from './background/bookmark-sync-service.js';
 
 // ===================================================================
 // Top-level listener registration
@@ -20,7 +20,7 @@ registerMessageRouter();
 
 initContextMenus();
 
-initSyncListener({
+initBookmarkSyncListener({
   onSettingsChanged: async (newSettings) => {
     const { colorsChanged } = await applySettingsFromSync(newSettings);
     if (colorsChanged) {
@@ -42,7 +42,7 @@ browserAPI.runtime.onInstalled.addListener(async () => {
     await initializePlatform();
     await loadCustomColors();
     await createOrUpdateContextMenus();
-    await migrateLocalToSync();
+    await migrateLocalToBookmarks();
   } catch (e) {
     console.error('Initialization error in background script', e);
   }

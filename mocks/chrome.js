@@ -64,4 +64,18 @@ export default {
       addListener: jest.fn(),
     },
   },
+  bookmarks: {
+    search: jest.fn(() => Promise.resolve([])),
+    get: jest.fn(() => Promise.resolve([])),
+    getChildren: jest.fn(() => Promise.resolve([])),
+    create: jest.fn((data) => Promise.resolve({ id: 'mock_bookmark_id', parentId: 'mock_folder_id', ...data })),
+    update: jest.fn((id, data) => Promise.resolve({ id, ...data })),
+    remove: jest.fn(() => Promise.resolve()),
+    onChanged: {
+      addListener: jest.fn(),
+    },
+    onRemoved: {
+      addListener: jest.fn(),
+    },
+  },
 };

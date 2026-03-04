@@ -3,6 +3,7 @@ export const STORAGE_KEYS = {
   MINIMAP_VISIBLE: 'minimapVisible',
   SELECTION_CONTROLS_VISIBLE: 'selectionControlsVisible',
   SYNC_MIGRATION_DONE: 'syncMigrationDone',
+  BOOKMARK_MIGRATION_DONE: 'bookmarkMigrationDone',
   META_SUFFIX: '_meta',
 };
 
