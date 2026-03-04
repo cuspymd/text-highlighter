@@ -41,6 +41,106 @@ async function waitForSyncReady(background) {
   }).toBe(true);
 }
 
+async function installStorageSyncBookmarkBridge(background) {
+  await background.evaluate(async () => {
+    if (globalThis.__syncBridgeInstalled) return;
+
+    const ROOT_FOLDER_TITLE = 'Text Highlighter Sync';
+
+    const encodeUtf8 = (value) => {
+      if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(value);
+      return Uint8Array.from(Buffer.from(value, 'utf-8'));
+    };
+    const decodeUtf8 = (bytes) => {
+      if (typeof TextDecoder !== 'undefined') return new TextDecoder().decode(bytes);
+      return Buffer.from(bytes).toString('utf-8');
+    };
+    const encodeBase64 = (value) => {
+      const bytes = encodeUtf8(value);
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      }
+      return btoa(binary);
+    };
+    const decodeBase64 = (value) => {
+      const binary = atob(value);
+      const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
+      return decodeUtf8(bytes);
+    };
+    const toDataUrl = (payload) => `data:application/json;base64,${encodeBase64(JSON.stringify(payload))}`;
+    const fromDataUrl = (url) => {
+      if (!url || typeof url !== 'string') return null;
+      const marker = 'base64,';
+      const idx = url.indexOf(marker);
+      if (idx < 0) return null;
+      return JSON.parse(decodeBase64(url.slice(idx + marker.length)));
+    };
+
+    const getRootId = async () => {
+      const results = await chrome.bookmarks.search({ title: ROOT_FOLDER_TITLE });
+      const folder = results.find(node => !node.url && node.title === ROOT_FOLDER_TITLE);
+      if (folder) return folder.id;
+      const created = await chrome.bookmarks.create({ title: ROOT_FOLDER_TITLE });
+      return created.id;
+    };
+    const findByTitle = async (title) => {
+      const rootId = await getRootId();
+      const children = await chrome.bookmarks.getChildren(rootId);
+      return children.find(node => node.title === title);
+    };
+    const upsertByTitle = async (title, payload) => {
+      const dataUrl = toDataUrl(payload);
+      const existing = await findByTitle(title);
+      if (existing) {
+        await chrome.bookmarks.update(existing.id, { title, url: dataUrl });
+      } else {
+        const parentId = await getRootId();
+        await chrome.bookmarks.create({ parentId, title, url: dataUrl });
+      }
+    };
+    const removeByTitle = async (title) => {
+      const existing = await findByTitle(title);
+      if (existing) await chrome.bookmarks.remove(existing.id);
+    };
+
+    chrome.storage.sync.get = async (keys) => {
+      if (keys == null) return {};
+      const list = Array.isArray(keys) ? keys : [keys];
+      const result = {};
+      for (const key of list) {
+        const node = await findByTitle(key);
+        if (node && node.url) result[key] = fromDataUrl(node.url);
+      }
+      return result;
+    };
+
+    chrome.storage.sync.set = async (items) => {
+      for (const [key, value] of Object.entries(items || {})) {
+        await upsertByTitle(key, value);
+      }
+    };
+
+    chrome.storage.sync.remove = async (keys) => {
+      const list = Array.isArray(keys) ? keys : [keys];
+      for (const key of list) {
+        await removeByTitle(key);
+      }
+    };
+
+    chrome.storage.sync.clear = async () => {
+      const rootId = await getRootId();
+      const children = await chrome.bookmarks.getChildren(rootId);
+      for (const node of children) {
+        if (node.url) await chrome.bookmarks.remove(node.id);
+      }
+    };
+
+    globalThis.__syncBridgeInstalled = true;
+  });
+}
+
 function testFileUrl(fileName) {
   return pathToFileURL(path.join(__dirname, fileName)).href;
 }
@@ -48,6 +148,7 @@ function testFileUrl(fileName) {
 test.describe('Sync scenarios', () => {
   test.beforeEach(async ({ background }) => {
     await waitForSyncReady(background);
+    await installStorageSyncBookmarkBridge(background);
   });
 
   test('sync key removal arrives before tombstone meta update -> eventually treated as user deletion', async ({ background }) => {
