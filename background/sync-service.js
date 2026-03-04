@@ -18,6 +18,19 @@ const META_BOOKMARK_TITLE = SYNC_KEYS.META;
 
 const pendingSyncRemovalResolutions = new Map();
 
+
+function hasBookmarkSyncAPI() {
+  return Boolean(
+    browserAPI
+    && browserAPI.bookmarks
+    && browserAPI.bookmarks.search
+    && browserAPI.bookmarks.create
+    && browserAPI.bookmarks.update
+    && browserAPI.bookmarks.remove
+    && browserAPI.bookmarks.getChildren,
+  );
+}
+
 function encodeBase64(value) {
   if (typeof btoa === 'function') return btoa(value);
   return Buffer.from(value, 'utf-8').toString('base64');
@@ -167,10 +180,13 @@ export function mergeHighlights(localData, remoteData) {
 }
 
 export async function getSyncedSettings() {
+  if (!hasBookmarkSyncAPI()) return null;
   return readBookmarkPayloadByTitle(SETTINGS_BOOKMARK_TITLE, null);
 }
 
 export async function saveSettingsToSync() {
+  if (!hasBookmarkSyncAPI()) return;
+
   const result = await browserAPI.storage.local.get([
     STORAGE_KEYS.CUSTOM_COLORS,
     STORAGE_KEYS.MINIMAP_VISIBLE,
@@ -192,6 +208,8 @@ export async function saveSettingsToSync() {
 }
 
 export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
+  if (!hasBookmarkSyncAPI()) return;
+
   const syncKey = urlToSyncKey(url);
 
   try {
@@ -262,6 +280,8 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
 }
 
 export async function syncRemoveHighlights(url) {
+  if (!hasBookmarkSyncAPI()) return;
+
   const syncKey = urlToSyncKey(url);
 
   try {
@@ -299,6 +319,8 @@ async function applyUserDeletionFromSync(url) {
 }
 
 export async function clearAllSyncedHighlights() {
+  if (!hasBookmarkSyncAPI()) return;
+
   try {
     const meta = await getBookmarkSyncMeta();
     const now = Date.now();
@@ -319,6 +341,8 @@ export async function clearAllSyncedHighlights() {
 }
 
 export async function migrateLocalToSync() {
+  if (!hasBookmarkSyncAPI()) return;
+
   const flagResult = await browserAPI.storage.local.get(STORAGE_KEYS.BOOKMARK_MIGRATION_DONE);
   if (flagResult[STORAGE_KEYS.BOOKMARK_MIGRATION_DONE]) return;
 

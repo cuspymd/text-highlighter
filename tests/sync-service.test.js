@@ -120,6 +120,22 @@ describe('sync-service (bookmark-based)', () => {
     });
   });
 
+
+  describe('bookmark API availability guard', () => {
+    it('returns safely when bookmarks API is unavailable', async () => {
+      const originalBookmarks = chrome.bookmarks;
+      // Simulate missing permission/API surface
+      // eslint-disable-next-line no-global-assign
+      chrome.bookmarks = undefined;
+
+      await expect(saveSettingsToSync()).resolves.toBeUndefined();
+      await expect(syncSaveHighlights('https://no-bookmarks.test', [], '', '')).resolves.toBeUndefined();
+      await expect(clearAllSyncedHighlights()).resolves.toBeUndefined();
+
+      chrome.bookmarks = originalBookmarks;
+    });
+  });
+
   describe('cleanupEmptyHighlightData', () => {
     it('removes page and metadata keys', async () => {
       await cleanupEmptyHighlightData('https://example.com');
