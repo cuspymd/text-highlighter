@@ -427,11 +427,9 @@ openSettingsBtn.addEventListener('click', () => {
         <h2 class="section-title" data-i18n="shortcutsSection">Keyboard Shortcuts</h2>
         <div id="shortcuts-list"></div>
         <p class="hint-text" data-i18n="shortcutHint">
-          Key combinations can be changed in browser shortcut settings.
+          Key combinations can be changed in browser shortcut settings
+          (Chrome: chrome://extensions/shortcuts, Firefox: about:addons).
         </p>
-        <button id="open-browser-shortcuts" class="btn" data-i18n="openBrowserShortcuts">
-          Open Browser Shortcut Settings ↗
-        </button>
       </section>
     </div>
     <script type="module" src="settings.js"></script>
@@ -613,17 +611,17 @@ function renderShortcutsList(commands, colorMap, allColors) {
 
 #### 브라우저 단축키 설정 열기
 
-```js
-document.getElementById('open-browser-shortcuts').addEventListener('click', () => {
-  // Chrome: chrome://extensions/shortcuts
-  // Firefox: about:addons (직접 열기 불가하여 탭 생성 시도)
-  if (navigator.userAgent.includes('Firefox')) {
-    browserAPI.tabs.create({ url: 'about:addons' });
-  } else {
-    browserAPI.tabs.create({ url: 'chrome://extensions/shortcuts' });
-  }
-});
+`chrome://extensions/shortcuts`는 Chrome 확장에서 `tabs.create()`로 열 수 없다. Firefox의 `about:addons`도 직접 열기가 제한된다. 따라서 버튼을 제거하고 안내 텍스트만 표시한다.
+
+```html
+<!-- 버튼 제거, 안내 텍스트만 표시 -->
+<p class="hint-text" data-i18n="shortcutHint">
+  Key combinations can be changed in browser shortcut settings
+  (Chrome: chrome://extensions/shortcuts, Firefox: about:addons).
+</p>
 ```
+
+`shortcutHint` i18n 키 값에 각 브라우저의 진입 경로를 명시한다. 버튼(`open-browser-shortcuts`)과 관련 핸들러 코드는 구현하지 않는다.
 
 ---
 
@@ -645,8 +643,7 @@ document.getElementById('open-browser-shortcuts').addEventListener('click', () =
 | `colorAlreadyExists` | This color already exists. | 이미 추가된 색상입니다. |
 | `shortcutSlot` | Slot | 슬롯 |
 | `notAssigned` | (Not assigned) | (미배정) |
-| `shortcutHint` | Key combinations can be changed in browser shortcut settings. | 키 조합은 브라우저 단축키 설정에서 변경할 수 있습니다. |
-| `openBrowserShortcuts` | Open Browser Shortcut Settings ↗ | 브라우저 단축키 설정 열기 ↗ |
+| `shortcutHint` | Key combinations can be changed in browser shortcut settings (Chrome: chrome://extensions/shortcuts, Firefox: about:addons). | 키 조합은 브라우저 단축키 설정에서 변경할 수 있습니다 (Chrome: chrome://extensions/shortcuts, Firefox: about:addons). |
 | `colorChangeWarning` | Changes do not affect existing highlights. | 기존 하이라이트에는 영향을 주지 않습니다. |
 
 ---
@@ -748,14 +745,6 @@ const filesToCopy = [
 
 `createOrUpdateContextMenus()`는 `currentColors` 기반으로 메뉴를 생성하므로 사용자 정의 색상 추가/변경/삭제 후 반드시 재호출한다. 매핑 변경(`saveShortcutColorMap`) 시에도 컨텍스트 메뉴 타이틀에 표시되는 단축키가 올바른지 확인이 필요하다.
 
-### `chrome://extensions/shortcuts` 탭 생성
+### `chrome://extensions/shortcuts` 탭 생성 불가
 
-Chrome에서 `chrome://` URL을 `tabs.create()`로 열 수 없다. 대신 아래 접근:
-
-```js
-// chrome://extensions/shortcuts 직접 열기는 불가
-// 대안: 확장의 단축키 설정 페이지 링크를 안내 텍스트로만 표시
-// 또는 browserAPI.tabs.create({ url: 'chrome://extensions/shortcuts' }) 시도 후 실패 시 안내
-```
-
-실제로는 `chrome://extensions/shortcuts` 직접 열기가 불가하므로, 버튼 클릭 시 해당 URL을 클립보드에 복사하고 "주소창에 붙여넣어 이동하세요" 안내를 표시하는 방식 또는 단순히 안내 텍스트로 처리하는 것을 권장한다.
+Chrome 확장에서 `browserAPI.tabs.create({ url: 'chrome://...' })`는 동작하지 않는다. Firefox의 `about:addons`도 직접 열기가 제한된다. 따라서 "브라우저 단축키 설정 열기" 버튼은 구현하지 않고, `settings.html`의 단축키 섹션 하단에 진입 경로를 안내하는 텍스트만 표시한다.
