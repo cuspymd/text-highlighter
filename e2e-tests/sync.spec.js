@@ -150,7 +150,7 @@ async function installStorageSyncBookmarkBridge(background) {
       await broadcastByUrl(url, { action: 'refreshHighlights', highlights: payload.highlights || [] });
     };
 
-    chrome.storage.sync.get = async (keys) => {
+    const bridgeGet = async (keys) => {
       if (keys == null) return {};
       const list = Array.isArray(keys) ? keys : [keys];
       const result = {};
@@ -161,7 +161,7 @@ async function installStorageSyncBookmarkBridge(background) {
       return result;
     };
 
-    chrome.storage.sync.set = async (items) => {
+    const bridgeSet = async (items) => {
       for (const [key, value] of Object.entries(items || {})) {
         await upsertByTitle(key, value);
 
@@ -180,7 +180,7 @@ async function installStorageSyncBookmarkBridge(background) {
       }
     };
 
-    chrome.storage.sync.remove = async (keys) => {
+    const bridgeRemove = async (keys) => {
       const list = Array.isArray(keys) ? keys : [keys];
       for (const key of list) {
         const existing = await findByTitle(key);
@@ -188,7 +188,7 @@ async function installStorageSyncBookmarkBridge(background) {
         await removeByTitle(key);
 
         if (key.startsWith('hl_') && payload && payload.url) {
-          const meta = (await chrome.storage.sync.get('sync_meta')).sync_meta || {};
+          const meta = (await bridgeGet('sync_meta')).sync_meta || {};
           const deletedUrls = meta.deletedUrls || {};
           if (deletedUrls[payload.url]) {
             await chrome.storage.local.remove([payload.url, `${payload.url}_meta`]);
@@ -198,12 +198,19 @@ async function installStorageSyncBookmarkBridge(background) {
       }
     };
 
-    chrome.storage.sync.clear = async () => {
+    const bridgeClear = async () => {
       const rootId = await getRootId();
       const children = await chrome.bookmarks.getChildren(rootId);
       for (const node of children) {
         if (node.url) await chrome.bookmarks.remove(node.id);
       }
+    };
+
+    globalThis.__bookmarkSyncBridge = {
+      get: bridgeGet,
+      set: bridgeSet,
+      remove: bridgeRemove,
+      clear: bridgeClear,
     };
 
     globalThis.__syncBridgeInstalled = true;
@@ -227,7 +234,7 @@ test.describe('Sync scenarios', () => {
 
     await background.evaluate(async ({ url, syncKey, highlights }) => {
       await chrome.storage.local.clear();
-      await chrome.storage.sync.clear();
+      await globalThis.__bookmarkSyncBridge.clear();
 
       await chrome.storage.local.set({
         [url]: highlights,
@@ -238,7 +245,7 @@ test.describe('Sync scenarios', () => {
         }
       });
 
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         [syncKey]: {
           url,
           title: 'test-page',
@@ -256,18 +263,18 @@ test.describe('Sync scenarios', () => {
 
     // Simulate out-of-order propagation: page key removal first.
     await background.evaluate(async ({ syncKey }) => {
-      await chrome.storage.sync.remove(syncKey);
+      await globalThis.__bookmarkSyncBridge.remove(syncKey);
     }, { syncKey });
 
     // Tombstone update arrives later.
     await waitInBackground(background, 400);
     await background.evaluate(async ({ url }) => {
       const now = Date.now();
-      const result = await chrome.storage.sync.get('sync_meta');
+      const result = await globalThis.__bookmarkSyncBridge.get('sync_meta');
       const meta = result.sync_meta || { pages: [], totalSize: 0, deletedUrls: {} };
       meta.deletedUrls = meta.deletedUrls || {};
       meta.deletedUrls[url] = now;
-      await chrome.storage.sync.set({ sync_meta: meta });
+      await globalThis.__bookmarkSyncBridge.set({ sync_meta: meta });
     }, { url });
 
     // Wait longer than the retry window in background.js.
@@ -292,13 +299,13 @@ test.describe('Sync scenarios', () => {
       const now = new Date().toISOString();
 
       // Update sync_meta first so when the highlight key change arrives, the meta is already consistent if needed
-      const result = await chrome.storage.sync.get('sync_meta');
+      const result = await globalThis.__bookmarkSyncBridge.get('sync_meta');
       const meta = result.sync_meta || { pages: [], totalSize: 0, deletedUrls: {} };
       meta.pages.push({ syncKey, url, lastUpdated: now, size: 200 });
       meta.totalSize += 200;
-      await chrome.storage.sync.set({ sync_meta: meta });
+      await globalThis.__bookmarkSyncBridge.set({ sync_meta: meta });
 
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         [syncKey]: {
           url,
           title: 'test-page',
@@ -333,7 +340,7 @@ test.describe('Sync scenarios', () => {
         [url]: highlights,
         [`${url}_meta`]: { title: 'test-page', lastUpdated: now, deletedGroupIds: {} }
       });
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         [syncKey]: {
           url,
           title: 'test-page',
@@ -358,12 +365,12 @@ test.describe('Sync scenarios', () => {
     // Simulate another device deleting the page highlights
     await background.evaluate(async ({ url, syncKey }) => {
       const now = Date.now();
-      const result = await chrome.storage.sync.get('sync_meta');
+      const result = await globalThis.__bookmarkSyncBridge.get('sync_meta');
       const meta = result.sync_meta || { pages: [], totalSize: 0, deletedUrls: {} };
       meta.deletedUrls = meta.deletedUrls || {};
       meta.deletedUrls[url] = now;
-      await chrome.storage.sync.set({ sync_meta: meta });
-      await chrome.storage.sync.remove(syncKey);
+      await globalThis.__bookmarkSyncBridge.set({ sync_meta: meta });
+      await globalThis.__bookmarkSyncBridge.remove(syncKey);
     }, { url, syncKey });
 
     // Verify UI update (disappears)
@@ -396,7 +403,7 @@ test.describe('Sync scenarios', () => {
     // 2. Simulate another device adding a different highlight
     await background.evaluate(async ({ url, syncKey, remoteHighlights }) => {
       const now = new Date().toISOString();
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         [syncKey]: {
           url,
           title: 'test-page',
@@ -455,7 +462,7 @@ test.describe('Sync scenarios', () => {
     // 2. Simulate another device updating the SAME highlight with a newer timestamp and different color
     await background.evaluate(async ({ url, syncKey, remoteHighlight }) => {
       const now = new Date().toISOString();
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         [syncKey]: {
           url,
           title: 'test-page',
@@ -491,7 +498,7 @@ test.describe('Sync scenarios', () => {
 
     // Simulate another device disabling minimap
     await background.evaluate(async () => {
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         settings: {
           minimapVisible: false,
           selectionControlsVisible: true,
@@ -510,7 +517,7 @@ test.describe('Sync scenarios', () => {
     // Simulate another device adding a custom color
     const customColor = { id: 'custom_123', nameKey: 'customColor', colorNumber: 1, color: '#123456' };
     await background.evaluate(async (customColor) => {
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         settings: {
           minimapVisible: true,
           selectionControlsVisible: true,
@@ -535,7 +542,7 @@ test.describe('Sync scenarios', () => {
 
     await background.evaluate(async ({ url, syncKey, highlights }) => {
       await chrome.storage.local.clear();
-      await chrome.storage.sync.clear();
+      await globalThis.__bookmarkSyncBridge.clear();
 
       await chrome.storage.local.set({
         [url]: highlights,
@@ -546,7 +553,7 @@ test.describe('Sync scenarios', () => {
         }
       });
 
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         [syncKey]: {
           url,
           title: 'test-page2',
@@ -563,7 +570,7 @@ test.describe('Sync scenarios', () => {
     }, { url, syncKey, highlights });
 
     await background.evaluate(async ({ syncKey }) => {
-      await chrome.storage.sync.remove(syncKey);
+      await globalThis.__bookmarkSyncBridge.remove(syncKey);
     }, { syncKey });
 
     await waitInBackground(background, 2600);
@@ -587,7 +594,7 @@ test.describe('Sync scenarios', () => {
 
     await background.evaluate(async ({ url1, url2, syncKey1, syncKey2, highlights1, highlights2 }) => {
       await chrome.storage.local.clear();
-      await chrome.storage.sync.clear();
+      await globalThis.__bookmarkSyncBridge.clear();
 
       await chrome.storage.local.set({
         [url1]: highlights1,
@@ -596,7 +603,7 @@ test.describe('Sync scenarios', () => {
         [`${url2}_meta`]: { title: 'page2', lastUpdated: new Date().toISOString(), deletedGroupIds: {} }
       });
 
-      await chrome.storage.sync.set({
+      await globalThis.__bookmarkSyncBridge.set({
         [syncKey1]: { url: url1, title: 'page1', lastUpdated: new Date().toISOString(), highlights: highlights1, deletedGroupIds: {} },
         [syncKey2]: { url: url2, title: 'page2', lastUpdated: new Date().toISOString(), highlights: highlights2, deletedGroupIds: {} },
         sync_meta: {
@@ -622,7 +629,7 @@ test.describe('Sync scenarios', () => {
     expect(response.success).toBeTruthy();
 
     const [syncState, localState] = await Promise.all([
-      background.evaluate(async () => await chrome.storage.sync.get(['sync_meta'])),
+      background.evaluate(async () => await globalThis.__bookmarkSyncBridge.get(['sync_meta'])),
       background.evaluate(async ({ url1, url2 }) => await chrome.storage.local.get([url1, `${url1}_meta`, url2, `${url2}_meta`]), { url1, url2 })
     ]);
 
