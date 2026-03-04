@@ -506,29 +506,29 @@ async function applyMetaDeletedUrls(meta) {
 export function initSyncListener({ onSettingsChanged } = {}) {
   if (!browserAPI.bookmarks) return;
 
-  browserAPI.bookmarks.onChanged.addListener(async (id, changeInfo) => {
-    if (!changeInfo || !changeInfo.title) return;
+  const applyBookmarkChange = async ({ title, url }) => {
+    if (!title || !url) return;
 
-    if (changeInfo.title === SETTINGS_BOOKMARK_TITLE && changeInfo.url) {
-      const settings = decodePayloadFromDataUrl(changeInfo.url);
+    if (title === SETTINGS_BOOKMARK_TITLE) {
+      const settings = decodePayloadFromDataUrl(url);
       if (settings && onSettingsChanged) await onSettingsChanged(settings);
       return;
     }
 
-    if (changeInfo.title === META_BOOKMARK_TITLE && changeInfo.url) {
-      const meta = normalizeSyncMeta(decodePayloadFromDataUrl(changeInfo.url));
+    if (title === META_BOOKMARK_TITLE) {
+      const meta = normalizeSyncMeta(decodePayloadFromDataUrl(url));
       await applyMetaDeletedUrls(meta);
       return;
     }
 
-    if (!changeInfo.title.startsWith(SYNC_KEYS.HIGHLIGHT_PREFIX) || !changeInfo.url) return;
-    const incoming = decodePayloadFromDataUrl(changeInfo.url);
+    if (!title.startsWith(SYNC_KEYS.HIGHLIGHT_PREFIX)) return;
+    const incoming = decodePayloadFromDataUrl(url);
     if (!incoming || !incoming.url) return;
 
-    const url = incoming.url;
-    const localResult = await browserAPI.storage.local.get([url, `${url}${STORAGE_KEYS.META_SUFFIX}`]);
-    const localHighlights = localResult[url] || [];
-    const localMeta = localResult[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
+    const pageUrl = incoming.url;
+    const localResult = await browserAPI.storage.local.get([pageUrl, `${pageUrl}${STORAGE_KEYS.META_SUFFIX}`]);
+    const localHighlights = localResult[pageUrl] || [];
+    const localMeta = localResult[`${pageUrl}${STORAGE_KEYS.META_SUFFIX}`] || {};
 
     const merged = mergeHighlights(
       { highlights: localHighlights, deletedGroupIds: localMeta.deletedGroupIds || {} },
@@ -536,8 +536,8 @@ export function initSyncListener({ onSettingsChanged } = {}) {
     );
 
     await browserAPI.storage.local.set({
-      [url]: merged.highlights,
-      [`${url}${STORAGE_KEYS.META_SUFFIX}`]: {
+      [pageUrl]: merged.highlights,
+      [`${pageUrl}${STORAGE_KEYS.META_SUFFIX}`]: {
         ...localMeta,
         title: incoming.title || localMeta.title || '',
         lastUpdated: incoming.lastUpdated || localMeta.lastUpdated || '',
@@ -545,8 +545,18 @@ export function initSyncListener({ onSettingsChanged } = {}) {
       },
     });
 
-    await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: merged.highlights });
+    await broadcastToTabsByUrl(pageUrl, { action: 'refreshHighlights', highlights: merged.highlights });
+  };
+
+  browserAPI.bookmarks.onChanged.addListener(async (_id, changeInfo) => {
+    await applyBookmarkChange(changeInfo || {});
   });
+
+  if (browserAPI.bookmarks.onCreated && browserAPI.bookmarks.onCreated.addListener) {
+    browserAPI.bookmarks.onCreated.addListener(async (_id, bookmarkNode) => {
+      await applyBookmarkChange(bookmarkNode || {});
+    });
+  }
 
   browserAPI.bookmarks.onRemoved.addListener(async (_id, removeInfo) => {
     const node = removeInfo && removeInfo.node;

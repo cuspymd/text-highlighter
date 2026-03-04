@@ -270,7 +270,48 @@ describe('sync-service (bookmark-based)', () => {
     it('registers bookmark listeners', () => {
       initSyncListener({});
       expect(chrome.bookmarks.onChanged.addListener).toHaveBeenCalledTimes(1);
+      expect(chrome.bookmarks.onCreated.addListener).toHaveBeenCalledTimes(1);
       expect(chrome.bookmarks.onRemoved.addListener).toHaveBeenCalledTimes(1);
+    });
+
+
+
+    it('invokes onSettingsChanged when settings bookmark is newly created', async () => {
+      const onSettingsChanged = jest.fn();
+      initSyncListener({ onSettingsChanged });
+      const listener = chrome.bookmarks.onCreated.addListener.mock.calls.at(-1)[0];
+
+      const payload = { customColors: [], minimapVisible: true };
+      const dataUrl = `data:application/json;base64,${Buffer.from(JSON.stringify(payload)).toString('base64')}`;
+
+      await listener('new-id', { title: 'settings', url: dataUrl });
+      expect(onSettingsChanged).toHaveBeenCalledWith(payload);
+    });
+
+    it('applies highlight data when highlight bookmark is newly created', async () => {
+      initSyncListener({});
+      const listener = chrome.bookmarks.onCreated.addListener.mock.calls.at(-1)[0];
+
+      const incoming = {
+        url: 'https://new-page.test',
+        title: '새 페이지',
+        lastUpdated: new Date().toISOString(),
+        highlights: [{ groupId: 'g1', updatedAt: Date.now(), text: '새 하이라이트', ranges: [] }],
+        deletedGroupIds: {},
+      };
+
+      chrome.storage.local.get.mockResolvedValueOnce({
+        'https://new-page.test': [],
+        'https://new-page.test_meta': {},
+      });
+
+      const dataUrl = `data:application/json;base64,${Buffer.from(JSON.stringify(incoming)).toString('base64')}`;
+      await listener('new-hl', { title: 'hl_new', url: dataUrl });
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        'https://new-page.test': expect.any(Array),
+        'https://new-page.test_meta': expect.objectContaining({ title: '새 페이지' }),
+      }));
     });
 
     it('invokes onSettingsChanged when settings bookmark changes', async () => {

@@ -53,6 +53,9 @@ export default {
     onChanged: {
       addListener: jest.fn(),
     },
+    onCreated: {
+      addListener: jest.fn(),
+    },
     onRemoved: {
       addListener: jest.fn(),
     },
