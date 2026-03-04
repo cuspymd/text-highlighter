@@ -105,6 +105,51 @@ async function installStorageSyncBookmarkBridge(background) {
       if (existing) await chrome.bookmarks.remove(existing.id);
     };
 
+    const broadcastByUrl = async (url, message) => {
+      const tabs = await chrome.tabs.query({ url });
+      for (const tab of tabs) {
+        try { await chrome.tabs.sendMessage(tab.id, message); } catch {}
+      }
+    };
+
+    const applySettingsPayload = async (settings) => {
+      if (!settings) return;
+      const toSet = {};
+      if (settings.customColors !== undefined) toSet.customColors = settings.customColors;
+      if (settings.minimapVisible !== undefined) toSet.minimapVisible = settings.minimapVisible;
+      if (settings.selectionControlsVisible !== undefined) toSet.selectionControlsVisible = settings.selectionControlsVisible;
+      if (Object.keys(toSet).length > 0) await chrome.storage.local.set(toSet);
+
+      const tabs = await chrome.tabs.query({});
+      for (const tab of tabs) {
+        try {
+          if (settings.customColors !== undefined) {
+            await chrome.tabs.sendMessage(tab.id, { action: 'colorsUpdated', colors: settings.customColors || [] });
+          }
+          if (settings.minimapVisible !== undefined) {
+            await chrome.tabs.sendMessage(tab.id, { action: 'setMinimapVisibility', visible: settings.minimapVisible });
+          }
+          if (settings.selectionControlsVisible !== undefined) {
+            await chrome.tabs.sendMessage(tab.id, { action: 'setSelectionControlsVisibility', visible: settings.selectionControlsVisible });
+          }
+        } catch {}
+      }
+    };
+
+    const applyHighlightPayload = async (payload) => {
+      if (!payload || !payload.url) return;
+      const url = payload.url;
+      await chrome.storage.local.set({
+        [url]: payload.highlights || [],
+        [`${url}_meta`]: {
+          title: payload.title || '',
+          lastUpdated: payload.lastUpdated || '',
+          deletedGroupIds: payload.deletedGroupIds || {},
+        },
+      });
+      await broadcastByUrl(url, { action: 'refreshHighlights', highlights: payload.highlights || [] });
+    };
+
     chrome.storage.sync.get = async (keys) => {
       if (keys == null) return {};
       const list = Array.isArray(keys) ? keys : [keys];
@@ -119,13 +164,37 @@ async function installStorageSyncBookmarkBridge(background) {
     chrome.storage.sync.set = async (items) => {
       for (const [key, value] of Object.entries(items || {})) {
         await upsertByTitle(key, value);
+
+        if (key === 'settings') {
+          await applySettingsPayload(value);
+        } else if (key === 'sync_meta') {
+          const deleted = (value && value.deletedUrls) || {};
+          for (const [url, deletedAt] of Object.entries(deleted)) {
+            if (!deletedAt) continue;
+            await chrome.storage.local.remove([url, `${url}_meta`]);
+            await broadcastByUrl(url, { action: 'refreshHighlights', highlights: [] });
+          }
+        } else if (key.startsWith('hl_')) {
+          await applyHighlightPayload(value);
+        }
       }
     };
 
     chrome.storage.sync.remove = async (keys) => {
       const list = Array.isArray(keys) ? keys : [keys];
       for (const key of list) {
+        const existing = await findByTitle(key);
+        const payload = existing && existing.url ? fromDataUrl(existing.url) : null;
         await removeByTitle(key);
+
+        if (key.startsWith('hl_') && payload && payload.url) {
+          const meta = (await chrome.storage.sync.get('sync_meta')).sync_meta || {};
+          const deletedUrls = meta.deletedUrls || {};
+          if (deletedUrls[payload.url]) {
+            await chrome.storage.local.remove([payload.url, `${payload.url}_meta`]);
+            await broadcastByUrl(payload.url, { action: 'refreshHighlights', highlights: [] });
+          }
+        }
       }
     };
 
