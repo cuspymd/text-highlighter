@@ -42,7 +42,20 @@ export default {
     },
     onChanged: {
       addListener: jest.fn(),
-    }
+    },
+  },
+  bookmarks: {
+    search: jest.fn(() => Promise.resolve([])),
+    create: jest.fn(() => Promise.resolve({ id: 'bookmark-id' })),
+    update: jest.fn((_id, changes) => Promise.resolve({ id: 'bookmark-id', ...changes })),
+    remove: jest.fn(() => Promise.resolve()),
+    getChildren: jest.fn(() => Promise.resolve([])),
+    onChanged: {
+      addListener: jest.fn(),
+    },
+    onRemoved: {
+      addListener: jest.fn(),
+    },
   },
   contextMenus: {
     create: jest.fn(),

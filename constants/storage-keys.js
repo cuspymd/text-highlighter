@@ -2,7 +2,7 @@ export const STORAGE_KEYS = {
   CUSTOM_COLORS: 'customColors',
   MINIMAP_VISIBLE: 'minimapVisible',
   SELECTION_CONTROLS_VISIBLE: 'selectionControlsVisible',
-  SYNC_MIGRATION_DONE: 'syncMigrationDone',
+  BOOKMARK_MIGRATION_DONE: 'bookmarkMigrationDone',
   META_SUFFIX: '_meta',
 };
 
