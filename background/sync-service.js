@@ -15,6 +15,7 @@ const SYNC_REMOVAL_MAX_RETRIES = 3;
 const ROOT_FOLDER_TITLE = 'Text Highlighter Sync';
 const SETTINGS_BOOKMARK_TITLE = SYNC_KEYS.SETTINGS;
 const META_BOOKMARK_TITLE = SYNC_KEYS.META;
+const LEGACY_SYNC_MIGRATION_KEY = 'syncMigrationDone';
 
 const pendingSyncRemovalResolutions = new Map();
 
@@ -372,8 +373,17 @@ export async function clearAllSyncedHighlights() {
 export async function migrateLocalToSync() {
   if (!hasBookmarkSyncAPI()) return;
 
-  const flagResult = await browserAPI.storage.local.get(STORAGE_KEYS.BOOKMARK_MIGRATION_DONE);
-  if (flagResult[STORAGE_KEYS.BOOKMARK_MIGRATION_DONE]) return;
+  const flagResult = await browserAPI.storage.local.get([
+    STORAGE_KEYS.BOOKMARK_MIGRATION_DONE,
+    LEGACY_SYNC_MIGRATION_KEY,
+  ]);
+
+  if (flagResult[STORAGE_KEYS.BOOKMARK_MIGRATION_DONE]) {
+    if (!flagResult[LEGACY_SYNC_MIGRATION_KEY]) {
+      await browserAPI.storage.local.set({ [LEGACY_SYNC_MIGRATION_KEY]: true });
+    }
+    return;
+  }
 
   try {
     const syncedSettings = await getSyncedSettings();
@@ -459,6 +469,7 @@ export async function migrateLocalToSync() {
 
     await browserAPI.storage.local.set({
       [STORAGE_KEYS.BOOKMARK_MIGRATION_DONE]: true,
+      [LEGACY_SYNC_MIGRATION_KEY]: true,
     });
   } catch (e) {
     debugLog('Bookmark sync migration error:', e.message);

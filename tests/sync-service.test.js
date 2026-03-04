@@ -9,6 +9,7 @@ import {
   clearAllSyncedHighlights,
   initSyncListener,
   syncSaveHighlights,
+  migrateLocalToSync,
 } from '../background/sync-service.js';
 
 const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -263,6 +264,20 @@ describe('sync-service (bookmark-based)', () => {
       expect(updatedMeta.deletedUrls['https://b.com']).toBe(now);
 
       Date.now.mockRestore();
+    });
+  });
+
+
+  describe('migration legacy compatibility', () => {
+    it('backfills legacy syncMigrationDone when bookmarkMigrationDone is already true', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({
+        bookmarkMigrationDone: true,
+        syncMigrationDone: false,
+      });
+
+      await migrateLocalToSync();
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({ syncMigrationDone: true });
     });
   });
 
