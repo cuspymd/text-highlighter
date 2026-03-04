@@ -77,21 +77,23 @@ describe('sync-service (bookmark-based)', () => {
         selectionControlsVisible: true,
       });
 
-      chrome.bookmarks.search.mockResolvedValueOnce([]);
-      chrome.bookmarks.create.mockResolvedValueOnce({ id: 'root-folder' });
-      chrome.bookmarks.getChildren.mockResolvedValueOnce([]);
-      chrome.bookmarks.create.mockResolvedValueOnce({ id: 'settings-bookmark' });
+      chrome.bookmarks.search.mockResolvedValue([{ id: 'root-folder', title: 'Text Highlighter Sync' }]);
+      chrome.bookmarks.getChildren.mockResolvedValue([]);
 
       await saveSettingsToSync();
 
-      const settingsCreateCall = chrome.bookmarks.create.mock.calls.find(call => call[0].title === 'settings');
-      expect(settingsCreateCall).toBeDefined();
-      expect(settingsCreateCall[0]).toEqual(expect.objectContaining({
+      const settingsOp = [
+        ...chrome.bookmarks.create.mock.calls.map(call => call[0]),
+        ...chrome.bookmarks.update.mock.calls.map(call => call[1]),
+      ].find(op => op && op.title === 'settings');
+
+      expect(settingsOp).toBeDefined();
+      expect(settingsOp).toEqual(expect.objectContaining({
         title: 'settings',
         url: expect.stringContaining('data:application/json;base64,'),
       }));
 
-      const payload = parseBookmarkPayload(settingsCreateCall[0].url);
+      const payload = parseBookmarkPayload(settingsOp.url);
       expect(payload).toMatchObject({
         minimapVisible: false,
         selectionControlsVisible: true,
@@ -121,18 +123,63 @@ describe('sync-service (bookmark-based)', () => {
   });
 
 
+
+  describe('UTF-8 safe bookmark payload encoding', () => {
+    it('saves multilingual settings without throwing when btoa/atob are strict Latin-1', async () => {
+      const originalBtoa = globalThis.btoa;
+      const originalAtob = globalThis.atob;
+
+      try {
+        globalThis.btoa = (str) => {
+          for (let i = 0; i < str.length; i++) {
+            if (str.charCodeAt(i) > 255) {
+              throw new Error('InvalidCharacterError');
+            }
+          }
+          return Buffer.from(str, 'binary').toString('base64');
+        };
+        globalThis.atob = (b64) => Buffer.from(b64, 'base64').toString('binary');
+
+        chrome.storage.local.get.mockResolvedValueOnce({
+          customColors: [{ id: 'custom_ko', color: '#12AB34', nameKey: '커스텀😀' }],
+          minimapVisible: true,
+          selectionControlsVisible: false,
+        });
+
+        chrome.bookmarks.search.mockResolvedValue([{ id: 'root-folder', title: 'Text Highlighter Sync' }]);
+        chrome.bookmarks.getChildren.mockResolvedValue([]);
+
+        await expect(saveSettingsToSync()).resolves.toBeUndefined();
+
+        const settingsOp = [
+          ...chrome.bookmarks.create.mock.calls.map(call => call[0]),
+          ...chrome.bookmarks.update.mock.calls.map(call => call[1]),
+        ].find(op => op && op.title === 'settings');
+
+        expect(settingsOp).toBeDefined();
+        const payload = parseBookmarkPayload(settingsOp.url);
+        expect(payload.customColors[0].nameKey).toBe('커스텀😀');
+      } finally {
+        globalThis.btoa = originalBtoa;
+        globalThis.atob = originalAtob;
+      }
+    });
+  });
+
   describe('bookmark API availability guard', () => {
     it('returns safely when bookmarks API is unavailable', async () => {
       const originalBookmarks = chrome.bookmarks;
-      // Simulate missing permission/API surface
-      // eslint-disable-next-line no-global-assign
-      chrome.bookmarks = undefined;
+      try {
+        // Simulate missing permission/API surface
+        // eslint-disable-next-line no-global-assign
+        chrome.bookmarks = undefined;
 
-      await expect(saveSettingsToSync()).resolves.toBeUndefined();
-      await expect(syncSaveHighlights('https://no-bookmarks.test', [], '', '')).resolves.toBeUndefined();
-      await expect(clearAllSyncedHighlights()).resolves.toBeUndefined();
-
-      chrome.bookmarks = originalBookmarks;
+        await expect(saveSettingsToSync()).resolves.toBeUndefined();
+        await expect(syncSaveHighlights('https://no-bookmarks.test', [], '', '')).resolves.toBeUndefined();
+        await expect(clearAllSyncedHighlights()).resolves.toBeUndefined();
+      } finally {
+        chrome.bookmarks = originalBookmarks;
+      }
     });
   });
 

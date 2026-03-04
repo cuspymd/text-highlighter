@@ -31,13 +31,42 @@ function hasBookmarkSyncAPI() {
   );
 }
 
+function encodeUtf8(value) {
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(value);
+  }
+  return Uint8Array.from(Buffer.from(value, 'utf-8'));
+}
+
+function decodeUtf8(bytes) {
+  if (typeof TextDecoder !== 'undefined') {
+    return new TextDecoder().decode(bytes);
+  }
+  return Buffer.from(bytes).toString('utf-8');
+}
+
 function encodeBase64(value) {
-  if (typeof btoa === 'function') return btoa(value);
-  return Buffer.from(value, 'utf-8').toString('base64');
+  const bytes = encodeUtf8(value);
+
+  if (typeof btoa === 'function') {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  return Buffer.from(bytes).toString('base64');
 }
 
 function decodeBase64(value) {
-  if (typeof atob === 'function') return atob(value);
+  if (typeof atob === 'function') {
+    const binary = atob(value);
+    const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
+    return decodeUtf8(bytes);
+  }
+
   return Buffer.from(value, 'base64').toString('utf-8');
 }
 
