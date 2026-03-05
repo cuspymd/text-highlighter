@@ -3,9 +3,19 @@ import { fileURLToPath } from 'url';
 import { test, expect, expectHighlightSpan, selectTextInElement } from './fixtures';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+async function enableSelectionControls(background) {
+  await background.evaluate(async () => {
+    await new Promise((resolve) => {
+      chrome.storage.local.set({ selectionControlsVisible: true }, resolve);
+    });
+  });
+}
+
 test.describe('Selection Controls Tests', () => {
-  test('Should highlight text using the selection control icon', async ({ page }) => {
+  test('Should highlight text using the selection control icon', async ({ page, background }) => {
+    await enableSelectionControls(background);
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await page.waitForTimeout(200);
 
     const paragraph = page.locator('p:has-text("This is a sample paragraph")');
     const textToSelect = "sample paragraph";
