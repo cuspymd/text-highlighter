@@ -35,8 +35,8 @@ npm install
 
 This extension supports:
 - **Chrome**: Manifest V3 with native Chrome APIs
-- **Firefox**: Manifest V3 with native WebExtensions APIs
-- **Firefox for Android**: Manifest V3 with mobile-optimized UI (requires Firefox 120.0+)
+- **Firefox**: Manifest V3 with native WebExtensions APIs (requires Firefox 140.0+)
+- **Firefox for Android**: Manifest V3 with mobile-optimized UI (requires Firefox for Android 142.0+)
 
 #### Firefox Android Notes
 
