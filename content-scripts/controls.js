@@ -1020,6 +1020,7 @@ function hideSelectionIcon() {
 // Show selection controls (reusing existing controls.js UI without delete button)
 function showSelectionControls(mouseX, mouseY) {
   if (!currentSelection) return;
+  const iconRect = selectionIcon ? selectionIcon.getBoundingClientRect() : null;
   
   hideSelectionControls(); // Remove any existing controls
   
@@ -1088,6 +1089,19 @@ function showSelectionControls(mouseX, mouseY) {
     }
   }
   
+  // Ensure controls cover the icon center point so follow-up click
+  // at icon coordinates lands inside controls.
+  if (iconRect) {
+    const iconCenterX = iconRect.left + iconRect.width / 2;
+    const iconCenterY = iconRect.top + iconRect.height / 2;
+    const minLeft = 0;
+    const minTop = 0;
+    const maxLeft = Math.max(0, viewportWidth - controlsRect.width);
+    const maxTop = Math.max(0, viewportHeight - controlsRect.height);
+    leftPosition = Math.min(Math.max(iconCenterX - controlsRect.width / 2, minLeft), maxLeft);
+    topPosition = Math.min(Math.max(iconCenterY - controlsRect.height / 2, minTop), maxTop);
+  }
+
   // Set final position and make visible
   selectionControlsContainer.style.left = `${leftPosition}px`;
   selectionControlsContainer.style.top = `${topPosition}px`;
