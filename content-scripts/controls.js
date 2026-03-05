@@ -871,6 +871,7 @@ function handleSelectionMouseUp(e) {
 // Handle touch end event to detect text selection on mobile
 function handleSelectionTouchEnd(e) {
   if (!selectionControlsEnabled) return;
+  if (selectionControlsContainer) return;
 
   const target = e.target;
   if (target.classList.contains('text-highlighter-extension') ||
@@ -925,6 +926,7 @@ function handleSelectionChange() {
 
 // Show selection icon near mouse position
 function showSelectionIcon(mouseX, mouseY) {
+  if (selectionControlsContainer) return;
   hideSelectionIcon(); // Remove any existing icon
   
   selectionIcon = document.createElement('div');

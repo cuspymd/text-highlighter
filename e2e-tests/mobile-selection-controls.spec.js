@@ -117,6 +117,26 @@ test.describe('Mobile Selection Controls Regression', () => {
     await expect(selectionControls).toBeHidden();
   });
 
+  test('Should not re-show selection icon on touchend while selection controls are open', async ({ page, background }) => {
+    await enableSelectionControls(background);
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await page.waitForTimeout(200);
+
+    const selectionIcon = await showSelectionIconForText(page, 'sample paragraph');
+    await openSelectionControlsWithTouchPointerDown(selectionIcon);
+
+    const selectionControls = page.locator('.text-highlighter-selection-controls');
+    await expect(selectionControls).toBeVisible();
+
+    await page.evaluate(() => {
+      document.body.dispatchEvent(new Event('touchend', { bubbles: true, cancelable: true }));
+    });
+
+    await page.waitForTimeout(350);
+    await expect(page.locator('.text-highlighter-selection-icon')).toHaveCount(0);
+    await expect(selectionControls).toBeVisible();
+  });
+
   test('Controls should overlap icon point on click fallback open', async ({ page, background }) => {
     await enableSelectionControls(background);
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
