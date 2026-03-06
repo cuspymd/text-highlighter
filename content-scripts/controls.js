@@ -12,6 +12,11 @@ let selectionIcon = null;
 let selectionControlsContainer = null;
 let currentSelection = null;
 let uiMountRoot = null;
+let selectionViewportListenersAdded = false;
+let selectionScrollRestoreTimer = null;
+let selectionIconHiddenForScroll = false;
+
+const SELECTION_SCROLL_RESTORE_DELAY_MS = 220;
 
 // Mobile platform detection
 let isMobilePlatform = false;
@@ -832,6 +837,161 @@ function initializeSelectionControls() {
 
   // Add touch event support for mobile
   document.addEventListener('touchend', handleSelectionTouchEnd);
+
+  if (!selectionViewportListenersAdded) {
+    window.addEventListener('scroll', handleSelectionScroll, { passive: true });
+    window.addEventListener('resize', handleSelectionViewportChange, { passive: true });
+    selectionViewportListenersAdded = true;
+  }
+}
+
+function calculateSelectionIconPosition(mouseX, mouseY) {
+  const iconWidth = isMobilePlatform ? 48 : 29;
+  const iconHeight = isMobilePlatform ? 48 : 29;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const selectionRect = currentSelection && currentSelection.range
+    ? currentSelection.range.getBoundingClientRect()
+    : null;
+
+  let leftPosition;
+  let topPosition;
+  if (isMobilePlatform) {
+    const defaultTopPosition = mouseY + 30;
+    const isBottomOverflow = defaultTopPosition + iconHeight > viewportHeight - 10;
+
+    if (isBottomOverflow) {
+      topPosition = selectionRect ? selectionRect.top : mouseY;
+
+      const preferredLeftPosition = (selectionRect ? selectionRect.left : mouseX) - iconWidth - 30;
+      if (preferredLeftPosition >= 10) {
+        leftPosition = preferredLeftPosition;
+      } else {
+        leftPosition = (selectionRect ? selectionRect.right : mouseX) + 30;
+      }
+    } else {
+      topPosition = defaultTopPosition;
+      leftPosition = mouseX - iconWidth - 10;
+
+      if (selectionRect) {
+        leftPosition = Math.max(leftPosition, selectionRect.left);
+      }
+    }
+
+    leftPosition = Math.max(10, Math.min(leftPosition, viewportWidth - iconWidth - 10));
+    topPosition = Math.max(10, Math.min(topPosition, viewportHeight - iconHeight - 10));
+  } else {
+    leftPosition = mouseX + 10;
+
+    if (mouseX > viewportWidth * 0.7) {
+      leftPosition = mouseX - iconWidth - 10;
+
+      if (leftPosition < 10) {
+        leftPosition = 10;
+      }
+    }
+
+    topPosition = mouseY - 30;
+    if (mouseY - 30 < 0) {
+      topPosition = mouseY + 10;
+
+      if (topPosition + iconHeight > viewportHeight - 10) {
+        topPosition = viewportHeight - iconHeight - 10;
+      }
+    }
+  }
+
+  return {
+    left: leftPosition,
+    top: topPosition
+  };
+}
+
+function positionSelectionIcon(mouseX, mouseY) {
+  if (!selectionIcon) return;
+  const pos = calculateSelectionIconPosition(mouseX, mouseY);
+  selectionIcon.style.left = `${pos.left}px`;
+  selectionIcon.style.top = `${pos.top}px`;
+}
+
+function hideSelectionIconForScroll() {
+  if (!selectionIcon || selectionIconHiddenForScroll) return;
+  selectionIcon.style.visibility = 'hidden';
+  selectionIcon.style.pointerEvents = 'none';
+  selectionIconHiddenForScroll = true;
+}
+
+function showSelectionIconAfterScroll() {
+  if (!selectionIcon || !selectionIconHiddenForScroll) return;
+  selectionIcon.style.visibility = '';
+  selectionIcon.style.pointerEvents = '';
+  selectionIconHiddenForScroll = false;
+}
+
+function getSelectionAnchorFromCurrentRange() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return null;
+  }
+
+  const rect = currentSelection && currentSelection.range && typeof currentSelection.range.getBoundingClientRect === 'function'
+    ? currentSelection.range.getBoundingClientRect()
+    : null;
+
+  if (!rect || (rect.width === 0 && rect.height === 0)) {
+    return null;
+  }
+
+  return {
+    x: isMobilePlatform ? rect.left + rect.width / 2 : rect.right,
+    y: isMobilePlatform ? rect.bottom : rect.top
+  };
+}
+
+function handleSelectionScroll() {
+  if (!selectionIcon || !currentSelection || selectionControlsContainer) return;
+
+  if (!isMobilePlatform) {
+    handleSelectionViewportChange();
+    return;
+  }
+
+  hideSelectionIconForScroll();
+
+  if (selectionScrollRestoreTimer) {
+    clearTimeout(selectionScrollRestoreTimer);
+  }
+
+  selectionScrollRestoreTimer = setTimeout(() => {
+    selectionScrollRestoreTimer = null;
+
+    if (!selectionIcon || !currentSelection || selectionControlsContainer) return;
+
+    const anchor = getSelectionAnchorFromCurrentRange();
+    if (!anchor) {
+      hideSelectionIcon();
+      return;
+    }
+
+    currentSelection.mouseX = anchor.x;
+    currentSelection.mouseY = anchor.y;
+    positionSelectionIcon(anchor.x, anchor.y);
+    showSelectionIconAfterScroll();
+  }, SELECTION_SCROLL_RESTORE_DELAY_MS);
+}
+
+function handleSelectionViewportChange() {
+  if (!selectionIcon || !currentSelection || selectionControlsContainer) return;
+  const anchor = getSelectionAnchorFromCurrentRange();
+  if (!anchor) {
+    hideSelectionIcon();
+    return;
+  }
+
+  currentSelection.mouseX = anchor.x;
+  currentSelection.mouseY = anchor.y;
+  positionSelectionIcon(anchor.x, anchor.y);
+  showSelectionIconAfterScroll();
 }
 
 // Handle mouse up event to detect text selection
@@ -934,74 +1094,7 @@ function showSelectionIcon(mouseX, mouseY) {
   selectionIcon.innerHTML = `<img src="${browserAPI.runtime.getURL('images/icon48.png')}" alt="Highlight" style="width: 19px; height: 19px;">`;
   selectionIcon.title = getMessage('highlightText');
   
-  // Position the icon with viewport boundary checking
-  const iconWidth = isMobilePlatform ? 48 : 29;
-  const iconHeight = isMobilePlatform ? 48 : 29;
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const selectionRect = currentSelection && currentSelection.range
-    ? currentSelection.range.getBoundingClientRect()
-    : null;
-  
-  let leftPosition;
-  let topPosition;
-  if (isMobilePlatform) {
-    // Calculate Y first on mobile to decide whether bottom overflow fallback is needed.
-    const defaultTopPosition = mouseY + 30;
-    const isBottomOverflow = defaultTopPosition + iconHeight > viewportHeight - 10;
-
-    if (isBottomOverflow) {
-      // Keep icon at the same Y band as the selection to avoid native top menu overlap.
-      topPosition = selectionRect ? selectionRect.top : mouseY;
-
-      const preferredLeftPosition = (selectionRect ? selectionRect.left : mouseX) - iconWidth - 30;
-      if (preferredLeftPosition >= 10) {
-        // Prefer placing icon on the left side of selection whenever possible.
-        leftPosition = preferredLeftPosition;
-      } else {
-        // Place on the right side only when left-side space is not available.
-        leftPosition = (selectionRect ? selectionRect.right : mouseX) + 30;
-      }
-    } else {
-      topPosition = defaultTopPosition;
-      // Default mobile placement stays on the left side of the selection.
-      leftPosition = mouseX - iconWidth - 10;
-
-      // Keep icon from starting left of the selected range.
-      if (selectionRect) {
-        leftPosition = Math.max(leftPosition, selectionRect.left);
-      }
-    }
-
-    leftPosition = Math.max(10, Math.min(leftPosition, viewportWidth - iconWidth - 10));
-    topPosition = Math.max(10, Math.min(topPosition, viewportHeight - iconHeight - 10));
-  } else {
-    // Desktop: calculate X first, then Y.
-    leftPosition = mouseX + 10;
-
-    // Check if mouse is in the right 30% of the viewport (70% threshold)
-    if (mouseX > viewportWidth * 0.7) {
-      leftPosition = mouseX - iconWidth - 10;
-
-      if (leftPosition < 10) {
-        leftPosition = 10;
-      }
-    }
-
-    topPosition = mouseY - 30;
-
-    // Check if icon would go beyond top edge of viewport
-    if (mouseY - 30 < 0) {
-      topPosition = mouseY + 10;
-
-      if (topPosition + iconHeight > viewportHeight - 10) {
-        topPosition = viewportHeight - iconHeight - 10;
-      }
-    }
-  }
-  
-  selectionIcon.style.left = `${leftPosition}px`;
-  selectionIcon.style.top = `${topPosition}px`;
+  positionSelectionIcon(mouseX, mouseY);
   
   let pointerHandled = false;
   // Use pointerdown so we open controls before selection can collapse on click.
@@ -1027,6 +1120,11 @@ function showSelectionIcon(mouseX, mouseY) {
 
 // Hide selection icon
 function hideSelectionIcon() {
+  if (selectionScrollRestoreTimer) {
+    clearTimeout(selectionScrollRestoreTimer);
+    selectionScrollRestoreTimer = null;
+  }
+  selectionIconHiddenForScroll = false;
   if (selectionIcon) {
     selectionIcon.remove();
     selectionIcon = null;
