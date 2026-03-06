@@ -939,18 +939,44 @@ function showSelectionIcon(mouseX, mouseY) {
   const iconHeight = isMobilePlatform ? 48 : 29;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
+  const selectionRect = currentSelection && currentSelection.range
+    ? currentSelection.range.getBoundingClientRect()
+    : null;
   
-  // Calculate horizontal position
   let leftPosition;
+  let topPosition;
   if (isMobilePlatform) {
-    // On mobile, position to the left of selection to avoid right selection handle
-    leftPosition = mouseX - iconWidth - 10;
+    // Calculate Y first on mobile to decide whether bottom overflow fallback is needed.
+    const defaultTopPosition = mouseY + 30;
+    const isBottomOverflow = defaultTopPosition + iconHeight > viewportHeight - 10;
 
-    // If beyond left edge, position to the right instead
-    if (leftPosition < 10) {
-      leftPosition = mouseX + 20;
+    if (isBottomOverflow) {
+      // Keep icon at the same Y band as the selection to avoid native top menu overlap.
+      topPosition = selectionRect ? selectionRect.top : mouseY;
+
+      const preferredLeftPosition = (selectionRect ? selectionRect.left : mouseX) - iconWidth - 30;
+      if (preferredLeftPosition >= 10) {
+        // Prefer placing icon on the left side of selection whenever possible.
+        leftPosition = preferredLeftPosition;
+      } else {
+        // Place on the right side only when left-side space is not available.
+        leftPosition = (selectionRect ? selectionRect.right : mouseX) + 30;
+      }
+    } else {
+      topPosition = defaultTopPosition;
+      // Default mobile placement stays on the left side of the selection.
+      leftPosition = mouseX - iconWidth - 10;
+
+      // Keep icon from starting left of the selected range.
+      if (selectionRect) {
+        leftPosition = Math.max(leftPosition, selectionRect.left);
+      }
     }
+
+    leftPosition = Math.max(10, Math.min(leftPosition, viewportWidth - iconWidth - 10));
+    topPosition = Math.max(10, Math.min(topPosition, viewportHeight - iconHeight - 10));
   } else {
+    // Desktop: calculate X first, then Y.
     leftPosition = mouseX + 10;
 
     // Check if mouse is in the right 30% of the viewport (70% threshold)
@@ -961,19 +987,7 @@ function showSelectionIcon(mouseX, mouseY) {
         leftPosition = 10;
       }
     }
-  }
-  
-  // Calculate vertical position
-  let topPosition;
-  if (isMobilePlatform) {
-    // On mobile, position below selection to avoid overlap with native popup menu
-    topPosition = mouseY + 10;
 
-    // If beyond bottom edge, position above instead
-    if (topPosition + iconHeight > viewportHeight - 10) {
-      topPosition = mouseY - iconHeight - 40;
-    }
-  } else {
     topPosition = mouseY - 30;
 
     // Check if icon would go beyond top edge of viewport
