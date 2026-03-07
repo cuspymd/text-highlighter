@@ -22,7 +22,7 @@ function initializeI18n() {
   });
 }
 
-const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(
+const { showAlertModal } = createLocalizedModalHelpers(
   (key, defaultValue) => browserAPI.i18n.getMessage(key) || defaultValue
 );
 
