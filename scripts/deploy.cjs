@@ -13,6 +13,8 @@ const filesToCopy = [
   'background.js',
   'popup.html',
   'popup.js',
+  'settings.html',
+  'settings.js',
   'styles.css',
   'pages-list.html',
   'pages-list.js',
