@@ -12,9 +12,18 @@ const COLORS = [
   { id: 'orange', nameKey: 'orangeColor', color: '#FFAA55' },
 ];
 
+const DEFAULT_SHORTCUT_COLOR_MAP = {
+  highlight_yellow: 'yellow',
+  highlight_green: 'green',
+  highlight_blue: 'blue',
+  highlight_pink: 'pink',
+  highlight_orange: 'orange',
+};
+
 let currentColors = [...COLORS];
 let platformInfo = { os: 'unknown' };
 let storedShortcuts = {};
+let shortcutColorMap = { ...DEFAULT_SHORTCUT_COLOR_MAP };
 
 function getMessage(key) {
   return browserAPI.i18n.getMessage(key);
@@ -84,8 +93,8 @@ export async function createOrUpdateContextMenus() {
   storedShortcuts = { ...commandShortcuts };
 
   for (const color of currentColors) {
-    const commandName = `highlight_${color.id}`;
-    const shortcutDisplay = commandShortcuts[commandName] || '';
+    const commandName = Object.keys(shortcutColorMap).find(k => shortcutColorMap[k] === color.id) || null;
+    const shortcutDisplay = commandName ? (commandShortcuts[commandName] || '') : '';
     const title = color.colorNumber
       ? `${getMessage(color.nameKey)} ${color.colorNumber}${shortcutDisplay}`
       : `${getMessage(color.nameKey)}${shortcutDisplay}`;
@@ -105,6 +114,22 @@ export async function createOrUpdateContextMenus() {
   }
 
   debugLog('Context menus created with shortcuts:', storedShortcuts);
+}
+
+
+async function loadShortcutColorMap() {
+  const result = await browserAPI.storage.local.get([STORAGE_KEYS.SHORTCUT_COLOR_MAP]);
+  shortcutColorMap = result[STORAGE_KEYS.SHORTCUT_COLOR_MAP] || { ...DEFAULT_SHORTCUT_COLOR_MAP };
+}
+
+export function getShortcutColorMap() {
+  return shortcutColorMap;
+}
+
+export async function saveShortcutColorMap(newMap) {
+  shortcutColorMap = { ...newMap };
+  await browserAPI.storage.local.set({ [STORAGE_KEYS.SHORTCUT_COLOR_MAP]: shortcutColorMap });
+  await saveSettingsToSync();
 }
 
 export async function loadCustomColors() {
@@ -145,6 +170,8 @@ export async function loadCustomColors() {
     if (customColors.length) {
       debugLog('Loaded custom colors:', customColors);
     }
+
+    await loadShortcutColorMap();
   } catch (e) {
     console.error('Error loading custom colors', e);
   }
@@ -186,6 +213,48 @@ export async function addCustomColor(newColorValue) {
  * Clear all custom colors.
  * @returns {{ hadColors: boolean, colors: object[] }}
  */
+export async function updateCustomColor(id, newColorValue) {
+  const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+  const customColors = stored.customColors || [];
+
+  const idx = customColors.findIndex(c => c.id === id);
+  if (idx === -1) return { notFound: true, colors: currentColors };
+
+  const duplicate = [...COLORS, ...customColors].some(
+    c => c.color.toLowerCase() === newColorValue.toLowerCase() && c.id !== id
+  );
+  if (duplicate) return { exists: true, colors: currentColors };
+
+  customColors[idx] = { ...customColors[idx], color: newColorValue };
+  await browserAPI.storage.local.set({ customColors });
+
+  const globalIdx = currentColors.findIndex(c => c.id === id);
+  if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], color: newColorValue };
+
+  await saveSettingsToSync();
+  return { exists: false, colors: currentColors };
+}
+
+export async function removeCustomColor(id) {
+  const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+  let customColors = stored.customColors || [];
+
+  const before = customColors.length;
+  customColors = customColors.filter(c => c.id !== id);
+  if (customColors.length === before) return { notFound: true, colors: currentColors };
+
+  await browserAPI.storage.local.set({ customColors });
+  currentColors = currentColors.filter(c => c.id !== id);
+
+  for (const commandName of Object.keys(shortcutColorMap)) {
+    if (shortcutColorMap[commandName] === id) shortcutColorMap[commandName] = null;
+  }
+  await browserAPI.storage.local.set({ [STORAGE_KEYS.SHORTCUT_COLOR_MAP]: shortcutColorMap });
+
+  await saveSettingsToSync();
+  return { colors: currentColors };
+}
+
 export async function clearCustomColors() {
   const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = result.customColors || [];
@@ -254,6 +323,11 @@ export async function applySettingsFromSync(newSettings) {
   if (newSettings.selectionControlsVisible !== undefined) {
     await browserAPI.storage.local.set({ selectionControlsVisible: newSettings.selectionControlsVisible });
     await broadcastToAllTabs({ action: 'setSelectionControlsVisibility', visible: newSettings.selectionControlsVisible });
+  }
+
+  if (newSettings.shortcutColorMap) {
+    await browserAPI.storage.local.set({ [STORAGE_KEYS.SHORTCUT_COLOR_MAP]: newSettings.shortcutColorMap });
+    shortcutColorMap = newSettings.shortcutColorMap;
   }
 
   return { colorsChanged };

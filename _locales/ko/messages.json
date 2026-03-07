@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: 텍스트 하이라이터"
   },
   "extensionDescription": {
@@ -190,5 +191,47 @@
   },
   "sortOldestFirst": {
     "message": "시간순 정렬 (오래된 순)"
+  },
+  "settingsTitle": {
+    "message": "설정"
+  },
+  "settingsIconLabel": {
+    "message": "설정 열기"
+  },
+  "generalSection": {
+    "message": "일반"
+  },
+  "customColorsSection": {
+    "message": "사용자 정의 색상"
+  },
+  "shortcutsSection": {
+    "message": "단축키"
+  },
+  "addCustomColor": {
+    "message": "+ 색상 추가"
+  },
+  "editColor": {
+    "message": "변경"
+  },
+  "removeColor": {
+    "message": "삭제"
+  },
+  "noCustomColors": {
+    "message": "사용자 정의 색상이 없습니다."
+  },
+  "colorAlreadyExists": {
+    "message": "이미 추가된 색상입니다."
+  },
+  "shortcutSlot": {
+    "message": "슬롯"
+  },
+  "notAssigned": {
+    "message": "(미배정)"
+  },
+  "shortcutHint": {
+    "message": "키 조합은 브라우저 단축키 설정에서 변경할 수 있습니다 (Chrome: chrome://extensions/shortcuts, Firefox: about:addons)."
+  },
+  "colorChangeWarning": {
+    "message": "기존 하이라이트에는 영향을 주지 않습니다."
   }
 }

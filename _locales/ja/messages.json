@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: テキストハイライター"
   },
   "extensionDescription": {
@@ -190,5 +191,47 @@
   },
   "sortOldestFirst": {
     "message": "時間順ソート（古い順）"
+  },
+  "settingsTitle": {
+    "message": "設定"
+  },
+  "settingsIconLabel": {
+    "message": "設定を開く"
+  },
+  "generalSection": {
+    "message": "一般"
+  },
+  "customColorsSection": {
+    "message": "カスタムカラー"
+  },
+  "shortcutsSection": {
+    "message": "キーボードショートカット"
+  },
+  "addCustomColor": {
+    "message": "+ カスタムカラーを追加"
+  },
+  "editColor": {
+    "message": "変更"
+  },
+  "removeColor": {
+    "message": "削除"
+  },
+  "noCustomColors": {
+    "message": "カスタムカラーはまだありません。"
+  },
+  "colorAlreadyExists": {
+    "message": "この色はすでに追加されています。"
+  },
+  "shortcutSlot": {
+    "message": "スロット"
+  },
+  "notAssigned": {
+    "message": "(未割り当て)"
+  },
+  "shortcutHint": {
+    "message": "キーの組み合わせはブラウザのショートカット設定で変更できます (Chrome: chrome://extensions/shortcuts, Firefox: about:addons)."
+  },
+  "colorChangeWarning": {
+    "message": "変更は既存のハイライトには影響しません。"
   }
 }
