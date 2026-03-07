@@ -1,0 +1,349 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="settingsTitle">Settings</title>
+    <link rel="stylesheet" href="shared/modal.css" />
+    <style>
+      :root {
+        --bg: #ffffff;
+        --surface: #f5f5f7;
+        --surface-strong: #ffffff;
+        --text: #1b1b1f;
+        --muted: #64646b;
+        --border: #e1e1e6;
+        --accent: #8b5cf6;
+        --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.12);
+        --danger: #ef4444;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121212;
+          --surface: #1c1c1e;
+          --surface-strong: #222226;
+          --text: #f4f4f5;
+          --muted: #ababba;
+          --border: #36363c;
+          --accent: #a78bfa;
+          --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.25);
+          --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.42);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 14px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, "Segoe UI Variable", "Segoe UI", -apple-system, sans-serif;
+        font-size: 14px;
+      }
+
+      .settings-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-width: 440px;
+        margin: 0 auto;
+      }
+
+      .settings-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+
+      .section-card {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow-1);
+        padding: 16px;
+      }
+
+      .section-title {
+        margin: 0 0 12px;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .toggle-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .toggle-container:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .toggle-container > label:not(.toggle-switch) {
+        margin: 0;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 42px;
+        height: 24px;
+        flex: 0 0 42px;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        background: #b8bcc6;
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+
+      .toggle-slider::before {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        top: 3px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      }
+
+      .toggle-switch input:checked + .toggle-slider {
+        background: var(--accent);
+      }
+
+      .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(18px);
+      }
+
+      .btn {
+        min-height: 36px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface-strong);
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn:hover {
+        background: var(--surface);
+      }
+
+      .btn-primary {
+        color: var(--accent);
+        border-color: rgba(139, 92, 246, 0.45);
+      }
+
+      .btn-primary:hover {
+        background: rgba(139, 92, 246, 0.05);
+      }
+
+      /* Custom Colors */
+      .color-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .color-row:last-child {
+        border-bottom: none;
+      }
+
+      .color-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .color-swatch {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+      }
+
+      .color-name {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .color-hex {
+        font-size: 12px;
+        color: var(--muted);
+        font-family: monospace;
+      }
+
+      .color-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .btn-icon {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 8px;
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 12px;
+        transition: all 0.2s ease;
+      }
+      .btn-icon:hover {
+        background: var(--surface-strong);
+        color: var(--text);
+      }
+
+      .btn-danger:hover {
+        color: var(--danger);
+        border-color: rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.05);
+      }
+
+      #add-custom-color-btn {
+        margin-top: 12px;
+        width: 100%;
+      }
+
+      /* Shortcuts */
+      .shortcut-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .shortcut-row:last-child {
+        border-bottom: none;
+      }
+
+      .shortcut-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .shortcut-slot {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .key-badge {
+        font-family: monospace;
+        font-size: 12px;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+
+      .shortcut-select {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--surface-strong);
+        color: var(--text);
+        font-size: 13px;
+        outline: none;
+        cursor: pointer;
+      }
+
+      .hint-text {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 12px 0 0;
+        line-height: 1.4;
+      }
+
+      .empty-text {
+        color: var(--muted);
+        font-size: 13px;
+        font-style: italic;
+        padding: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="settings-shell">
+      <header class="settings-header">
+        <h1 data-i18n="settingsTitle">Settings</h1>
+      </header>
+
+      <!-- General Section -->
+      <section class="section-card">
+        <h2 class="section-title" data-i18n="generalSection">General</h2>
+        <div class="toggle-container">
+          <label for="minimap-toggle" data-i18n="showMinimap">Show Minimap</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="minimap-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-container" id="selection-controls-row">
+          <label for="selection-controls-toggle" data-i18n="showControlsOnSelection">Show Control UI on Text Selection</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="selection-controls-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Custom Colors Section -->
+      <section class="section-card">
+        <h2 class="section-title" data-i18n="customColorsSection">Custom Colors</h2>
+        <div id="custom-colors-list"></div>
+        <button id="add-custom-color-btn" class="btn btn-primary" data-i18n="addCustomColor">+ Add Custom Color</button>
+        <input type="color" id="color-picker-hidden" style="display:none" />
+      </section>
+
+      <!-- Keyboard Shortcuts Section -->
+      <section class="section-card">
+        <h2 class="section-title" data-i18n="shortcutsSection">Keyboard Shortcuts</h2>
+        <div id="shortcuts-list"></div>
+        <p class="hint-text" data-i18n="shortcutHint">
+          Key combinations can be changed in browser shortcut settings
+          (Chrome: chrome://extensions/shortcuts, Firefox: about:addons).
+        </p>
+      </section>
+    </div>
+    <script type="module" src="settings.js"></script>
+  </body>
+</html>

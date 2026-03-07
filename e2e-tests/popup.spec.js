@@ -32,6 +32,11 @@ test.describe('Popup Tests', () => {
     }, "popupTitle");
 
     await expect(h1Locator).toHaveText(expectedH1Text);
+
+    // Verify settings button exists
+    const settingsBtn = popupPage.locator('#open-settings');
+    await expect(settingsBtn).toBeVisible();
+
     await popupPage.close();
   });
 
@@ -192,14 +197,14 @@ test.describe('Popup Tests', () => {
     await expect(selectionIcon).toBeVisible();
   });
 
-  test('Selection icon display test: Verify icon display when selecting after enabling in popup', async ({ page, context, background, extensionId }) => {
-    const popupPage = await context.newPage();
-    await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
+  test('Selection icon display test: Verify icon display when selecting after enabling in settings', async ({ page, context, background, extensionId }) => {
+    const settingsPage = await context.newPage();
+    await settingsPage.goto(`chrome-extension://${extensionId}/settings.html`);
 
-    const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
+    const selectionControlsToggle = settingsPage.locator('#selection-controls-toggle');
     await expect(selectionControlsToggle).toBeAttached();
-    // Wait until popup async initialization applies stored/default state.
-    await popupPage.waitForFunction(async () => {
+    // Wait until async initialization applies stored/default state.
+    await settingsPage.waitForFunction(async () => {
       const toggle = document.getElementById('selection-controls-toggle');
       if (!toggle) return false;
       const result = await chrome.storage.local.get(['selectionControlsVisible']);
@@ -213,7 +218,7 @@ test.describe('Popup Tests', () => {
 
     await expect(selectionControlsToggle).toBeChecked();
 
-    await popupPage.close();
+    await settingsPage.close();
 
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
@@ -228,7 +233,7 @@ test.describe('Popup Tests', () => {
     await expect(selectionIcon).toBeVisible();
   });
 
-  test('Setting change immediate reflection test: Verify popup toggle changes are applied immediately to other open tabs', async ({ page, context, background, extensionId }) => {
+  test('Setting change immediate reflection test: Verify settings toggle changes are applied immediately to other open tabs', async ({ page, context, background, extensionId }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
     const secondPage = await context.newPage();
     await secondPage.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
@@ -239,18 +244,17 @@ test.describe('Popup Tests', () => {
     await expect(secondPage.locator('.text-highlighter-selection-icon')).toBeVisible();
 
     await page.bringToFront();
-    const tabId = await getCurrentTabId(background);
-    const popupPage = await context.newPage();
-    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+    const settingsPage = await context.newPage();
+    await settingsPage.goto(`chrome-extension://${extensionId}/settings.html`);
 
-    const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
+    const selectionControlsToggle = settingsPage.locator('#selection-controls-toggle');
     await expect(selectionControlsToggle).toBeAttached();
     await selectionControlsToggle.evaluate((el) => {
       el.checked = false;
       el.dispatchEvent(new Event('change'));
     });
     await expect(selectionControlsToggle).not.toBeChecked();
-    await popupPage.close();
+    await settingsPage.close();
 
     await secondPage.bringToFront();
     await secondPage.keyboard.press('Escape');
@@ -264,7 +268,7 @@ test.describe('Popup Tests', () => {
     await secondPage.close();
   });
 
-  test('Add custom color in control UI and then remove via "Delete Custom Colors" in popup', async ({ page, context, background, extensionId }) => {
+  test('Add custom color in control UI and then remove via settings page', async ({ page, context, background, extensionId }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
     const h1 = page.locator('h1');
@@ -295,20 +299,15 @@ test.describe('Popup Tests', () => {
       return Array.from(controls.querySelectorAll('.color-button')).some(b => getComputedStyle(b).backgroundColor === rgb);
     }, newColorRgb);
 
-    const tabId = await getCurrentTabId(background);
-    const popupPage = await context.newPage();
-    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+    const settingsPage = await context.newPage();
+    await settingsPage.goto(`chrome-extension://${extensionId}/settings.html`);
 
-    await popupPage.click('#delete-custom-colors');
-    
-    const confirmBtn = popupPage.locator('.modal-confirm');
-    await expect(confirmBtn).toBeVisible();
-    await confirmBtn.click();
-    
-    const okBtn = popupPage.locator('.modal-confirm');
-    await expect(okBtn).toBeVisible();
-    await okBtn.click();
+    // Click the first remove button in custom colors section
+    const removeBtn = settingsPage.locator('.btn-danger').first();
+    await removeBtn.click();
 
+    // Go back to content page and verify it's removed
+    await page.bringToFront();
     await page.waitForFunction((rgb) => {
       const controls = document.querySelector('.text-highlighter-controls');
       return !Array.from(controls.querySelectorAll('.color-button')).some(b => getComputedStyle(b).backgroundColor === rgb);
@@ -317,15 +316,15 @@ test.describe('Popup Tests', () => {
     const colorButtons = controls.locator('.color-button');
     await expect(colorButtons).toHaveCount(5);
 
-    await popupPage.close();
+    await settingsPage.close();
   });
 
   test('Verify highlight behavior using selection icon', async ({ page, context, background, extensionId }) => {
-    // Check selection-controls-toggle after loading popup.html
-    const popupPage = await context.newPage();
-    await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
+    // Check selection-controls-toggle after loading settings.html
+    const settingsPage = await context.newPage();
+    await settingsPage.goto(`chrome-extension://${extensionId}/settings.html`);
 
-    const selectionControlsToggle = popupPage.locator('#selection-controls-toggle');
+    const selectionControlsToggle = settingsPage.locator('#selection-controls-toggle');
     await expect(selectionControlsToggle).toBeAttached();
     await selectionControlsToggle.evaluate((el) => {
       el.checked = true;
@@ -333,7 +332,7 @@ test.describe('Popup Tests', () => {
     });
     await expect(selectionControlsToggle).toBeChecked();
 
-    await popupPage.close();
+    await settingsPage.close();
 
     // Select h1 tag after loading test-page.html
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);

@@ -17,6 +17,10 @@ import {
   clearCustomColors,
   broadcastSettingsToTabs,
   createOrUpdateContextMenus,
+  updateCustomColor,
+  removeCustomColor,
+  getShortcutColorMap,
+  saveShortcutColorMap,
 } from './settings-service.js';
 
 function successResponse(data = {}) { return { success: true, ...data }; }
@@ -87,7 +91,37 @@ async function handleAddColor(message) {
     await createOrUpdateContextMenus();
     await broadcastToAllTabs({ action: 'colorsUpdated', colors });
   }
-  return successResponse({ colors });
+  return successResponse({ exists, colors });
+}
+
+async function handleUpdateCustomColor(message) {
+  if (!message.id || !message.color) return errorResponse('Missing id or color');
+  const result = await updateCustomColor(message.id, message.color);
+  if (result.notFound) return errorResponse('Color not found');
+  if (result.exists) return successResponse({ exists: true, colors: result.colors });
+  await createOrUpdateContextMenus();
+  await broadcastToAllTabs({ action: 'colorsUpdated', colors: result.colors });
+  return successResponse({ colors: result.colors });
+}
+
+async function handleRemoveCustomColor(message) {
+  if (!message.id) return errorResponse('Missing id');
+  const result = await removeCustomColor(message.id);
+  if (result.notFound) return errorResponse('Color not found');
+  await createOrUpdateContextMenus();
+  await broadcastToAllTabs({ action: 'colorsUpdated', colors: result.colors });
+  return successResponse({ colors: result.colors });
+}
+
+async function handleGetShortcutColorMap(_message) {
+  return successResponse({ shortcutColorMap: getShortcutColorMap() });
+}
+
+async function handleSaveShortcutColorMap(message) {
+  if (!message.shortcutColorMap) return errorResponse('Missing shortcutColorMap');
+  await saveShortcutColorMap(message.shortcutColorMap);
+  await createOrUpdateContextMenus();
+  return successResponse();
 }
 
 async function handleSaveHighlights(message) {
@@ -174,6 +208,7 @@ async function handleGetAllHighlightedPages(_message) {
     STORAGE_KEYS.SYNC_MIGRATION_DONE,
     STORAGE_KEYS.MINIMAP_VISIBLE,
     STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+    STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   ]);
 
   for (const key in result) {
@@ -211,6 +246,7 @@ async function handleDeleteAllHighlightedPages(_message) {
     STORAGE_KEYS.SYNC_MIGRATION_DONE,
     STORAGE_KEYS.MINIMAP_VISIBLE,
     STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+    STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   ]);
 
   for (const key in result) {
@@ -241,10 +277,14 @@ const ACTION_HANDLERS = {
   getHighlights:             handleGetHighlights,
   clearCustomColors:         handleClearCustomColors,
   addColor:                  handleAddColor,
+  updateCustomColor:         handleUpdateCustomColor,
+  removeCustomColor:         handleRemoveCustomColor,
+  getShortcutColorMap:       handleGetShortcutColorMap,
+  saveShortcutColorMap:      handleSaveShortcutColorMap,
   saveHighlights:            handleSaveHighlights,
   deleteHighlight:           handleDeleteHighlight,
   clearAllHighlights:        handleClearAllHighlights,
-  getAllHighlightedPages:     handleGetAllHighlightedPages,
+  getAllHighlightedPages:    handleGetAllHighlightedPages,
   deleteAllHighlightedPages: handleDeleteAllHighlightedPages,
 };
 

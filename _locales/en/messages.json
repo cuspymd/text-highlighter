@@ -190,5 +190,47 @@
   },
   "sortOldestFirst": {
     "message": "Sort by time (oldest first)"
+  },
+  "settingsTitle": {
+    "message": "Settings"
+  },
+  "settingsIconLabel": {
+    "message": "Open Settings"
+  },
+  "generalSection": {
+    "message": "General"
+  },
+  "customColorsSection": {
+    "message": "Custom Colors"
+  },
+  "shortcutsSection": {
+    "message": "Keyboard Shortcuts"
+  },
+  "addCustomColor": {
+    "message": "+ Add Custom Color"
+  },
+  "editColor": {
+    "message": "Change"
+  },
+  "removeColor": {
+    "message": "Remove"
+  },
+  "noCustomColors": {
+    "message": "No custom colors yet."
+  },
+  "colorAlreadyExists": {
+    "message": "This color already exists."
+  },
+  "shortcutSlot": {
+    "message": "Slot"
+  },
+  "notAssigned": {
+    "message": "(Not assigned)"
+  },
+  "shortcutHint": {
+    "message": "Key combinations can be changed in browser shortcut settings (Chrome: chrome://extensions/shortcuts, Firefox: about:addons)."
+  },
+  "colorChangeWarning": {
+    "message": "Changes do not affect existing highlights."
   }
 }
