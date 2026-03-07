@@ -56,7 +56,7 @@ function initializeI18n() {
   });
 }
 
-const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(
+const { showConfirmModal } = createLocalizedModalHelpers(
   (key, defaultValue) => browserAPI.i18n.getMessage(key) || defaultValue
 );
 
@@ -71,9 +71,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const noHighlights = document.getElementById('no-highlights');
   const clearAllBtn = document.getElementById('clear-all');
   const viewAllPagesBtn = document.getElementById('view-all-pages');
-  const deleteCustomColorsBtn = document.getElementById('delete-custom-colors');
-  const minimapToggle = document.getElementById('minimap-toggle');
-  const selectionControlsToggle = document.getElementById('selection-controls-toggle');
+  const openSettingsBtn = document.getElementById('open-settings');
   // Load highlight information from current active tab
   async function loadHighlights() {
     const tab = await getActiveTab();
@@ -147,54 +145,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   }
 
-  // Load minimap settings
-  async function loadMinimapSetting() {
-    const result = await browserAPI.storage.local.get(['minimapVisible']);
-    // Default value is true (show minimap)
-    const isVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
-    minimapToggle.checked = isVisible;
-    debugLog('Loaded minimap setting:', isVisible);
-  }
-
-  // Load selection controls setting
-  async function loadSelectionControlsSetting() {
-    // On mobile (no browserAPI.windows), always enable and hide the toggle
-    if (!browserAPI.windows) {
-      selectionControlsToggle.closest('.toggle-container').style.display = 'none';
-      debugLog('Mobile platform: selection controls always enabled, toggle hidden');
-      return;
-    }
-    const result = await browserAPI.storage.local.get(['selectionControlsVisible']);
-    // Default value is true (show controls on selection)
-    const isVisible = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true;
-    selectionControlsToggle.checked = isVisible;
-    debugLog('Loaded selection controls setting:', isVisible);
-  }
-
-  // Save minimap settings (background handles immediate local broadcast + sync)
-  minimapToggle.addEventListener('change', async function () {
-    const isVisible = minimapToggle.checked;
-
-    // Save to storage via background
-    await browserAPI.runtime.sendMessage({
-      action: 'saveSettings',
-      minimapVisible: isVisible
-    });
-    debugLog('Minimap visibility saved:', isVisible);
-  });
-
-  // Save selection controls settings (background handles immediate local broadcast + sync)
-  selectionControlsToggle.addEventListener('change', async function () {
-    const isVisible = selectionControlsToggle.checked;
-
-    // Save to storage via background
-    await browserAPI.runtime.sendMessage({
-      action: 'saveSettings',
-      selectionControlsVisible: isVisible
-    });
-    debugLog('Selection controls visibility saved:', isVisible);
-  });
-
   // Delete highlight (group basis)
   async function deleteHighlight(groupId, url) {
     const response = await browserAPI.runtime.sendMessage({
@@ -232,22 +182,19 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   });
 
-  // Delete all custom colors
-  deleteCustomColorsBtn.addEventListener('click', async function () {
-    debugLog('Deleting all custom colors');
-    const confirmMessage = browserAPI.i18n.getMessage('confirmDeleteCustomColors') || 'Delete all custom colors?';
-    const confirmed = await showConfirmModal(confirmMessage);
-    if (confirmed) {
-      const response = await browserAPI.runtime.sendMessage({ action: 'clearCustomColors' });
-      if (response && response.success) {
-        if (response.noCustomColors) {
-          debugLog('No custom colors to delete');
-          await showAlertModal(browserAPI.i18n.getMessage('noCustomColorsToDelete') || 'No custom colors to delete.');
-        } else {
-          debugLog('All custom colors deleted');
-          await showAlertModal(browserAPI.i18n.getMessage('deletedCustomColors') || 'Custom colors deleted.');
-        }
-      }
+
+  openSettingsBtn.addEventListener('click', () => {
+    const settingsUrl = browserAPI.runtime.getURL('settings.html');
+    if (browserAPI.windows) {
+      browserAPI.windows.create({
+        url: settingsUrl,
+        type: 'popup',
+        width: 440,
+        height: 620,
+      });
+    } else {
+      browserAPI.tabs.create({ url: settingsUrl });
+      window.close();
     }
   });
 
@@ -301,6 +248,4 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Initialization
   await loadHighlights();
-  await loadMinimapSetting();
-  await loadSelectionControlsSetting();
 });

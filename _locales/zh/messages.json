@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: 文本高亮器"
   },
   "extensionDescription": {
@@ -190,5 +191,47 @@
   },
   "sortOldestFirst": {
     "message": "按时间排序（最旧优先）"
+  },
+  "settingsTitle": {
+    "message": "设置"
+  },
+  "settingsIconLabel": {
+    "message": "打开设置"
+  },
+  "generalSection": {
+    "message": "常规"
+  },
+  "customColorsSection": {
+    "message": "自定义颜色"
+  },
+  "shortcutsSection": {
+    "message": "键盘快捷键"
+  },
+  "addCustomColor": {
+    "message": "+ 添加自定义颜色"
+  },
+  "editColor": {
+    "message": "更改"
+  },
+  "removeColor": {
+    "message": "删除"
+  },
+  "noCustomColors": {
+    "message": "还没有自定义颜色。"
+  },
+  "colorAlreadyExists": {
+    "message": "该颜色已存在。"
+  },
+  "shortcutSlot": {
+    "message": "槽位"
+  },
+  "notAssigned": {
+    "message": "（未分配）"
+  },
+  "shortcutHint": {
+    "message": "按键组合可在浏览器快捷键设置中更改（Chrome: chrome://extensions/shortcuts，Firefox: about:addons）。"
+  },
+  "colorChangeWarning": {
+    "message": "更改不会影响现有高亮。"
   }
 }

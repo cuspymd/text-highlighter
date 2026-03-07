@@ -5,6 +5,7 @@ import {
   getCurrentColors,
   getCurrentShortcuts,
   getStoredShortcuts,
+  getShortcutColorMap,
   createOrUpdateContextMenus,
 } from './settings-service.js';
 
@@ -50,8 +51,9 @@ export function initContextMenus() {
       if (activeTab) {
         let targetColor = null;
         if (command.startsWith('highlight_')) {
-          const colorId = command.replace('highlight_', '');
-          targetColor = getCurrentColors().find(c => c.id === colorId)?.color;
+          const colorMap = getShortcutColorMap();
+          const colorId = colorMap[command] ?? null;
+          targetColor = colorId ? getCurrentColors().find(c => c.id === colorId)?.color : null;
         }
 
         if (targetColor) {

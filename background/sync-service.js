@@ -99,11 +99,13 @@ export async function saveSettingsToSync() {
     STORAGE_KEYS.CUSTOM_COLORS,
     STORAGE_KEYS.MINIMAP_VISIBLE,
     STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+    STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   ]);
   const settings = {
     customColors: result.customColors || [],
     minimapVisible: result.minimapVisible !== undefined ? result.minimapVisible : true,
     selectionControlsVisible: result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true,
+    shortcutColorMap: result.shortcutColorMap || null,
   };
   try {
     await browserAPI.storage.sync.set({ [SYNC_SETTINGS_KEY]: settings });
@@ -267,6 +269,7 @@ export async function migrateLocalToSync() {
         STORAGE_KEYS.CUSTOM_COLORS,
         STORAGE_KEYS.MINIMAP_VISIBLE,
         STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+        STORAGE_KEYS.SHORTCUT_COLOR_MAP,
       ]);
 
       const mergedSettings = {
@@ -277,6 +280,7 @@ export async function migrateLocalToSync() {
         selectionControlsVisible: syncSettings.selectionControlsVisible !== undefined
           ? syncSettings.selectionControlsVisible
           : (localResult.selectionControlsVisible !== undefined ? localResult.selectionControlsVisible : true),
+        shortcutColorMap: syncSettings.shortcutColorMap || localResult.shortcutColorMap || null,
       };
 
       if (syncSettings.customColors) {
@@ -308,6 +312,7 @@ export async function migrateLocalToSync() {
         STORAGE_KEYS.SYNC_MIGRATION_DONE,
         STORAGE_KEYS.MINIMAP_VISIBLE,
         STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+        STORAGE_KEYS.SHORTCUT_COLOR_MAP,
         'settings',
       ].includes(k) &&
       !k.endsWith(STORAGE_KEYS.META_SUFFIX) &&

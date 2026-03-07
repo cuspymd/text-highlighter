@@ -2,6 +2,7 @@ export const STORAGE_KEYS = {
   CUSTOM_COLORS: 'customColors',
   MINIMAP_VISIBLE: 'minimapVisible',
   SELECTION_CONTROLS_VISIBLE: 'selectionControlsVisible',
+  SHORTCUT_COLOR_MAP: 'shortcutColorMap',
   SYNC_MIGRATION_DONE: 'syncMigrationDone',
   META_SUFFIX: '_meta',
 };
