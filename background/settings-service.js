@@ -24,6 +24,8 @@ let currentColors = [...COLORS];
 let platformInfo = { os: 'unknown' };
 let storedShortcuts = {};
 let shortcutColorMap = { ...DEFAULT_SHORTCUT_COLOR_MAP };
+let hasLoadedCustomColors = false;
+let customColorsLoadInFlight = null;
 
 function isValidCustomColorNumber(value) {
   return Number.isInteger(value) && value > 0;
@@ -161,45 +163,69 @@ export async function createOrUpdateContextMenus() {
   debugLog('Context menus created with shortcuts:', storedShortcuts);
 }
 
-export async function loadCustomColors() {
+async function loadCustomColorsFromStorage() {
+  let customColors = [];
   try {
-    let customColors = [];
-    try {
-      const syncResult = await browserAPI.storage.sync.get(SYNC_KEYS.SETTINGS);
-      if (syncResult[SYNC_KEYS.SETTINGS] && syncResult[SYNC_KEYS.SETTINGS].customColors) {
-        customColors = syncResult[SYNC_KEYS.SETTINGS].customColors;
-        await browserAPI.storage.local.set({ customColors });
-        debugLog('Loaded custom colors from storage.sync');
-      }
-    } catch (e) {
-      debugLog('Failed to read sync settings, falling back to local:', e.message);
-    }
-
-    if (customColors.length === 0) {
-      const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
-      customColors = result.customColors || [];
-    }
-
-    const { needsUpdate } = normalizeCustomColorNumbers(customColors);
-    customColors.forEach((c) => {
-      if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
-        currentColors.push(c);
-      }
-    });
-
-    if (needsUpdate) {
+    const syncResult = await browserAPI.storage.sync.get(SYNC_KEYS.SETTINGS);
+    if (syncResult[SYNC_KEYS.SETTINGS] && syncResult[SYNC_KEYS.SETTINGS].customColors) {
+      customColors = syncResult[SYNC_KEYS.SETTINGS].customColors;
       await browserAPI.storage.local.set({ customColors });
-      debugLog('Updated custom colors with numbers:', customColors);
+      debugLog('Loaded custom colors from storage.sync');
     }
-
-    if (customColors.length) {
-      debugLog('Loaded custom colors:', customColors);
-    }
-
-    await loadShortcutColorMap();
   } catch (e) {
-    console.error('Error loading custom colors', e);
+    debugLog('Failed to read sync settings, falling back to local:', e.message);
   }
+
+  if (customColors.length === 0) {
+    const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+    customColors = result.customColors || [];
+  }
+
+  const { needsUpdate } = normalizeCustomColorNumbers(customColors);
+  currentColors = [...COLORS];
+  customColors.forEach((c) => {
+    if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
+      currentColors.push(c);
+    }
+  });
+
+  if (needsUpdate) {
+    await browserAPI.storage.local.set({ customColors });
+    debugLog('Updated custom colors with numbers:', customColors);
+  }
+
+  if (customColors.length) {
+    debugLog('Loaded custom colors:', customColors);
+  }
+
+  await loadShortcutColorMap();
+}
+
+export async function loadCustomColors() {
+  if (hasLoadedCustomColors) return;
+  if (customColorsLoadInFlight) {
+    await customColorsLoadInFlight;
+    return;
+  }
+
+  customColorsLoadInFlight = (async () => {
+    try {
+      await loadCustomColorsFromStorage();
+      hasLoadedCustomColors = true;
+    } catch (e) {
+      console.error('Error loading custom colors', e);
+      throw e;
+    } finally {
+      customColorsLoadInFlight = null;
+    }
+  })();
+
+  await customColorsLoadInFlight;
+}
+
+export async function ensureCustomColorsLoaded() {
+  if (hasLoadedCustomColors) return;
+  await loadCustomColors();
 }
 
 export async function updateCustomColor(id, newColorValue) {
