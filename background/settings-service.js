@@ -25,6 +25,36 @@ let platformInfo = { os: 'unknown' };
 let storedShortcuts = {};
 let shortcutColorMap = { ...DEFAULT_SHORTCUT_COLOR_MAP };
 
+function isValidCustomColorNumber(value) {
+  return Number.isInteger(value) && value > 0;
+}
+
+function normalizeCustomColorNumbers(customColors) {
+  const usedNumbers = new Set();
+  let maxNumber = 0;
+  let needsUpdate = false;
+
+  customColors.forEach((colorObj) => {
+    if (isValidCustomColorNumber(colorObj.colorNumber) && !usedNumbers.has(colorObj.colorNumber)) {
+      usedNumbers.add(colorObj.colorNumber);
+      maxNumber = Math.max(maxNumber, colorObj.colorNumber);
+      return;
+    }
+
+    let nextNumber = maxNumber + 1;
+    while (usedNumbers.has(nextNumber)) {
+      nextNumber += 1;
+    }
+
+    colorObj.colorNumber = nextNumber;
+    usedNumbers.add(nextNumber);
+    maxNumber = nextNumber;
+    needsUpdate = true;
+  });
+
+  return { maxNumber, needsUpdate };
+}
+
 function getMessage(key) {
   return browserAPI.i18n.getMessage(key);
 }
@@ -150,12 +180,8 @@ export async function loadCustomColors() {
       customColors = result.customColors || [];
     }
 
-    let needsUpdate = false;
-    customColors.forEach((c, index) => {
-      if (!c.colorNumber) {
-        c.colorNumber = index + 1;
-        needsUpdate = true;
-      }
+    const { needsUpdate } = normalizeCustomColorNumbers(customColors);
+    customColors.forEach((c) => {
       if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
         currentColors.push(c);
       }
@@ -229,11 +255,11 @@ export async function addCustomColor(newColorValue) {
   );
   if (exists) return { exists: true, colors: currentColors };
 
-  const existingCustomCount = currentColors.filter(c => c.id.startsWith('custom_')).length;
+  const { maxNumber } = normalizeCustomColorNumbers(customColors);
   const newColorObj = {
     id: `custom_${Date.now()}`,
     nameKey: 'customColor',
-    colorNumber: existingCustomCount + 1,
+    colorNumber: maxNumber + 1,
     color: newColorValue,
   };
 
