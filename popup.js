@@ -205,11 +205,16 @@ document.addEventListener('DOMContentLoaded', async function () {
           if (found) break;
         }
         if (!found) {
+          const w = 860, h = 600;
+          const left = Math.round((window.screen.width - w) / 2);
+          const top = Math.round((window.screen.height - h) / 2);
           browserAPI.windows.create({
             url: targetUrl,
             type: 'popup',
-            width: 860,
-            height: 600
+            width: w,
+            height: h,
+            left,
+            top,
           });
         }
       });
@@ -234,11 +239,16 @@ document.addEventListener('DOMContentLoaded', async function () {
   openSettingsBtn.addEventListener('click', () => {
     const settingsUrl = browserAPI.runtime.getURL('settings.html');
     if (browserAPI.windows) {
+      const w = 440, h = 620;
+      const left = Math.round((window.screen.width - w) / 2);
+      const top = Math.round((window.screen.height - h) / 2);
       browserAPI.windows.create({
         url: settingsUrl,
         type: 'popup',
-        width: 440,
-        height: 620,
+        width: w,
+        height: h,
+        left,
+        top,
       });
     } else {
       // Mobile fallback
