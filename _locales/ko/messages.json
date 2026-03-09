@@ -28,20 +28,20 @@
   "deleteHighlight": {
     "message": "하이라이트 삭제"
   },
-  "highlightWithYellow": {
-    "message": "노란색으로 하이라이트"
+  "commandSlot1": {
+    "message": "슬롯 1"
   },
-  "highlightWithGreen": {
-    "message": "초록색으로 하이라이트"
+  "commandSlot2": {
+    "message": "슬롯 2"
   },
-  "highlightWithBlue": {
-    "message": "파란색으로 하이라이트"
+  "commandSlot3": {
+    "message": "슬롯 3"
   },
-  "highlightWithPink": {
-    "message": "분홍색으로 하이라이트"
+  "commandSlot4": {
+    "message": "슬롯 4"
   },
-  "highlightWithOrange": {
-    "message": "주황색으로 하이라이트"
+  "commandSlot5": {
+    "message": "슬롯 5"
   },
   "popupTitle": {
     "message": "텍스트 하이라이터"

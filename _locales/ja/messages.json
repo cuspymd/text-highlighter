@@ -28,20 +28,20 @@
   "deleteHighlight": {
     "message": "ハイライトを削除"
   },
-  "highlightWithYellow": {
-    "message": "黄色でハイライト"
+  "commandSlot1": {
+    "message": "スロット 1"
   },
-  "highlightWithGreen": {
-    "message": "緑色でハイライト"
+  "commandSlot2": {
+    "message": "スロット 2"
   },
-  "highlightWithBlue": {
-    "message": "青色でハイライト"
+  "commandSlot3": {
+    "message": "スロット 3"
   },
-  "highlightWithPink": {
-    "message": "ピンク色でハイライト"
+  "commandSlot4": {
+    "message": "スロット 4"
   },
-  "highlightWithOrange": {
-    "message": "オレンジ色でハイライト"
+  "commandSlot5": {
+    "message": "スロット 5"
   },
   "popupTitle": {
     "message": "テキストハイライター"

@@ -13,11 +13,11 @@ const COLORS = [
 ];
 
 const DEFAULT_SHORTCUT_COLOR_MAP = {
-  highlight_yellow: 'yellow',
-  highlight_green:  'green',
-  highlight_blue:   'blue',
-  highlight_pink:   'pink',
-  highlight_orange: 'orange',
+  command_slot_1: 'yellow',
+  command_slot_2:  'green',
+  command_slot_3:   'blue',
+  command_slot_4:   'pink',
+  command_slot_5: 'orange',
 };
 
 let currentColors = [...COLORS];
