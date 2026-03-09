@@ -28,20 +28,20 @@
   "deleteHighlight": {
     "message": "Eliminar Resaltado"
   },
-  "commandSlot1": {
-    "message": "Ranura 1"
+  "highlightWithYellow": {
+    "message": "Resaltar con Amarillo"
   },
-  "commandSlot2": {
-    "message": "Ranura 2"
+  "highlightWithGreen": {
+    "message": "Resaltar con Verde"
   },
-  "commandSlot3": {
-    "message": "Ranura 3"
+  "highlightWithBlue": {
+    "message": "Resaltar con Azul"
   },
-  "commandSlot4": {
-    "message": "Ranura 4"
+  "highlightWithPink": {
+    "message": "Resaltar con Rosa"
   },
-  "commandSlot5": {
-    "message": "Ranura 5"
+  "highlightWithOrange": {
+    "message": "Resaltar con Naranja"
   },
   "popupTitle": {
     "message": "Resaltador de Texto"

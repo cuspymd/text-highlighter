@@ -220,8 +220,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     shortcutsList.innerHTML = '';
 
     const SLOT_COMMANDS = [
-      'command_slot_1', 'command_slot_2', 'command_slot_3',
-      'command_slot_4', 'command_slot_5',
+      'highlight_yellow', 'highlight_green', 'highlight_blue',
+      'highlight_pink', 'highlight_orange',
     ];
 
     SLOT_COMMANDS.forEach((cmdName, idx) => {

@@ -21,7 +21,6 @@ import {
   removeCustomColor,
   getShortcutColorMap,
   saveShortcutColorMap,
-  ensureCustomColorsLoaded,
 } from './settings-service.js';
 
 function successResponse(data = {}) { return { success: true, ...data }; }
@@ -40,7 +39,6 @@ async function handleGetPlatformInfo(_message) {
 }
 
 async function handleGetColors(_message) {
-  await ensureCustomColorsLoaded();
   debugLog('Content script requested COLORS.');
   return { colors: getCurrentColors() };
 }
@@ -116,7 +114,6 @@ async function handleRemoveCustomColor(message) {
 }
 
 async function handleGetShortcutColorMap(_message) {
-  await ensureCustomColorsLoaded();
   return successResponse({ shortcutColorMap: getShortcutColorMap() });
 }
 

@@ -66,20 +66,11 @@ describe('message-router', () => {
   });
 
   describe('routing — getColors', () => {
-    it('should include custom colors loaded from storage before returning', async () => {
-      chrome.storage.sync.get.mockResolvedValueOnce({
-        settings: {
-          customColors: [
-            { id: 'custom_123', nameKey: 'customColor', colorNumber: 1, color: '#123456' },
-          ],
-        },
-      });
-
+    it('should return an array of at least 5 colors', async () => {
       const result = await sendMessage({ action: 'getColors' });
       expect(result).toHaveProperty('colors');
       expect(Array.isArray(result.colors)).toBe(true);
       expect(result.colors.length).toBeGreaterThanOrEqual(5);
-      expect(result.colors.some(c => c.id === 'custom_123' && c.color === '#123456')).toBe(true);
     });
   });
 

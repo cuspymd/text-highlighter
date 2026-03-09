@@ -50,7 +50,7 @@ export function initContextMenus() {
 
       if (activeTab) {
         let targetColor = null;
-        if (command.startsWith('command_slot_')) {
+        if (command.startsWith('highlight_')) {
           const colorMap = getShortcutColorMap();
           const colorId = colorMap[command] ?? null;
           targetColor = colorId ? getCurrentColors().find(c => c.id === colorId)?.color : null;
