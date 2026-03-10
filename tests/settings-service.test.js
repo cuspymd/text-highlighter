@@ -134,6 +134,30 @@ describe('settings-service', () => {
       const result = await addCustomColor(null);
       expect(result.exists).toBe(true);
     });
+
+    it('should assign next number after max existing custom color number', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ customColors: [] });
+      await clearCustomColors();
+
+      chrome.storage.local.get.mockResolvedValueOnce({
+        customColors: [
+          { id: 'custom_a', nameKey: 'customColor', color: '#111111', colorNumber: 1 },
+          { id: 'custom_b', nameKey: 'customColor', color: '#222222', colorNumber: 4 },
+          { id: 'custom_c', nameKey: 'customColor', color: '#333333', colorNumber: 3 },
+        ],
+      });
+
+      await addCustomColor('#ABCDEF');
+
+      const latestCustomColorsSetCall = chrome.storage.local.set.mock.calls
+        .map(([arg]) => arg)
+        .filter(arg => Array.isArray(arg.customColors))
+        .pop();
+      const addedColor = latestCustomColorsSetCall.customColors.find(c => c.color === '#ABCDEF');
+
+      expect(addedColor).toBeTruthy();
+      expect(addedColor.colorNumber).toBe(5);
+    });
   });
 
   describe('clearCustomColors', () => {

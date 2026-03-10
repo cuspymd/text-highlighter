@@ -1088,10 +1088,18 @@ function handleSelectionChange() {
 function showSelectionIcon(mouseX, mouseY) {
   if (selectionControlsContainer) return;
   hideSelectionIcon(); // Remove any existing icon
-  
+
+  let iconUrl;
+  try {
+    iconUrl = browserAPI.runtime.getURL('images/icon48.png');
+  } catch (e) {
+    // Extension context has been invalidated (e.g. after reload); abort silently.
+    return;
+  }
+
   selectionIcon = document.createElement('div');
   selectionIcon.className = 'text-highlighter-selection-icon';
-  selectionIcon.innerHTML = `<img src="${browserAPI.runtime.getURL('images/icon48.png')}" alt="Highlight" style="width: 19px; height: 19px;">`;
+  selectionIcon.innerHTML = `<img src="${iconUrl}" alt="Highlight" style="width: 19px; height: 19px;">`;
   selectionIcon.title = getMessage('highlightText');
   
   positionSelectionIcon(mouseX, mouseY);

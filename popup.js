@@ -91,6 +91,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     debugLog('Loaded highlights for popup (sorted by position):', highlights);
 
+    // Enable/disable clear-all button based on highlight count
+    clearAllBtn.disabled = highlights.length === 0;
+
     // Display highlight list (group basis)
     if (highlights.length > 0) {
       noHighlights.style.display = 'none';

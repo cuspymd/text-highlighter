@@ -42,6 +42,8 @@ test.describe('Selection Controls Tests', () => {
     // 4. Wait for the selection controls to appear
     const selectionControls = page.locator('.text-highlighter-selection-controls');
     await expect(selectionControls).toBeVisible();
+    // Wait for the justShown guard (300ms) to expire before clicking
+    await page.waitForTimeout(350);
 
     // 5. Click the yellow color button (first button)
     const yellowButton = selectionControls.locator('.text-highlighter-control-button.color-button').nth(0);

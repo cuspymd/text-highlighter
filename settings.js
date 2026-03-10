@@ -220,8 +220,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     shortcutsList.innerHTML = '';
 
     const SLOT_COMMANDS = [
-      'highlight_yellow', 'highlight_green', 'highlight_blue',
-      'highlight_pink', 'highlight_orange',
+      'command_slot_1', 'command_slot_2', 'command_slot_3',
+      'command_slot_4', 'command_slot_5',
     ];
 
     SLOT_COMMANDS.forEach((cmdName, idx) => {
@@ -312,9 +312,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Init ---
+  if (!browserAPI.commands) {
+    document.getElementById('shortcuts-section').style.display = 'none';
+  }
+
   await Promise.all([
     loadGeneralSettings(),
     loadCustomColors(),
     loadShortcuts()
   ]);
+
+  window.addEventListener('focus', async () => {
+    await Promise.all([
+      loadCustomColors(),
+      loadShortcuts()
+    ]);
+  });
 });
