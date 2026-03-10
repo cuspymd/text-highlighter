@@ -312,6 +312,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Init ---
+  if (!browserAPI.commands) {
+    document.getElementById('shortcuts-section').style.display = 'none';
+  }
+
   await Promise.all([
     loadGeneralSettings(),
     loadCustomColors(),
