@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   SELECTION_CONTROLS_VISIBLE: 'selectionControlsVisible',
   SYNC_MIGRATION_DONE: 'syncMigrationDone',
   META_SUFFIX: '_meta',
+  SHORTCUT_COLOR_MAP: 'shortcutColorMap',
 };
 
 export const SYNC_KEYS = {

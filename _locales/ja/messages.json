@@ -190,5 +190,47 @@
   },
   "sortOldestFirst": {
     "message": "時間順ソート（古い順）"
+  },
+  "settingsTitle": {
+    "message": "設定"
+  },
+  "settingsIconLabel": {
+    "message": "設定を開く"
+  },
+  "generalSection": {
+    "message": "一般"
+  },
+  "customColorsSection": {
+    "message": "カスタムカラー"
+  },
+  "shortcutsSection": {
+    "message": "ショートカットキー"
+  },
+  "addCustomColor": {
+    "message": "+ カラーを追加"
+  },
+  "editColor": {
+    "message": "変更"
+  },
+  "removeColor": {
+    "message": "削除"
+  },
+  "noCustomColors": {
+    "message": "カスタムカラーはありません。"
+  },
+  "colorAlreadyExists": {
+    "message": "すでに存在するカラーです。"
+  },
+  "shortcutSlot": {
+    "message": "スロット"
+  },
+  "notAssigned": {
+    "message": "(未割り当て)"
+  },
+  "shortcutHint": {
+    "message": "キーの組み合わせはブラウザのショートカット設定で変更できます (Chrome: chrome://extensions/shortcuts, Firefox: about:addons)。"
+  },
+  "colorChangeWarning": {
+    "message": "既存のハイライトには影響しません。"
   }
 }

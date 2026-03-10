@@ -12,9 +12,18 @@ const COLORS = [
   { id: 'orange', nameKey: 'orangeColor', color: '#FFAA55' },
 ];
 
+const DEFAULT_SHORTCUT_COLOR_MAP = {
+  highlight_yellow: 'yellow',
+  highlight_green:  'green',
+  highlight_blue:   'blue',
+  highlight_pink:   'pink',
+  highlight_orange: 'orange',
+};
+
 let currentColors = [...COLORS];
 let platformInfo = { os: 'unknown' };
 let storedShortcuts = {};
+let shortcutColorMap = { ...DEFAULT_SHORTCUT_COLOR_MAP };
 
 function getMessage(key) {
   return browserAPI.i18n.getMessage(key);
@@ -43,6 +52,21 @@ export function getCurrentColors() {
 
 export function getStoredShortcuts() {
   return storedShortcuts;
+}
+
+export function getShortcutColorMap() {
+  return shortcutColorMap;
+}
+
+export async function saveShortcutColorMap(newMap) {
+  shortcutColorMap = { ...newMap };
+  await browserAPI.storage.local.set({ [STORAGE_KEYS.SHORTCUT_COLOR_MAP]: shortcutColorMap });
+  await saveSettingsToSync();
+}
+
+async function loadShortcutColorMap() {
+  const result = await browserAPI.storage.local.get([STORAGE_KEYS.SHORTCUT_COLOR_MAP]);
+  shortcutColorMap = result[STORAGE_KEYS.SHORTCUT_COLOR_MAP] || { ...DEFAULT_SHORTCUT_COLOR_MAP };
 }
 
 export async function getCurrentShortcuts() {
@@ -145,9 +169,49 @@ export async function loadCustomColors() {
     if (customColors.length) {
       debugLog('Loaded custom colors:', customColors);
     }
+
+    await loadShortcutColorMap();
   } catch (e) {
     console.error('Error loading custom colors', e);
   }
+}
+
+export async function updateCustomColor(id, newColorValue) {
+  const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+  const customColors = stored.customColors || [];
+
+  const idx = customColors.findIndex(c => c.id === id);
+  if (idx === -1) return { notFound: true, colors: currentColors };
+
+  // Check for duplicates
+  const duplicate = [...COLORS, ...customColors].some(
+    (c, i) => c.color.toLowerCase() === newColorValue.toLowerCase() && c.id !== id
+  );
+  if (duplicate) return { exists: true, colors: currentColors };
+
+  customColors[idx] = { ...customColors[idx], color: newColorValue };
+  await browserAPI.storage.local.set({ customColors });
+
+  const globalIdx = currentColors.findIndex(c => c.id === id);
+  if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], color: newColorValue };
+
+  await saveSettingsToSync();
+  return { exists: false, colors: currentColors };
+}
+
+export async function removeCustomColor(id) {
+  const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+  let customColors = stored.customColors || [];
+
+  const before = customColors.length;
+  customColors = customColors.filter(c => c.id !== id);
+  if (customColors.length === before) return { notFound: true, colors: currentColors };
+
+  await browserAPI.storage.local.set({ customColors });
+  currentColors = currentColors.filter(c => c.id !== id);
+
+  await saveSettingsToSync();
+  return { colors: currentColors };
 }
 
 /**
@@ -254,6 +318,11 @@ export async function applySettingsFromSync(newSettings) {
   if (newSettings.selectionControlsVisible !== undefined) {
     await browserAPI.storage.local.set({ selectionControlsVisible: newSettings.selectionControlsVisible });
     await broadcastToAllTabs({ action: 'setSelectionControlsVisibility', visible: newSettings.selectionControlsVisible });
+  }
+
+  if (newSettings.shortcutColorMap) {
+    await browserAPI.storage.local.set({ [STORAGE_KEYS.SHORTCUT_COLOR_MAP]: newSettings.shortcutColorMap });
+    shortcutColorMap = newSettings.shortcutColorMap;
   }
 
   return { colorsChanged };

@@ -190,5 +190,47 @@
   },
   "sortOldestFirst": {
     "message": "Ordenar por tiempo (más antiguo primero)"
+  },
+  "settingsTitle": {
+    "message": "Configuración"
+  },
+  "settingsIconLabel": {
+    "message": "Abrir configuración"
+  },
+  "generalSection": {
+    "message": "General"
+  },
+  "customColorsSection": {
+    "message": "Colores personalizados"
+  },
+  "shortcutsSection": {
+    "message": "Atajos de teclado"
+  },
+  "addCustomColor": {
+    "message": "+ Añadir color personalizado"
+  },
+  "editColor": {
+    "message": "Cambiar"
+  },
+  "removeColor": {
+    "message": "Eliminar"
+  },
+  "noCustomColors": {
+    "message": "Aún no hay colores personalizados."
+  },
+  "colorAlreadyExists": {
+    "message": "Este color ya existe."
+  },
+  "shortcutSlot": {
+    "message": "Ranura"
+  },
+  "notAssigned": {
+    "message": "(Sin asignar)"
+  },
+  "shortcutHint": {
+    "message": "Las combinaciones de teclas se pueden cambiar en la configuración de atajos del navegador (Chrome: chrome://extensions/shortcuts, Firefox: about:addons)."
+  },
+  "colorChangeWarning": {
+    "message": "Los cambios no afectan a los resaltados existentes."
   }
 }

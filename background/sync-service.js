@@ -99,12 +99,29 @@ export async function saveSettingsToSync() {
     STORAGE_KEYS.CUSTOM_COLORS,
     STORAGE_KEYS.MINIMAP_VISIBLE,
     STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+    STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   ]);
   const settings = {
     customColors: result.customColors || [],
     minimapVisible: result.minimapVisible !== undefined ? result.minimapVisible : true,
     selectionControlsVisible: result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true,
   };
+
+  if (result.shortcutColorMap) {
+    settings.shortcutColorMap = result.shortcutColorMap;
+  } else {
+    try {
+      const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
+      if (syncResult[SYNC_SETTINGS_KEY] && syncResult[SYNC_SETTINGS_KEY].shortcutColorMap) {
+        settings.shortcutColorMap = syncResult[SYNC_SETTINGS_KEY].shortcutColorMap;
+      } else {
+        settings.shortcutColorMap = null;
+      }
+    } catch (e) {
+      settings.shortcutColorMap = null;
+    }
+  }
+
   try {
     await browserAPI.storage.sync.set({ [SYNC_SETTINGS_KEY]: settings });
     debugLog('Settings saved to sync:', settings);
@@ -267,6 +284,7 @@ export async function migrateLocalToSync() {
         STORAGE_KEYS.CUSTOM_COLORS,
         STORAGE_KEYS.MINIMAP_VISIBLE,
         STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+        STORAGE_KEYS.SHORTCUT_COLOR_MAP,
       ]);
 
       const mergedSettings = {
@@ -278,6 +296,12 @@ export async function migrateLocalToSync() {
           ? syncSettings.selectionControlsVisible
           : (localResult.selectionControlsVisible !== undefined ? localResult.selectionControlsVisible : true),
       };
+
+      if (syncSettings.shortcutColorMap !== undefined && syncSettings.shortcutColorMap !== null) {
+        mergedSettings.shortcutColorMap = syncSettings.shortcutColorMap;
+      } else if (localResult.shortcutColorMap) {
+        mergedSettings.shortcutColorMap = localResult.shortcutColorMap;
+      }
 
       if (syncSettings.customColors) {
         syncSettings.customColors.forEach(sc => {
@@ -302,14 +326,17 @@ export async function migrateLocalToSync() {
       syncData = await browserAPI.storage.sync.get(keys);
     }
 
+    const skipKeys = [
+      STORAGE_KEYS.CUSTOM_COLORS,
+      STORAGE_KEYS.SYNC_MIGRATION_DONE,
+      STORAGE_KEYS.MINIMAP_VISIBLE,
+      STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+      STORAGE_KEYS.SHORTCUT_COLOR_MAP,
+      'settings',
+    ];
+
     const localUrls = Object.keys(allLocal).filter(k =>
-      ![
-        STORAGE_KEYS.CUSTOM_COLORS,
-        STORAGE_KEYS.SYNC_MIGRATION_DONE,
-        STORAGE_KEYS.MINIMAP_VISIBLE,
-        STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
-        'settings',
-      ].includes(k) &&
+      !skipKeys.includes(k) &&
       !k.endsWith(STORAGE_KEYS.META_SUFFIX) &&
       Array.isArray(allLocal[k])
     );
