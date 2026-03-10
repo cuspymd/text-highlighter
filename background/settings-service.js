@@ -106,7 +106,7 @@ export async function getCurrentShortcuts() {
   const commands = await browserAPI.commands.getAll();
   const shortcuts = {};
   commands.forEach(command => {
-    if (command.name.startsWith('highlight_') && command.shortcut) {
+    if (command.name.startsWith('command_') && command.shortcut) {
       shortcuts[command.name] = ` (${command.shortcut})`;
     }
   });
@@ -140,8 +140,8 @@ export async function createOrUpdateContextMenus() {
   storedShortcuts = { ...commandShortcuts };
 
   for (const color of currentColors) {
-    const commandName = `highlight_${color.id}`;
-    const shortcutDisplay = commandShortcuts[commandName] || '';
+    const slotName = Object.keys(shortcutColorMap).find(key => shortcutColorMap[key] === color.id);
+    const shortcutDisplay = (slotName && commandShortcuts[slotName]) || '';
     const title = color.colorNumber
       ? `${getMessage(color.nameKey)} ${color.colorNumber}${shortcutDisplay}`
       : `${getMessage(color.nameKey)}${shortcutDisplay}`;
