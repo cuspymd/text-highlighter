@@ -321,4 +321,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadCustomColors(),
     loadShortcuts()
   ]);
+
+  window.addEventListener('focus', async () => {
+    await Promise.all([
+      loadCustomColors(),
+      loadShortcuts()
+    ]);
+  });
 });
