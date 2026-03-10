@@ -82,11 +82,11 @@ describe('context-menu', () => {
     }
 
     it.each([
-      ['highlight_yellow', DEFAULT_COLORS.yellow],
-      ['highlight_green',  DEFAULT_COLORS.green],
-      ['highlight_blue',   DEFAULT_COLORS.blue],
-      ['highlight_pink',   DEFAULT_COLORS.pink],
-      ['highlight_orange', DEFAULT_COLORS.orange],
+      ['command_slot_1', DEFAULT_COLORS.yellow],
+      ['command_slot_2',  DEFAULT_COLORS.green],
+      ['command_slot_3',   DEFAULT_COLORS.blue],
+      ['command_slot_4',   DEFAULT_COLORS.pink],
+      ['command_slot_5', DEFAULT_COLORS.orange],
     ])('should send highlight with correct color for command "%s"', async (command, expectedColor) => {
       chrome.tabs.query.mockResolvedValueOnce([{ id: 99 }]);
       const commandListener = getCommandListener();
@@ -101,7 +101,7 @@ describe('context-menu', () => {
     it('should do nothing when no active tab is found', async () => {
       chrome.tabs.query.mockResolvedValueOnce([]);
       const commandListener = getCommandListener();
-      await commandListener('highlight_yellow');
+      await commandListener('command_slot_1');
 
       expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
     });
@@ -113,5 +113,6 @@ describe('context-menu', () => {
 
       expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
     });
+
   });
 });

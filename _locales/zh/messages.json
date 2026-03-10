@@ -28,20 +28,20 @@
   "deleteHighlight": {
     "message": "删除高亮"
   },
-  "highlightWithYellow": {
-    "message": "用黄色高亮"
+  "commandSlot1": {
+    "message": "插槽 1"
   },
-  "highlightWithGreen": {
-    "message": "用绿色高亮"
+  "commandSlot2": {
+    "message": "插槽 2"
   },
-  "highlightWithBlue": {
-    "message": "用蓝色高亮"
+  "commandSlot3": {
+    "message": "插槽 3"
   },
-  "highlightWithPink": {
-    "message": "用粉色高亮"
+  "commandSlot4": {
+    "message": "插槽 4"
   },
-  "highlightWithOrange": {
-    "message": "用橙色高亮"
+  "commandSlot5": {
+    "message": "插槽 5"
   },
   "popupTitle": {
     "message": "文本高亮器"

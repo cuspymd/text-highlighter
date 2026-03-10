@@ -13,17 +13,49 @@ const COLORS = [
 ];
 
 const DEFAULT_SHORTCUT_COLOR_MAP = {
-  highlight_yellow: 'yellow',
-  highlight_green:  'green',
-  highlight_blue:   'blue',
-  highlight_pink:   'pink',
-  highlight_orange: 'orange',
+  command_slot_1: 'yellow',
+  command_slot_2:  'green',
+  command_slot_3:   'blue',
+  command_slot_4:   'pink',
+  command_slot_5: 'orange',
 };
 
 let currentColors = [...COLORS];
 let platformInfo = { os: 'unknown' };
 let storedShortcuts = {};
 let shortcutColorMap = { ...DEFAULT_SHORTCUT_COLOR_MAP };
+let hasLoadedCustomColors = false;
+let customColorsLoadInFlight = null;
+
+function isValidCustomColorNumber(value) {
+  return Number.isInteger(value) && value > 0;
+}
+
+function normalizeCustomColorNumbers(customColors) {
+  const usedNumbers = new Set();
+  let maxNumber = 0;
+  let needsUpdate = false;
+
+  customColors.forEach((colorObj) => {
+    if (isValidCustomColorNumber(colorObj.colorNumber) && !usedNumbers.has(colorObj.colorNumber)) {
+      usedNumbers.add(colorObj.colorNumber);
+      maxNumber = Math.max(maxNumber, colorObj.colorNumber);
+      return;
+    }
+
+    let nextNumber = maxNumber + 1;
+    while (usedNumbers.has(nextNumber)) {
+      nextNumber += 1;
+    }
+
+    colorObj.colorNumber = nextNumber;
+    usedNumbers.add(nextNumber);
+    maxNumber = nextNumber;
+    needsUpdate = true;
+  });
+
+  return { maxNumber, needsUpdate };
+}
 
 function getMessage(key) {
   return browserAPI.i18n.getMessage(key);
@@ -131,49 +163,69 @@ export async function createOrUpdateContextMenus() {
   debugLog('Context menus created with shortcuts:', storedShortcuts);
 }
 
-export async function loadCustomColors() {
+async function loadCustomColorsFromStorage() {
+  let customColors = [];
   try {
-    let customColors = [];
-    try {
-      const syncResult = await browserAPI.storage.sync.get(SYNC_KEYS.SETTINGS);
-      if (syncResult[SYNC_KEYS.SETTINGS] && syncResult[SYNC_KEYS.SETTINGS].customColors) {
-        customColors = syncResult[SYNC_KEYS.SETTINGS].customColors;
-        await browserAPI.storage.local.set({ customColors });
-        debugLog('Loaded custom colors from storage.sync');
-      }
-    } catch (e) {
-      debugLog('Failed to read sync settings, falling back to local:', e.message);
-    }
-
-    if (customColors.length === 0) {
-      const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
-      customColors = result.customColors || [];
-    }
-
-    let needsUpdate = false;
-    customColors.forEach((c, index) => {
-      if (!c.colorNumber) {
-        c.colorNumber = index + 1;
-        needsUpdate = true;
-      }
-      if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
-        currentColors.push(c);
-      }
-    });
-
-    if (needsUpdate) {
+    const syncResult = await browserAPI.storage.sync.get(SYNC_KEYS.SETTINGS);
+    if (syncResult[SYNC_KEYS.SETTINGS] && syncResult[SYNC_KEYS.SETTINGS].customColors) {
+      customColors = syncResult[SYNC_KEYS.SETTINGS].customColors;
       await browserAPI.storage.local.set({ customColors });
-      debugLog('Updated custom colors with numbers:', customColors);
+      debugLog('Loaded custom colors from storage.sync');
     }
-
-    if (customColors.length) {
-      debugLog('Loaded custom colors:', customColors);
-    }
-
-    await loadShortcutColorMap();
   } catch (e) {
-    console.error('Error loading custom colors', e);
+    debugLog('Failed to read sync settings, falling back to local:', e.message);
   }
+
+  if (customColors.length === 0) {
+    const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+    customColors = result.customColors || [];
+  }
+
+  const { needsUpdate } = normalizeCustomColorNumbers(customColors);
+  currentColors = [...COLORS];
+  customColors.forEach((c) => {
+    if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
+      currentColors.push(c);
+    }
+  });
+
+  if (needsUpdate) {
+    await browserAPI.storage.local.set({ customColors });
+    debugLog('Updated custom colors with numbers:', customColors);
+  }
+
+  if (customColors.length) {
+    debugLog('Loaded custom colors:', customColors);
+  }
+
+  await loadShortcutColorMap();
+}
+
+export async function loadCustomColors() {
+  if (hasLoadedCustomColors) return;
+  if (customColorsLoadInFlight) {
+    await customColorsLoadInFlight;
+    return;
+  }
+
+  customColorsLoadInFlight = (async () => {
+    try {
+      await loadCustomColorsFromStorage();
+      hasLoadedCustomColors = true;
+    } catch (e) {
+      console.error('Error loading custom colors', e);
+      throw e;
+    } finally {
+      customColorsLoadInFlight = null;
+    }
+  })();
+
+  await customColorsLoadInFlight;
+}
+
+export async function ensureCustomColorsLoaded() {
+  if (hasLoadedCustomColors) return;
+  await loadCustomColors();
 }
 
 export async function updateCustomColor(id, newColorValue) {
@@ -229,11 +281,11 @@ export async function addCustomColor(newColorValue) {
   );
   if (exists) return { exists: true, colors: currentColors };
 
-  const existingCustomCount = currentColors.filter(c => c.id.startsWith('custom_')).length;
+  const { maxNumber } = normalizeCustomColorNumbers(customColors);
   const newColorObj = {
     id: `custom_${Date.now()}`,
     nameKey: 'customColor',
-    colorNumber: existingCustomCount + 1,
+    colorNumber: maxNumber + 1,
     color: newColorValue,
   };
 

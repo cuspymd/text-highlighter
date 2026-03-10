@@ -25,36 +25,36 @@
     }
   },
   "commands": {
-    "highlight_yellow": {
+    "command_slot_1": {
       "suggested_key": {
         "default": "Ctrl+Shift+1",
         "mac": "Command+Shift+1"
       },
-      "description": "__MSG_highlightWithYellow__"
+      "description": "__MSG_commandSlot1__"
     },
-    "highlight_green": {
+    "command_slot_2": {
       "suggested_key": {
         "default": "Ctrl+Shift+2",
         "mac": "Command+Shift+2"
       },
-      "description": "__MSG_highlightWithGreen__"
+      "description": "__MSG_commandSlot2__"
     },
-    "highlight_blue": {
+    "command_slot_3": {
       "suggested_key": {
         "default": "Ctrl+Shift+3",
         "mac": "Command+Shift+3"
       },
-      "description": "__MSG_highlightWithBlue__"
+      "description": "__MSG_commandSlot3__"
     },
-    "highlight_pink": {
+    "command_slot_4": {
       "suggested_key": {
         "default": "Ctrl+Shift+4",
         "mac": "Command+Shift+4"
       },
-      "description": "__MSG_highlightWithPink__"
+      "description": "__MSG_commandSlot4__"
     },
-    "highlight_orange": {
-      "description": "__MSG_highlightWithOrange__"
+    "command_slot_5": {
+      "description": "__MSG_commandSlot5__"
     }
   },
   "content_scripts": [

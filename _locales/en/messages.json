@@ -28,20 +28,20 @@
   "deleteHighlight": {
     "message": "Delete Highlight"
   },
-  "highlightWithYellow": {
-    "message": "Highlight with Yellow"
+  "commandSlot1": {
+    "message": "Slot 1"
   },
-  "highlightWithGreen": {
-    "message": "Highlight with Green"
+  "commandSlot2": {
+    "message": "Slot 2"
   },
-  "highlightWithBlue": {
-    "message": "Highlight with Blue"
+  "commandSlot3": {
+    "message": "Slot 3"
   },
-  "highlightWithPink": {
-    "message": "Highlight with Pink"
+  "commandSlot4": {
+    "message": "Slot 4"
   },
-  "highlightWithOrange": {
-    "message": "Highlight with Orange"
+  "commandSlot5": {
+    "message": "Slot 5"
   },
   "popupTitle": {
     "message": "Text Highlighter"
