@@ -22,7 +22,9 @@
   "jest": {
     "testEnvironment": "jsdom",
     "transform": {},
-    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
     "testPathIgnorePatterns": [
       "<rootDir>/e2e-tests/"
     ]
