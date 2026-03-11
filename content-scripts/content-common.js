@@ -1,7 +1,3 @@
-const DEBUG_MODE = false;
-
-var debugLog = DEBUG_MODE ? console.log.bind(console) : () => {};
-
 // Cross-browser compatibility: use browser API in Firefox, chrome API in Chromium.
 var browserAPI = window.browserAPI || (() => {
   if (typeof browser !== 'undefined') {
