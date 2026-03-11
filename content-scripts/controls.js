@@ -1099,7 +1099,14 @@ function showSelectionIcon(mouseX, mouseY) {
 
   selectionIcon = document.createElement('div');
   selectionIcon.className = 'text-highlighter-selection-icon';
-  selectionIcon.innerHTML = `<img src="${iconUrl}" alt="Highlight" style="width: 19px; height: 19px;">`;
+
+  const iconImg = document.createElement('img');
+  iconImg.src = iconUrl;
+  iconImg.alt = 'Highlight';
+  iconImg.style.width = '19px';
+  iconImg.style.height = '19px';
+  selectionIcon.appendChild(iconImg);
+
   selectionIcon.title = getMessage('highlightText');
   
   positionSelectionIcon(mouseX, mouseY);
