@@ -89,7 +89,7 @@
     "message": "このページにはハイライトされたテキストがありません。"
   },
   "deleteAllHighlights": {
-    "message": "すべてのハイライトを削除"
+    "message": "このページのハイライトをすべて削除"
   },
   "viewAllPages": {
     "message": "ハイライトしたページ一覧"
