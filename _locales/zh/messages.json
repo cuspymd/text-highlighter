@@ -89,7 +89,7 @@
     "message": "当前页面没有高亮的文本。"
   },
   "deleteAllHighlights": {
-    "message": "清除所有高亮"
+    "message": "删除此页面上的所有高亮"
   },
   "viewAllPages": {
     "message": "已高亮页面列表"

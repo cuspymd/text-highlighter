@@ -89,7 +89,7 @@
     "message": "No hay texto resaltado en esta página."
   },
   "deleteAllHighlights": {
-    "message": "Limpiar Todos los Resaltados"
+    "message": "Eliminar todos los resaltados de esta página"
   },
   "viewAllPages": {
     "message": "Lista de Páginas Resaltadas"

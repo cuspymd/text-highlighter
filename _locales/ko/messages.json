@@ -89,7 +89,7 @@
     "message": "현재 페이지에 하이라이트된 텍스트가 없습니다."
   },
   "deleteAllHighlights": {
-    "message": "모든 하이라이트 지우기"
+    "message": "이 페이지의 모든 하이라이트 삭제"
   },
   "viewAllPages": {
     "message": "하이라이트된 페이지 목록"
