@@ -97,4 +97,60 @@ describe('content-core', () => {
 
     expect(core.selectionOverlapsHighlight(range)).toBe(true);
   });
+  describe('buildNormalizedTextModel and rangeToTextPosition', () => {
+    it('should build a text model and map range to offsets', () => {
+      document.body.innerHTML = '<div>Hello <span>World</span>!</div>';
+      const model = TextHighlighterCore.buildNormalizedTextModel(document.body);
+      expect(model.text).toBe('Hello World!');
+
+      const textNode = document.querySelector('span').firstChild;
+      const range = document.createRange();
+      range.setStart(textNode, 0);
+      range.setEnd(textNode, 5);
+
+      const pos = TextHighlighterCore.rangeToTextPosition(model, range);
+      expect(pos).toEqual({ start: 6, end: 11 }); // 'World'
+    });
+  });
+
+  describe('buildQuoteSelector', () => {
+    it('should build a quote selector from a range', () => {
+      document.body.innerHTML = '<div>The quick brown fox jumps over the lazy dog</div>';
+      const model = TextHighlighterCore.buildNormalizedTextModel(document.body);
+
+      const textNode = document.querySelector('div').firstChild;
+      const range = document.createRange();
+      range.setStart(textNode, 10); // 'brown'
+      range.setEnd(textNode, 15);
+
+      const quote = TextHighlighterCore.buildQuoteSelector(model, range, { prefixLen: 10, suffixLen: 10 });
+      expect(quote).toEqual({
+        exact: 'brown',
+        prefix: 'The quick ',
+        suffix: ' fox jumps'
+      });
+    });
+  });
+
+  describe('resolveQuoteSelector and normalizedOffsetsToRange', () => {
+    it('should resolve quote selector and restore range', () => {
+      document.body.innerHTML = '<div>The quick brown fox jumps over the lazy dog</div>';
+      const model = TextHighlighterCore.buildNormalizedTextModel(document.body);
+
+      const selector = {
+        exact: 'brown',
+        prefix: 'The quick ',
+        suffix: ' fox jumps'
+      };
+
+      const match = TextHighlighterCore.resolveQuoteSelector(model, selector, 'brown');
+      expect(match).toEqual({ start: 10, end: 15 });
+
+      const range = TextHighlighterCore.normalizedOffsetsToRange(model, match.start, match.end);
+      expect(range.toString()).toBe('brown');
+      expect(range.startContainer.nodeValue).toBe('The quick brown fox jumps over the lazy dog');
+      expect(range.startOffset).toBe(10);
+      expect(range.endOffset).toBe(15);
+    });
+  });
 });

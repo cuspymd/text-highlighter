@@ -276,11 +276,307 @@
   }
 
   /**
+   * Build a normalized text model from a root node.
+   * @param {Node} root - The root element to build the model from (e.g., document.body).
+   * @returns {Object} { text: string, segments: Array }
+   */
+  function buildNormalizedTextModel(root) {
+    let normalizedText = '';
+    const segments = [];
+    let currentLength = 0;
+
+    const walker = document.createTreeWalker(
+      root,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function(node) {
+          const parent = node.parentNode;
+          if (!parent) return NodeFilter.FILTER_REJECT;
+          if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          const parentTagName = parent.tagName && parent.tagName.toUpperCase();
+          if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          let el = parent;
+          while (el && el !== document.body && el !== document.documentElement) {
+            if (window.getComputedStyle(el).display === 'none') {
+              return NodeFilter.FILTER_REJECT;
+            }
+            el = el.parentNode;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      },
+      false
+    );
+
+    let currentNode;
+    while (currentNode = walker.nextNode()) {
+      const rawText = currentNode.nodeValue;
+      if (!rawText) continue;
+
+      let nText = '';
+      const mapping = [];
+
+      for (let i = 0; i < rawText.length; i++) {
+        const char = rawText[i];
+        if (/\s/.test(char)) {
+          if (nText.length === 0 || nText[nText.length - 1] !== ' ') {
+            nText += ' ';
+            mapping.push(i);
+          }
+        } else {
+          nText += char;
+          mapping.push(i);
+        }
+      }
+
+      if (nText.length > 0) {
+        segments.push({
+          node: currentNode,
+          normalizedStart: currentLength,
+          normalizedEnd: currentLength + nText.length,
+          normalizedToRaw: mapping,
+        });
+        normalizedText += nText;
+        currentLength += nText.length;
+      }
+    }
+
+    return { text: normalizedText, segments };
+  }
+
+  /**
+   * Convert a DOM range to a text position using the normalized model.
+   * @param {Object} model - The normalized text model.
+   * @param {Range} range - The DOM range.
+   * @returns {Object|null} { start: number, end: number }
+   */
+  function rangeToTextPosition(model, range) {
+    let startPos = -1;
+    let endPos = -1;
+
+    // Helper to find normalized offset for a node and raw offset
+    function findNormalizedOffset(node, offset, isEnd) {
+      for (const segment of model.segments) {
+        if (segment.node === node) {
+          if (offset === 0) return segment.normalizedStart;
+          if (offset >= segment.normalizedToRaw.length) return segment.normalizedEnd;
+
+          for (let i = 0; i < segment.normalizedToRaw.length; i++) {
+            if (segment.normalizedToRaw[i] === offset) {
+              return segment.normalizedStart + i;
+            }
+          }
+          // Fallback if exactly matching offset not in mapping (e.g. collapsed spaces)
+          for (let i = 0; i < segment.normalizedToRaw.length; i++) {
+            if (segment.normalizedToRaw[i] > offset) {
+              return segment.normalizedStart + i;
+            }
+          }
+          return segment.normalizedEnd;
+        }
+      }
+      return -1;
+    }
+
+    // Start container
+    if (range.startContainer.nodeType === Node.TEXT_NODE) {
+      startPos = findNormalizedOffset(range.startContainer, range.startOffset, false);
+    } else {
+      // Find first text node in start container
+      const walker = document.createTreeWalker(range.startContainer, NodeFilter.SHOW_TEXT, null, false);
+      const textNode = walker.nextNode();
+      if (textNode) startPos = findNormalizedOffset(textNode, 0, false);
+    }
+
+    // End container
+    if (range.endContainer.nodeType === Node.TEXT_NODE) {
+      endPos = findNormalizedOffset(range.endContainer, range.endOffset, true);
+    } else {
+      // Find last text node in end container or next node
+       // This is a simplification, might need more robust end resolution
+      endPos = startPos + range.toString().length; // Rough fallback
+    }
+
+    // If endPos couldn't be accurately resolved from text node, estimate it
+    if (endPos === -1 && startPos !== -1) {
+       endPos = startPos + range.toString().length;
+    }
+
+    if (startPos !== -1 && endPos !== -1 && endPos >= startPos) {
+      return { start: startPos, end: endPos };
+    }
+    return null;
+  }
+
+  /**
+   * Build a quote selector for a range.
+   * @param {Object} model - The normalized text model.
+   * @param {Range} range - The DOM range.
+   * @param {Object} [options]
+   * @returns {Object|null} { exact: string, prefix: string, suffix: string }
+   */
+  function buildQuoteSelector(model, range, options = {}) {
+    const pos = rangeToTextPosition(model, range);
+    if (!pos) return null;
+
+    const prefixLen = options.prefixLen || 24;
+    const suffixLen = options.suffixLen || 24;
+
+    const exact = model.text.substring(pos.start, pos.end);
+    let prefixStart = pos.start - prefixLen;
+    if (prefixStart < 0) prefixStart = 0;
+    const prefix = model.text.substring(prefixStart, pos.start);
+
+    let suffixEnd = pos.end + suffixLen;
+    if (suffixEnd > model.text.length) suffixEnd = model.text.length;
+    const suffix = model.text.substring(pos.end, suffixEnd);
+
+    return { exact, prefix, suffix };
+  }
+
+  /**
+   * Resolve a quote selector against a text model.
+   * @param {Object} model - The normalized text model.
+   * @param {Object} selector - The quote selector { exact, prefix, suffix }.
+   * @param {string} exactText - The exact text to find.
+   * @param {Object} [hints] - Optional hints like { textPosition: { start, end } }.
+   * @returns {Object|null} { start: number, end: number }
+   */
+  function resolveQuoteSelector(model, selector, exactText, hints = {}) {
+    if (!selector || !exactText) return null;
+
+    const candidates = [];
+    let searchIdx = 0;
+
+    // 1. Find all exact match candidates
+    while (searchIdx < model.text.length) {
+      const idx = model.text.indexOf(exactText, searchIdx);
+      if (idx === -1) break;
+
+      candidates.push({ start: idx, end: idx + exactText.length });
+      searchIdx = idx + 1; // can be +exactText.length if we assume no overlap
+    }
+
+    if (candidates.length === 0) return null;
+    if (candidates.length === 1) return candidates[0];
+
+    // 2. Score candidates based on prefix/suffix match and position hint
+    let bestCandidate = candidates[0];
+    let maxScore = -1;
+
+    for (const c of candidates) {
+      let score = 0;
+
+      // Score prefix
+      if (selector.prefix) {
+        const expectedPrefixStart = Math.max(0, c.start - selector.prefix.length);
+        const actualPrefix = model.text.substring(expectedPrefixStart, c.start);
+        if (actualPrefix.endsWith(selector.prefix)) {
+          score += 100;
+        } else {
+          // Partial match score could be added here
+          // simple overlap match
+          for(let i = Math.min(selector.prefix.length, actualPrefix.length); i > 0; i--) {
+             if (actualPrefix.endsWith(selector.prefix.substring(selector.prefix.length - i))) {
+                score += i;
+                break;
+             }
+          }
+        }
+      }
+
+      // Score suffix
+      if (selector.suffix) {
+        const expectedSuffixEnd = Math.min(model.text.length, c.end + selector.suffix.length);
+        const actualSuffix = model.text.substring(c.end, expectedSuffixEnd);
+        if (actualSuffix.startsWith(selector.suffix)) {
+          score += 100;
+        } else {
+           for(let i = Math.min(selector.suffix.length, actualSuffix.length); i > 0; i--) {
+             if (actualSuffix.startsWith(selector.suffix.substring(0, i))) {
+                score += i;
+                break;
+             }
+          }
+        }
+      }
+
+      // Tie-breaker: textPosition hint
+      if (hints.textPosition && hints.textPosition.start !== undefined) {
+         const dist = Math.abs(c.start - hints.textPosition.start);
+         // subtract distance penalty
+         score -= Math.min(50, dist / 100);
+      }
+
+      if (score > maxScore) {
+        maxScore = score;
+        bestCandidate = c;
+      }
+    }
+
+    return bestCandidate;
+  }
+
+  /**
+   * Convert normalized text offsets back to a DOM Range.
+   * @param {Object} model - The normalized text model.
+   * @param {number} start - The start normalized offset.
+   * @param {number} end - The end normalized offset.
+   * @returns {Range|null}
+   */
+  function normalizedOffsetsToRange(model, start, end) {
+    if (start < 0 || end > model.text.length || start >= end) return null;
+
+    let startNode = null;
+    let startRawOffset = 0;
+    let endNode = null;
+    let endRawOffset = 0;
+
+    for (const segment of model.segments) {
+      // Find start
+      if (!startNode && start >= segment.normalizedStart && start < segment.normalizedEnd) {
+        startNode = segment.node;
+        const localOffset = start - segment.normalizedStart;
+        startRawOffset = segment.normalizedToRaw[localOffset];
+      }
+
+      // Find end
+      if (!endNode && end > segment.normalizedStart && end <= segment.normalizedEnd) {
+        endNode = segment.node;
+        const localOffset = end - segment.normalizedStart - 1;
+        // The end is exclusive, so we find the raw index of the last character
+        // and add 1 to it.
+        endRawOffset = segment.normalizedToRaw[localOffset] + 1;
+      }
+
+      if (startNode && endNode) break;
+    }
+
+    if (startNode && endNode) {
+      const range = document.createRange();
+      try {
+        range.setStart(startNode, startRawOffset);
+        range.setEnd(endNode, endRawOffset);
+        return range;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * @param {object} params
    * @param {string} params.groupId
    * @param {string} params.color
    * @param {string} params.selectedText
    * @param {HTMLElement[]} params.highlightSpans
+   * @param {Object} [params.selectors]
    * @param {function(HTMLElement): number} [params.getSpanPosition]
    * @returns {HighlightGroup}
    */
@@ -289,6 +585,7 @@
     color,
     selectedText,
     highlightSpans,
+    selectors,
     getSpanPosition,
   }) {
     const resolvePosition = getSpanPosition || ((span) => {
@@ -304,6 +601,10 @@
       updatedAt: Date.now(),
       spans: [],
     };
+
+    if (selectors) {
+      group.selectors = selectors;
+    }
 
     highlightSpans.forEach((span, index) => {
       const spanId = `${groupId}_${index}`;
@@ -324,5 +625,10 @@
     processSelectionRange,
     selectionOverlapsHighlight,
     buildHighlightGroup,
+    buildNormalizedTextModel,
+    rangeToTextPosition,
+    buildQuoteSelector,
+    resolveQuoteSelector,
+    normalizedOffsetsToRange,
   };
 })();

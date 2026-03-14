@@ -1,6 +1,39 @@
 import { validateImportPayload } from '../shared/import-export-schema.js';
 
 describe('import-export schema validation', () => {
+  it('should accept payloads with selectors and no spans', () => {
+    const updatedAt = 1700000000000;
+    const result = validateImportPayload({
+      pages: [
+        {
+          url: 'https://example.com',
+          title: 'Example',
+          lastUpdated: '2026-02-01T00:00:00.000Z',
+          highlights: [
+            {
+              groupId: 'g1',
+              color: 'yellow',
+              text: 'hello',
+              updatedAt,
+              selectors: {
+                 quote: { prefix: 'a', suffix: 'b' },
+                 textPosition: { start: 1, end: 5 }
+              }
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.pages).toHaveLength(1);
+    expect(result.pages[0].highlights).toHaveLength(1);
+    expect(result.pages[0].highlights[0].selectors.quote.prefix).toBe('a');
+    expect(result.pages[0].highlights[0].selectors.textPosition.start).toBe(1);
+    expect(result.stats.acceptedPages).toBe(1);
+    expect(result.stats.rejectedPages).toBe(0);
+  });
+
   it('should reject payloads without pages array', () => {
     const result = validateImportPayload({});
     expect(result.valid).toBe(false);

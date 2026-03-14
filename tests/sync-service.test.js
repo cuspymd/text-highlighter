@@ -8,6 +8,7 @@ import {
   cleanupEmptyHighlightData,
   clearAllSyncedHighlights,
   initSyncListener,
+  toSyncHighlightGroup,
 } from '../background/sync-service.js';
 
 const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -96,6 +97,24 @@ describe('sync-service', () => {
       const key = urlToSyncKey('https://example.com/test?q=1&p=2');
       const suffix = key.slice(3); // strip 'hl_'
       expect(suffix).toMatch(/^[0-9a-z]+$/);
+    });
+  });
+
+  describe('toSyncHighlightGroup', () => {
+    it('strips spans from highlight group', () => {
+      const group = {
+        groupId: 'g1',
+        color: '#ffff00',
+        text: 'hello',
+        spans: [{ spanId: 's1', text: 'hello', position: 10 }],
+        selectors: {
+           quote: { prefix: 'a', suffix: 'b' }
+        }
+      };
+      const synced = toSyncHighlightGroup(group);
+      expect(synced.spans).toBeUndefined();
+      expect(synced.groupId).toBe('g1');
+      expect(synced.selectors.quote.prefix).toBe('a');
     });
   });
 
