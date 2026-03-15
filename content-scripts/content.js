@@ -285,6 +285,7 @@ function retryPendingRestores() {
   debugLog(`Retrying pending restores (attempt ${restoreRetryCount})...`, pendingRestoreQueue.length, 'items');
 
   const stillPending = [];
+
   pendingRestoreQueue.forEach(group => {
     let model = null;
     if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
