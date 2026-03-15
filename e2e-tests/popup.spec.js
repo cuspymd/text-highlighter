@@ -337,6 +337,9 @@ test.describe('Popup Tests', () => {
     // Select h1 tag after loading test-page.html
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
     
+    // Add small delay to ensure background message listeners are active
+    await page.waitForTimeout(500);
+
     const h1 = page.locator('h1');
     const h1Text = await h1.textContent();
     
