@@ -363,7 +363,7 @@
       for (const segment of model.segments) {
         if (segment.node === node) {
           if (offset === 0) return segment.normalizedStart;
-          if (offset >= segment.normalizedToRaw.length) return segment.normalizedEnd;
+          if (offset >= node.nodeValue.length) return segment.normalizedEnd;
 
           for (let i = 0; i < segment.normalizedToRaw.length; i++) {
             if (segment.normalizedToRaw[i] === offset) {
