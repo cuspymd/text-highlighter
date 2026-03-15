@@ -69,6 +69,7 @@ function normalizeHighlightGroup(group, groupIdFallback) {
     selectors = {};
     if (isPlainObject(group.selectors.quote)) {
       selectors.quote = {
+        exact: isNonEmptyString(group.selectors.quote.exact) ? group.selectors.quote.exact : '',
         prefix: isNonEmptyString(group.selectors.quote.prefix) ? group.selectors.quote.prefix : '',
         suffix: isNonEmptyString(group.selectors.quote.suffix) ? group.selectors.quote.suffix : '',
       };

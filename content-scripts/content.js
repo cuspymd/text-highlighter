@@ -365,7 +365,7 @@ function tryRestoreHighlightGroup(group, model) {
       const match = contentCore.resolveQuoteSelector(
         model,
         group.selectors.quote,
-        group.text,
+        group.selectors.quote.exact || group.text,
         { textPosition: group.selectors.textPosition }
       );
 
