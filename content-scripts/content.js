@@ -284,17 +284,17 @@ function retryPendingRestores() {
 
   debugLog(`Retrying pending restores (attempt ${restoreRetryCount})...`, pendingRestoreQueue.length, 'items');
 
-  let model = null;
-  if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
-    try {
-      model = contentCore.buildNormalizedTextModel(document.body);
-    } catch (e) {
-      debugLog('Error building text model for retry:', e);
-    }
-  }
-
   const stillPending = [];
   pendingRestoreQueue.forEach(group => {
+    let model = null;
+    if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
+      try {
+        model = contentCore.buildNormalizedTextModel(document.body);
+      } catch (e) {
+        debugLog('Error building text model for retry:', e);
+      }
+    }
+
     try {
       const restored = tryRestoreHighlightGroup(group, model);
       if (!restored) {
