@@ -41,6 +41,9 @@ export function normalizeSyncMeta(rawMeta) {
 }
 
 export function toSyncHighlightGroup(group) {
+  if (!group.selectors || !group.selectors.quote) {
+    return group;
+  }
   const { spans, ...rest } = group;
   return rest;
 }
