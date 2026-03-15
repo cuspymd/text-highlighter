@@ -229,22 +229,212 @@ function clearAllHighlights() {
   });
 }
 
-// Apply highlights to the page using saved highlight information
-function applyHighlights() {
-  debugLog('Applying highlights, count:', highlights.length);
-  highlights.forEach(group => {
+// Helper to apply highlight from a DOM Range
+function applyHighlightFromRange(range, color, groupId) {
+  try {
+    const convertedRange = convertSelectionRange(range);
+    const highlightSpans = processSelectionRange(convertedRange, color, groupId);
+    if (highlightSpans.length > 0) {
+      highlightSpans.forEach((span, index) => {
+        if (!span.dataset.spanId) {
+           span.dataset.spanId = `${groupId}_${index}`;
+        }
+        addHighlightEventListeners(span);
+      });
+      return true;
+    }
+  } catch (error) {
+    debugLog('Error applying highlight from range:', error);
+  }
+  return false;
+}
+
+let pendingRestoreQueue = [];
+let restoreObserver = null;
+let restoreRetryCount = 0;
+const MAX_RESTORE_RETRIES = 10;
+let restoreDebounceTimeout = null;
+
+// Clean up restore observer
+function stopRestoreObserver() {
+  if (restoreObserver) {
+    restoreObserver.disconnect();
+    restoreObserver = null;
+  }
+  if (restoreDebounceTimeout) {
+    clearTimeout(restoreDebounceTimeout);
+    restoreDebounceTimeout = null;
+  }
+}
+
+// Retry restoring pending groups
+function retryPendingRestores() {
+  if (pendingRestoreQueue.length === 0) {
+    stopRestoreObserver();
+    return;
+  }
+
+  restoreRetryCount++;
+  if (restoreRetryCount > MAX_RESTORE_RETRIES) {
+    debugLog('Max restore retries reached. Stopping observer.');
+    stopRestoreObserver();
+    pendingRestoreQueue = [];
+    return;
+  }
+
+  debugLog(`Retrying pending restores (attempt ${restoreRetryCount})...`, pendingRestoreQueue.length, 'items');
+
+  const stillPending = [];
+
+  pendingRestoreQueue.forEach(group => {
+    let model = null;
+    if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
+      try {
+        model = contentCore.buildNormalizedTextModel(document.body);
+      } catch (e) {
+        debugLog('Error building text model for retry:', e);
+      }
+    }
+
     try {
-      debugLog('Applying highlight group:', group);
-      highlightTextInDocument(
+      const restored = tryRestoreHighlightGroup(group, model);
+      if (!restored) {
+        stillPending.push(group);
+      }
+    } catch (error) {
+      debugLog('Error retrying highlight group:', error);
+      stillPending.push(group);
+    }
+  });
+
+  pendingRestoreQueue = stillPending;
+
+  if (pendingRestoreQueue.length === 0) {
+    stopRestoreObserver();
+  } else {
+    // Some highlights still failed, ensure we wait for next mutation
+    updateMinimapMarkers();
+  }
+}
+
+// Initialize MutationObserver to watch for dynamic content and retry
+function startRestoreObserver() {
+  if (pendingRestoreQueue.length === 0) return;
+  if (restoreObserver) return; // Already running
+
+  restoreRetryCount = 0;
+
+  restoreObserver = new MutationObserver((mutations) => {
+    // Only care about nodes added or text content changes
+    let hasRelevantChanges = false;
+    for (const mutation of mutations) {
+      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+        // Ignore changes caused by highlighter extension itself
+        const allExtensions = Array.from(mutation.addedNodes).every(
+           node => node.nodeType === Node.ELEMENT_NODE && node.classList.contains('text-highlighter-extension')
+        );
+        if (!allExtensions) {
+           hasRelevantChanges = true;
+           break;
+        }
+      } else if (mutation.type === 'characterData') {
+         hasRelevantChanges = true;
+         break;
+      }
+    }
+
+    if (hasRelevantChanges) {
+      if (restoreDebounceTimeout) clearTimeout(restoreDebounceTimeout);
+      restoreDebounceTimeout = setTimeout(() => {
+        retryPendingRestores();
+      }, 500); // 500ms debounce
+    }
+  });
+
+  restoreObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
+}
+
+// Try to restore a highlight group using quote selectors first, then fallback
+function tryRestoreHighlightGroup(group, model) {
+  // 1. Try Quote-based restoration
+  if (group.selectors && group.selectors.quote && model && contentCore && typeof contentCore.resolveQuoteSelector === 'function') {
+    try {
+      const match = contentCore.resolveQuoteSelector(
+        model,
+        group.selectors.quote,
+        group.selectors.quote.exact || group.text,
+        { textPosition: group.selectors.textPosition }
+      );
+
+      if (match) {
+        const range = contentCore.normalizedOffsetsToRange(model, match.start, match.end);
+        if (range) {
+          if (applyHighlightFromRange(range, group.color, group.groupId)) {
+            debugLog('Restored highlight using quote selector:', group.groupId);
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      debugLog('Quote restoration failed, falling back to legacy spans:', e);
+    }
+  }
+
+  // 2. Legacy fallback
+  if (group.spans && group.spans.length > 0) {
+     const success = highlightTextInDocument(
         document.body,
         group.spans,
         group.color,
         group.groupId
-      );
+     );
+     if (success) {
+        debugLog('Restored highlight using legacy spans:', group.groupId);
+        return true;
+     }
+  }
+
+  debugLog('Failed to restore highlight group:', group.groupId);
+  return false;
+}
+
+// Apply highlights to the page using saved highlight information
+function applyHighlights() {
+  debugLog('Applying highlights, count:', highlights.length);
+  stopRestoreObserver();
+  pendingRestoreQueue = [];
+
+  let model = null;
+  if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
+    try {
+      model = contentCore.buildNormalizedTextModel(document.body);
+    } catch (e) {
+      debugLog('Error building text model for restoration:', e);
+    }
+  }
+
+  highlights.forEach(group => {
+    try {
+      debugLog('Applying highlight group:', group);
+      const restored = tryRestoreHighlightGroup(group, model);
+      if (!restored) {
+        pendingRestoreQueue.push(group);
+      }
     } catch (error) {
       debugLog('Error applying highlight group:', error);
+      pendingRestoreQueue.push(group);
     }
   });
+
+  if (pendingRestoreQueue.length > 0) {
+    debugLog(`Queueing ${pendingRestoreQueue.length} highlights for dynamic retry`);
+    startRestoreObserver();
+  }
+
   updateMinimapMarkers();
 }
 
@@ -505,19 +695,36 @@ function highlightSelectedText(color) {
 
   try {
     const groupId = Date.now().toString();
+
+    // Generate selectors for robust restoration
+    let selectors = null;
+    if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
+      try {
+        const model = contentCore.buildNormalizedTextModel(document.body);
+        const quote = contentCore.buildQuoteSelector(model, convertedRange);
+        const textPosition = contentCore.rangeToTextPosition(model, convertedRange);
+        if (quote && textPosition) {
+          selectors = { quote, textPosition };
+        }
+      } catch (err) {
+        debugLog('Error building selectors:', err);
+      }
+    }
+
     const highlightSpans = processSelectionRange(convertedRange, color, groupId);
     if (highlightSpans.length > 0) {
       const group = (
         contentCore
         && typeof contentCore.buildHighlightGroup === 'function'
       )
-        ? contentCore.buildHighlightGroup({ groupId, color, selectedText, highlightSpans })
+        ? contentCore.buildHighlightGroup({ groupId, color, selectedText, highlightSpans, selectors })
         : {
             groupId,
             color,
             text: selectedText,
             updatedAt: Date.now(),
             spans: [],
+            ...(selectors ? { selectors } : {})
           };
 
       highlightSpans.forEach((span, index) => {

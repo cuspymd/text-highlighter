@@ -40,6 +40,14 @@ export function normalizeSyncMeta(rawMeta) {
   return meta;
 }
 
+export function toSyncHighlightGroup(group) {
+  if (!group.selectors || !group.selectors.quote) {
+    return group;
+  }
+  const { spans, ...rest } = group;
+  return rest;
+}
+
 export function urlToSyncKey(url) {
   let hash = 0;
   for (let i = 0; i < url.length; i++) {
@@ -146,7 +154,9 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
       { highlights: remoteData.highlights || [], deletedGroupIds: remoteData.deletedGroupIds || {} }
     );
 
-    const data = { url, title, lastUpdated, highlights: merged.highlights, deletedGroupIds: merged.deletedGroupIds };
+    const syncHighlights = merged.highlights.map(toSyncHighlightGroup);
+
+    const data = { url, title, lastUpdated, highlights: syncHighlights, deletedGroupIds: merged.deletedGroupIds };
     const dataStr = JSON.stringify({ [syncKey]: data });
     const dataSize = new TextEncoder().encode(dataStr).byteLength;
 

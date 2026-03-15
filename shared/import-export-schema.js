@@ -46,24 +46,40 @@ function normalizeHighlightGroup(group, groupIdFallback) {
     return { ok: false, reason: 'group.color must be a non-empty string' };
   }
 
-  if (!Array.isArray(group.spans)) {
-    return { ok: false, reason: 'group.spans must be an array' };
-  }
-
   const spans = [];
   let rejectedSpans = 0;
 
-  for (const rawSpan of group.spans) {
-    const normalized = normalizeSpan(rawSpan);
-    if (!normalized.ok) {
-      rejectedSpans += 1;
-      continue;
+  if (Array.isArray(group.spans)) {
+    for (const rawSpan of group.spans) {
+      const normalized = normalizeSpan(rawSpan);
+      if (!normalized.ok) {
+        rejectedSpans += 1;
+        continue;
+      }
+      spans.push(normalized.value);
     }
-    spans.push(normalized.value);
   }
 
-  if (spans.length === 0) {
-    return { ok: false, reason: 'group contains no valid spans', rejectedSpans };
+  if (spans.length === 0 && !isPlainObject(group.selectors)) {
+    return { ok: false, reason: 'group contains no valid spans and no selectors', rejectedSpans };
+  }
+
+  let selectors = undefined;
+  if (isPlainObject(group.selectors)) {
+    selectors = {};
+    if (isPlainObject(group.selectors.quote)) {
+      selectors.quote = {
+        exact: isNonEmptyString(group.selectors.quote.exact) ? group.selectors.quote.exact : '',
+        prefix: isNonEmptyString(group.selectors.quote.prefix) ? group.selectors.quote.prefix : '',
+        suffix: isNonEmptyString(group.selectors.quote.suffix) ? group.selectors.quote.suffix : '',
+      };
+    }
+    if (isPlainObject(group.selectors.textPosition)) {
+      selectors.textPosition = {
+        start: Number.isFinite(group.selectors.textPosition.start) ? group.selectors.textPosition.start : 0,
+        end: Number.isFinite(group.selectors.textPosition.end) ? group.selectors.textPosition.end : 0,
+      };
+    }
   }
 
   return {
@@ -74,6 +90,7 @@ function normalizeHighlightGroup(group, groupIdFallback) {
       text: isNonEmptyString(group.text) ? group.text : spans.map(span => span.text).join(''),
       updatedAt: toTimestampOrNow(group.updatedAt),
       spans,
+      ...(selectors ? { selectors } : {}),
     },
     rejectedSpans,
   };
