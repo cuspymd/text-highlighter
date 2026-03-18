@@ -18,6 +18,7 @@ import {
   broadcastSettingsToTabs,
   createOrUpdateContextMenus,
   updateCustomColor,
+  updateCustomColorName,
   removeCustomColor,
   getShortcutColorMap,
   saveShortcutColorMap,
@@ -99,6 +100,16 @@ async function handleAddColor(message) {
 async function handleUpdateCustomColor(message) {
   if (!message.id || !message.color) return errorResponse('Missing id or color');
   const result = await updateCustomColor(message.id, message.color);
+  if (result.notFound) return errorResponse('Color not found');
+  if (result.exists) return successResponse({ exists: true, colors: result.colors });
+  await createOrUpdateContextMenus();
+  await broadcastToAllTabs({ action: 'colorsUpdated', colors: result.colors });
+  return successResponse({ colors: result.colors });
+}
+
+async function handleUpdateCustomColorName(message) {
+  if (!message.id || !message.name) return errorResponse('Missing id or name');
+  const result = await updateCustomColorName(message.id, message.name);
   if (result.notFound) return errorResponse('Color not found');
   if (result.exists) return successResponse({ exists: true, colors: result.colors });
   await createOrUpdateContextMenus();
@@ -281,6 +292,7 @@ const ACTION_HANDLERS = {
   clearCustomColors:         handleClearCustomColors,
   addColor:                  handleAddColor,
   updateCustomColor:         handleUpdateCustomColor,
+  updateCustomColorName:     handleUpdateCustomColorName,
   removeCustomColor:         handleRemoveCustomColor,
   getShortcutColorMap:       handleGetShortcutColorMap,
   saveShortcutColorMap:      handleSaveShortcutColorMap,
