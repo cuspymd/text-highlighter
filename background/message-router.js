@@ -109,6 +109,7 @@ async function handleUpdateCustomColor(message) {
 
 async function handleUpdateCustomColorName(message) {
   if (!message.id || !message.name) return errorResponse('Missing id or name');
+  await ensureCustomColorsLoaded();
   const result = await updateCustomColorName(message.id, message.name);
   if (result.notFound) return errorResponse('Color not found');
   if (result.exists) return successResponse({ exists: true, colors: result.colors });
