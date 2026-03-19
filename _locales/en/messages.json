@@ -218,6 +218,12 @@
   "noCustomColors": {
     "message": "No custom colors yet."
   },
+  "editNameTooltip": {
+    "message": "Click to edit name"
+  },
+  "nameAlreadyExists": {
+    "message": "Name already exists."
+  },
   "colorAlreadyExists": {
     "message": "This color already exists."
   },
