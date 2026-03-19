@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const input = document.createElement('input');
       input.type = 'text';
       input.className = 'color-name-input';
+      input.maxLength = 50;
       input.value = name.textContent;
 
       const finishEditing = async () => {

@@ -250,11 +250,13 @@ export async function updateCustomColorName(id, newName) {
 
   if (duplicate) return { exists: true, colors: currentColors };
 
-  customColors[idx] = { ...customColors[idx], customName: newName };
+  const finalName = newName.substring(0, 50);
+
+  customColors[idx] = { ...customColors[idx], customName: finalName };
   await browserAPI.storage.local.set({ customColors });
 
   const globalIdx = currentColors.findIndex(c => c.id === id);
-  if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], customName: newName };
+  if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], customName: finalName };
 
   await saveSettingsToSync();
   return { exists: false, colors: currentColors };
