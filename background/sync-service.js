@@ -308,8 +308,8 @@ export async function migrateLocalToSync() {
           const localMatch = mergedSettings.customColors.find(lc => lc.color.toLowerCase() === sc.color.toLowerCase());
           if (!localMatch) {
             mergedSettings.customColors.push(sc);
-          } else if (sc.customName && !localMatch.customName) {
-            // If sync has a custom name and local doesn't, prefer sync's custom name
+          } else if (sc.customName && sc.customName !== localMatch.customName) {
+            // Prefer sync's custom name over local if they differ
             localMatch.customName = sc.customName;
           }
         });
