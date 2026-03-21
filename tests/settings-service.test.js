@@ -9,6 +9,7 @@ import {
   clearCustomColors,
   applySettingsFromSync,
   broadcastSettingsToTabs,
+  loadCustomColors,
 } from '../background/settings-service.js';
 
 describe('settings-service', () => {
@@ -225,6 +226,28 @@ describe('settings-service', () => {
     it('should return colorsChanged: false when settings contain no color data', async () => {
       const result = await applySettingsFromSync({});
       expect(result.colorsChanged).toBe(false);
+    });
+  });
+
+  describe('loadCustomColors', () => {
+    it('should sanitize legacy custom colors without writing full settings back to sync', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: {
+          customColors: [
+            { id: 'custom_legacy', nameKey: 'customColor', color: '#123456' },
+          ],
+        },
+      });
+      chrome.storage.local.get.mockResolvedValueOnce({});
+
+      await loadCustomColors();
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+        customColors: [
+          { id: 'custom_legacy', color: '#123456', colorNumber: 1 },
+        ],
+      });
+      expect(chrome.storage.sync.set).not.toHaveBeenCalled();
     });
   });
 

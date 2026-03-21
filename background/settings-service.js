@@ -232,7 +232,6 @@ async function loadCustomColorsFromStorage() {
 
   if (needsUpdate) {
     await browserAPI.storage.local.set({ customColors });
-    await saveSettingsToSync();
     debugLog('Updated custom colors with numbers:', customColors);
   }
 
