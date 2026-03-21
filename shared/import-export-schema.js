@@ -60,8 +60,8 @@ function normalizeHighlightGroup(group, groupIdFallback) {
     }
   }
 
-  if (spans.length === 0 && !isPlainObject(group.selectors)) {
-    return { ok: false, reason: 'group contains no valid spans and no selectors', rejectedSpans };
+  if (spans.length === 0 && (!isPlainObject(group.selectors) || !isPlainObject(group.selectors.quote))) {
+    return { ok: false, reason: 'group contains no valid spans and no valid quote selector', rejectedSpans };
   }
 
   let selectors = undefined;

@@ -138,6 +138,38 @@ describe('import-export schema validation', () => {
     expect(typeof result.pages[0].highlights[0].updatedAt).toBe('number');
   });
 
+  it('should reject highlights with no spans and missing/invalid quote selector', () => {
+    const result = validateImportPayload({
+      pages: [
+        {
+          url: 'https://example.com',
+          highlights: [
+            {
+              groupId: 'g1',
+              color: 'yellow',
+              spans: [], // Empty spans
+              selectors: {
+                 textPosition: { start: 1, end: 5 } // Missing quote selector
+              }
+            },
+            {
+              groupId: 'g2',
+              color: 'yellow',
+              // Missing spans completely
+              selectors: {
+                 quote: 'not an object' // Invalid quote selector
+              }
+            }
+          ],
+        },
+      ],
+    });
+
+    expect(result.pages).toHaveLength(0); // Both highlights rejected -> page empty -> rejected
+    expect(result.stats.rejectedPages).toBe(1);
+    expect(result.stats.rejectedHighlights).toBe(2);
+  });
+
   it('should fallback invalid highlight updatedAt to current time', () => {
     const now = 1700000001234;
     jest.spyOn(Date, 'now').mockReturnValue(now);
