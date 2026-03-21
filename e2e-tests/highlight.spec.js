@@ -244,6 +244,21 @@ test.describe('Chrome Extension Tests', () => {
   });
 
   test('Deleting one of two highlights with the controls delete button should not be restored by sync merge', async ({ page, background }) => {
+    // Wait for the background page to complete its migration so test data doesn't get cleared
+    await background.evaluate(async () => {
+      const result = await chrome.storage.local.get('syncMigrationDone');
+      if (!result.syncMigrationDone) {
+        return new Promise((resolve) => {
+          chrome.storage.onChanged.addListener(function listener(changes, areaName) {
+            if (areaName === 'local' && changes.syncMigrationDone?.newValue) {
+              chrome.storage.onChanged.removeListener(listener);
+              resolve();
+            }
+          });
+        });
+      }
+    });
+
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
     const h1 = page.locator('h1');
@@ -253,9 +268,12 @@ test.describe('Chrome Extension Tests', () => {
     await sendHighlightMessage(background, 'yellow');
     await expect(h1.locator('span.text-highlighter-extension')).toHaveCount(1);
 
-    await firstParagraph.click({ clickCount: 3 });
+    const secondParagraph = page.locator('p').nth(1);
+    await selectTextInElement(secondParagraph, "Another paragraph to ensure multiple elements are handled correctly.");
+    const selected2 = await page.evaluate(() => window.getSelection().toString().trim());
+    expect(selected2).toBe("Another paragraph to ensure multiple elements are handled correctly.");
     await sendHighlightMessage(background, '#AAFFAA');
-    await expect(firstParagraph.locator('span.text-highlighter-extension')).toHaveCount(1);
+    await expect(secondParagraph.locator('span.text-highlighter-extension')).toHaveCount(1);
 
     const h1Span = h1.locator('span.text-highlighter-extension');
     await h1Span.click();
@@ -263,9 +281,17 @@ test.describe('Chrome Extension Tests', () => {
     await expect(controls).toBeVisible();
     await controls.locator('.delete-highlight').click();
 
-    // Give sync merge/onChanged a chance to re-apply stale data.
-    await page.waitForTimeout(1500);
+    // Wait until the group is visually deleted from the page, meaning the DOM is updated
+    await expect(h1.locator('span.text-highlighter-extension')).toHaveCount(0);
 
+    // Make sure the second paragraph's highlight wasn't accidentally affected by DOM mutations
+    await expect(secondParagraph.locator('span.text-highlighter-extension')).toHaveCount(1);
+
+    // Give sync merge/onChanged a chance to run
+    // Since we're deleting, we expect the background sync to NOT restore it
+    await page.waitForTimeout(2000);
+
+    // Verify only 1 highlight group exists on the page (the green one)
     const groupCount = await page.evaluate(() => {
       const groups = new Set(
         Array.from(document.querySelectorAll('.text-highlighter-extension'))
