@@ -262,9 +262,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Keyboard Shortcuts ---
   const shortcutsList = document.getElementById('shortcuts-list');
 
+  function isCustomColor(colorObj) {
+    return colorObj.id && colorObj.id.startsWith('custom_');
+  }
+
+  function getCustomColorBaseName() {
+    return browserAPI.i18n.getMessage('customColor') || 'Custom Color';
+  }
+
   function buildColorLabel(colorObj) {
     if (colorObj.customName) {
       return colorObj.customName;
+    }
+    if (isCustomColor(colorObj)) {
+      const baseName = getCustomColorBaseName();
+      return colorObj.colorNumber ? `${baseName} ${colorObj.colorNumber}` : baseName;
     }
     if (colorObj.nameKey) {
       const msg = browserAPI.i18n.getMessage(colorObj.nameKey);

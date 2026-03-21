@@ -61,6 +61,43 @@ function getMessage(key) {
   return browserAPI.i18n.getMessage(key);
 }
 
+function getCustomColorBaseName() {
+  return getMessage('customColor') || 'Custom Color';
+}
+
+function isCustomColor(color) {
+  return color && typeof color.id === 'string' && color.id.startsWith('custom_');
+}
+
+function getColorDisplayName(color) {
+  if (color.customName) return color.customName;
+
+  if (isCustomColor(color)) {
+    const baseName = getCustomColorBaseName();
+    return color.colorNumber ? `${baseName} ${color.colorNumber}` : baseName;
+  }
+
+  if (color.nameKey) {
+    return getMessage(color.nameKey) || color.nameKey;
+  }
+
+  return color.color || '';
+}
+
+function sanitizeCustomColors(customColors) {
+  let needsUpdate = false;
+
+  customColors.forEach((colorObj) => {
+    if (Object.prototype.hasOwnProperty.call(colorObj, 'nameKey')) {
+      delete colorObj.nameKey;
+      needsUpdate = true;
+    }
+  });
+
+  const normalized = normalizeCustomColorNumbers(customColors);
+  return { ...normalized, needsUpdate: needsUpdate || normalized.needsUpdate };
+}
+
 export async function initializePlatform() {
   try {
     platformInfo = await browserAPI.runtime.getPlatformInfo();
@@ -147,9 +184,7 @@ export async function createOrUpdateContextMenus() {
     if (color.customName) {
       title = `${color.customName}${shortcutDisplay}`;
     } else {
-      title = color.colorNumber
-        ? `${getMessage(color.nameKey)} ${color.colorNumber}${shortcutDisplay}`
-        : `${getMessage(color.nameKey)}${shortcutDisplay}`;
+      title = `${getColorDisplayName(color)}${shortcutDisplay}`;
     }
 
     try {
@@ -187,7 +222,7 @@ async function loadCustomColorsFromStorage() {
     customColors = result.customColors || [];
   }
 
-  const { needsUpdate } = normalizeCustomColorNumbers(customColors);
+  const { needsUpdate } = sanitizeCustomColors(customColors);
   currentColors = [...COLORS];
   customColors.forEach((c) => {
     if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
@@ -244,7 +279,7 @@ export async function updateCustomColorName(id, newName) {
   // Check for duplicates in custom names or generated default names
   const duplicate = [...COLORS, ...customColors].some((c) => {
     if (c.id === id) return false;
-    const currentName = c.customName || (c.colorNumber ? `${getMessage(c.nameKey) || 'Custom Color'} ${c.colorNumber}` : getMessage(c.nameKey));
+    const currentName = getColorDisplayName(c);
     return currentName.toLowerCase() === newName.toLowerCase();
   });
 
@@ -318,7 +353,6 @@ export async function addCustomColor(newColorValue) {
   const { maxNumber } = normalizeCustomColorNumbers(customColors);
   const newColorObj = {
     id: `custom_${Date.now()}`,
-    nameKey: 'customColor',
     colorNumber: maxNumber + 1,
     color: newColorValue,
   };
@@ -385,9 +419,11 @@ export async function applySettingsFromSync(newSettings) {
   let colorsChanged = false;
 
   if (newSettings.customColors) {
-    await browserAPI.storage.local.set({ customColors: newSettings.customColors });
+    const customColors = newSettings.customColors.map(color => ({ ...color }));
+    sanitizeCustomColors(customColors);
+    await browserAPI.storage.local.set({ customColors });
     currentColors = [...COLORS];
-    newSettings.customColors.forEach(c => {
+    customColors.forEach(c => {
       if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
         currentColors.push(c);
       }

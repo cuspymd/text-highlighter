@@ -9,6 +9,7 @@ import {
   clearCustomColors,
   applySettingsFromSync,
   broadcastSettingsToTabs,
+  loadCustomColors,
 } from '../background/settings-service.js';
 
 describe('settings-service', () => {
@@ -122,6 +123,20 @@ describe('settings-service', () => {
       );
     });
 
+    it('should store new custom colors without nameKey', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ customColors: [] });
+      await addCustomColor('#AABB02');
+
+      const latestCustomColorsSetCall = chrome.storage.local.set.mock.calls
+        .map(([arg]) => arg)
+        .filter(arg => Array.isArray(arg.customColors))
+        .pop();
+      const addedColor = latestCustomColorsSetCall.customColors.find(c => c.color === '#AABB02');
+
+      expect(addedColor).toBeTruthy();
+      expect(addedColor).not.toHaveProperty('nameKey');
+    });
+
     it('should return exists: true for a built-in default color (case-insensitive)', async () => {
       chrome.storage.local.get.mockResolvedValueOnce({ customColors: [] });
       const result = await addCustomColor('#ffff00'); // yellow, lowercase
@@ -141,9 +156,9 @@ describe('settings-service', () => {
 
       chrome.storage.local.get.mockResolvedValueOnce({
         customColors: [
-          { id: 'custom_a', nameKey: 'customColor', color: '#111111', colorNumber: 1 },
-          { id: 'custom_b', nameKey: 'customColor', color: '#222222', colorNumber: 4 },
-          { id: 'custom_c', nameKey: 'customColor', color: '#333333', colorNumber: 3 },
+          { id: 'custom_a', color: '#111111', colorNumber: 1 },
+          { id: 'custom_b', color: '#222222', colorNumber: 4 },
+          { id: 'custom_c', color: '#333333', colorNumber: 3 },
         ],
       });
 
@@ -169,7 +184,7 @@ describe('settings-service', () => {
 
     it('should clear stored custom colors and return hadColors: true', async () => {
       chrome.storage.local.get.mockResolvedValueOnce({
-        customColors: [{ id: 'custom_1', color: '#112233', nameKey: 'customColor' }],
+        customColors: [{ id: 'custom_1', color: '#112233' }],
       });
       const result = await clearCustomColors();
 
@@ -185,7 +200,7 @@ describe('settings-service', () => {
   describe('applySettingsFromSync', () => {
     it('should update custom colors from sync and return colorsChanged: true', async () => {
       const result = await applySettingsFromSync({
-        customColors: [{ id: 'custom_sync', color: '#FFAA11', nameKey: 'customColor' }],
+        customColors: [{ id: 'custom_sync', color: '#FFAA11' }],
       });
 
       expect(result.colorsChanged).toBe(true);
@@ -211,6 +226,28 @@ describe('settings-service', () => {
     it('should return colorsChanged: false when settings contain no color data', async () => {
       const result = await applySettingsFromSync({});
       expect(result.colorsChanged).toBe(false);
+    });
+  });
+
+  describe('loadCustomColors', () => {
+    it('should sanitize legacy custom colors without writing full settings back to sync', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: {
+          customColors: [
+            { id: 'custom_legacy', nameKey: 'customColor', color: '#123456' },
+          ],
+        },
+      });
+      chrome.storage.local.get.mockResolvedValueOnce({});
+
+      await loadCustomColors();
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+        customColors: [
+          { id: 'custom_legacy', color: '#123456', colorNumber: 1 },
+        ],
+      });
+      expect(chrome.storage.sync.set).not.toHaveBeenCalled();
     });
   });
 

@@ -338,7 +338,7 @@ test.describe('Sync scenarios', () => {
     await page.goto(testFileUrl('test-page.html'));
 
     // Simulate another device adding a custom color
-    const customColor = { id: 'custom_123', nameKey: 'customColor', colorNumber: 1, color: '#123456' };
+    const customColor = { id: 'custom_123', colorNumber: 1, color: '#123456' };
     await background.evaluate(async (customColor) => {
       await chrome.storage.sync.set({
         settings: {
