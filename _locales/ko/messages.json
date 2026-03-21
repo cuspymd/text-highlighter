@@ -218,6 +218,12 @@
   "noCustomColors": {
     "message": "사용자 정의 색상이 없습니다."
   },
+  "editNameTooltip": {
+    "message": "클릭하여 이름 편집"
+  },
+  "nameAlreadyExists": {
+    "message": "이미 존재하는 이름입니다."
+  },
   "colorAlreadyExists": {
     "message": "이미 추가된 색상입니다."
   },

@@ -218,6 +218,12 @@
   "noCustomColors": {
     "message": "カスタムカラーはありません。"
   },
+  "editNameTooltip": {
+    "message": "クリックして名前を編集"
+  },
+  "nameAlreadyExists": {
+    "message": "その名前はすでに存在します。"
+  },
   "colorAlreadyExists": {
     "message": "すでに存在するカラーです。"
   },

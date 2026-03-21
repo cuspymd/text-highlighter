@@ -218,6 +218,12 @@
   "noCustomColors": {
     "message": "暂无自定义颜色。"
   },
+  "editNameTooltip": {
+    "message": "点击以编辑名称"
+  },
+  "nameAlreadyExists": {
+    "message": "名称已存在。"
+  },
   "colorAlreadyExists": {
     "message": "该颜色已存在。"
   },

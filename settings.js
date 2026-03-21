@@ -83,13 +83,70 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const name = document.createElement('span');
     name.className = 'color-name';
-    name.textContent = `${browserAPI.i18n.getMessage('customColor') || 'Custom Color'} ${colorObj.colorNumber}`;
+    name.textContent = colorObj.customName || `${browserAPI.i18n.getMessage('customColor') || 'Custom Color'} ${colorObj.colorNumber}`;
+    name.title = browserAPI.i18n.getMessage('editNameTooltip') || 'Click to edit name';
+
+    let isEditingName = false;
+
+    name.addEventListener('click', () => {
+      if (isEditingName) return;
+      isEditingName = true;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'color-name-input';
+      input.maxLength = 50;
+      input.value = name.textContent;
+
+      const finishEditing = async () => {
+        if (!isEditingName) return;
+        isEditingName = false;
+
+        const newName = input.value.trim();
+        if (newName && newName !== (colorObj.customName || `${browserAPI.i18n.getMessage('customColor') || 'Custom Color'} ${colorObj.colorNumber}`)) {
+          const response = await browserAPI.runtime.sendMessage({
+            action: 'updateCustomColorName',
+            id: colorObj.id,
+            name: newName
+          });
+
+          if (response.success) {
+            if (response.exists) {
+              await showAlertModal(browserAPI.i18n.getMessage('nameAlreadyExists') || 'Name already exists.');
+              name.textContent = colorObj.customName || `${browserAPI.i18n.getMessage('customColor') || 'Custom Color'} ${colorObj.colorNumber}`;
+            } else {
+              const customColors = response.colors.filter(c => c.id.startsWith('custom_'));
+              renderCustomColorsList(customColors);
+              await loadShortcuts(); // Refresh names in dropdown
+              return; // re-rendering handles putting the span back
+            }
+          }
+        }
+
+        info.replaceChild(name, input);
+      };
+
+      input.addEventListener('blur', finishEditing);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          input.blur();
+        } else if (e.key === 'Escape') {
+          isEditingName = false;
+          info.replaceChild(name, input);
+        }
+      });
+
+      info.replaceChild(input, name);
+      input.focus();
+      input.select();
+    });
 
     const hex = document.createElement('span');
     hex.className = 'color-hex';
     hex.textContent = colorObj.color.toUpperCase();
 
     info.appendChild(swatch);
+    // When editing, info will contain input instead of name. This append handles the initial render.
     info.appendChild(name);
     info.appendChild(hex);
 
@@ -206,6 +263,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const shortcutsList = document.getElementById('shortcuts-list');
 
   function buildColorLabel(colorObj) {
+    if (colorObj.customName) {
+      return colorObj.customName;
+    }
     if (colorObj.nameKey) {
       const msg = browserAPI.i18n.getMessage(colorObj.nameKey);
       if (colorObj.colorNumber) {

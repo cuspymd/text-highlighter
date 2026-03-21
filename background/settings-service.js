@@ -142,9 +142,15 @@ export async function createOrUpdateContextMenus() {
   for (const color of currentColors) {
     const slotName = Object.keys(shortcutColorMap).find(key => shortcutColorMap[key] === color.id);
     const shortcutDisplay = (slotName && commandShortcuts[slotName]) || '';
-    const title = color.colorNumber
-      ? `${getMessage(color.nameKey)} ${color.colorNumber}${shortcutDisplay}`
-      : `${getMessage(color.nameKey)}${shortcutDisplay}`;
+
+    let title;
+    if (color.customName) {
+      title = `${color.customName}${shortcutDisplay}`;
+    } else {
+      title = color.colorNumber
+        ? `${getMessage(color.nameKey)} ${color.colorNumber}${shortcutDisplay}`
+        : `${getMessage(color.nameKey)}${shortcutDisplay}`;
+    }
 
     try {
       await browserAPI.contextMenus.create({
@@ -226,6 +232,34 @@ export async function loadCustomColors() {
 export async function ensureCustomColorsLoaded() {
   if (hasLoadedCustomColors) return;
   await loadCustomColors();
+}
+
+export async function updateCustomColorName(id, newName) {
+  const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+  const customColors = stored.customColors || [];
+
+  const idx = customColors.findIndex(c => c.id === id);
+  if (idx === -1) return { notFound: true, colors: currentColors };
+
+  // Check for duplicates in custom names or generated default names
+  const duplicate = [...COLORS, ...customColors].some((c) => {
+    if (c.id === id) return false;
+    const currentName = c.customName || (c.colorNumber ? `${getMessage(c.nameKey) || 'Custom Color'} ${c.colorNumber}` : getMessage(c.nameKey));
+    return currentName.toLowerCase() === newName.toLowerCase();
+  });
+
+  if (duplicate) return { exists: true, colors: currentColors };
+
+  const finalName = newName.substring(0, 50);
+
+  customColors[idx] = { ...customColors[idx], customName: finalName };
+  await browserAPI.storage.local.set({ customColors });
+
+  const globalIdx = currentColors.findIndex(c => c.id === id);
+  if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], customName: finalName };
+
+  await saveSettingsToSync();
+  return { exists: false, colors: currentColors };
 }
 
 export async function updateCustomColor(id, newColorValue) {

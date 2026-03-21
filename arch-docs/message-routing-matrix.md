@@ -12,6 +12,7 @@ Source of truth: `background/message-router.js`
 | `clearCustomColors` | none | `success`, `noCustomColors?`, `error?` | local storage write, context menu update, tab broadcast | `handleClearCustomColors` |
 | `addColor` | `color` | `success`, `colors?`, `error?` | local storage write, context menu update, tab broadcast | `handleAddColor` |
 | `updateCustomColor` | `id`, `color` | `success`, `colors?`, `exists?`, `error?` | local storage write, context menu update, tab broadcast | `handleUpdateCustomColor` |
+| `updateCustomColorName` | `id`, `name` | `success`, `colors?`, `exists?`, `error?` | local storage write, context menu update, tab broadcast | `handleUpdateCustomColorName` |
 | `removeCustomColor` | `id` | `success`, `colors?`, `error?` | local storage write, context menu update, tab broadcast | `handleRemoveCustomColor` |
 | `getShortcutColorMap` | none | `success`, `shortcutColorMap`, `error?` | local storage read | `handleGetShortcutColorMap` |
 | `saveShortcutColorMap` | `shortcutColorMap` | `success`, `error?` | local storage write, context menu update | `handleSaveShortcutColorMap` |

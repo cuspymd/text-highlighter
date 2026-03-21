@@ -202,6 +202,29 @@
       .color-name {
         font-size: 14px;
         font-weight: 500;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+        border: 1px solid transparent;
+      }
+
+      .color-name:hover {
+        background-color: var(--surface-strong);
+        border-color: var(--border);
+      }
+
+      .color-name-input {
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text);
+        background: var(--surface-strong);
+        border: 1px solid var(--accent);
+        border-radius: 4px;
+        padding: 1px 3px;
+        outline: none;
+        width: 120px;
       }
 
       .color-hex {
