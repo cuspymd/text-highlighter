@@ -231,7 +231,14 @@ function createColorButton(colorInfo) {
   const colorButton = document.createElement('div');
   colorButton.className = 'text-highlighter-control-button color-button';
   colorButton.style.backgroundColor = colorInfo.color;
-  colorButton.title = getMessage(colorInfo.nameKey);
+  if (colorInfo.customName) {
+    colorButton.title = colorInfo.customName;
+  } else if (colorInfo.id && colorInfo.id.startsWith('custom_')) {
+    const baseName = getMessage('customColor') || 'Custom Color';
+    colorButton.title = colorInfo.colorNumber ? `${baseName} ${colorInfo.colorNumber}` : baseName;
+  } else {
+    colorButton.title = getMessage(colorInfo.nameKey);
+  }
   colorButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
       changeHighlightColorViaApi(activeHighlightElement, colorInfo.color);

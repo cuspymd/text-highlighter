@@ -70,7 +70,7 @@ describe('message-router', () => {
       chrome.storage.sync.get.mockResolvedValueOnce({
         settings: {
           customColors: [
-            { id: 'custom_123', nameKey: 'customColor', colorNumber: 1, color: '#123456' },
+            { id: 'custom_123', colorNumber: 1, color: '#123456' },
           ],
         },
       });
