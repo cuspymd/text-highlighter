@@ -183,6 +183,24 @@
       return walker.nextNode();
     }
 
+    function getVisibleTextStartOffset(text) {
+      for (let i = 0; i < text.length; i++) {
+        if (!/\s/.test(text[i])) {
+          return i;
+        }
+      }
+      return 0;
+    }
+
+    function getVisibleTextEndOffset(text) {
+      for (let i = text.length - 1; i >= 0; i--) {
+        if (!/\s/.test(text[i])) {
+          return i + 1;
+        }
+      }
+      return text.length;
+    }
+
     const commonAncestor = range.commonAncestorContainer;
     const startContainer = range.startContainer;
     const selectedText = normalizeText(range.toString());
@@ -202,9 +220,11 @@
       const firstTextNode = findFirstSelectableTextNode(selectionRoot);
       const lastTextNode = findLastSelectableTextNode(selectionRoot);
       if (firstTextNode && lastTextNode) {
+        const startOffset = getVisibleTextStartOffset(firstTextNode.textContent || '');
+        const endOffset = getVisibleTextEndOffset(lastTextNode.textContent || '');
         const convertedRange = document.createRange();
-        convertedRange.setStart(firstTextNode, 0);
-        convertedRange.setEnd(lastTextNode, lastTextNode.textContent.length);
+        convertedRange.setStart(firstTextNode, startOffset);
+        convertedRange.setEnd(lastTextNode, endOffset);
 
         logger('Clamped Range To Selected Root:', {
           commonAncestorContainer: convertedRange.commonAncestorContainer,

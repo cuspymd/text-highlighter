@@ -42,14 +42,19 @@ describe('content-core', () => {
   });
 
   it('clamps full-paragraph selection that starts on the element and ends at the next block boundary', () => {
-    const article = document.createElement('article');
-    const firstParagraph = document.createElement('p');
-    firstParagraph.textContent = 'First paragraph for triple click selection.';
-    const secondParagraph = document.createElement('p');
-    secondParagraph.textContent = 'Second paragraph should stay untouched.';
-    article.appendChild(firstParagraph);
-    article.appendChild(secondParagraph);
-    document.body.appendChild(article);
+    document.body.innerHTML = `
+      <article>
+        <p>
+          First paragraph for triple click selection.
+        </p>
+        <p>
+          Second paragraph should stay untouched.
+        </p>
+      </article>
+    `;
+    const article = document.querySelector('article');
+    const firstParagraph = article.querySelectorAll('p')[0];
+    const secondParagraph = article.querySelectorAll('p')[1];
 
     const range = document.createRange();
     range.setStart(firstParagraph, 0);
@@ -57,9 +62,9 @@ describe('content-core', () => {
 
     const converted = core.convertSelectionRange(range);
     expect(converted.startContainer).toBe(firstParagraph.firstChild);
-    expect(converted.startOffset).toBe(0);
+    expect(converted.startOffset).toBeGreaterThan(0);
     expect(converted.endContainer).toBe(firstParagraph.firstChild);
-    expect(converted.endOffset).toBe(firstParagraph.firstChild.textContent.length);
+    expect(converted.endOffset).toBeLessThan(firstParagraph.firstChild.textContent.length);
     expect(converted.toString()).toBe('First paragraph for triple click selection.');
   });
 
@@ -146,6 +151,36 @@ describe('content-core', () => {
     expect(converted.endContainer).toBe(bold.firstChild);
     expect(converted.endOffset).toBe(bold.firstChild.textContent.length);
     expect(converted.toString()).toBe('Play Beethoven’s 7th Symphony in its entirety');
+  });
+
+  it('builds formatting-stable quote selectors after clamping a pretty-printed paragraph range', () => {
+    document.body.innerHTML = `
+      <article>
+        <p>
+          First paragraph for triple click selection.
+        </p>
+        <p>
+          Second paragraph should stay untouched.
+        </p>
+      </article>
+    `;
+    const article = document.querySelector('article');
+    const paragraphs = article.querySelectorAll('p');
+    const range = document.createRange();
+    range.setStart(paragraphs[0], 0);
+    range.setEnd(paragraphs[1], 0);
+
+    const converted = core.convertSelectionRange(range);
+    const prettyModel = core.buildNormalizedTextModel(document.body);
+    const quote = core.buildQuoteSelector(prettyModel, converted);
+
+    expect(quote.exact).toBe('First paragraph for triple click selection.');
+
+    document.body.innerHTML = '<article><p>First paragraph for triple click selection.</p><p>Second paragraph should stay untouched.</p></article>';
+    const minifiedModel = core.buildNormalizedTextModel(document.body);
+    const resolved = core.resolveQuoteSelector(minifiedModel, quote, quote.exact);
+
+    expect(resolved).toEqual({ start: 0, end: quote.exact.length });
   });
 
   it('processes single-node selection and creates one highlight span', () => {
