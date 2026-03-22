@@ -772,11 +772,29 @@ function showControlUi(highlightElement, e) {
   activeHighlightElement = highlightElement;
   const controlsHeight = 44;
   const controlsWidth = 320;
+  const highlightControlsVerticalOffset = 52;
+  const highlightControlsSpacing = 8;
   const viewportPadding = 10;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  let topPosition = e.clientY - 40;
   const isPortrait = isMobilePlatform && window.innerWidth < window.innerHeight;
+  const highlightRect = highlightElement && typeof highlightElement.getBoundingClientRect === 'function'
+    ? highlightElement.getBoundingClientRect()
+    : null;
+  let topPosition = e.clientY - highlightControlsVerticalOffset;
+
+  if (isMobilePlatform && highlightRect) {
+    const preferredTop = highlightRect.top - controlsHeight - highlightControlsSpacing;
+    const fallbackTop = highlightRect.bottom + highlightControlsSpacing;
+    const canPlaceAboveHighlight = preferredTop >= viewportPadding;
+    const canPlaceBelowHighlight = fallbackTop + controlsHeight <= viewportHeight - viewportPadding;
+
+    if (canPlaceAboveHighlight) {
+      topPosition = preferredTop;
+    } else if (canPlaceBelowHighlight) {
+      topPosition = fallbackTop;
+    }
+  }
 
   if (topPosition + controlsHeight > viewportHeight - viewportPadding) {
     topPosition = viewportHeight - controlsHeight - viewportPadding;

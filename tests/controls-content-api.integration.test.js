@@ -79,4 +79,59 @@ describe('controls -> content API integration', () => {
 
     expect(api.changeHighlightColor).toHaveBeenCalledWith(span, '#ffff00');
   });
+
+  it('positions highlight controls slightly above the click point', () => {
+    const span = document.createElement('span');
+    span.className = 'text-highlighter-extension';
+    span.dataset.groupId = 'g3';
+    span.textContent = 'sample';
+    document.body.appendChild(span);
+
+    window.showControlUi(span, { clientX: 100, clientY: 100 });
+
+    const controls = document.querySelector('.text-highlighter-controls');
+    expect(controls.style.top).toBe('48px');
+  });
+
+  it('anchors mobile highlight controls to the highlight rect instead of the touch point', () => {
+    const span = document.createElement('span');
+    span.className = 'text-highlighter-extension';
+    span.dataset.groupId = 'g4';
+    span.textContent = 'sample';
+    document.body.appendChild(span);
+
+    span.getBoundingClientRect = jest.fn(() => ({
+      top: 120,
+      bottom: 140,
+      left: 40,
+      right: 160,
+      width: 120,
+      height: 20,
+    }));
+
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+    const originalSendMessage = global.browser.runtime.sendMessage;
+
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 844 });
+    global.browser.runtime.sendMessage = jest.fn((message, callback) => {
+      if (!callback) return;
+      if (message.action === 'getPlatformInfo') {
+        callback({ isMobile: true });
+        return;
+      }
+      callback({});
+    });
+    window.initializeSelectionControls();
+
+    window.showControlUi(span, { clientX: 120, clientY: 700 });
+
+    const controls = document.querySelector('.text-highlighter-controls');
+    expect(controls.style.top).toBe('68px');
+
+    global.browser.runtime.sendMessage = originalSendMessage;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+  });
 });
