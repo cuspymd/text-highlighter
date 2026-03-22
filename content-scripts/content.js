@@ -249,113 +249,68 @@ function applyHighlightFromRange(range, color, groupId) {
   return false;
 }
 
-let pendingRestoreQueue = [];
-let restoreObserver = null;
-let restoreRetryCount = 0;
-const MAX_RESTORE_RETRIES = 10;
-let restoreDebounceTimeout = null;
+const RESTORE_RETRY_DELAY_MS = 1500;
+let restoreRetryTimeout = null;
+let hasScheduledRestoreRetry = false;
 
-// Clean up restore observer
-function stopRestoreObserver() {
-  if (restoreObserver) {
-    restoreObserver.disconnect();
-    restoreObserver = null;
-  }
-  if (restoreDebounceTimeout) {
-    clearTimeout(restoreDebounceTimeout);
-    restoreDebounceTimeout = null;
+function clearRestoreRetryTimeout() {
+  if (restoreRetryTimeout) {
+    clearTimeout(restoreRetryTimeout);
+    restoreRetryTimeout = null;
   }
 }
 
-// Retry restoring pending groups
-function retryPendingRestores() {
-  if (pendingRestoreQueue.length === 0) {
-    stopRestoreObserver();
-    return;
+function needsQuoteRestore(group) {
+  return Boolean(group && group.selectors && group.selectors.quote);
+}
+
+function buildRestoreModel() {
+  if (!contentCore || typeof contentCore.buildNormalizedTextModel !== 'function') {
+    return null;
   }
 
-  restoreRetryCount++;
-  if (restoreRetryCount > MAX_RESTORE_RETRIES) {
-    debugLog('Max restore retries reached. Stopping observer.');
-    stopRestoreObserver();
-    pendingRestoreQueue = [];
-    return;
-  }
+  return contentCore.buildNormalizedTextModel(document.body);
+}
 
-  debugLog(`Retrying pending restores (attempt ${restoreRetryCount})...`, pendingRestoreQueue.length, 'items');
+function processRestoreGroups(groups, reason) {
+  let model = null;
+  let modelDirty = true;
+  const failedGroups = [];
 
-  const stillPending = [];
-
-  pendingRestoreQueue.forEach(group => {
-    let model = null;
-    if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
-      try {
-        model = contentCore.buildNormalizedTextModel(document.body);
-      } catch (e) {
-        debugLog('Error building text model for retry:', e);
-      }
-    }
-
+  groups.forEach(group => {
     try {
-      const restored = tryRestoreHighlightGroup(group, model);
+      let restoreModel = null;
+      if (needsQuoteRestore(group)) {
+        if (modelDirty) {
+          try {
+            model = buildRestoreModel();
+          } catch (e) {
+            debugLog(`Error building text model for ${reason}:`, e);
+            model = null;
+          }
+          modelDirty = false;
+        }
+        restoreModel = model;
+      }
+
+      const restored = tryRestoreHighlightGroup(group, restoreModel);
       if (!restored) {
-        stillPending.push(group);
+        failedGroups.push(group);
+        return;
+      }
+
+      if (needsQuoteRestore(group)) {
+        // Quote-based restore mutates the DOM by wrapping text nodes, so the
+        // normalized model becomes stale only after a successful application.
+        modelDirty = true;
       }
     } catch (error) {
-      debugLog('Error retrying highlight group:', error);
-      stillPending.push(group);
+      debugLog(`Error during ${reason}:`, error);
+      failedGroups.push(group);
     }
   });
 
-  pendingRestoreQueue = stillPending;
-
-  if (pendingRestoreQueue.length === 0) {
-    stopRestoreObserver();
-  } else {
-    // Some highlights still failed, ensure we wait for next mutation
-    updateMinimapMarkers();
-  }
-}
-
-// Initialize MutationObserver to watch for dynamic content and retry
-function startRestoreObserver() {
-  if (pendingRestoreQueue.length === 0) return;
-  if (restoreObserver) return; // Already running
-
-  restoreRetryCount = 0;
-
-  restoreObserver = new MutationObserver((mutations) => {
-    // Only care about nodes added or text content changes
-    let hasRelevantChanges = false;
-    for (const mutation of mutations) {
-      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-        // Ignore changes caused by highlighter extension itself
-        const allExtensions = Array.from(mutation.addedNodes).every(
-           node => node.nodeType === Node.ELEMENT_NODE && node.classList.contains('text-highlighter-extension')
-        );
-        if (!allExtensions) {
-           hasRelevantChanges = true;
-           break;
-        }
-      } else if (mutation.type === 'characterData') {
-         hasRelevantChanges = true;
-         break;
-      }
-    }
-
-    if (hasRelevantChanges) {
-      if (restoreDebounceTimeout) clearTimeout(restoreDebounceTimeout);
-      restoreDebounceTimeout = setTimeout(() => {
-        retryPendingRestores();
-      }, 500); // 500ms debounce
-    }
-  });
-
-  restoreObserver.observe(document.body, {
-    childList: true,
-    subtree: true,
-    characterData: true
-  });
+  return failedGroups;
 }
 
 // Try to restore a highlight group using quote selectors first, then fallback
@@ -402,39 +357,33 @@ function tryRestoreHighlightGroup(group, model) {
   return false;
 }
 
+function scheduleSingleRestoreRetry(failedGroups) {
+  if (hasScheduledRestoreRetry || !failedGroups || failedGroups.length === 0) {
+    return;
+  }
+
+  hasScheduledRestoreRetry = true;
+  clearRestoreRetryTimeout();
+  restoreRetryTimeout = setTimeout(() => {
+    restoreRetryTimeout = null;
+    debugLog(`Retrying failed highlight restores once after delay...`, failedGroups.length, 'items');
+    processRestoreGroups(failedGroups, 'delayed restore retry');
+    updateMinimapMarkers();
+  }, RESTORE_RETRY_DELAY_MS);
+}
+
 // Apply highlights to the page using saved highlight information
 function applyHighlights() {
   debugLog('Applying highlights, count:', highlights.length);
-  stopRestoreObserver();
-  pendingRestoreQueue = [];
-
-  let model = null;
-  if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
-    try {
-      model = contentCore.buildNormalizedTextModel(document.body);
-    } catch (e) {
-      debugLog('Error building text model for restoration:', e);
-    }
-  }
+  clearRestoreRetryTimeout();
+  hasScheduledRestoreRetry = false;
 
   highlights.forEach(group => {
-    try {
-      debugLog('Applying highlight group:', group);
-      const restored = tryRestoreHighlightGroup(group, model);
-      if (!restored) {
-        pendingRestoreQueue.push(group);
-      }
-    } catch (error) {
-      debugLog('Error applying highlight group:', error);
-      pendingRestoreQueue.push(group);
-    }
+    debugLog('Applying highlight group:', group);
   });
 
-  if (pendingRestoreQueue.length > 0) {
-    debugLog(`Queueing ${pendingRestoreQueue.length} highlights for dynamic retry`);
-    startRestoreObserver();
-  }
-
+  const failedGroups = processRestoreGroups(highlights, 'initial restore');
+  scheduleSingleRestoreRetry(failedGroups);
   updateMinimapMarkers();
 }
 
