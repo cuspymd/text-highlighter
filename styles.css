@@ -371,7 +371,7 @@
 
 .text-highlighter-minimap-marker::after {
   all: initial;
-  content: attr(data-tooltip);
+  content: attr(data-minimap-tooltip);
   display: block;
   position: absolute;
   left: -8px;

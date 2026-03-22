@@ -127,7 +127,9 @@ class MinimapManager {
     marker.dataset.highlightId = highlightElement.dataset.highlightId;
     const snippet = (highlightElement.textContent || '').trim().replace(/\s+/g, ' ');
     const tooltipText = snippet.length > 60 ? `${snippet.slice(0, 57)}...` : snippet;
-    marker.dataset.tooltip = tooltipText || 'Highlight';
+    // Avoid generic `data-tooltip` because some sites attach global tooltip
+    // styles to that attribute and override our minimap preview.
+    marker.dataset.minimapTooltip = tooltipText || 'Highlight';
 
     // Marker click event
     marker.addEventListener('click', (e) => {
