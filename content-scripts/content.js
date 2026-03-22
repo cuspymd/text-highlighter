@@ -655,6 +655,46 @@ function updateMinimapMarkers() {
   }
 }
 
+function describeNodeForDebug(node) {
+  if (!node) return null;
+
+  if (node.nodeType === Node.TEXT_NODE) {
+    return {
+      type: 'text',
+      parentTag: node.parentNode ? node.parentNode.tagName : null,
+      textPreview: (node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),
+      textLength: (node.textContent || '').length,
+    };
+  }
+
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    return {
+      type: 'element',
+      tag: node.tagName,
+      childCount: node.childNodes.length,
+      textPreview: (node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),
+    };
+  }
+
+  return {
+    type: `node-${node.nodeType}`,
+    name: node.nodeName,
+  };
+}
+
+function describeRangeForDebug(range) {
+  if (!range) return null;
+
+  return {
+    text: range.toString().replace(/\s+/g, ' ').trim(),
+    startContainer: describeNodeForDebug(range.startContainer),
+    startOffset: range.startOffset,
+    endContainer: describeNodeForDebug(range.endContainer),
+    endOffset: range.endOffset,
+    commonAncestorContainer: describeNodeForDebug(range.commonAncestorContainer),
+  };
+}
+
 // Convert selection range when all containers are the same node
 function convertSelectionRange(range) {
   if (!contentCore || typeof contentCore.convertSelectionRange !== 'function') {
@@ -682,16 +722,20 @@ function highlightSelectedText(color) {
   }
 
   const range = selection.getRangeAt(0);
-  debugLog('Highlight Range:', {
-    commonAncestorContainer: range.commonAncestorContainer,
-    startContainer: range.startContainer,
-    endContainer: range.endContainer,
-    startOffset: range.startOffset,
-    endOffset: range.endOffset
+  debugLog('Highlight Selection Debug:', {
+    selectedText: selectedText.replace(/\s+/g, ' ').trim(),
+    range: describeRangeForDebug(range),
+    anchorNode: describeNodeForDebug(selection.anchorNode),
+    anchorOffset: selection.anchorOffset,
+    focusNode: describeNodeForDebug(selection.focusNode),
+    focusOffset: selection.focusOffset,
+    isCollapsed: selection.isCollapsed,
+    rangeCount: selection.rangeCount,
   });
 
   // Convert range if common ancestor and start container are the same node
   const convertedRange = convertSelectionRange(range);
+  debugLog('Converted Highlight Range Debug:', describeRangeForDebug(convertedRange));
 
   try {
     const groupId = Date.now().toString();

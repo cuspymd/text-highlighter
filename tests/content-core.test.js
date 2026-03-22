@@ -41,6 +41,113 @@ describe('content-core', () => {
     expect(converted).toBe(range);
   });
 
+  it('clamps full-paragraph selection that starts on the element and ends at the next block boundary', () => {
+    const article = document.createElement('article');
+    const firstParagraph = document.createElement('p');
+    firstParagraph.textContent = 'First paragraph for triple click selection.';
+    const secondParagraph = document.createElement('p');
+    secondParagraph.textContent = 'Second paragraph should stay untouched.';
+    article.appendChild(firstParagraph);
+    article.appendChild(secondParagraph);
+    document.body.appendChild(article);
+
+    const range = document.createRange();
+    range.setStart(firstParagraph, 0);
+    range.setEnd(secondParagraph, 0);
+
+    const converted = core.convertSelectionRange(range);
+    expect(converted.startContainer).toBe(firstParagraph.firstChild);
+    expect(converted.startOffset).toBe(0);
+    expect(converted.endContainer).toBe(firstParagraph.firstChild);
+    expect(converted.endOffset).toBe(firstParagraph.firstChild.textContent.length);
+    expect(converted.toString()).toBe('First paragraph for triple click selection.');
+  });
+
+  it('clamps standalone bold selection that ends at the next paragraph boundary', () => {
+    const article = document.createElement('article');
+    const bold = document.createElement('b');
+    bold.textContent = 'Standalone bold heading';
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Final paragraph content.';
+    article.appendChild(bold);
+    article.appendChild(paragraph);
+    document.body.appendChild(article);
+
+    const range = document.createRange();
+    range.setStart(bold, 0);
+    range.setEnd(paragraph, 0);
+
+    const converted = core.convertSelectionRange(range);
+    expect(converted.startContainer).toBe(bold.firstChild);
+    expect(converted.startOffset).toBe(0);
+    expect(converted.endContainer).toBe(bold.firstChild);
+    expect(converted.endOffset).toBe(bold.firstChild.textContent.length);
+    expect(converted.toString()).toBe('Standalone bold heading');
+  });
+
+  it('clamps standalone bold selection when the start container is the parent element boundary', () => {
+    const article = document.createElement('article');
+    const intro = document.createElement('p');
+    intro.textContent = 'Intro paragraph';
+    const bold = document.createElement('b');
+    bold.textContent = 'Standalone bold heading';
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Final paragraph content.';
+    article.appendChild(intro);
+    article.appendChild(bold);
+    article.appendChild(paragraph);
+    document.body.appendChild(article);
+
+    const range = document.createRange();
+    range.setStart(article, 1);
+    range.setEnd(paragraph, 0);
+
+    const converted = core.convertSelectionRange(range);
+    expect(converted.startContainer).toBe(bold.firstChild);
+    expect(converted.startOffset).toBe(0);
+    expect(converted.endContainer).toBe(bold.firstChild);
+    expect(converted.endOffset).toBe(bold.firstChild.textContent.length);
+    expect(converted.toString()).toBe('Standalone bold heading');
+  });
+
+  it('clamps standalone bold selection when firefox reports a shared parent boundary range', () => {
+    const article = document.createElement('article');
+    article.appendChild(document.createTextNode('\n  '));
+
+    const intro = document.createElement('p');
+    intro.textContent = 'Intro paragraph';
+    article.appendChild(intro);
+    article.appendChild(document.createTextNode('\n  '));
+
+    const bold = document.createElement('b');
+    bold.textContent = 'Play Beethoven’s 7th Symphony in its entirety';
+    article.appendChild(bold);
+    article.appendChild(document.createTextNode('\n  '));
+
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Next paragraph text';
+    article.appendChild(paragraph);
+    article.appendChild(document.createTextNode('\n'));
+
+    document.body.appendChild(article);
+
+    const boldIndex = Array.from(article.childNodes).indexOf(bold);
+    const paragraphIndex = Array.from(article.childNodes).indexOf(paragraph);
+
+    const range = document.createRange();
+    range.setStart(article, boldIndex);
+    range.setEnd(article, paragraphIndex);
+
+    expect(range.toString().replace(/\s+/g, ' ').trim()).toBe('Play Beethoven’s 7th Symphony in its entirety');
+
+    const converted = core.convertSelectionRange(range);
+    expect(converted.startContainer).toBe(bold.firstChild);
+    expect(converted.startOffset).toBe(0);
+    expect(converted.endContainer).toBe(bold.firstChild);
+    expect(converted.endOffset).toBe(bold.firstChild.textContent.length);
+    expect(converted.toString()).toBe('Play Beethoven’s 7th Symphony in its entirety');
+  });
+
   it('processes single-node selection and creates one highlight span', () => {
     const p = document.createElement('p');
     const text = document.createTextNode('abcdef');

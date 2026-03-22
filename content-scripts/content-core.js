@@ -1,4 +1,12 @@
 (() => {
+  const BLOCK_TAGS = [
+    'DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+    'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'NAV',
+    'ASIDE', 'MAIN', 'BLOCKQUOTE', 'PRE', 'UL', 'OL',
+    'LI', 'TABLE', 'TR', 'TD', 'TH', 'TBODY', 'THEAD',
+    'TFOOT', 'FORM', 'FIELDSET', 'ADDRESS',
+  ];
+
   /**
    * @typedef {Object} HighlightSpan
    * @property {string} spanId
@@ -28,8 +36,187 @@
    * @returns {Range}
    */
   function convertSelectionRange(range, logger = () => {}) {
+    function isBlockElement(node) {
+      return node && node.nodeType === Node.ELEMENT_NODE && BLOCK_TAGS.includes(node.tagName);
+    }
+
+    function normalizeText(text) {
+      return (text || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function getExactSelectionRoot(node, selectedText) {
+      let current = node && node.nodeType === Node.TEXT_NODE ? node.parentNode : node;
+      while (current && current !== document.body && current !== document.documentElement) {
+        if (current.nodeType === Node.ELEMENT_NODE && normalizeText(current.textContent) === selectedText) {
+          return current;
+        }
+        current = current.parentNode;
+      }
+      return null;
+    }
+
+    function getSelectionRootFromStartBoundary(startNode, startOffset, selectedText) {
+      if (!startNode || startNode.nodeType !== Node.ELEMENT_NODE) {
+        return null;
+      }
+
+      const candidateChild = startNode.childNodes && startNode.childNodes[startOffset];
+      let candidate = candidateChild && candidateChild.nodeType === Node.TEXT_NODE
+        ? candidateChild.parentNode
+        : candidateChild;
+
+      while (candidate && candidate !== startNode) {
+        if (candidate.nodeType === Node.ELEMENT_NODE && normalizeText(candidate.textContent) === selectedText) {
+          return candidate;
+        }
+        candidate = candidate.parentNode;
+      }
+
+      return null;
+    }
+
+    function findMatchingElementInSubtree(root, selectedText) {
+      if (!root || root.nodeType !== Node.ELEMENT_NODE) {
+        return null;
+      }
+
+      if (normalizeText(root.textContent) === selectedText) {
+        return root;
+      }
+
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null, false);
+      let currentNode;
+      while (currentNode = walker.nextNode()) {
+        if (normalizeText(currentNode.textContent) === selectedText) {
+          return currentNode;
+        }
+      }
+
+      return null;
+    }
+
+    function getSelectionRootFromBoundaryRange(container, startOffset, endOffset, selectedText) {
+      if (!container || container.nodeType !== Node.ELEMENT_NODE) {
+        return null;
+      }
+
+      const maxOffset = Math.min(endOffset, container.childNodes.length);
+      for (let index = startOffset; index < maxOffset; index++) {
+        const child = container.childNodes[index];
+        if (!child) continue;
+
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const match = findMatchingElementInSubtree(child, selectedText);
+          if (match) {
+            return match;
+          }
+        } else if (child.nodeType === Node.TEXT_NODE) {
+          const parent = child.parentNode;
+          if (
+            parent
+            && parent !== container
+            && parent.nodeType === Node.ELEMENT_NODE
+            && normalizeText(parent.textContent) === selectedText
+          ) {
+            return parent;
+          }
+        }
+      }
+
+      return null;
+    }
+
+    function findLastSelectableTextNode(root) {
+      const walker = document.createTreeWalker(
+        root,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode(node) {
+            const parent = node.parentNode;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            const parentTagName = parent.tagName && parent.tagName.toUpperCase();
+            if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            return node.textContent && node.textContent.trim() !== ''
+              ? NodeFilter.FILTER_ACCEPT
+              : NodeFilter.FILTER_REJECT;
+          }
+        },
+        false
+      );
+
+      let lastNode = null;
+      let currentNode;
+      while (currentNode = walker.nextNode()) {
+        lastNode = currentNode;
+      }
+      return lastNode;
+    }
+
+    function findFirstSelectableTextNode(root) {
+      const walker = document.createTreeWalker(
+        root,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode(node) {
+            const parent = node.parentNode;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            const parentTagName = parent.tagName && parent.tagName.toUpperCase();
+            if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            return node.textContent && node.textContent.trim() !== ''
+              ? NodeFilter.FILTER_ACCEPT
+              : NodeFilter.FILTER_REJECT;
+          }
+        },
+        false
+      );
+
+      return walker.nextNode();
+    }
+
     const commonAncestor = range.commonAncestorContainer;
     const startContainer = range.startContainer;
+    const selectedText = normalizeText(range.toString());
+    const selectionRoot = selectedText !== ''
+      ? (
+          getExactSelectionRoot(startContainer, selectedText)
+          || getSelectionRootFromStartBoundary(startContainer, range.startOffset, selectedText)
+          || getSelectionRootFromBoundaryRange(startContainer, range.startOffset, range.endOffset, selectedText)
+        )
+      : null;
+
+    // Triple-click selections on some pages can resolve to element boundaries:
+    // start on the selected element itself and end at the next sibling block with
+    // offset 0. Rebuild the range from the first/last text nodes of the exact
+    // selected container before mutating the DOM.
+    if (selectionRoot) {
+      const firstTextNode = findFirstSelectableTextNode(selectionRoot);
+      const lastTextNode = findLastSelectableTextNode(selectionRoot);
+      if (firstTextNode && lastTextNode) {
+        const convertedRange = document.createRange();
+        convertedRange.setStart(firstTextNode, 0);
+        convertedRange.setEnd(lastTextNode, lastTextNode.textContent.length);
+
+        logger('Clamped Range To Selected Root:', {
+          commonAncestorContainer: convertedRange.commonAncestorContainer,
+          startContainer: convertedRange.startContainer,
+          endContainer: convertedRange.endContainer,
+          startOffset: convertedRange.startOffset,
+          endOffset: convertedRange.endOffset,
+        });
+
+        return convertedRange;
+      }
+    }
 
     if (commonAncestor === startContainer) {
       if (commonAncestor.childNodes && range.startOffset < commonAncestor.childNodes.length) {
@@ -92,17 +279,7 @@
     }
 
     function isBlockElement(node) {
-      if (node.nodeType !== Node.ELEMENT_NODE) return false;
-
-      const blockTags = [
-        'DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
-        'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'NAV',
-        'ASIDE', 'MAIN', 'BLOCKQUOTE', 'PRE', 'UL', 'OL',
-        'LI', 'TABLE', 'TR', 'TD', 'TH', 'TBODY', 'THEAD',
-        'TFOOT', 'FORM', 'FIELDSET', 'ADDRESS',
-      ];
-
-      return blockTags.includes(node.tagName);
+      return node.nodeType === Node.ELEMENT_NODE && BLOCK_TAGS.includes(node.tagName);
     }
 
     function shouldSkipNode(node) {
