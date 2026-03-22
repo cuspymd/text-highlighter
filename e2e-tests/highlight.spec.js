@@ -457,6 +457,96 @@ test.describe('Chrome Extension Tests', () => {
     await expect(inSpanInH1).toHaveCount(0);
   });
 
+  test('Triple-click pretty-printed paragraph should not highlight the next paragraph prefix', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page5.html')}`);
+
+    const firstParagraph = page.locator('article > p').nth(0);
+    const secondParagraph = page.locator('article > p').nth(1);
+    const expectedText = 'First paragraph for triple click selection.';
+
+    await firstParagraph.click({ clickCount: 3, position: { x: 20, y: 10 } });
+
+    const selectedText = await page.evaluate(() => {
+      const selection = window.getSelection();
+      return selection ? selection.toString().replace(/\s+/g, ' ').trim() : '';
+    });
+    expect(selectedText).toBe(expectedText);
+
+    await sendHighlightMessage(background, 'yellow');
+
+    const verifyHighlight = async () => {
+      await expectHighlightSpan(
+        firstParagraph.locator('span.text-highlighter-extension'),
+        { color: 'rgb(255, 255, 0)', text: expectedText }
+      );
+      await expect(secondParagraph.locator('span.text-highlighter-extension')).toHaveCount(0);
+    };
+
+    await verifyHighlight();
+    await page.reload();
+    await verifyHighlight();
+  });
+
+  test('Triple-click pretty-printed paragraph should not highlight the next standalone bold block', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page5.html')}`);
+
+    const targetParagraph = page.locator('article > p').nth(2);
+    const standaloneBold = page.locator('article > b');
+    const expectedText = 'Intro paragraph before a standalone bold heading:';
+
+    await targetParagraph.click({ clickCount: 3, position: { x: 20, y: 10 } });
+
+    const selectedText = await page.evaluate(() => {
+      const selection = window.getSelection();
+      return selection ? selection.toString().replace(/\s+/g, ' ').trim() : '';
+    });
+    expect(selectedText).toBe(expectedText);
+
+    await sendHighlightMessage(background, 'yellow');
+
+    const verifyHighlight = async () => {
+      await expectHighlightSpan(
+        targetParagraph.locator('span.text-highlighter-extension'),
+        { color: 'rgb(255, 255, 0)', text: expectedText }
+      );
+      await expect(standaloneBold.locator('span.text-highlighter-extension')).toHaveCount(0);
+    };
+
+    await verifyHighlight();
+    await page.reload();
+    await verifyHighlight();
+  });
+
+  test('Triple-click standalone bold text should not highlight the next paragraph prefix', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page5.html')}`);
+
+    const standaloneBold = page.locator('article > b');
+    const nextParagraph = page.locator('article > p').nth(3);
+    const expectedText = 'Standalone bold heading';
+
+    await standaloneBold.click({ clickCount: 3, position: { x: 20, y: 8 } });
+
+    const selectedText = await page.evaluate(() => {
+      const selection = window.getSelection();
+      return selection ? selection.toString().replace(/\s+/g, ' ').trim() : '';
+    });
+    expect(selectedText).toBe(expectedText);
+
+    await sendHighlightMessage(background, 'yellow');
+
+    const verifyHighlight = async () => {
+      await expectHighlightSpan(
+        standaloneBold.locator('span.text-highlighter-extension'),
+        { color: 'rgb(255, 255, 0)', text: expectedText }
+      );
+      await expect(nextParagraph.locator('span.text-highlighter-extension')).toHaveCount(0);
+    };
+
+    await verifyHighlight();
+    await page.reload();
+    await verifyHighlight();
+  });
+
   test('Add and change custom color in highlight control UI after highlighting h1 tag', async ({ page, background }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
