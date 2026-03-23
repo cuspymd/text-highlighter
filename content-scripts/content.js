@@ -249,17 +249,6 @@ function applyHighlightFromRange(range, color, groupId) {
   return false;
 }
 
-const RESTORE_RETRY_DELAY_MS = 1500;
-let restoreRetryTimeout = null;
-let hasScheduledRestoreRetry = false;
-
-function clearRestoreRetryTimeout() {
-  if (restoreRetryTimeout) {
-    clearTimeout(restoreRetryTimeout);
-    restoreRetryTimeout = null;
-  }
-}
-
 function needsQuoteRestore(group) {
   return Boolean(group && group.selectors && group.selectors.quote);
 }
@@ -275,7 +264,6 @@ function buildRestoreModel() {
 function processRestoreGroups(groups, reason) {
   let model = null;
   let modelDirty = true;
-  const failedGroups = [];
 
   groups.forEach(group => {
     try {
@@ -294,23 +282,15 @@ function processRestoreGroups(groups, reason) {
       }
 
       const restored = tryRestoreHighlightGroup(group, restoreModel);
-      if (!restored) {
-        failedGroups.push(group);
-        return;
-      }
+      if (!restored) return;
 
-      if (needsQuoteRestore(group)) {
-        // Quote-based restore mutates the DOM by wrapping text nodes, so the
-        // normalized model becomes stale only after a successful application.
-        modelDirty = true;
-      }
+      // Any successful restore can wrap/split text nodes, so the normalized
+      // model must be rebuilt before the next quote-based restore.
+      modelDirty = true;
     } catch (error) {
       debugLog(`Error during ${reason}:`, error);
-      failedGroups.push(group);
     }
   });
-
-  return failedGroups;
 }
 
 // Try to restore a highlight group using quote selectors first, then fallback
@@ -357,33 +337,15 @@ function tryRestoreHighlightGroup(group, model) {
   return false;
 }
 
-function scheduleSingleRestoreRetry(failedGroups) {
-  if (hasScheduledRestoreRetry || !failedGroups || failedGroups.length === 0) {
-    return;
-  }
-
-  hasScheduledRestoreRetry = true;
-  clearRestoreRetryTimeout();
-  restoreRetryTimeout = setTimeout(() => {
-    restoreRetryTimeout = null;
-    debugLog(`Retrying failed highlight restores once after delay...`, failedGroups.length, 'items');
-    processRestoreGroups(failedGroups, 'delayed restore retry');
-    updateMinimapMarkers();
-  }, RESTORE_RETRY_DELAY_MS);
-}
-
 // Apply highlights to the page using saved highlight information
 function applyHighlights() {
   debugLog('Applying highlights, count:', highlights.length);
-  clearRestoreRetryTimeout();
-  hasScheduledRestoreRetry = false;
 
   highlights.forEach(group => {
     debugLog('Applying highlight group:', group);
   });
 
-  const failedGroups = processRestoreGroups(highlights, 'initial restore');
-  scheduleSingleRestoreRetry(failedGroups);
+  processRestoreGroups(highlights, 'initial restore');
   updateMinimapMarkers();
 }
 
