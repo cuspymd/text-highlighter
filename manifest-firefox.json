@@ -82,7 +82,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "images/icon48.png"
+        "images/icon48.png",
+        "content-scripts/navigation-bridge.js"
       ],
       "matches": [
         "<all_urls>"

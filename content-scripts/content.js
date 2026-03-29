@@ -1,11 +1,13 @@
 let highlights = [];
-const currentUrl = window.location.href;
+let currentUrl = window.location.href;
 
 let currentColors = [];
 const contentCore = window.TextHighlighterCore;
 
 // Minimap manager instance
 let minimapManager = null;
+const NAVIGATION_BRIDGE_SOURCE = 'text-highlighter-navigation-bridge';
+let pendingNavigationRestoreTimer = null;
 
 window.TextHighlighterState = {
   get() {
@@ -45,6 +47,67 @@ window.TextHighlighterContentAPI = {
 };
 
 debugLog('Content script loaded for:', currentUrl);
+
+function injectNavigationBridge() {
+  const bridgeId = 'text-highlighter-navigation-bridge';
+  if (document.getElementById(bridgeId)) return;
+
+  const script = document.createElement('script');
+  script.id = bridgeId;
+  script.src = browserAPI.runtime.getURL('content-scripts/navigation-bridge.js');
+  script.async = false;
+  script.onload = () => {
+    script.remove();
+  };
+  script.onerror = () => {
+    debugLog('Failed to inject navigation bridge');
+    script.remove();
+  };
+
+  (document.documentElement || document.head || document.body).appendChild(script);
+}
+
+function handleUrlChange(nextUrl, trigger = 'unknown') {
+  if (!nextUrl || nextUrl === currentUrl) return;
+
+  debugLog('Detected URL change:', {
+    trigger,
+    previousUrl: currentUrl,
+    nextUrl,
+  });
+
+  currentUrl = nextUrl;
+  highlights = [];
+
+  if (typeof hideHighlightControls === 'function') {
+    hideHighlightControls();
+  }
+
+  clearAllHighlights();
+  updateMinimapMarkers();
+
+  if (pendingNavigationRestoreTimer) {
+    clearTimeout(pendingNavigationRestoreTimer);
+  }
+
+  pendingNavigationRestoreTimer = setTimeout(() => {
+    pendingNavigationRestoreTimer = null;
+    loadHighlights();
+  }, 1000);
+}
+
+window.addEventListener('message', (event) => {
+  if (event.source !== window) return;
+
+  const data = event.data;
+  if (!data || data.source !== NAVIGATION_BRIDGE_SOURCE || data.type !== 'location-changed') {
+    return;
+  }
+
+  handleUrlChange(data.href, data.trigger);
+});
+
+injectNavigationBridge();
 
 getColorsFromBackground().then(() => {
   setTimeout(() => {
@@ -113,10 +176,16 @@ function getColorsFromBackground() {
 
 function loadHighlights() {
   debugLog('Loading highlights for URL:', currentUrl);
+  const requestUrl = currentUrl;
 
   browserAPI.runtime.sendMessage(
-    { action: 'getHighlights', url: currentUrl },
+    { action: 'getHighlights', url: requestUrl },
     (response) => {
+      if (requestUrl !== currentUrl) {
+        debugLog('Ignoring stale highlights response for previous URL:', requestUrl);
+        return;
+      }
+
       debugLog('Got highlights response:', response);
       if (response && response.highlights) {
         highlights = response.highlights;
@@ -550,9 +619,12 @@ function initMinimap() {
   browserAPI.storage.local.get(['minimapVisible'], (result) => {
     const minimapVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
 
-    minimapManager = new MinimapManager();
+    if (!minimapManager) {
+      minimapManager = new MinimapManager();
+      minimapManager.init();
+    }
+
     minimapManager.setVisibility(minimapVisible);
-    minimapManager.init();
 
     minimapManager.updateMarkers();
 
