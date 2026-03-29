@@ -104,6 +104,14 @@ window.addEventListener('message', (event) => {
     return;
   }
 
+  if (data.href !== window.location.href) {
+    debugLog('Ignoring navigation bridge message with mismatched URL:', {
+      reportedHref: data.href,
+      actualHref: window.location.href,
+    });
+    return;
+  }
+
   handleUrlChange(data.href, data.trigger);
 });
 
