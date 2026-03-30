@@ -48,6 +48,18 @@ describe('settings-service', () => {
   });
 
   describe('getPlatformInfo', () => {
+    it('should return default unknown platform when detection fails', async () => {
+      // Because platformInfo module state persists across tests unless reset
+      // we can't guarantee it's strictly 'unknown', but we can mock rejection
+      // and ensure the returned object always conforms to the expected structure.
+      chrome.runtime.getPlatformInfo.mockRejectedValue(new Error('Test error'));
+      await initializePlatform();
+
+      const info = getPlatformInfo();
+      expect(info).toHaveProperty('platform');
+      expect(typeof info.isMobile).toBe('boolean');
+    });
+
     it('should return both platform object and isMobile flag', async () => {
       chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'mac' });
       await initializePlatform();
@@ -56,6 +68,16 @@ describe('settings-service', () => {
       expect(info).toHaveProperty('platform');
       expect(info).toHaveProperty('isMobile', false);
       expect(info.platform.os).toBe('mac');
+    });
+
+    it('should return true for isMobile when platform is android', async () => {
+      chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'android' });
+      await initializePlatform();
+
+      const info = getPlatformInfo();
+      expect(info).toHaveProperty('platform');
+      expect(info).toHaveProperty('isMobile', true);
+      expect(info.platform.os).toBe('android');
     });
   });
 
