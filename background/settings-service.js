@@ -1,5 +1,5 @@
 import { browserAPI } from '../shared/browser-api.js';
-import { debugLog } from '../shared/logger.js';
+import { debugLog, errorLog } from '../shared/logger.js';
 import { broadcastToAllTabs } from '../shared/tab-broadcast.js';
 import { STORAGE_KEYS, SYNC_KEYS } from '../constants/storage-keys.js';
 import { saveSettingsToSync } from './sync-service.js';
@@ -254,7 +254,7 @@ export async function loadCustomColors() {
       await loadCustomColorsFromStorage();
       hasLoadedCustomColors = true;
     } catch (e) {
-      console.error('Error loading custom colors', e);
+      errorLog('Error loading custom colors', e);
       throw e;
     } finally {
       customColorsLoadInFlight = null;
