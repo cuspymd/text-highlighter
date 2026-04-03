@@ -1,5 +1,5 @@
 let highlights = [];
-const currentUrl = window.location.href;
+const currentUrl = window.location.href.replace(/#selection-[\d.]+-[\d.]+$/, '');
 
 let currentColors = [];
 const contentCore = window.TextHighlighterCore;
