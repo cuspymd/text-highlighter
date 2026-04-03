@@ -1,5 +1,5 @@
 let highlights = [];
-let currentUrl = window.location.href;
+let currentUrl = window.location.href.replace(/#selection-[\d.]+-[\d.]+$/, '');
 
 let currentColors = [];
 const contentCore = window.TextHighlighterCore;
@@ -68,15 +68,16 @@ function injectNavigationBridge() {
 }
 
 function handleUrlChange(nextUrl, trigger = 'unknown') {
-  if (!nextUrl || nextUrl === currentUrl) return;
+  const normalizedUrl = nextUrl ? nextUrl.replace(/#selection-[\d.]+-[\d.]+$/, '') : nextUrl;
+  if (!normalizedUrl || normalizedUrl === currentUrl) return;
 
   debugLog('Detected URL change:', {
     trigger,
     previousUrl: currentUrl,
-    nextUrl,
+    nextUrl: normalizedUrl,
   });
 
-  currentUrl = nextUrl;
+  currentUrl = normalizedUrl;
   highlights = [];
 
   if (typeof hideHighlightControls === 'function') {
