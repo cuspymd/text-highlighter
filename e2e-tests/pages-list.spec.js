@@ -222,6 +222,40 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await listPage.close();
   });
 
+  test('search expands filtered page details, highlights matching text, and refresh clears the search input', async ({ context, extensionId }) => {
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    const importBtn = listPage.locator('#import-btn');
+    await expect(importBtn).toBeVisible();
+
+    const jsonPath = path.join(__dirname, 'all-highlights-test.json');
+    await importBtn.click();
+    await listPage.setInputFiles('#import-file', jsonPath);
+    await acceptModalAndGetMessage(listPage);
+
+    const searchInput = listPage.locator('#search-input');
+    await searchInput.fill('sample');
+
+    const pageItems = listPage.locator('.page-item');
+    await expect(pageItems).toHaveCount(1);
+
+    const expandedHighlights = pageItems.first().locator('.page-highlights');
+    await expect(expandedHighlights).toBeVisible();
+
+    const matchedMark = expandedHighlights.locator('.highlight-text mark.search-match');
+    await expect(matchedMark).toContainText('sample');
+
+    const refreshBtn = listPage.locator('#refresh-btn');
+    await refreshBtn.click();
+
+    await expect(searchInput).toHaveValue('');
+    await expect(pageItems).toHaveCount(2);
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(0);
+
+    await listPage.close();
+  });
+
   test('Verify that only safe URLs are imported when importing JSON containing unsafe URLs', async ({ context, extensionId }) => {
     const listPage = await context.newPage();
     await openPagesList(listPage, extensionId);
