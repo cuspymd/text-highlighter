@@ -214,53 +214,60 @@ class MinimapManager {
     });
   }
 
-  // Temporary emphasis effect for highlight
+  // Temporary emphasis effect for highlight group
   highlightTemporarily(highlightElement) {
     if (!highlightElement) return;
 
-    const elementKey = highlightElement;
+    const groupId = highlightElement.dataset.groupId;
+    const highlightElements = groupId
+      ? Array.from(document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`))
+      : [highlightElement];
 
-    if (this.highlightTimers.has(elementKey)) {
-      clearTimeout(this.highlightTimers.get(elementKey));
-      this.highlightTimers.delete(elementKey);
-    }
+    highlightElements.forEach((element) => {
+      const elementKey = element;
 
-    const isAlreadyHighlighted = highlightElement.hasAttribute('data-highlighted');
-
-    if (!isAlreadyHighlighted) {
-      const originalStyles = {
-        boxShadow: highlightElement.style.boxShadow,
-        transition: highlightElement.style.transition,
-        zIndex: highlightElement.style.zIndex
-      };
-
-      highlightElement.dataset.originalBoxShadow = originalStyles.boxShadow;
-      highlightElement.dataset.originalTransition = originalStyles.transition;
-      highlightElement.dataset.originalZIndex = originalStyles.zIndex;
-
-      highlightElement.setAttribute('data-highlighted', 'true');
-    }
-
-    highlightElement.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.7), 0 0 0 6px rgba(0, 0, 0, 0.3)';
-    highlightElement.style.transition = 'box-shadow 0.3s';
-    highlightElement.style.zIndex = '10000'; // Display above other elements
-
-    const timerId = setTimeout(() => {
-      if (highlightElement.hasAttribute('data-highlighted')) {
-        highlightElement.style.boxShadow = highlightElement.dataset.originalBoxShadow || '';
-        highlightElement.style.transition = highlightElement.dataset.originalTransition || '';
-        highlightElement.style.zIndex = highlightElement.dataset.originalZIndex || '';
-
-        highlightElement.removeAttribute('data-highlighted');
-        delete highlightElement.dataset.originalBoxShadow;
-        delete highlightElement.dataset.originalTransition;
-        delete highlightElement.dataset.originalZIndex;
+      if (this.highlightTimers.has(elementKey)) {
+        clearTimeout(this.highlightTimers.get(elementKey));
+        this.highlightTimers.delete(elementKey);
       }
 
-      this.highlightTimers.delete(elementKey);
-    }, 1500);
+      const isAlreadyHighlighted = element.hasAttribute('data-highlighted');
 
-    this.highlightTimers.set(elementKey, timerId);
+      if (!isAlreadyHighlighted) {
+        const originalStyles = {
+          boxShadow: element.style.boxShadow,
+          transition: element.style.transition,
+          zIndex: element.style.zIndex
+        };
+
+        element.dataset.originalBoxShadow = originalStyles.boxShadow;
+        element.dataset.originalTransition = originalStyles.transition;
+        element.dataset.originalZIndex = originalStyles.zIndex;
+
+        element.setAttribute('data-highlighted', 'true');
+      }
+
+      element.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.7), 0 0 0 6px rgba(0, 0, 0, 0.3)';
+      element.style.transition = 'box-shadow 0.3s';
+      element.style.zIndex = '10000'; // Display above other elements
+
+      const timerId = setTimeout(() => {
+        if (element.hasAttribute('data-highlighted')) {
+          element.style.boxShadow = element.dataset.originalBoxShadow || '';
+          element.style.transition = element.dataset.originalTransition || '';
+          element.style.zIndex = element.dataset.originalZIndex || '';
+
+          element.removeAttribute('data-highlighted');
+          delete element.dataset.originalBoxShadow;
+          delete element.dataset.originalTransition;
+          delete element.dataset.originalZIndex;
+        }
+
+        this.highlightTimers.delete(elementKey);
+      }, 1500);
+
+      this.highlightTimers.set(elementKey, timerId);
+    });
   }
 
   // Set minimap visibility
