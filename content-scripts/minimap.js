@@ -119,14 +119,23 @@ class MinimapManager {
     const relativePosition = absoluteTop / documentHeight;
     const markerPosition = relativePosition * minimapHeight;
 
+    const groupId = highlightElement.dataset.groupId;
+    const highlightElements = groupId
+      ? Array.from(document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`))
+      : [highlightElement];
+    const snippet = highlightElements
+      .map((element) => (element.textContent || '').trim())
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+/g, ' ');
+    const tooltipText = snippet.length > 60 ? `${snippet.slice(0, 57)}...` : snippet;
+
     // Create marker element
     const marker = document.createElement('div');
     marker.className = 'text-highlighter-minimap-marker';
     marker.style.backgroundColor = highlightElement.style.backgroundColor;
     marker.style.top = `${markerPosition}px`;
     marker.dataset.highlightId = highlightElement.dataset.highlightId;
-    const snippet = (highlightElement.textContent || '').trim().replace(/\s+/g, ' ');
-    const tooltipText = snippet.length > 60 ? `${snippet.slice(0, 57)}...` : snippet;
     // Avoid generic `data-tooltip` because some sites attach global tooltip
     // styles to that attribute and override our minimap preview.
     marker.dataset.minimapTooltip = tooltipText || 'Highlight';
