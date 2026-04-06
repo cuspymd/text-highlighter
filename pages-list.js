@@ -106,19 +106,110 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function normalizeSearchTerm(searchTerm) {
+    return (searchTerm || '').trim().toLowerCase();
+  }
+
+  function appendHighlightedText(container, text, searchTerm) {
+    const sourceText = text || '';
+    const normalizedTerm = normalizeSearchTerm(searchTerm);
+
+    if (!normalizedTerm) {
+      container.textContent = sourceText;
+      return;
+    }
+
+    const lowerText = sourceText.toLowerCase();
+    let startIndex = 0;
+    let matchIndex = lowerText.indexOf(normalizedTerm, startIndex);
+
+    if (matchIndex === -1) {
+      container.textContent = sourceText;
+      return;
+    }
+
+    while (matchIndex !== -1) {
+      if (matchIndex > startIndex) {
+        container.appendChild(document.createTextNode(sourceText.slice(startIndex, matchIndex)));
+      }
+
+      const mark = document.createElement('mark');
+      mark.className = 'search-match';
+      mark.textContent = sourceText.slice(matchIndex, matchIndex + normalizedTerm.length);
+      container.appendChild(mark);
+
+      startIndex = matchIndex + normalizedTerm.length;
+      matchIndex = lowerText.indexOf(normalizedTerm, startIndex);
+    }
+
+    if (startIndex < sourceText.length) {
+      container.appendChild(document.createTextNode(sourceText.slice(startIndex)));
+    }
+  }
+
+  function renderPageHighlights(page, highlightsContainer, searchTerm) {
+    highlightsContainer.replaceChildren();
+
+    const sortedHighlights = [...(page.highlights || [])].sort((a, b) => {
+      const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
+      const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
+      return posA - posB;
+    });
+
+    if (sortedHighlights.length === 0) {
+      const emptyHighlight = document.createElement('div');
+      emptyHighlight.className = 'highlight-item';
+      const emptyText = document.createElement('span');
+      emptyText.className = 'highlight-text';
+      emptyText.textContent = getMessage('noHighlights', 'No highlighted text on this page.');
+      emptyHighlight.appendChild(emptyText);
+      highlightsContainer.appendChild(emptyHighlight);
+      return;
+    }
+
+    sortedHighlights.forEach(group => {
+      const highlightItem = document.createElement('div');
+      highlightItem.className = 'highlight-item';
+      highlightItem.style.setProperty('--highlight-color', group.color);
+      const span = document.createElement('span');
+      span.className = 'highlight-text';
+      appendHighlightedText(span, group.text, searchTerm);
+      highlightItem.appendChild(span);
+      highlightsContainer.appendChild(highlightItem);
+    });
+  }
+
+  function setPageDetailsExpanded(pageItem, page, expand, searchTerm) {
+    const highlightsContainer = pageItem.querySelector('.page-highlights');
+    const detailsButton = pageItem.querySelector('.btn-details');
+
+    if (!expand) {
+      highlightsContainer.style.display = 'none';
+      detailsButton.textContent = getMessage('showDetails', 'Show Details');
+      return;
+    }
+
+    renderPageHighlights(page, highlightsContainer, searchTerm);
+    highlightsContainer.style.display = 'block';
+    detailsButton.textContent = getMessage('hideDetails', 'Hide');
+  }
+
   // Search functionality
   function filterPages(searchTerm) {
-    if (!searchTerm.trim()) {
+    currentSearchTerm = searchTerm || '';
+
+    const normalizedTerm = normalizeSearchTerm(searchTerm);
+
+    if (!normalizedTerm) {
       filteredPages = [...allPages];
     } else {
-      const term = searchTerm.toLowerCase();
       filteredPages = allPages.filter(page => {
         // Search in page title
-        const titleMatch = (page.title || '').toLowerCase().includes(term);
+        const titleMatch = (page.title || '').toLowerCase().includes(normalizedTerm);
 
         // Search in highlight text
         const highlightMatch = page.highlights && page.highlights.some(group =>
-          group.text && group.text.toLowerCase().includes(term)
+          group.text && group.text.toLowerCase().includes(normalizedTerm)
         );
 
         return titleMatch || highlightMatch;
@@ -205,11 +296,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const titleDiv = document.createElement('div');
         titleDiv.className = 'page-title';
-        titleDiv.textContent = pageTitle;
+        appendHighlightedText(titleDiv, pageTitle, currentSearchTerm);
 
         const urlDiv = document.createElement('div');
         urlDiv.className = 'page-url';
-        urlDiv.textContent = page.url;
+        appendHighlightedText(urlDiv, page.url, currentSearchTerm);
 
         const infoDiv = document.createElement('div');
         infoDiv.className = 'page-info';
@@ -249,47 +340,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         pagesContainer.appendChild(pageItem);
 
+        const shouldAutoExpand = Boolean(normalizeSearchTerm(currentSearchTerm));
+        if (shouldAutoExpand) {
+          setPageDetailsExpanded(pageItem, page, true, currentSearchTerm);
+        }
+
         // Page details button event
         pageItem.querySelector('.btn-details').addEventListener('click', function () {
           const highlightsContainer = pageItem.querySelector('.page-highlights');
-
-          if (highlightsContainer.style.display === 'block') {
-            highlightsContainer.style.display = 'none';
-            this.textContent = getMessage('showDetails', 'Show Details');
-          } else {
-            // Display highlight data
-            highlightsContainer.innerHTML = '';
-            highlightsContainer.style.display = 'block';
-            this.textContent = getMessage('hideDetails', 'Hide');
-
-            const sortedHighlights = [...(page.highlights || [])].sort((a, b) => {
-              const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
-              const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
-              return posA - posB;
-            });
-
-            if (sortedHighlights.length === 0) {
-              const emptyHighlight = document.createElement('div');
-              emptyHighlight.className = 'highlight-item';
-              const emptyText = document.createElement('span');
-              emptyText.className = 'highlight-text';
-              emptyText.textContent = getMessage('noHighlights', 'No highlighted text on this page.');
-              emptyHighlight.appendChild(emptyText);
-              highlightsContainer.appendChild(emptyHighlight);
-              return;
-            }
-
-            sortedHighlights.forEach(group => {
-              const highlightItem = document.createElement('div');
-              highlightItem.className = 'highlight-item';
-              highlightItem.style.setProperty('--highlight-color', group.color);
-              const span = document.createElement('span');
-              span.className = 'highlight-text';
-              span.textContent = group.text;
-              highlightItem.appendChild(span);
-              highlightsContainer.appendChild(highlightItem);
-            });
-          }
+          const isExpanded = highlightsContainer.style.display === 'block';
+          setPageDetailsExpanded(pageItem, page, !isExpanded, currentSearchTerm);
         });
 
         // Open page button event
@@ -360,6 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let allPages = [];
   let filteredPages = [];
   let currentSortMode = 'timeDesc'; // 'timeDesc' or 'timeAsc'
+  let currentSearchTerm = '';
 
   // Import highlights event
   if (importBtn && importFileInput) {
@@ -533,6 +594,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // Connect Refresh button events
   if (refreshBtn) {
     refreshBtn.addEventListener('click', function () {
+      currentSearchTerm = '';
+      if (searchInput) {
+        searchInput.value = '';
+      }
       loadAllHighlightedPages();
     });
   }

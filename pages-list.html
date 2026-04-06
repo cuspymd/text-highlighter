@@ -316,6 +316,19 @@
         word-break: break-word;
       }
 
+      .search-match {
+        background: rgba(139, 92, 246, 0.22);
+        color: inherit;
+        border-radius: 4px;
+        padding: 0 2px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .search-match {
+          background: rgba(167, 139, 250, 0.3);
+        }
+      }
+
       #import-btn svg {
         transform: rotate(180deg);
       }
