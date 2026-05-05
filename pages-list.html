@@ -136,6 +136,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 6px;
         padding: 0;
       }
 
@@ -210,12 +211,15 @@
       }
 
       .page-url {
+        display: inline-flex;
+        max-width: 100%;
         font-size: 12px;
         color: var(--muted);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         margin-bottom: 5px;
+        border-radius: 6px;
       }
 
       .page-info {
@@ -342,6 +346,11 @@
         background: var(--surface);
       }
 
+      .clear-search-btn {
+        margin-top: 12px;
+        min-width: 0;
+      }
+
       @media (max-width: 760px) {
         .page-wrap {
           width: min(100% - 16px, 1120px);
@@ -358,6 +367,11 @@
       }
 
       @media (max-width: 500px) {
+        .action-buttons {
+          width: 100%;
+          flex-wrap: wrap;
+        }
+
         .btn {
           min-width: 0;
           padding: 6px 10px;
@@ -391,20 +405,20 @@
         </div>
 
         <div class="action-buttons">
-          <button id="sort-btn" class="icon-btn" data-i18n-title="sortNewestFirst" title="Sort by time (newest first)">
-            <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h6v2H3v-2z"/></svg>
+          <button id="sort-btn" class="icon-btn" data-i18n-title="sortNewestFirst" data-i18n-aria-label="sortNewestFirst" title="Sort by time (newest first)">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h6v2H3v-2z"/></svg>
           </button>
-          <button id="refresh-btn" class="icon-btn btn-refresh" data-i18n-title="refresh" title="Refresh">
-            <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.9 6.8h-2.05A6 6 0 1 1 12 6c1.3 0 2.5.42 3.47 1.15L13 9.6h7V3l-2.35 3.35Z"/></svg>
+          <button id="refresh-btn" class="icon-btn btn-refresh" data-i18n-title="refresh" data-i18n-aria-label="refresh" title="Refresh">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.9 6.8h-2.05A6 6 0 1 1 12 6c1.3 0 2.5.42 3.47 1.15L13 9.6h7V3l-2.35 3.35Z"/></svg>
           </button>
-          <button id="delete-all-btn" class="icon-btn btn-delete-all" data-i18n-title="deleteAllPages" title="Delete All Pages">
-            <svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12Zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4Z"/></svg>
+          <button id="delete-all-btn" class="icon-btn btn-delete-all" data-i18n-title="deleteAllPages" data-i18n-aria-label="deleteAllPages" title="Delete All Pages">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12Zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4Z"/></svg>
           </button>
-          <button id="export-all-btn" class="icon-btn" data-i18n-title="exportAllTooltip" title="Export">
-            <svg viewBox="0 0 24 24"><path d="M12 3 5 10h4v6h6v-6h4l-7-7Zm-7 15h14v3H5v-3Z"/></svg>
+          <button id="export-all-btn" class="icon-btn" data-i18n-title="exportAllTooltip" data-i18n-aria-label="exportAllTooltip" title="Export">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 5 10h4v6h6v-6h4l-7-7Zm-7 15h14v3H5v-3Z"/></svg>
           </button>
-          <button id="import-btn" class="icon-btn" data-i18n-title="importHighlightsTooltip" title="Import">
-            <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2Zm7-16L5 11h4v5h6v-5h4L12 4Z"/></svg>
+          <button id="import-btn" class="icon-btn" data-i18n-title="importHighlightsTooltip" data-i18n-aria-label="importHighlightsTooltip" title="Import">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 20h14v-2H5v2Zm7-16L5 11h4v5h6v-5h4L12 4Z"/></svg>
           </button>
         </div>
 

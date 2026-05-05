@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: テキストハイライター"
   },
   "extensionDescription": {
@@ -238,5 +239,20 @@
   },
   "colorChangeWarning": {
     "message": "既存のハイライトには影響しません。"
+  },
+  "noSearchResults": {
+    "message": "「$1」の結果はありません。"
+  },
+  "clearSearch": {
+    "message": "検索をクリア"
+  },
+  "highlightWithColor": {
+    "message": "$1でハイライト"
+  },
+  "changeHighlightToColor": {
+    "message": "ハイライトを$1に変更"
+  },
+  "deleteHighlightAria": {
+    "message": "このハイライトを削除"
   }
 }

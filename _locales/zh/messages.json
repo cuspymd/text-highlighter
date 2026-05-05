@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: 文本高亮器"
   },
   "extensionDescription": {
@@ -238,5 +239,20 @@
   },
   "colorChangeWarning": {
     "message": "更改不会影响已有的高亮显示。"
+  },
+  "noSearchResults": {
+    "message": "没有“$1”的结果。"
+  },
+  "clearSearch": {
+    "message": "清除搜索"
+  },
+  "highlightWithColor": {
+    "message": "用$1高亮"
+  },
+  "changeHighlightToColor": {
+    "message": "将高亮改为$1"
+  },
+  "deleteHighlightAria": {
+    "message": "删除此高亮"
   }
 }

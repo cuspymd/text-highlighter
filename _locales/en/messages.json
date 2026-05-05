@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: Text Highlighter"
   },
   "extensionDescription": {
@@ -238,5 +239,20 @@
   },
   "colorChangeWarning": {
     "message": "Changes do not affect existing highlights."
+  },
+  "noSearchResults": {
+    "message": "No results for \"$1\"."
+  },
+  "clearSearch": {
+    "message": "Clear search"
+  },
+  "highlightWithColor": {
+    "message": "Highlight with $1"
+  },
+  "changeHighlightToColor": {
+    "message": "Change highlight to $1"
+  },
+  "deleteHighlightAria": {
+    "message": "Delete this highlight"
   }
 }

@@ -116,16 +116,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         textSpan.textContent = displayText;
 
         // Add delete button
-        const deleteBtn = document.createElement('span');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
         deleteBtn.className = 'delete-btn';
-        const removeLabel = browserAPI.i18n.getMessage('removeHighlight');
+        const removeLabel = browserAPI.i18n.getMessage('deleteHighlightAria') || browserAPI.i18n.getMessage('removeHighlight');
         deleteBtn.title = removeLabel;
         deleteBtn.setAttribute('aria-label', removeLabel);
-
-        const deleteIcon = document.createElement('span');
-        deleteIcon.className = 'delete-icon';
-        deleteIcon.textContent = 'x';
-        deleteBtn.appendChild(deleteIcon);
+        deleteBtn.innerHTML = `<svg class="delete-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12Zm13-15h-3.5l-1-1h-5l-1 1H5v2h14V4Z"/></svg>`;
         deleteBtn.addEventListener('click', async function (e) {
           e.stopPropagation();
           const confirmMessage =

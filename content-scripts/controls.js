@@ -193,10 +193,12 @@ function createHighlightControls() {
   if (highlightControlsContainer) return;
   highlightControlsContainer = document.createElement('div');
   highlightControlsContainer.className = 'text-highlighter-controls';
-  const deleteButton = document.createElement('div');
+  const deleteButton = document.createElement('button');
+  deleteButton.type = 'button';
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
   deleteButton.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="4" y1="4" x2="12" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
   deleteButton.title = getMessage('deleteHighlight');
+  deleteButton.setAttribute('aria-label', getMessage('deleteHighlight'));
   deleteButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
       removeHighlightViaApi(activeHighlightElement);
@@ -228,17 +230,21 @@ function createHighlightControls() {
 
 // create colorButton (reusable function)
 function createColorButton(colorInfo) {
-  const colorButton = document.createElement('div');
+  const colorButton = document.createElement('button');
+  colorButton.type = 'button';
   colorButton.className = 'text-highlighter-control-button color-button';
   colorButton.style.backgroundColor = colorInfo.color;
+  let colorLabel;
   if (colorInfo.customName) {
-    colorButton.title = colorInfo.customName;
+    colorLabel = colorInfo.customName;
   } else if (colorInfo.id && colorInfo.id.startsWith('custom_')) {
     const baseName = getMessage('customColor') || 'Custom Color';
-    colorButton.title = colorInfo.colorNumber ? `${baseName} ${colorInfo.colorNumber}` : baseName;
+    colorLabel = colorInfo.colorNumber ? `${baseName} ${colorInfo.colorNumber}` : baseName;
   } else {
-    colorButton.title = getMessage(colorInfo.nameKey);
+    colorLabel = getMessage(colorInfo.nameKey);
   }
+  colorButton.title = colorLabel;
+  colorButton.setAttribute('aria-label', getMessage('changeHighlightToColor', [colorLabel]) || `Change highlight to ${colorLabel}`);
   colorButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
       changeHighlightColorViaApi(activeHighlightElement, colorInfo.color);
@@ -265,10 +271,12 @@ function createColorButton(colorInfo) {
 
 // create addColorBtn (reusable function)
 function createAddColorButton() {
-  const addColorBtn = document.createElement('div');
+  const addColorBtn = document.createElement('button');
+  addColorBtn.type = 'button';
   addColorBtn.className = 'text-highlighter-control-button add-color-button';
   addColorBtn.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="8" y1="3" x2="8" y2="13" stroke="#999" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>`;
   addColorBtn.title = getMessage('addColor') || '+';
+  addColorBtn.setAttribute('aria-label', addColorBtn.title);
 
   // Add custom color picker event
   addColorBtn.addEventListener('click', (e) => {
@@ -1281,6 +1289,9 @@ function showSelectionControls(mouseX, mouseY) {
     // Remove existing event listeners by cloning the node
     const newColorButton = colorButton.cloneNode(true);
     colorButton.parentNode.replaceChild(newColorButton, colorButton);
+
+    const colorLabel = newColorButton.title || '';
+    newColorButton.setAttribute('aria-label', getMessage('highlightWithColor', [colorLabel]) || `Highlight with ${colorLabel}`);
 
     // Add new event listener for creating highlights
     newColorButton.addEventListener('click', function(e) {
