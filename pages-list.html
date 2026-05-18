@@ -401,7 +401,7 @@
           <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 1 0 14 15.5l.27.28v.79L19 21.5 20.5 20l-5-6Zm-6 0A4.5 4.5 0 1 1 9.5 5a4.5 4.5 0 0 1 0 9Z"/>
           </svg>
-          <input id="search-input" class="search-input" type="text" data-i18n-placeholder="searchPlaceholder" placeholder="Search..." />
+          <input id="search-input" class="search-input" type="text" data-i18n-placeholder="searchPlaceholder" data-i18n-aria-label="searchTooltip" placeholder="Search..." aria-label="Search highlights" />
         </div>
 
         <div class="action-buttons">
@@ -426,7 +426,7 @@
       </div>
 
       <div id="pages-container" class="page-grid">
-        <div id="no-pages" class="no-pages" data-i18n="noPagesFound">No highlighted pages found.</div>
+        <div id="no-pages" class="no-pages" data-i18n="noPagesFound" role="status" aria-live="polite">No highlighted pages found.</div>
       </div>
     </div>
 

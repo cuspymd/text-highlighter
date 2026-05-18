@@ -592,14 +592,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Update button appearance and tooltip
       if (currentSortMode === 'timeAsc') {
-        sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
+        sortBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M3 6h6v2H3V6zm0 5h12v2H3v-2zm0 5h18v2H3v-2z"/>
         </svg>`;
         sortBtn.title = getMessage('sortOldestFirst', 'Sort by time (oldest first)');
         sortBtn.setAttribute('aria-label', sortBtn.title);
         sortBtn.classList.add('sort-active');
       } else {
-        sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
+        sortBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h6v2H3v-2z"/>
         </svg>`;
         sortBtn.title = getMessage('sortNewestFirst', 'Sort by time (newest first)');

@@ -105,6 +105,7 @@ test.describe('Popup Tests', () => {
     expect(highlight0.startsWith(h1Text.substring(0, 45))).toBe(true);
 
     const deleteBtn = highlightItems.nth(0).locator('.delete-btn');
+    await expect(highlightItems.nth(0)).toHaveCSS('padding-right', '40px');
     await deleteBtn.click();
     const confirmBtn = popupPage.locator('.modal-confirm');
     await expect(confirmBtn).toBeVisible();
