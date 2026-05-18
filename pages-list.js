@@ -85,6 +85,13 @@ document.addEventListener('DOMContentLoaded', function () {
       element.title = getMessage(key, element.title);
     });
 
+    // Handle data-i18n-aria-label attributes
+    const elementsWithAriaLabel = document.querySelectorAll('[data-i18n-aria-label]');
+    elementsWithAriaLabel.forEach(element => {
+      const key = element.getAttribute('data-i18n-aria-label');
+      element.setAttribute('aria-label', getMessage(key, element.getAttribute('aria-label') || element.title || ''));
+    });
+
     // Handle data-i18n-placeholder attributes
     const elementsWithPlaceholder = document.querySelectorAll('[data-i18n-placeholder]');
     elementsWithPlaceholder.forEach(element => {
@@ -108,6 +115,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function normalizeSearchTerm(searchTerm) {
     return (searchTerm || '').trim().toLowerCase();
+  }
+
+  function formatDisplayUrl(urlString) {
+    if (!urlString) return '';
+    try {
+      const url = new URL(urlString);
+      if (url.protocol === 'file:') {
+        const parts = decodeURIComponent(url.pathname).split('/').filter(Boolean);
+        const fileName = parts.pop() || url.pathname;
+        const parent = parts.pop();
+        return parent ? `file://…/${parent}/${fileName}` : `file://…/${fileName}`;
+      }
+      if (url.hostname) {
+        const path = decodeURIComponent(url.pathname || '/');
+        const shortPath = path.length > 48 ? `${path.slice(0, 45)}…` : path;
+        return `${url.hostname}${shortPath}${url.search ? '…' : ''}`;
+      }
+    } catch (e) {
+      // Fall through to length-based truncation.
+    }
+    return urlString.length > 72 ? `${urlString.slice(0, 69)}…` : urlString;
   }
 
   function appendHighlightedText(container, text, searchTerm) {
@@ -300,7 +328,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const urlDiv = document.createElement('div');
         urlDiv.className = 'page-url';
-        appendHighlightedText(urlDiv, page.url, currentSearchTerm);
+        urlDiv.title = page.url;
+        urlDiv.setAttribute('aria-label', page.url);
+        appendHighlightedText(urlDiv, formatDisplayUrl(page.url), currentSearchTerm);
 
         const infoDiv = document.createElement('div');
         infoDiv.className = 'page-info';
@@ -369,6 +399,31 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       noPages.style.display = 'block';
       pagesContainer.innerHTML = '';
+      noPages.replaceChildren();
+
+      const normalizedTerm = normalizeSearchTerm(currentSearchTerm);
+      if (normalizedTerm) {
+        const message = document.createElement('div');
+        message.textContent = getMessage('noSearchResults', `No results for "${currentSearchTerm}".`, [currentSearchTerm]);
+        noPages.appendChild(message);
+
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.className = 'btn clear-search-btn';
+        clearButton.textContent = getMessage('clearSearch', 'Clear search');
+        clearButton.addEventListener('click', () => {
+          currentSearchTerm = '';
+          if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+          }
+          filterPages('');
+        });
+        noPages.appendChild(clearButton);
+      } else {
+        noPages.textContent = getMessage('noPagesFound', 'No highlighted pages found.');
+      }
+
       pagesContainer.appendChild(noPages);
     }
   }
@@ -537,16 +592,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Update button appearance and tooltip
       if (currentSortMode === 'timeAsc') {
-        sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
+        sortBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M3 6h6v2H3V6zm0 5h12v2H3v-2zm0 5h18v2H3v-2z"/>
         </svg>`;
         sortBtn.title = getMessage('sortOldestFirst', 'Sort by time (oldest first)');
+        sortBtn.setAttribute('aria-label', sortBtn.title);
         sortBtn.classList.add('sort-active');
       } else {
-        sortBtn.innerHTML = `<svg viewBox="0 0 24 24">
+        sortBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h6v2H3v-2z"/>
         </svg>`;
         sortBtn.title = getMessage('sortNewestFirst', 'Sort by time (newest first)');
+        sortBtn.setAttribute('aria-label', sortBtn.title);
         sortBtn.classList.remove('sort-active');
       }
 

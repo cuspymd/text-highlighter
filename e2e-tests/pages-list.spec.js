@@ -235,6 +235,19 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await acceptModalAndGetMessage(listPage);
 
     const searchInput = listPage.locator('#search-input');
+    await expect(searchInput).toHaveAttribute('aria-label', /^(Search highlights|하이라이트 검색)$/);
+
+    const sortBtn = listPage.locator('#sort-btn');
+    await sortBtn.click();
+    await expect(sortBtn.locator('svg')).toHaveAttribute('aria-hidden', 'true');
+    await expect(sortBtn.locator('svg')).toHaveAttribute('focusable', 'false');
+
+    await searchInput.fill('no-matching-highlight');
+    const noPages = listPage.locator('#no-pages');
+    await expect(noPages).toBeVisible();
+    await expect(noPages).toHaveAttribute('role', 'status');
+    await expect(noPages).toHaveAttribute('aria-live', 'polite');
+
     await searchInput.fill('sample');
 
     const pageItems = listPage.locator('.page-item');
