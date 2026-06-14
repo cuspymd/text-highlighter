@@ -18,6 +18,13 @@ async function acceptModalAndGetMessage(page) {
   return message;
 }
 
+async function clickMoreMenuItem(page, selector) {
+  await page.locator('#more-menu-btn').click();
+  const menuItem = page.locator(selector);
+  await expect(menuItem).toBeVisible();
+  await menuItem.click();
+}
+
 test.describe('Pages List UI and Delete All Pages', () => {
   test('should show highlighted pages and delete all', async ({ context, background, extensionId }) => {
     // 1. test-page.html: highlight first p
@@ -124,7 +131,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await openPagesList(listPage, extensionId);
     const [download] = await Promise.all([
       listPage.waitForEvent('download'),
-      listPage.click('#export-all-btn'),
+      clickMoreMenuItem(listPage, '#export-all-btn'),
     ]);
     const downloadPath = await download.path();
     const exported = JSON.parse(fs.readFileSync(downloadPath, 'utf-8'));
@@ -172,7 +179,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await openPagesList(listPage, extensionId);
     const [download] = await Promise.all([
       listPage.waitForEvent('download'),
-      listPage.click('#export-all-btn'),
+      clickMoreMenuItem(listPage, '#export-all-btn'),
     ]);
     const downloadPath = await download.path();
     const exported = JSON.parse(fs.readFileSync(downloadPath, 'utf-8'));
@@ -200,13 +207,10 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await openPagesList(listPage, extensionId);
 
     // 2. Select file after clicking import button
-    const importBtn = listPage.locator('#import-btn');
-    await expect(importBtn).toBeVisible();
-
     const jsonPath = path.join(__dirname, 'all-highlights-test.json');
 
     // Set file after opening file input by clicking importBtn
-    await importBtn.click();
+    await clickMoreMenuItem(listPage, '#import-btn');
     await listPage.setInputFiles('#import-file', jsonPath);
     await acceptModalAndGetMessage(listPage);
 
@@ -226,11 +230,8 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const listPage = await context.newPage();
     await openPagesList(listPage, extensionId);
 
-    const importBtn = listPage.locator('#import-btn');
-    await expect(importBtn).toBeVisible();
-
     const jsonPath = path.join(__dirname, 'all-highlights-test.json');
-    await importBtn.click();
+    await clickMoreMenuItem(listPage, '#import-btn');
     await listPage.setInputFiles('#import-file', jsonPath);
     await acceptModalAndGetMessage(listPage);
 
@@ -256,15 +257,77 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await listPage.close();
   });
 
+  test('expand/collapse all button toggles visible page highlights and tracks partial state', async ({ context, extensionId }) => {
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    const jsonPath = path.join(__dirname, 'all-highlights-test.json');
+    await clickMoreMenuItem(listPage, '#import-btn');
+    await listPage.setInputFiles('#import-file', jsonPath);
+    await acceptModalAndGetMessage(listPage);
+
+    const pageItems = listPage.locator('.page-item');
+    await expect(pageItems).toHaveCount(2);
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(0);
+
+    const expandAllBtn = listPage.locator('#expand-all-btn');
+    await expect(expandAllBtn).toBeVisible();
+    await expect(expandAllBtn).toHaveAttribute('aria-pressed', 'false');
+    await expandAllBtn.click();
+
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(2);
+    await expect(expandAllBtn).toHaveAttribute('aria-pressed', 'true');
+
+    await expandAllBtn.click();
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(0);
+    await expect(expandAllBtn).toHaveAttribute('aria-pressed', 'false');
+
+    await pageItems.nth(0).locator('.btn-details').click();
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(1);
+    await expect(expandAllBtn).toHaveAttribute('aria-pressed', 'false');
+
+    await pageItems.nth(1).locator('.btn-details').click();
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(2);
+    await expect(expandAllBtn).toHaveAttribute('aria-pressed', 'true');
+
+    await pageItems.nth(0).locator('.btn-details').click();
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(1);
+    await expect(expandAllBtn).toHaveAttribute('aria-pressed', 'false');
+
+    await expandAllBtn.click();
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(2);
+    await expect(expandAllBtn).toHaveAttribute('aria-pressed', 'true');
+
+    await listPage.locator('#refresh-btn').click();
+    await expect(listPage.locator('.page-highlights:visible')).toHaveCount(0);
+
+    await listPage.close();
+  });
+
+  test('more actions menu opens and closes from the toolbar', async ({ context, extensionId }) => {
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    const moreMenu = listPage.locator('#more-menu');
+    await expect(moreMenu).toBeHidden();
+
+    await listPage.locator('#more-menu-btn').click();
+    await expect(moreMenu).toBeVisible();
+    await expect(listPage.locator('#export-all-btn')).toBeVisible();
+    await expect(listPage.locator('#import-btn')).toBeVisible();
+
+    await listPage.keyboard.press('Escape');
+    await expect(moreMenu).toBeHidden();
+
+    await listPage.close();
+  });
+
   test('Verify that only safe URLs are imported when importing JSON containing unsafe URLs', async ({ context, extensionId }) => {
     const listPage = await context.newPage();
     await openPagesList(listPage, extensionId);
 
-    const importBtn = listPage.locator('#import-btn');
-    await expect(importBtn).toBeVisible();
-
     const jsonPath = path.join(__dirname, 'import-mixed-unsafe-urls.json');
-    await importBtn.click();
+    await clickMoreMenuItem(listPage, '#import-btn');
     await listPage.setInputFiles('#import-file', jsonPath);
     const modalMessages = [
       await acceptModalAndGetMessage(listPage),
@@ -288,11 +351,8 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const listPage = await context.newPage();
     await openPagesList(listPage, extensionId);
 
-    const importBtn = listPage.locator('#import-btn');
-    await expect(importBtn).toBeVisible();
-
     const jsonPath = path.join(__dirname, 'import-all-unsafe-urls.json');
-    await importBtn.click();
+    await clickMoreMenuItem(listPage, '#import-btn');
     await listPage.setInputFiles('#import-file', jsonPath);
     const modalMessages = [
       await acceptModalAndGetMessage(listPage),
@@ -313,11 +373,8 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const listPage = await context.newPage();
     await openPagesList(listPage, extensionId);
 
-    const importBtn = listPage.locator('#import-btn');
-    await expect(importBtn).toBeVisible();
-
     const jsonPath = path.join(__dirname, 'import-mixed-schema-invalid.json');
-    await importBtn.click();
+    await clickMoreMenuItem(listPage, '#import-btn');
     await listPage.setInputFiles('#import-file', jsonPath);
     const modalMessages = [
       await acceptModalAndGetMessage(listPage),

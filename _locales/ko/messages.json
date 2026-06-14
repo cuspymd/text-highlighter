@@ -191,6 +191,15 @@
   "sortOldestFirst": {
     "message": "시간순 정렬 (오래된 순)"
   },
+  "expandAllHighlights": {
+    "message": "모든 하이라이트 펼치기"
+  },
+  "collapseAllHighlights": {
+    "message": "모든 하이라이트 접기"
+  },
+  "moreActions": {
+    "message": "더보기"
+  },
   "settingsTitle": {
     "message": "설정"
   },

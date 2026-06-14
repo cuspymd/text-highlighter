@@ -191,6 +191,15 @@
   "sortOldestFirst": {
     "message": "按时间排序（最旧优先）"
   },
+  "expandAllHighlights": {
+    "message": "展开所有高亮"
+  },
+  "collapseAllHighlights": {
+    "message": "折叠所有高亮"
+  },
+  "moreActions": {
+    "message": "更多操作"
+  },
   "settingsTitle": {
     "message": "设置"
   },

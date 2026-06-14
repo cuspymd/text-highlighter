@@ -191,6 +191,15 @@
   "sortOldestFirst": {
     "message": "時間順ソート（古い順）"
   },
+  "expandAllHighlights": {
+    "message": "すべてのハイライトを展開"
+  },
+  "collapseAllHighlights": {
+    "message": "すべてのハイライトを折りたたむ"
+  },
+  "moreActions": {
+    "message": "その他の操作"
+  },
   "settingsTitle": {
     "message": "設定"
   },
