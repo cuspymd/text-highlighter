@@ -199,7 +199,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // Search functionality
   function filterPages(searchTerm) {
     expandAllActive = false;
-    updateExpandCollapseAllButtonState();
     currentSearchTerm = searchTerm || '';
 
     const normalizedTerm = normalizeSearchTerm(searchTerm);
@@ -708,7 +707,6 @@ document.addEventListener('DOMContentLoaded', function () {
     refreshBtn.addEventListener('click', function () {
       currentSearchTerm = '';
       expandAllActive = false;
-      updateExpandCollapseAllButtonState();
       if (searchInput) {
         searchInput.value = '';
       }
