@@ -191,6 +191,15 @@
   "sortOldestFirst": {
     "message": "Sort by time (oldest first)"
   },
+  "expandAllHighlights": {
+    "message": "Expand all highlights"
+  },
+  "collapseAllHighlights": {
+    "message": "Collapse all highlights"
+  },
+  "moreActions": {
+    "message": "More actions"
+  },
   "settingsTitle": {
     "message": "Settings"
   },

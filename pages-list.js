@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(getMessage);
+  const expandAllIconSvg = '<svg viewBox="0 0 24 24"><path d="M7 5h10v2H7V5Zm-4 4h18v2H3V9Zm4 4h10v2H7v-2Zm-4 4h18v2H3v-2Z"/></svg>';
+  const collapseAllIconSvg = '<svg viewBox="0 0 24 24"><path d="M3 5h18v2H3V5Zm4 4h10v2H7V9Zm-4 4h18v2H3v-2Zm4 4h10v2H7v-2Z"/></svg>';
   const webProtocols = new Set(['http:', 'https:']);
   const fallbackWebFavicon = `data:image/svg+xml;utf8,${encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#e5e7eb" stroke="#9ca3af"/><path d="M2 8h12M8 1a11 11 0 0 0 0 14M8 1a11 11 0 0 1 0 14" stroke="#6b7280" stroke-width="1" fill="none"/></svg>'
@@ -196,6 +198,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Search functionality
   function filterPages(searchTerm) {
+    expandAllActive = false;
+    updateExpandCollapseAllButtonState();
     currentSearchTerm = searchTerm || '';
 
     const normalizedTerm = normalizeSearchTerm(searchTerm);
@@ -236,9 +240,66 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Display page list
   function displayPages(pages) {
+    expandAllActive = false;
     allPages = [...pages];
     filteredPages = [...pages];
     sortAndDisplayPages();
+  }
+
+  function getVisiblePageItems() {
+    return Array.from(pagesContainer.querySelectorAll('.page-item'));
+  }
+
+  function areAllVisiblePagesExpanded() {
+    const pageItems = getVisiblePageItems();
+    return pageItems.length > 0 && pageItems.every(pageItem => {
+      const highlightsContainer = pageItem.querySelector('.page-highlights');
+      return highlightsContainer?.style.display === 'block';
+    });
+  }
+
+  function updateExpandCollapseAllButtonState() {
+    if (!expandAllBtn) return;
+
+    const hasVisiblePages = getVisiblePageItems().length > 0;
+    const allExpanded = areAllVisiblePagesExpanded();
+    const titleKey = allExpanded ? 'collapseAllHighlights' : 'expandAllHighlights';
+    const fallbackTitle = allExpanded ? 'Collapse all highlights' : 'Expand all highlights';
+
+    expandAllBtn.disabled = !hasVisiblePages;
+    expandAllBtn.setAttribute('aria-pressed', String(allExpanded));
+    expandAllBtn.title = getMessage(titleKey, fallbackTitle);
+    expandAllBtn.setAttribute('aria-label', expandAllBtn.title);
+    expandAllBtn.innerHTML = allExpanded ? collapseAllIconSvg : expandAllIconSvg;
+  }
+
+  function expandAllVisiblePages() {
+    if (filteredPages.length === 0) return;
+
+    expandAllActive = true;
+    sortAndDisplayPages();
+  }
+
+  function collapseAllVisiblePages() {
+    expandAllActive = false;
+
+    getVisiblePageItems().forEach(pageItem => {
+      const page = filteredPages.find(item => item.url === pageItem.dataset.url);
+      if (page) {
+        setPageDetailsExpanded(pageItem, page, false, currentSearchTerm);
+      }
+    });
+
+    updateExpandCollapseAllButtonState();
+  }
+
+  function toggleExpandCollapseAllVisiblePages() {
+    if (areAllVisiblePagesExpanded()) {
+      collapseAllVisiblePages();
+      return;
+    }
+
+    expandAllVisiblePages();
   }
 
   // Display filtered pages
@@ -340,16 +401,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         pagesContainer.appendChild(pageItem);
 
-        const shouldAutoExpand = Boolean(normalizeSearchTerm(currentSearchTerm));
+        const shouldAutoExpand = expandAllActive || Boolean(normalizeSearchTerm(currentSearchTerm));
         if (shouldAutoExpand) {
           setPageDetailsExpanded(pageItem, page, true, currentSearchTerm);
         }
 
         // Page details button event
         pageItem.querySelector('.btn-details').addEventListener('click', function () {
+          expandAllActive = false;
           const highlightsContainer = pageItem.querySelector('.page-highlights');
           const isExpanded = highlightsContainer.style.display === 'block';
           setPageDetailsExpanded(pageItem, page, !isExpanded, currentSearchTerm);
+          updateExpandCollapseAllButtonState();
         });
 
         // Open page button event
@@ -371,6 +434,8 @@ document.addEventListener('DOMContentLoaded', function () {
       pagesContainer.innerHTML = '';
       pagesContainer.appendChild(noPages);
     }
+
+    updateExpandCollapseAllButtonState();
   }
 
   // Delete all highlights for a page
@@ -410,21 +475,60 @@ document.addEventListener('DOMContentLoaded', function () {
   // Get button DOM elements (now created directly in HTML)
   const deleteAllBtn = document.getElementById('delete-all-btn');
   const refreshBtn = document.getElementById('refresh-btn');
+  const expandAllBtn = document.getElementById('expand-all-btn');
   const exportAllBtn = document.getElementById('export-all-btn');
   const importBtn = document.getElementById('import-btn');
   const importFileInput = document.getElementById('import-file');
   const searchInput = document.getElementById('search-input');
   const sortBtn = document.getElementById('sort-btn');
+  const moreMenuBtn = document.getElementById('more-menu-btn');
+  const moreMenu = document.getElementById('more-menu');
 
   // Search and sort state
   let allPages = [];
   let filteredPages = [];
   let currentSortMode = 'timeDesc'; // 'timeDesc' or 'timeAsc'
   let currentSearchTerm = '';
+  let expandAllActive = false;
+
+  function setMoreMenuOpen(open) {
+    if (!moreMenu || !moreMenuBtn) return;
+
+    moreMenu.hidden = !open;
+    moreMenuBtn.setAttribute('aria-expanded', String(open));
+  }
+
+  function closeMoreMenu() {
+    setMoreMenuOpen(false);
+  }
+
+  if (moreMenuBtn) {
+    moreMenuBtn.addEventListener('click', function (event) {
+      event.stopPropagation();
+      setMoreMenuOpen(moreMenu ? moreMenu.hidden : false);
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    if (!moreMenu || !moreMenuBtn) return;
+
+    const menuContainer = moreMenuBtn.closest('.more-menu-container');
+    if (menuContainer && !menuContainer.contains(event.target)) {
+      closeMoreMenu();
+    }
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || !moreMenu || moreMenu.hidden) return;
+
+    closeMoreMenu();
+    moreMenuBtn?.focus();
+  });
 
   // Import highlights event
   if (importBtn && importFileInput) {
     importBtn.addEventListener('click', function () {
+      closeMoreMenu();
       importFileInput.value = '';
       importFileInput.click();
     });
@@ -554,9 +658,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Expand/collapse all currently visible page highlights
+  if (expandAllBtn) {
+    expandAllBtn.addEventListener('click', function () {
+      toggleExpandCollapseAllVisiblePages();
+    });
+  }
+
   // Export all highlights event
   if (exportAllBtn) {
     exportAllBtn.addEventListener('click', function () {
+      closeMoreMenu();
       browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, async (response) => {
         if (response && response.success) {
           const exportData = response.pages;
@@ -595,6 +707,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (refreshBtn) {
     refreshBtn.addEventListener('click', function () {
       currentSearchTerm = '';
+      expandAllActive = false;
+      updateExpandCollapseAllButtonState();
       if (searchInput) {
         searchInput.value = '';
       }

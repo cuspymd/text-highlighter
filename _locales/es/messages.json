@@ -191,6 +191,15 @@
   "sortOldestFirst": {
     "message": "Ordenar por tiempo (más antiguo primero)"
   },
+  "expandAllHighlights": {
+    "message": "Expandir todos los resaltados"
+  },
+  "collapseAllHighlights": {
+    "message": "Contraer todos los resaltados"
+  },
+  "moreActions": {
+    "message": "Más acciones"
+  },
   "settingsTitle": {
     "message": "Configuración"
   },
