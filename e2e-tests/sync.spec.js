@@ -32,6 +32,7 @@ async function waitInBackground(background, ms) {
 async function waitForSyncReady(background) {
   await expect.poll(async () => {
     return await background.evaluate(async () => {
+      if (typeof chrome === 'undefined' || !chrome.storage) return false;
       const result = await chrome.storage.local.get('syncMigrationDone');
       return !!result.syncMigrationDone;
     });

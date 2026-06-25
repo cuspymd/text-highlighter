@@ -359,6 +359,9 @@ test.describe('Popup Tests', () => {
     const controls = page.locator('.text-highlighter-controls.text-highlighter-selection-controls');
     await expect(controls).toBeVisible();
 
+    // Wait for the justShown guard (300ms) to expire before clicking
+    await page.waitForTimeout(350);
+
     // Click the first yellow color icon
     const yellowColorButton = controls.locator('.color-button').first();
     await yellowColorButton.click();

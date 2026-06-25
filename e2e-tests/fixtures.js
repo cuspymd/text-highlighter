@@ -49,6 +49,17 @@ export const test = base.extend({
     if (!background) {
       background = await context.waitForEvent('serviceworker', { timeout: 30_000 });
     }
+    // On Windows, Chrome suspends service workers aggressively. Wait until
+    // the chrome APIs are actually available before handing the worker to tests.
+    for (let i = 0; i < 50; i++) {
+      try {
+        const ready = await background.evaluate(
+          () => typeof chrome !== 'undefined' && !!chrome.storage
+        );
+        if (ready) break;
+      } catch {}
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
     await use(background);
   }, { timeout: 40_000 }],
   extensionId: async ({ background }, use) => {
