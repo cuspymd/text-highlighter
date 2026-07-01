@@ -1,0 +1,9 @@
+name = "text-highlighter-sync"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Created via `wrangler kv namespace create SYNC_KV` — replace `id` with the
+# id it prints. See ../README.md for the full deployment walkthrough.
+kv_namespaces = [
+  { binding = "SYNC_KV", id = "REPLACE_WITH_KV_NAMESPACE_ID" }
+]

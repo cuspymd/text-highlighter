@@ -1,7 +1,7 @@
 import { browserAPI } from '../shared/browser-api.js';
 import { debugLog } from '../shared/logger.js';
 import { broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
-import { STORAGE_KEYS, SYNC_KEYS } from '../constants/storage-keys.js';
+import { STORAGE_KEYS, SYNC_KEYS, CLOUD_SYNC_KEYS } from '../constants/storage-keys.js';
 
 const SYNC_QUOTA_BYTES_PER_ITEM = 8192;
 // Reserve space for settings and sync_meta
@@ -130,11 +130,32 @@ export async function saveSettingsToSync() {
     }
   }
 
+  // Recorded regardless of storage.sync outcome so the cloud sync blob (which has no
+  // event-based change detection of its own) can tell whose settings are newest.
+  await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT]: Date.now() });
+
   try {
     await browserAPI.storage.sync.set({ [SYNC_SETTINGS_KEY]: settings });
     debugLog('Settings saved to sync:', settings);
   } catch (e) {
     debugLog('Failed to save settings to sync:', e.message);
+  }
+}
+
+/**
+ * Record a local tombstone for cloud sync (Cloudflare KV blob), independent of
+ * browser storage.sync's own tombstone bookkeeping (sync_meta.deletedUrls).
+ */
+async function recordCloudSyncTombstones(urls) {
+  try {
+    const result = await browserAPI.storage.local.get(CLOUD_SYNC_KEYS.DELETED_URLS);
+    const deletedUrls = result[CLOUD_SYNC_KEYS.DELETED_URLS] || {};
+    const now = Date.now();
+    for (const url of urls) deletedUrls[url] = now;
+    cleanupTombstones(deletedUrls);
+    await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: deletedUrls });
+  } catch (e) {
+    debugLog('Failed to record cloud sync tombstone(s):', e.message);
   }
 }
 
@@ -229,6 +250,8 @@ export async function syncRemoveHighlights(url) {
   } catch (e) {
     debugLog('Failed to remove highlights from sync:', e.message);
   }
+
+  await recordCloudSyncTombstones([url]);
 }
 
 export async function cleanupEmptyHighlightData(url) {
@@ -251,8 +274,13 @@ async function applyUserDeletionFromSync(url) {
  * Clear all synced highlights and mark synced URLs as user-deleted.
  * Tombstones are written only for URLs currently tracked in sync_meta.pages
  * to keep the sync_meta item within per-item quota.
+ *
+ * @param {string[]} localUrls - All locally known highlighted page URLs at the time of
+ *   clearing (may be a superset of sync_meta.pages, e.g. pages that never fit the 8KB
+ *   per-item browser sync limit). Used to record cloud sync tombstones for every page,
+ *   since the Cloudflare KV blob has no per-item size limit of its own.
  */
-export async function clearAllSyncedHighlights() {
+export async function clearAllSyncedHighlights(localUrls = []) {
   try {
     const meta = await getSyncMeta();
     const syncKeysToRemove = meta.pages.map(p => p.syncKey);
@@ -273,6 +301,8 @@ export async function clearAllSyncedHighlights() {
   } catch (e) {
     debugLog('Failed to clear synced highlights:', e.message);
   }
+
+  await recordCloudSyncTombstones(localUrls);
 }
 
 /**

@@ -247,5 +247,59 @@
   },
   "colorChangeWarning": {
     "message": "Changes do not affect existing highlights."
+  },
+  "cloudSyncSection": {
+    "message": "Cloud Sync (Beta)"
+  },
+  "cloudSyncIntro": {
+    "message": "Sync highlights across devices via an encrypted cloud backup, for platforms (like Firefox for Android) where browser sync isn't available. Your data is encrypted on this device before upload; the sync code is the only way to decrypt it."
+  },
+  "cloudSyncGenerateCode": {
+    "message": "Generate New Code"
+  },
+  "cloudSyncPairCodePlaceholder": {
+    "message": "Enter sync code from another device"
+  },
+  "cloudSyncPairCodeButton": {
+    "message": "Connect"
+  },
+  "cloudSyncInvalidCode": {
+    "message": "That sync code doesn't look right. Double-check it and try again."
+  },
+  "cloudSyncYourCode": {
+    "message": "Your Sync Code"
+  },
+  "cloudSyncSaveCodeWarning": {
+    "message": "Save this code somewhere safe. If you lose it, this data cannot be recovered."
+  },
+  "cloudSyncCopyCode": {
+    "message": "Copy"
+  },
+  "cloudSyncCodeCopied": {
+    "message": "Copied!"
+  },
+  "cloudSyncEnabledLabel": {
+    "message": "Cloud Sync"
+  },
+  "cloudSyncNowButton": {
+    "message": "Sync Now"
+  },
+  "cloudSyncSyncing": {
+    "message": "Syncing..."
+  },
+  "cloudSyncNeverSynced": {
+    "message": "Not synced yet"
+  },
+  "cloudSyncLastSyncedPrefix": {
+    "message": "Last synced: "
+  },
+  "cloudSyncErrorPrefix": {
+    "message": "Sync error: "
+  },
+  "cloudSyncResetButton": {
+    "message": "Forget Code"
+  },
+  "cloudSyncResetConfirm": {
+    "message": "This disconnects this device and permanently forgets the sync code. Data already uploaded to the cloud will remain unless you also reset it from another connected device. Continue?"
   }
 }
