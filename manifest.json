@@ -12,7 +12,7 @@
     "alarms"
   ],
   "host_permissions": [
-    "https://text-highlighter-sync.YOUR_SUBDOMAIN.workers.dev/*"
+    "https://text-highlighter-sync.cuspymd.workers.dev/*"
   ],
   "background": {
     "service_worker": "background.js",
