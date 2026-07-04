@@ -391,12 +391,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cloudSyncPairBtn = document.getElementById('cloud-sync-pair-btn');
   const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
   const cloudSyncCodeDisplay = document.getElementById('cloud-sync-code-display');
+  const cloudSyncToggleVisibilityBtn = document.getElementById('cloud-sync-toggle-visibility-btn');
   const cloudSyncCopyBtn = document.getElementById('cloud-sync-copy-btn');
   const cloudSyncStatusText = document.getElementById('cloud-sync-status-text');
   const cloudSyncNowBtn = document.getElementById('cloud-sync-now-btn');
   const cloudSyncResetBtn = document.getElementById('cloud-sync-reset-btn');
 
   let currentSyncCode = null;
+  let isSyncCodeVisible = false;
+
+  function maskSyncCode(code) {
+    const groups = code.split('-');
+    if (groups.length <= 2) return code;
+    return groups
+      .map((group, index) => (index === 0 || index === groups.length - 1 ? group : '•'.repeat(group.length)))
+      .join('-');
+  }
+
+  function renderSyncCodeDisplay() {
+    if (!currentSyncCode) return;
+    cloudSyncCodeDisplay.textContent = isSyncCodeVisible ? currentSyncCode : maskSyncCode(currentSyncCode);
+    cloudSyncToggleVisibilityBtn.textContent = browserAPI.i18n.getMessage(
+      isSyncCodeVisible ? 'cloudSyncHideCode' : 'cloudSyncShowCode'
+    ) || (isSyncCodeVisible ? 'Hide' : 'Show');
+  }
 
   function renderCloudSyncStatus(status) {
     cloudSyncToggle.checked = !!status.enabled;
@@ -414,12 +432,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderCloudSyncView(status) {
+    if (currentSyncCode !== status.code) {
+      isSyncCodeVisible = false;
+    }
     currentSyncCode = status.code;
 
     if (status.code) {
       cloudSyncSetup.style.display = 'none';
       cloudSyncConnected.style.display = '';
-      cloudSyncCodeDisplay.textContent = status.code;
+      renderSyncCodeDisplay();
       renderCloudSyncStatus(status);
     } else {
       cloudSyncSetup.style.display = '';
@@ -475,12 +496,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadCloudSyncStatus();
   });
 
+  cloudSyncToggleVisibilityBtn.addEventListener('click', () => {
+    isSyncCodeVisible = !isSyncCodeVisible;
+    renderSyncCodeDisplay();
+  });
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        // Fall through to the legacy fallback below (e.g. unsupported on this
+        // Firefox for Android version - navigator.clipboard.writeText only
+        // landed there in Firefox 151, long after desktop).
+      }
+    }
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return success;
+    } catch (err) {
+      return false;
+    }
+  }
+
   cloudSyncCopyBtn.addEventListener('click', async () => {
     if (!currentSyncCode) return;
-    await navigator.clipboard.writeText(currentSyncCode);
-    const original = cloudSyncCopyBtn.textContent;
-    cloudSyncCopyBtn.textContent = browserAPI.i18n.getMessage('cloudSyncCodeCopied') || 'Copied!';
-    setTimeout(() => { cloudSyncCopyBtn.textContent = original; }, 1500);
+    const copied = await copyTextToClipboard(currentSyncCode);
+    if (copied) {
+      const original = cloudSyncCopyBtn.textContent;
+      cloudSyncCopyBtn.textContent = browserAPI.i18n.getMessage('cloudSyncCodeCopied') || 'Copied!';
+      setTimeout(() => { cloudSyncCopyBtn.textContent = original; }, 1500);
+    } else {
+      isSyncCodeVisible = true;
+      renderSyncCodeDisplay();
+      await showAlertModal(
+        browserAPI.i18n.getMessage('cloudSyncCopyFailed') ||
+          "Couldn't copy automatically. The code is now shown above - please copy it manually."
+      );
+    }
   });
 
   cloudSyncNowBtn.addEventListener('click', async () => {
