@@ -147,6 +147,50 @@ function isSameHighlightState(a, b) {
   return JSON.stringify(a || []) === JSON.stringify(b || []);
 }
 
+function sortedEntries(obj) {
+  const sorted = {};
+  for (const key of Object.keys(obj || {}).sort()) {
+    sorted[key] = obj[key];
+  }
+  return sorted;
+}
+
+function canonicalPage(page) {
+  if (!page) return null;
+  const highlights = [...(page.highlights || [])].sort((a, b) =>
+    (a.groupId || '').localeCompare(b.groupId || '')
+  );
+  return {
+    title: page.title || '',
+    lastUpdated: page.lastUpdated || '',
+    highlights,
+    deletedGroupIds: sortedEntries(page.deletedGroupIds),
+  };
+}
+
+/**
+ * Order-insensitive comparison of the syncable content of two blobs. Ignores
+ * the top-level `updatedAt` stamp (regenerated on every merge, carries no
+ * signal about whether anything changed) and sorts pages/highlights/tombstone
+ * maps before comparing, since mergeBlobs/mergeHighlights build those from
+ * Map/Set iteration and spreads whose key order depends on which side
+ * (local vs remote) happened to be processed first.
+ */
+export function isBlobContentEqual(a, b) {
+  const canonicalize = (blob) => {
+    const pages = {};
+    for (const url of Object.keys(blob.pages || {}).sort()) {
+      pages[url] = canonicalPage(blob.pages[url]);
+    }
+    return JSON.stringify({
+      settings: blob.settings,
+      pages,
+      deletedUrls: sortedEntries(blob.deletedUrls),
+    });
+  };
+  return canonicalize(a) === canonicalize(b);
+}
+
 async function applyMergedPagesToLocal(mergedPages, deletedUrls, localPagesBefore) {
   const saveData = {};
   for (const [url, page] of Object.entries(mergedPages)) {
@@ -259,7 +303,11 @@ export async function runCloudSync() {
 
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });
 
-    await pushRemoteBlob(keyId, encryptionKey, merged);
+    if (isBlobContentEqual(merged, remoteBlob)) {
+      debugLog('Cloud sync: no changes since last push, skipping PUT.');
+    } else {
+      await pushRemoteBlob(keyId, encryptionKey, merged);
+    }
 
     await browserAPI.storage.local.set({
       [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: Date.now(),

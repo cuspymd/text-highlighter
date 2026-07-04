@@ -1,7 +1,8 @@
 import chrome from '../mocks/chrome.js';
-import { generateSyncCode } from '../shared/crypto-utils.js';
+import { generateSyncCode, deriveSyncKeys, encryptBlob } from '../shared/crypto-utils.js';
 import {
   mergeBlobs,
+  isBlobContentEqual,
   getCloudSyncStatus,
   runCloudSync,
   enableCloudSyncWithNewCode,
@@ -81,6 +82,34 @@ describe('cloud-sync-service', () => {
     });
   });
 
+  describe('isBlobContentEqual', () => {
+    it('treats identical content as equal even when the top-level updatedAt stamp differs', () => {
+      const a = emptyBlob({ updatedAt: 1 });
+      const b = emptyBlob({ updatedAt: 2 });
+      expect(isBlobContentEqual(a, b)).toBe(true);
+    });
+
+    it('ignores highlight array order within a page (Map-insertion-order artifact of mergeHighlights)', () => {
+      const page = (highlights) => ({ title: 'A', lastUpdated: '2024-01-01T00:00:00.000Z', highlights, deletedGroupIds: {} });
+      const a = emptyBlob({ pages: { 'https://a.test': page([{ groupId: 'g1', updatedAt: 1 }, { groupId: 'g2', updatedAt: 1 }]) } });
+      const b = emptyBlob({ pages: { 'https://a.test': page([{ groupId: 'g2', updatedAt: 1 }, { groupId: 'g1', updatedAt: 1 }]) } });
+      expect(isBlobContentEqual(a, b)).toBe(true);
+    });
+
+    it('ignores deletedUrls / deletedGroupIds key order (spread-merge artifact)', () => {
+      const a = emptyBlob({ deletedUrls: { 'https://a.test': 1, 'https://b.test': 2 } });
+      const b = emptyBlob({ deletedUrls: { 'https://b.test': 2, 'https://a.test': 1 } });
+      expect(isBlobContentEqual(a, b)).toBe(true);
+    });
+
+    it('still detects a real content difference (new highlight group added)', () => {
+      const page = (highlights) => ({ title: 'A', lastUpdated: '2024-01-01T00:00:00.000Z', highlights, deletedGroupIds: {} });
+      const a = emptyBlob({ pages: { 'https://a.test': page([{ groupId: 'g1', updatedAt: 1 }]) } });
+      const b = emptyBlob({ pages: { 'https://a.test': page([{ groupId: 'g1', updatedAt: 1 }, { groupId: 'g2', updatedAt: 1 }]) } });
+      expect(isBlobContentEqual(a, b)).toBe(false);
+    });
+  });
+
   describe('getCloudSyncStatus', () => {
     it('returns disabled defaults when nothing is stored', async () => {
       chrome.storage.local.get.mockResolvedValueOnce({});
@@ -124,6 +153,47 @@ describe('cloud-sync-service', () => {
       expect(chrome.storage.local.set).toHaveBeenCalledWith(
         expect.objectContaining({ cloudSyncLastSyncedAt: expect.any(Number), cloudSyncLastError: null })
       );
+    });
+
+    it('skips the PUT when the merged blob is unchanged from the fetched remote blob', async () => {
+      const code = generateSyncCode();
+      const { encryptionKey } = await deriveSyncKeys(code);
+
+      // Remote already holds exactly what local has (same page, reordered highlights
+      // to double-check the skip survives the order-insensitive comparison).
+      const remoteBlob = emptyBlob({
+        pages: {
+          'https://a.test': {
+            title: 'A',
+            lastUpdated: '2024-01-01T00:00:00.000Z',
+            highlights: [{ groupId: 'g2', updatedAt: 1 }, { groupId: 'g1', updatedAt: 1 }],
+            deletedGroupIds: {},
+          },
+        },
+      });
+      const envelope = await encryptBlob(remoteBlob, encryptionKey);
+
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            'https://a.test': [{ groupId: 'g1', updatedAt: 1 }, { groupId: 'g2', updatedAt: 1 }],
+            'https://a.test_meta': { title: 'A', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => envelope,
+      });
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      // Only the GET should have happened; the PUT is skipped because merged === remote.
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('records the error and returns success:false when the fetch fails', async () => {
