@@ -475,8 +475,6 @@
   border: 1px solid rgba(255, 255, 255, 0.36) !important;
   border-radius: 10px !important;
   box-shadow: var(--th-shadow-2) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s !important;
   display: flex !important;
   align-items: center !important;
@@ -506,6 +504,8 @@
 
 .text-highlighter-selection-icon img {
   display: block !important;
+  background: transparent !important;
+  border: none !important;
   pointer-events: none !important;
   user-select: none !important;
   -webkit-user-drag: none !important;
