@@ -309,6 +309,6 @@
     "message": "Forget Code"
   },
   "cloudSyncResetConfirm": {
-    "message": "This disconnects this device and permanently forgets the sync code. Data already uploaded to the cloud will remain unless you also reset it from another connected device. Continue?"
+    "message": "This disconnects this device and permanently forgets the sync code. Continue?"
   }
 }
