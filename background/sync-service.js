@@ -31,6 +31,17 @@ export function cleanupTombstones(obj) {
   }
 }
 
+export function mergeTombstonesByMax(localDeleted = {}, remoteDeleted = {}) {
+  const mergedDeleted = {};
+  for (const deleted of [localDeleted, remoteDeleted]) {
+    for (const [id, deletedAt] of Object.entries(deleted || {})) {
+      mergedDeleted[id] = Math.max(mergedDeleted[id] || 0, deletedAt || 0);
+    }
+  }
+  cleanupTombstones(mergedDeleted);
+  return mergedDeleted;
+}
+
 export function normalizeSyncMeta(rawMeta) {
   const meta = rawMeta || {};
   if (!Array.isArray(meta.pages)) meta.pages = [];
@@ -68,9 +79,8 @@ export function mergeHighlights(localData, remoteData) {
   const localDeleted = localData.deletedGroupIds || {};
   const remoteDeleted = remoteData.deletedGroupIds || {};
 
-  // 1. Merge deleted markers (Tombstones) - Union and Cleanup
-  const mergedDeleted = { ...localDeleted, ...remoteDeleted };
-  cleanupTombstones(mergedDeleted);
+  // 1. Merge deleted markers (Tombstones) - Union by newest timestamp and Cleanup
+  const mergedDeleted = mergeTombstonesByMax(localDeleted, remoteDeleted);
 
   // 2. Combine all highlight groups, favoring newer versions
   const allGroupsMap = new Map();

@@ -9,7 +9,7 @@ import {
   CLOUD_SYNC_MAX_BODY_BYTES,
 } from '../constants/cloud-sync-config.js';
 import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob } from '../shared/crypto-utils.js';
-import { mergeHighlights, cleanupTombstones } from './sync-service.js';
+import { mergeHighlights, cleanupTombstones, mergeTombstonesByMax } from './sync-service.js';
 import { applySettingsFromSync, createOrUpdateContextMenus } from './settings-service.js';
 
 const LOCAL_ONLY_KEYS = new Set([
@@ -99,8 +99,7 @@ function pageTimestamp(page) {
  * deletion wins unless one side has since recreated the page with a newer lastUpdated.
  */
 export function mergeBlobs(localBlob, remoteBlob) {
-  const deletedUrls = { ...localBlob.deletedUrls, ...remoteBlob.deletedUrls };
-  cleanupTombstones(deletedUrls);
+  const deletedUrls = mergeTombstonesByMax(localBlob.deletedUrls, remoteBlob.deletedUrls);
 
   const allUrls = new Set([...Object.keys(localBlob.pages), ...Object.keys(remoteBlob.pages)]);
   const pages = {};
@@ -232,9 +231,12 @@ async function broadcastMergedPages(mergedPages, localPagesBefore, removedUrls) 
   }
 }
 
-async function fetchRemoteBlob(keyId, encryptionKey) {
+async function fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote = true } = {}) {
   const res = await fetch(`${CLOUD_SYNC_ENDPOINT_BASE}/blob/${keyId}`);
-  if (res.status === 404) return emptyBlob();
+  if (res.status === 404) {
+    if (allowMissingRemote) return emptyBlob();
+    throw new Error('Cloud sync data not found (sync code may be incorrect)');
+  }
   if (!res.ok) throw new Error(`Failed to fetch cloud data (${res.status})`);
 
   const envelope = await res.json();
@@ -280,7 +282,7 @@ export async function getCloudSyncStatus() {
  * Pull-merge-push cycle. Safe to call repeatedly (alarm, manual button, startup).
  * No-ops if cloud sync isn't enabled.
  */
-export async function runCloudSync() {
+export async function runCloudSync({ allowMissingRemote = true, forcePush = false } = {}) {
   const status = await getCloudSyncStatus();
   if (!status.enabled || !status.code) {
     return { success: false, error: 'Cloud sync is not enabled' };
@@ -289,7 +291,7 @@ export async function runCloudSync() {
   try {
     const { encryptionKey, keyId } = await deriveSyncKeys(status.code);
     const localBlob = await buildLocalBlob();
-    const remoteBlob = await fetchRemoteBlob(keyId, encryptionKey);
+    const remoteBlob = await fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote });
     const merged = mergeBlobs(localBlob, remoteBlob);
 
     const { removedUrls } = await applyMergedPagesToLocal(merged.pages, merged.deletedUrls, localBlob.pages);
@@ -303,7 +305,7 @@ export async function runCloudSync() {
 
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });
 
-    if (isBlobContentEqual(merged, remoteBlob)) {
+    if (!forcePush && isBlobContentEqual(merged, remoteBlob)) {
       debugLog('Cloud sync: no changes since last push, skipping PUT.');
     } else {
       await pushRemoteBlob(keyId, encryptionKey, merged);
@@ -333,7 +335,7 @@ export async function enableCloudSyncWithNewCode() {
     [CLOUD_SYNC_KEYS.ENABLED]: true,
     [CLOUD_SYNC_KEYS.CODE]: code,
   });
-  const result = await runCloudSync();
+  const result = await runCloudSync({ forcePush: true });
   return { code, ...result };
 }
 
@@ -343,9 +345,10 @@ export async function enableCloudSyncWithNewCode() {
 export async function enableCloudSyncWithExistingCode(code) {
   const trimmed = (code || '').trim();
   try {
-    await deriveSyncKeys(trimmed);
+    const { encryptionKey, keyId } = await deriveSyncKeys(trimmed);
+    await fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote: false });
   } catch (e) {
-    return { success: false, error: 'Invalid sync code' };
+    return { success: false, error: e.message || 'Invalid sync code' };
   }
 
   await browserAPI.storage.local.set({

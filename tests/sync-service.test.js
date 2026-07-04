@@ -175,6 +175,14 @@ describe('sync-service', () => {
       expect(result.deletedGroupIds).toHaveProperty('g1');
       expect(result.deletedGroupIds).toHaveProperty('g2');
     });
+
+    it('should keep the newer tombstone when both sides deleted the same highlight', () => {
+      const now = Date.now();
+      const local = { deletedGroupIds: { g1: now - 1000 } };
+      const remote = { deletedGroupIds: { g1: now - 3000 } };
+      const result = mergeHighlights(local, remote);
+      expect(result.deletedGroupIds.g1).toBe(now - 1000);
+    });
   });
 
   // ===================================================================

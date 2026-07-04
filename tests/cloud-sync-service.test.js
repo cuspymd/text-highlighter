@@ -73,6 +73,33 @@ describe('cloud-sync-service', () => {
       expect(merged.pages['https://a.test'].highlights).toHaveLength(1);
     });
 
+    it('keeps the newer duplicate URL tombstone so an older remote tombstone cannot resurrect a page', () => {
+      const now = Date.now();
+      const url = 'https://a.test';
+      const localDelete = now - 1000;
+      const remoteRecreate = now - 2000;
+      const remoteOldDelete = now - 3000;
+      const local = emptyBlob({ deletedUrls: { [url]: localDelete } });
+      const remote = emptyBlob({
+        pages: { [url]: { highlights: [{ groupId: 'g1', updatedAt: remoteRecreate }], deletedGroupIds: {}, lastUpdated: new Date(remoteRecreate).toISOString() } },
+        deletedUrls: { [url]: remoteOldDelete },
+      });
+
+      const merged = mergeBlobs(local, remote);
+      expect(merged.deletedUrls[url]).toBe(localDelete);
+      expect(merged.pages[url]).toBeUndefined();
+    });
+
+    it('keeps the newer duplicate URL tombstone independent of merge direction', () => {
+      const now = Date.now();
+      const url = 'https://a.test';
+      const local = emptyBlob({ deletedUrls: { [url]: now - 3000 } });
+      const remote = emptyBlob({ deletedUrls: { [url]: now - 1000 } });
+
+      const merged = mergeBlobs(local, remote);
+      expect(merged.deletedUrls[url]).toBe(now - 1000);
+    });
+
     it('picks settings from whichever side has the newer settings.updatedAt', () => {
       const local = emptyBlob({ settings: { customColors: [], minimapVisible: false, selectionControlsVisible: true, shortcutColorMap: null, updatedAt: 100 } });
       const remote = emptyBlob({ settings: { customColors: [], minimapVisible: true, selectionControlsVisible: true, shortcutColorMap: null, updatedAt: 200 } });
@@ -214,7 +241,18 @@ describe('cloud-sync-service', () => {
 
   describe('enableCloudSyncWithNewCode / enableCloudSyncWithExistingCode', () => {
     it('generates a new code, enables sync, and runs an initial sync', async () => {
-      chrome.storage.local.get.mockResolvedValue({});
+      const localStore = {};
+      chrome.storage.local.set.mockImplementation((items) => {
+        Object.assign(localStore, items);
+        return Promise.resolve();
+      });
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) return Promise.resolve({});
+        if (Array.isArray(keys)) {
+          return Promise.resolve(Object.fromEntries(keys.map((key) => [key, localStore[key]])));
+        }
+        return Promise.resolve({ [keys]: localStore[keys] });
+      });
       global.fetch = jest.fn()
         .mockResolvedValueOnce({ status: 404, ok: false })
         .mockResolvedValueOnce({ ok: true, status: 204 });
@@ -224,6 +262,23 @@ describe('cloud-sync-service', () => {
       expect(chrome.storage.local.set).toHaveBeenCalledWith(
         expect.objectContaining({ cloudSyncEnabled: true, cloudSyncCode: result.code })
       );
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch.mock.calls[1][1].method).toBe('PUT');
+    });
+
+    it('rejects a valid-looking existing code when no remote blob exists', async () => {
+      const code = generateSyncCode();
+      global.fetch = jest.fn().mockResolvedValueOnce({ status: 404, ok: false });
+
+      const result = await enableCloudSyncWithExistingCode(code);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/not found|incorrect/i);
+      expect(chrome.storage.local.set).not.toHaveBeenCalledWith(
+        expect.objectContaining({ cloudSyncEnabled: true, cloudSyncCode: code })
+      );
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch.mock.calls[0][1]).toBeUndefined();
     });
 
     it('rejects a malformed pairing code without touching storage', async () => {
