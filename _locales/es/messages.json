@@ -247,5 +247,68 @@
   },
   "colorChangeWarning": {
     "message": "Los cambios no afectan a los resaltados existentes."
+  },
+  "cloudSyncSection": {
+    "message": "Sincronización en la Nube (Beta)"
+  },
+  "cloudSyncIntro": {
+    "message": "Sincroniza los resaltados entre dispositivos mediante una copia de seguridad cifrada en la nube, para plataformas (como Firefox para Android) donde la sincronización del navegador no está disponible. Tus datos se cifran en este dispositivo antes de subirlos; el código de sincronización es la única forma de descifrarlos."
+  },
+  "cloudSyncGenerateCode": {
+    "message": "Generar Nuevo Código"
+  },
+  "cloudSyncPairCodePlaceholder": {
+    "message": "Introduce el código de sincronización de otro dispositivo"
+  },
+  "cloudSyncPairCodeButton": {
+    "message": "Conectar"
+  },
+  "cloudSyncInvalidCode": {
+    "message": "Ese código de sincronización no parece correcto. Revísalo e inténtalo de nuevo."
+  },
+  "cloudSyncYourCode": {
+    "message": "Tu Código de Sincronización"
+  },
+  "cloudSyncSaveCodeWarning": {
+    "message": "Guarda este código en un lugar seguro. Si lo pierdes, estos datos no se podrán recuperar."
+  },
+  "cloudSyncCopyCode": {
+    "message": "Copiar"
+  },
+  "cloudSyncShowCode": {
+    "message": "Mostrar"
+  },
+  "cloudSyncHideCode": {
+    "message": "Ocultar"
+  },
+  "cloudSyncCodeCopied": {
+    "message": "¡Copiado!"
+  },
+  "cloudSyncCopyFailed": {
+    "message": "No se pudo copiar automáticamente. El código se muestra arriba: cópialo manualmente."
+  },
+  "cloudSyncEnabledLabel": {
+    "message": "Sincronización en la Nube"
+  },
+  "cloudSyncNowButton": {
+    "message": "Sincronizar Ahora"
+  },
+  "cloudSyncSyncing": {
+    "message": "Sincronizando..."
+  },
+  "cloudSyncNeverSynced": {
+    "message": "Aún no sincronizado"
+  },
+  "cloudSyncLastSyncedPrefix": {
+    "message": "Última sincronización: "
+  },
+  "cloudSyncErrorPrefix": {
+    "message": "Error de sincronización: "
+  },
+  "cloudSyncResetButton": {
+    "message": "Olvidar Código"
+  },
+  "cloudSyncResetConfirm": {
+    "message": "Esto desconecta este dispositivo y olvida permanentemente el código de sincronización. ¿Continuar?"
   }
 }

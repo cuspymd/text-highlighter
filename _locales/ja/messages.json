@@ -247,5 +247,68 @@
   },
   "colorChangeWarning": {
     "message": "既存のハイライトには影響しません。"
+  },
+  "cloudSyncSection": {
+    "message": "クラウド同期 (ベータ)"
+  },
+  "cloudSyncIntro": {
+    "message": "Firefox for Androidなど、ブラウザ自体の同期に対応していない環境のために、暗号化されたクラウドバックアップでデバイス間のハイライトを同期します。データはアップロード前にこの端末で暗号化され、同期コードがなければ復号できません。"
+  },
+  "cloudSyncGenerateCode": {
+    "message": "新しいコードを生成"
+  },
+  "cloudSyncPairCodePlaceholder": {
+    "message": "他のデバイスの同期コードを入力"
+  },
+  "cloudSyncPairCodeButton": {
+    "message": "接続"
+  },
+  "cloudSyncInvalidCode": {
+    "message": "同期コードが正しくないようです。もう一度確認してください。"
+  },
+  "cloudSyncYourCode": {
+    "message": "自分の同期コード"
+  },
+  "cloudSyncSaveCodeWarning": {
+    "message": "このコードは安全な場所に保管してください。紛失すると、このデータは復元できません。"
+  },
+  "cloudSyncCopyCode": {
+    "message": "コピー"
+  },
+  "cloudSyncShowCode": {
+    "message": "表示"
+  },
+  "cloudSyncHideCode": {
+    "message": "非表示"
+  },
+  "cloudSyncCodeCopied": {
+    "message": "コピーしました！"
+  },
+  "cloudSyncCopyFailed": {
+    "message": "自動コピーに失敗しました。コードが上に表示されているので、手動でコピーしてください。"
+  },
+  "cloudSyncEnabledLabel": {
+    "message": "クラウド同期"
+  },
+  "cloudSyncNowButton": {
+    "message": "今すぐ同期"
+  },
+  "cloudSyncSyncing": {
+    "message": "同期中..."
+  },
+  "cloudSyncNeverSynced": {
+    "message": "まだ同期されていません"
+  },
+  "cloudSyncLastSyncedPrefix": {
+    "message": "最終同期: "
+  },
+  "cloudSyncErrorPrefix": {
+    "message": "同期エラー: "
+  },
+  "cloudSyncResetButton": {
+    "message": "コードを忘れる"
+  },
+  "cloudSyncResetConfirm": {
+    "message": "このデバイスの接続が解除され、同期コードを完全に忘れます。続行しますか？"
   }
 }

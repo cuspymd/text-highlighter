@@ -247,5 +247,68 @@
   },
   "colorChangeWarning": {
     "message": "更改不会影响已有的高亮显示。"
+  },
+  "cloudSyncSection": {
+    "message": "云同步 (测试版)"
+  },
+  "cloudSyncIntro": {
+    "message": "专为不支持浏览器自带同步的环境（例如 Android 版 Firefox）提供，通过加密的云端备份在设备间同步高亮内容。数据会在上传前于本机加密，只有同步代码才能解密。"
+  },
+  "cloudSyncGenerateCode": {
+    "message": "生成新代码"
+  },
+  "cloudSyncPairCodePlaceholder": {
+    "message": "输入其他设备的同步代码"
+  },
+  "cloudSyncPairCodeButton": {
+    "message": "连接"
+  },
+  "cloudSyncInvalidCode": {
+    "message": "同步代码似乎不正确，请重新检查后再试。"
+  },
+  "cloudSyncYourCode": {
+    "message": "我的同步代码"
+  },
+  "cloudSyncSaveCodeWarning": {
+    "message": "请将此代码保存在安全的地方。一旦丢失，将无法恢复该数据。"
+  },
+  "cloudSyncCopyCode": {
+    "message": "复制"
+  },
+  "cloudSyncShowCode": {
+    "message": "显示"
+  },
+  "cloudSyncHideCode": {
+    "message": "隐藏"
+  },
+  "cloudSyncCodeCopied": {
+    "message": "已复制！"
+  },
+  "cloudSyncCopyFailed": {
+    "message": "无法自动复制。代码已显示在上方，请手动复制。"
+  },
+  "cloudSyncEnabledLabel": {
+    "message": "云同步"
+  },
+  "cloudSyncNowButton": {
+    "message": "立即同步"
+  },
+  "cloudSyncSyncing": {
+    "message": "同步中..."
+  },
+  "cloudSyncNeverSynced": {
+    "message": "尚未同步"
+  },
+  "cloudSyncLastSyncedPrefix": {
+    "message": "上次同步: "
+  },
+  "cloudSyncErrorPrefix": {
+    "message": "同步错误: "
+  },
+  "cloudSyncResetButton": {
+    "message": "重置代码"
+  },
+  "cloudSyncResetConfirm": {
+    "message": "此操作将断开该设备的连接，并彻底忘记同步代码。是否继续？"
   }
 }
