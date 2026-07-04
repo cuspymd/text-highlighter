@@ -63,6 +63,17 @@ curl -i "$BASE/blob/$KEY"                       # expect 200 + the JSON above
 curl -i -X DELETE "$BASE/blob/$KEY"              # expect 204
 ```
 
+## Storage cleanup (TTL)
+
+Every `PUT` sets a 1-year `expirationTtl` on the KV entry. As long as at least
+one paired device keeps syncing (even with no content changes — the client
+skips no-op pushes, but a stale blob compared against fresh local data is
+never a no-op, so it gets re-pushed with a fresh TTL automatically), the blob
+never expires. Only truly abandoned sync codes (no device pushes for a full
+year — e.g. after "Forget Code" is used, which never calls `DELETE`) age out
+on their own, reclaiming free-tier KV storage without any explicit cleanup
+job or per-key last-accessed tracking (KV doesn't expose that).
+
 ## Free tier limits to be aware of
 
 - KV: 100k reads/day, 1,000 writes/day (per namespace, shared across all

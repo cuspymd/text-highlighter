@@ -10,6 +10,10 @@
 
 const MAX_BODY_BYTES = 1_000_000; // Basic guardrail against accidental huge payloads, not abuse defense.
 const KEY_ID_PATTERN = /^\/blob\/([a-f0-9]{32})$/;
+// Every successful PUT refreshes this TTL, so any device that's still syncing keeps its
+// blob alive indefinitely. Only truly abandoned codes (no device pushes for a full year)
+// age out, reclaiming free-tier KV storage without any explicit cleanup job.
+const BLOB_TTL_SECONDS = 60 * 60 * 24 * 365;
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -54,7 +58,7 @@ export default {
         return new Response('Invalid envelope shape', { status: 400 });
       }
 
-      await env.SYNC_KV.put(kvKey, body);
+      await env.SYNC_KV.put(kvKey, body, { expirationTtl: BLOB_TTL_SECONDS });
       return new Response(null, { status: 204 });
     }
 

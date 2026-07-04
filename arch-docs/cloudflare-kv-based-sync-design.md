@@ -175,7 +175,7 @@ async function decryptBlob(envelope, encryptionKey) {
 | 메서드 | 경로 | 동작 |
 |---|---|---|
 | GET | `/blob/:keyId` | KV에서 envelope 조회, 없으면 404 |
-| PUT | `/blob/:keyId` | body(envelope)를 KV에 저장. 크기 상한 초과 시 413 |
+| PUT | `/blob/:keyId` | body(envelope)를 KV에 저장. 크기 상한 초과 시 413. 1년 `expirationTtl` 부여(매 PUT마다 갱신되어, 코드가 방치되면 자연 소멸) |
 | DELETE | `/blob/:keyId` | 사용자가 명시적으로 클라우드 데이터 삭제 요청 시 |
 
 ```js
@@ -276,6 +276,7 @@ kv_namespaces = [
 - pull-merge-push 동기화 흐름 + alarm 기반 주기 실행
 - 동기화 코드 생성/입력 UI, 분실 안내
 - payload 크기 상한(1MB) — 버그로 인한 비정상 데이터 방지 목적의 기본 안전장치
+- 클라우드 동기화 변경사항 없을 시 push 스킵(불필요한 KV 쓰기 방지) + KV 블롭 1년 TTL(방치된 코드의 자연 소멸)
 
 **제외 (문제가 확인되면 대응)**
 - IP/계정 기준 rate limiting
