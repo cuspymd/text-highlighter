@@ -9,6 +9,7 @@ import {
 import { initContextMenus } from './background/context-menu.js';
 import { registerMessageRouter } from './background/message-router.js';
 import { initSyncListener, migrateLocalToSync } from './background/sync-service.js';
+import { initCloudSyncAlarm, runCloudSync } from './background/cloud-sync-service.js';
 
 // ===================================================================
 // Top-level listener registration
@@ -29,6 +30,8 @@ initSyncListener({
   },
 });
 
+initCloudSyncAlarm();
+
 browserAPI.runtime.onInstalled.addListener(async () => {
   if (DEBUG_MODE) console.log('Extension installed/updated. Debug mode:', DEBUG_MODE);
 });
@@ -43,6 +46,7 @@ browserAPI.runtime.onInstalled.addListener(async () => {
     await loadCustomColors();
     await createOrUpdateContextMenus();
     await migrateLocalToSync();
+    runCloudSync().catch(e => console.error('Initial cloud sync failed', e));
   } catch (e) {
     console.error('Initialization error in background script', e);
   }

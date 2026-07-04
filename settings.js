@@ -22,7 +22,7 @@ function initializeI18n() {
   });
 }
 
-const { showAlertModal } = createLocalizedModalHelpers(
+const { showAlertModal, showConfirmModal } = createLocalizedModalHelpers(
   (key, defaultValue) => browserAPI.i18n.getMessage(key) || defaultValue
 );
 
@@ -383,6 +383,130 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderShortcutsList(commandsResult, colorMap, allColors);
   }
 
+  // --- Cloud Sync ---
+  const cloudSyncSetup = document.getElementById('cloud-sync-setup');
+  const cloudSyncConnected = document.getElementById('cloud-sync-connected');
+  const cloudSyncGenerateBtn = document.getElementById('cloud-sync-generate-btn');
+  const cloudSyncPairInput = document.getElementById('cloud-sync-pair-input');
+  const cloudSyncPairBtn = document.getElementById('cloud-sync-pair-btn');
+  const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
+  const cloudSyncCodeDisplay = document.getElementById('cloud-sync-code-display');
+  const cloudSyncCopyBtn = document.getElementById('cloud-sync-copy-btn');
+  const cloudSyncStatusText = document.getElementById('cloud-sync-status-text');
+  const cloudSyncNowBtn = document.getElementById('cloud-sync-now-btn');
+  const cloudSyncResetBtn = document.getElementById('cloud-sync-reset-btn');
+
+  let currentSyncCode = null;
+
+  function renderCloudSyncStatus(status) {
+    cloudSyncToggle.checked = !!status.enabled;
+
+    if (status.lastError) {
+      cloudSyncStatusText.textContent = `${browserAPI.i18n.getMessage('cloudSyncErrorPrefix') || 'Sync error: '}${status.lastError}`;
+      cloudSyncStatusText.classList.add('cloud-sync-error-text');
+    } else if (status.lastSyncedAt) {
+      cloudSyncStatusText.textContent = `${browserAPI.i18n.getMessage('cloudSyncLastSyncedPrefix') || 'Last synced: '}${new Date(status.lastSyncedAt).toLocaleString()}`;
+      cloudSyncStatusText.classList.remove('cloud-sync-error-text');
+    } else {
+      cloudSyncStatusText.textContent = browserAPI.i18n.getMessage('cloudSyncNeverSynced') || 'Not synced yet';
+      cloudSyncStatusText.classList.remove('cloud-sync-error-text');
+    }
+  }
+
+  function renderCloudSyncView(status) {
+    currentSyncCode = status.code;
+
+    if (status.code) {
+      cloudSyncSetup.style.display = 'none';
+      cloudSyncConnected.style.display = '';
+      cloudSyncCodeDisplay.textContent = status.code;
+      renderCloudSyncStatus(status);
+    } else {
+      cloudSyncSetup.style.display = '';
+      cloudSyncConnected.style.display = 'none';
+    }
+  }
+
+  async function loadCloudSyncStatus() {
+    const response = await browserAPI.runtime.sendMessage({ action: 'getCloudSyncStatus' });
+    if (response && response.success) {
+      renderCloudSyncView(response);
+    }
+  }
+
+  cloudSyncGenerateBtn.addEventListener('click', async () => {
+    cloudSyncGenerateBtn.disabled = true;
+    try {
+      const response = await browserAPI.runtime.sendMessage({ action: 'enableCloudSync' });
+      if (response && response.success) {
+        await loadCloudSyncStatus();
+      }
+    } finally {
+      cloudSyncGenerateBtn.disabled = false;
+    }
+  });
+
+  cloudSyncPairBtn.addEventListener('click', async () => {
+    const code = cloudSyncPairInput.value.trim();
+    if (!code) return;
+
+    cloudSyncPairBtn.disabled = true;
+    try {
+      const response = await browserAPI.runtime.sendMessage({ action: 'pairCloudSync', code });
+      if (response && response.success) {
+        cloudSyncPairInput.value = '';
+        await loadCloudSyncStatus();
+      } else {
+        await showAlertModal(browserAPI.i18n.getMessage('cloudSyncInvalidCode') || "That sync code doesn't look right.");
+      }
+    } finally {
+      cloudSyncPairBtn.disabled = false;
+    }
+  });
+
+  cloudSyncToggle.addEventListener('change', async () => {
+    if (cloudSyncToggle.checked) {
+      if (currentSyncCode) {
+        await browserAPI.runtime.sendMessage({ action: 'pairCloudSync', code: currentSyncCode });
+      }
+    } else {
+      await browserAPI.runtime.sendMessage({ action: 'disableCloudSync' });
+    }
+    await loadCloudSyncStatus();
+  });
+
+  cloudSyncCopyBtn.addEventListener('click', async () => {
+    if (!currentSyncCode) return;
+    await navigator.clipboard.writeText(currentSyncCode);
+    const original = cloudSyncCopyBtn.textContent;
+    cloudSyncCopyBtn.textContent = browserAPI.i18n.getMessage('cloudSyncCodeCopied') || 'Copied!';
+    setTimeout(() => { cloudSyncCopyBtn.textContent = original; }, 1500);
+  });
+
+  cloudSyncNowBtn.addEventListener('click', async () => {
+    cloudSyncNowBtn.disabled = true;
+    const originalText = cloudSyncNowBtn.textContent;
+    cloudSyncNowBtn.textContent = browserAPI.i18n.getMessage('cloudSyncSyncing') || 'Syncing...';
+    try {
+      await browserAPI.runtime.sendMessage({ action: 'triggerCloudSync' });
+      await loadCloudSyncStatus();
+    } finally {
+      cloudSyncNowBtn.disabled = false;
+      cloudSyncNowBtn.textContent = originalText;
+    }
+  });
+
+  cloudSyncResetBtn.addEventListener('click', async () => {
+    const confirmed = await showConfirmModal(
+      browserAPI.i18n.getMessage('cloudSyncResetConfirm') ||
+      'This disconnects this device and permanently forgets the sync code. Continue?'
+    );
+    if (!confirmed) return;
+
+    await browserAPI.runtime.sendMessage({ action: 'resetCloudSyncCode' });
+    await loadCloudSyncStatus();
+  });
+
   // --- Init ---
   if (!browserAPI.commands) {
     document.getElementById('shortcuts-section').style.display = 'none';
@@ -391,13 +515,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([
     loadGeneralSettings(),
     loadCustomColors(),
-    loadShortcuts()
+    loadShortcuts(),
+    loadCloudSyncStatus()
   ]);
 
   window.addEventListener('focus', async () => {
     await Promise.all([
       loadCustomColors(),
-      loadShortcuts()
+      loadShortcuts(),
+      loadCloudSyncStatus()
     ]);
   });
 });

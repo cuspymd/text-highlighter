@@ -247,5 +247,59 @@
   },
   "colorChangeWarning": {
     "message": "기존 하이라이트에는 영향을 주지 않습니다."
+  },
+  "cloudSyncSection": {
+    "message": "클라우드 동기화 (베타)"
+  },
+  "cloudSyncIntro": {
+    "message": "브라우저 자체 동기화를 지원하지 않는 환경(예: Android용 Firefox)을 위해, 암호화된 클라우드 백업으로 기기 간 하이라이트를 동기화합니다. 데이터는 업로드 전에 이 기기에서 암호화되며, 동기화 코드가 있어야만 복호화할 수 있습니다."
+  },
+  "cloudSyncGenerateCode": {
+    "message": "새 코드 생성"
+  },
+  "cloudSyncPairCodePlaceholder": {
+    "message": "다른 기기의 동기화 코드 입력"
+  },
+  "cloudSyncPairCodeButton": {
+    "message": "연결"
+  },
+  "cloudSyncInvalidCode": {
+    "message": "동기화 코드가 올바르지 않습니다. 다시 확인해 주세요."
+  },
+  "cloudSyncYourCode": {
+    "message": "내 동기화 코드"
+  },
+  "cloudSyncSaveCodeWarning": {
+    "message": "이 코드를 안전한 곳에 보관하세요. 분실하면 데이터를 복구할 수 없습니다."
+  },
+  "cloudSyncCopyCode": {
+    "message": "복사"
+  },
+  "cloudSyncCodeCopied": {
+    "message": "복사됨!"
+  },
+  "cloudSyncEnabledLabel": {
+    "message": "클라우드 동기화"
+  },
+  "cloudSyncNowButton": {
+    "message": "지금 동기화"
+  },
+  "cloudSyncSyncing": {
+    "message": "동기화 중..."
+  },
+  "cloudSyncNeverSynced": {
+    "message": "아직 동기화되지 않음"
+  },
+  "cloudSyncLastSyncedPrefix": {
+    "message": "마지막 동기화: "
+  },
+  "cloudSyncErrorPrefix": {
+    "message": "동기화 오류: "
+  },
+  "cloudSyncResetButton": {
+    "message": "코드 초기화"
+  },
+  "cloudSyncResetConfirm": {
+    "message": "이 기기의 연결을 해제하고 동기화 코드를 완전히 잊어버립니다. 이미 클라우드에 업로드된 데이터는 다른 연결된 기기에서 초기화하지 않는 한 그대로 남아 있습니다. 계속할까요?"
   }
 }

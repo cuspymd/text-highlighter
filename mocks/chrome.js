@@ -64,4 +64,10 @@ export default {
       addListener: jest.fn(),
     },
   },
+  alarms: {
+    create: jest.fn(),
+    onAlarm: {
+      addListener: jest.fn(),
+    },
+  },
 };

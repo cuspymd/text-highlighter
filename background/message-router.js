@@ -11,6 +11,14 @@ import {
   saveSettingsToSync,
 } from './sync-service.js';
 import {
+  getCloudSyncStatus,
+  enableCloudSyncWithNewCode,
+  enableCloudSyncWithExistingCode,
+  disableCloudSync,
+  resetCloudSyncCode,
+  runCloudSync,
+} from './cloud-sync-service.js';
+import {
   getPlatformInfo,
   getCurrentColors,
   addCustomColor,
@@ -255,6 +263,7 @@ async function handleGetAllHighlightedPages(_message) {
 async function handleDeleteAllHighlightedPages(_message) {
   const result = await browserAPI.storage.local.get(null);
   const keysToDelete = [];
+  const urls = [];
 
   const skipKeys = new Set([
     STORAGE_KEYS.CUSTOM_COLORS,
@@ -268,16 +277,47 @@ async function handleDeleteAllHighlightedPages(_message) {
     if (skipKeys.has(key)) continue;
     if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith(STORAGE_KEYS.META_SUFFIX)) {
       keysToDelete.push(key, `${key}${STORAGE_KEYS.META_SUFFIX}`);
+      urls.push(key);
     }
   }
 
   if (keysToDelete.length > 0) {
     await browserAPI.storage.local.remove(keysToDelete);
     debugLog('All highlighted pages deleted:', keysToDelete);
-    await clearAllSyncedHighlights();
+    await clearAllSyncedHighlights(urls);
   }
 
   return successResponse({ deletedCount: keysToDelete.length / 2 });
+}
+
+async function handleGetCloudSyncStatus(_message) {
+  return successResponse(await getCloudSyncStatus());
+}
+
+async function handleEnableCloudSync(_message) {
+  const result = await enableCloudSyncWithNewCode();
+  return successResponse(result);
+}
+
+async function handlePairCloudSync(message) {
+  if (!message.code) return errorResponse('Missing sync code');
+  const result = await enableCloudSyncWithExistingCode(message.code);
+  return result.success ? successResponse(result) : errorResponse(result.error);
+}
+
+async function handleDisableCloudSync(_message) {
+  await disableCloudSync();
+  return successResponse();
+}
+
+async function handleResetCloudSyncCode(_message) {
+  await resetCloudSyncCode();
+  return successResponse();
+}
+
+async function handleTriggerCloudSync(_message) {
+  const result = await runCloudSync();
+  return result.success ? successResponse(result) : errorResponse(result.error);
 }
 
 // ===================================================================
@@ -302,6 +342,12 @@ const ACTION_HANDLERS = {
   clearAllHighlights:        handleClearAllHighlights,
   getAllHighlightedPages:    handleGetAllHighlightedPages,
   deleteAllHighlightedPages: handleDeleteAllHighlightedPages,
+  getCloudSyncStatus:        handleGetCloudSyncStatus,
+  enableCloudSync:           handleEnableCloudSync,
+  pairCloudSync:             handlePairCloudSync,
+  disableCloudSync:          handleDisableCloudSync,
+  resetCloudSyncCode:        handleResetCloudSyncCode,
+  triggerCloudSync:          handleTriggerCloudSync,
 };
 
 /**

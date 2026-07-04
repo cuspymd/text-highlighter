@@ -323,6 +323,72 @@
         padding: 10px 0;
       }
 
+      /* Cloud Sync */
+      .cloud-sync-pair-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .cloud-sync-code-input {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface-strong);
+        color: var(--text);
+        font-size: 13px;
+        font-family: monospace;
+        outline: none;
+      }
+
+      .cloud-sync-code-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .cloud-sync-code-row > span {
+        font-size: 13px;
+        color: var(--muted);
+        flex: 0 0 auto;
+      }
+
+      .cloud-sync-code-value {
+        flex: 1;
+        min-width: 0;
+        font-family: monospace;
+        font-size: 12px;
+        word-break: break-all;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 6px;
+      }
+
+      .cloud-sync-status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 0;
+      }
+
+      .cloud-sync-status-row .hint-text {
+        margin: 0;
+      }
+
+      .cloud-sync-error-text {
+        color: var(--danger);
+      }
+
+      #cloud-sync-reset-btn {
+        margin-top: 12px;
+      }
+
 </style>
   </head>
   <body>
@@ -356,6 +422,56 @@
         <div id="custom-colors-list"></div>
         <button id="add-custom-color-btn" class="btn btn-primary" data-i18n="addCustomColor">+ Add Custom Color</button>
         <input type="color" id="color-picker-hidden" style="display:none" />
+      </section>
+
+      <!-- Cloud Sync Section -->
+      <section class="section-card" id="cloud-sync-section">
+        <h2 class="section-title" data-i18n="cloudSyncSection">Cloud Sync (Beta)</h2>
+        <p class="hint-text" data-i18n="cloudSyncIntro">
+          Sync highlights across devices via an encrypted cloud backup, for platforms
+          (like Firefox for Android) where browser sync isn't available. Your data is
+          encrypted on this device before upload; the sync code is the only way to decrypt it.
+        </p>
+
+        <div id="cloud-sync-setup">
+          <button id="cloud-sync-generate-btn" class="btn btn-primary" data-i18n="cloudSyncGenerateCode">Generate New Code</button>
+          <div class="cloud-sync-pair-row">
+            <input
+              type="text"
+              id="cloud-sync-pair-input"
+              class="cloud-sync-code-input"
+              data-i18n="cloudSyncPairCodePlaceholder"
+              placeholder="Enter sync code from another device"
+            />
+            <button id="cloud-sync-pair-btn" class="btn" data-i18n="cloudSyncPairCodeButton">Connect</button>
+          </div>
+        </div>
+
+        <div id="cloud-sync-connected" style="display:none">
+          <div class="toggle-container">
+            <label for="cloud-sync-toggle" data-i18n="cloudSyncEnabledLabel">Cloud Sync</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="cloud-sync-toggle" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="cloud-sync-code-row">
+            <span data-i18n="cloudSyncYourCode">Your Sync Code</span>
+            <code id="cloud-sync-code-display" class="cloud-sync-code-value"></code>
+            <button id="cloud-sync-copy-btn" class="btn-icon" data-i18n="cloudSyncCopyCode">Copy</button>
+          </div>
+          <p class="hint-text" data-i18n="cloudSyncSaveCodeWarning">
+            Save this code somewhere safe. If you lose it, this data cannot be recovered.
+          </p>
+
+          <div class="cloud-sync-status-row">
+            <span id="cloud-sync-status-text" class="hint-text"></span>
+            <button id="cloud-sync-now-btn" class="btn" data-i18n="cloudSyncNowButton">Sync Now</button>
+          </div>
+
+          <button id="cloud-sync-reset-btn" class="btn-icon btn-danger" data-i18n="cloudSyncResetButton">Forget Code</button>
+        </div>
       </section>
 
       <!-- Keyboard Shortcuts Section -->
