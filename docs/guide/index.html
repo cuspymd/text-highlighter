@@ -39,7 +39,11 @@
                 <li><a href="#minimap">미니맵 (Minimap)</a></li>
                 <li><a href="#popup-menu">Popup 메뉴 설명</a></li>
                 <li><a href="#pages-list">하이라이트 목록 (Pages List) 화면</a></li>
-                <li><a href="#sync">동기화 (Synchronization)</a></li>
+                <li><a href="#sync">동기화 (Synchronization)</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#cloud-sync">클라우드 동기화 (베타)</a></li>
+                    </ul>
+                </li>
                 <li><a href="#import-export">가져오기 및 내보내기</a></li>
             </ul>
         </aside>
@@ -163,6 +167,29 @@
                     <li><strong>오래된 데이터 정리:</strong> 용량이 가득 차면, 가장 오래전에 업데이트된 페이지의 동기화 데이터부터 자동으로 삭제됩니다. (로컬 데이터는 유지됩니다.)</li>
                     <li><strong>모바일 미지원:</strong> Firefox Android 버전에서는 동기화 기능이 지원되지 않습니다.</li>
                 </ul>
+
+                <h3 id="cloud-sync">클라우드 동기화 (베타)</h3>
+                <p>Firefox for Android처럼 브라우저 자체 동기화를 지원하지 않는 환경을 위해 별도로 제공되는 기능입니다. 계정 로그인 없이 <strong>동기화 코드</strong>만으로 기기를 연결하며, 하이라이트 데이터는 업로드 전에 기기에서 암호화되어 서버는 실제 내용을 알 수 없습니다.</p>
+
+                <h4>사용 방법</h4>
+                <ol>
+                    <li>브라우저 툴바의 확장 아이콘을 클릭해 Popup을 열고, <strong>설정(⚙) 아이콘</strong>을 클릭합니다.</li>
+                    <li>설정 화면의 <strong>"클라우드 동기화 (베타)"</strong> 섹션에서 <strong>"새 코드 생성"</strong> 버튼을 눌러 동기화 코드를 발급받습니다.</li>
+                    <li>동기화할 다른 기기의 설정 화면에서 "다른 기기의 동기화 코드 입력" 칸에 같은 코드를 입력하고 <strong>"연결"</strong> 버튼을 누릅니다.</li>
+                    <li>각 기기에서 <strong>"클라우드 동기화"</strong> 스위치를 켜면 동기화가 활성화됩니다. 이후 약 15분마다 자동으로 동기화되며, <strong>"지금 동기화"</strong> 버튼으로 즉시 동기화할 수도 있습니다.</li>
+                </ol>
+
+                <div class="warning">
+                    <span class="warning-title">주의</span>
+                    동기화 코드를 분실하면 클라우드에 백업된 데이터를 복구할 수 없습니다. 코드는 화면에 일부만 표시(마스킹)되며, "표시" 버튼으로 전체를 확인하거나 "복사" 버튼으로 클립보드에 복사할 수 있습니다. 안전한 곳에 별도로 보관하세요.
+                </div>
+
+                <p><strong>연결 해제:</strong> 설정 화면의 "코드 초기화" 버튼을 누르면 이 기기에서만 동기화 코드를 잊어버리고 연결이 해제됩니다. 이미 업로드된 클라우드 데이터는 다른 연결된 기기에서 별도로 초기화하지 않는 한 그대로 남아 있습니다.</p>
+
+                <div class="note">
+                    <span class="note-title">참고</span>
+                    브라우저 자체 동기화와 클라우드 동기화를 동시에 사용할 경우의 동작은 보장되지 않습니다. 두 기능 중 하나만 사용하는 것을 권장합니다.
+                </div>
             </section>
 
             <section id="import-export">

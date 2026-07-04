@@ -39,7 +39,11 @@
                 <li><a href="#minimap">ミニマップ (Minimap)</a></li>
                 <li><a href="#popup-menu">Popupメニューの説明</a></li>
                 <li><a href="#pages-list">ハイライト一覧画面 (Pages List)</a></li>
-                <li><a href="#sync">同期機能 (Synchronization)</a></li>
+                <li><a href="#sync">同期機能 (Synchronization)</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#cloud-sync">クラウド同期 (ベータ)</a></li>
+                    </ul>
+                </li>
                 <li><a href="#import-export">インポートとエクスポート</a></li>
             </ul>
         </aside>
@@ -163,6 +167,29 @@
                     <li><strong>古いデータの整理:</strong> 容量がいっぱいになると、最も古くに更新されたページの同期データから自動的に削除されます。（ローカルデータは維持されます。）</li>
                     <li><strong>モバイル未対応:</strong> Firefox Android版では同期機能はサポートされていません。</li>
                 </ul>
+
+                <h3 id="cloud-sync">クラウド同期 (ベータ)</h3>
+                <p>Firefox for Androidのようにブラウザ自体の同期機能に対応していない環境向けに、別途提供される機能です。アカウントへのログインではなく<strong>同期コード</strong>だけでデバイスを接続し、ハイライトデータはアップロード前にデバイス上で暗号化されるため、サーバーは実際の内容を把握できません。</p>
+
+                <h4>使い方</h4>
+                <ol>
+                    <li>ツールバーの拡張機能アイコンをクリックしてPopupを開き、<strong>設定(⚙)アイコン</strong>をクリックします。</li>
+                    <li>設定画面の<strong>「クラウド同期 (ベータ)」</strong>セクションで<strong>「新しいコードを生成」</strong>ボタンをクリックし、同期コードを発行します。</li>
+                    <li>同期したい別のデバイスの設定画面で、「他のデバイスの同期コードを入力」欄に同じコードを入力し、<strong>「接続」</strong>ボタンをクリックします。</li>
+                    <li>各デバイスで<strong>「クラウド同期」</strong>スイッチをオンにすると同期が有効になります。以降は約15分ごとに自動で同期され、<strong>「今すぐ同期」</strong>ボタンで即座に同期することもできます。</li>
+                </ol>
+
+                <div class="warning">
+                    <span class="warning-title">注意</span>
+                    同期コードを紛失すると、クラウドにバックアップされたデータは復元できません。コードは初期状態では一部のみ表示（マスク）され、「表示」ボタンで全体を確認したり、「コピー」ボタンでクリップボードにコピーしたりできます。安全な場所に別途保管してください。
+                </div>
+
+                <p><strong>接続解除:</strong> 設定画面の「コードを忘れる」ボタンをクリックすると、このデバイスでのみ同期コードが忘れられ、接続が解除されます。すでにアップロードされたクラウド上のデータは、他の接続済みデバイスで別途リセットしない限りそのまま残ります。</p>
+
+                <div class="note">
+                    <span class="note-title">参考</span>
+                    ブラウザ自体の同期機能とクラウド同期を同時に使用した場合の動作は保証されません。どちらか一方のみを使用することをおすすめします。
+                </div>
             </section>
 
             <section id="import-export">

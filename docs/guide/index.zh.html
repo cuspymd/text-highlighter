@@ -39,7 +39,11 @@
                 <li><a href="#minimap">缩略图 (Minimap)</a></li>
                 <li><a href="#popup-menu">弹出菜单说明</a></li>
                 <li><a href="#pages-list">高亮页面列表 (Pages List)</a></li>
-                <li><a href="#sync">同步功能 (Synchronization)</a></li>
+                <li><a href="#sync">同步功能 (Synchronization)</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#cloud-sync">云同步 (测试版)</a></li>
+                    </ul>
+                </li>
                 <li><a href="#import-export">导入与导出</a></li>
             </ul>
         </aside>
@@ -163,6 +167,29 @@
                     <li><strong>清理旧数据:</strong> 当容量已满时，最久未更新页面的同步数据将被自动删除以腾出空间。（本地数据将保留。）</li>
                     <li><strong>移动端不支持:</strong> Firefox Android 版本不支持同步功能。</li>
                 </ul>
+
+                <h3 id="cloud-sync">云同步 (测试版)</h3>
+                <p>专为不支持浏览器自带同步功能的环境（例如 Android 版 Firefox）提供的独立功能。设备之间不需要账号登录，只需通过<strong>同步代码</strong>即可连接；高亮数据会在上传前于本机完成加密，服务器无法获知实际内容。</p>
+
+                <h4>使用方法</h4>
+                <ol>
+                    <li>点击工具栏中的扩展图标打开 Popup，然后点击<strong>设置(⚙)图标</strong>。</li>
+                    <li>在设置界面的<strong>"云同步 (测试版)"</strong>部分点击<strong>"生成新代码"</strong>按钮以获取同步代码。</li>
+                    <li>在要同步的另一台设备的设置界面中，将相同的代码输入"输入其他设备的同步代码"栏，然后点击<strong>"连接"</strong>按钮。</li>
+                    <li>在每台设备上打开<strong>"云同步"</strong>开关即可启用同步。之后大约每 15 分钟会自动同步一次，也可以点击<strong>"立即同步"</strong>按钮立即进行同步。</li>
+                </ol>
+
+                <div class="warning">
+                    <span class="warning-title">注意</span>
+                    如果丢失同步代码，已备份到云端的数据将无法恢复。代码默认仅部分显示（遮盖），可点击"显示"查看完整内容，或点击"复制"将其复制到剪贴板。请将代码另行妥善保管。
+                </div>
+
+                <p><strong>断开连接:</strong> 点击设置界面中的"重置代码"按钮，将使该设备忘记同步代码并断开连接。已上传到云端的数据不会因此删除，除非在其他已连接的设备上也执行重置。</p>
+
+                <div class="note">
+                    <span class="note-title">提示</span>
+                    同时使用浏览器自带同步功能和云同步的行为未经保证。建议只使用其中一种功能。
+                </div>
             </section>
 
             <section id="import-export">
