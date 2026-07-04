@@ -275,8 +275,17 @@
   "cloudSyncCopyCode": {
     "message": "Copy"
   },
+  "cloudSyncShowCode": {
+    "message": "Show"
+  },
+  "cloudSyncHideCode": {
+    "message": "Hide"
+  },
   "cloudSyncCodeCopied": {
     "message": "Copied!"
+  },
+  "cloudSyncCopyFailed": {
+    "message": "Couldn't copy automatically. The code is now shown above - please copy it manually."
   },
   "cloudSyncEnabledLabel": {
     "message": "Cloud Sync"

@@ -275,8 +275,17 @@
   "cloudSyncCopyCode": {
     "message": "복사"
   },
+  "cloudSyncShowCode": {
+    "message": "표시"
+  },
+  "cloudSyncHideCode": {
+    "message": "숨기기"
+  },
   "cloudSyncCodeCopied": {
     "message": "복사됨!"
+  },
+  "cloudSyncCopyFailed": {
+    "message": "자동으로 복사할 수 없습니다. 위에 코드가 표시되었으니 직접 복사해 주세요."
   },
   "cloudSyncEnabledLabel": {
     "message": "클라우드 동기화"
