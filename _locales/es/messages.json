@@ -264,7 +264,7 @@
     "message": "Conectar"
   },
   "cloudSyncInvalidCode": {
-    "message": "Ese código de sincronización no parece correcto. Revísalo e inténtalo de nuevo."
+    "message": "Ese código de sincronización no parece correcto. Compruébalo e inténtalo de nuevo."
   },
   "cloudSyncYourCode": {
     "message": "Tu Código de Sincronización"
@@ -285,7 +285,7 @@
     "message": "¡Copiado!"
   },
   "cloudSyncCopyFailed": {
-    "message": "No se pudo copiar automáticamente. El código se muestra arriba: cópialo manualmente."
+    "message": "No se pudo copiar automáticamente. El código se muestra arriba; cópialo manualmente."
   },
   "cloudSyncEnabledLabel": {
     "message": "Sincronización en la Nube"
