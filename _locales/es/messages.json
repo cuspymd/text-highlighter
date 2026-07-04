@@ -309,6 +309,6 @@
     "message": "Olvidar Código"
   },
   "cloudSyncResetConfirm": {
-    "message": "Esto desconecta este dispositivo y olvida permanentemente el código de sincronización. Los datos ya subidos a la nube permanecerán a menos que también los restablezcas desde otro dispositivo conectado. ¿Continuar?"
+    "message": "Esto desconecta este dispositivo y olvida permanentemente el código de sincronización. ¿Continuar?"
   }
 }

@@ -39,7 +39,11 @@
                 <li><a href="#minimap">Minimap</a></li>
                 <li><a href="#popup-menu">Popup Menu</a></li>
                 <li><a href="#pages-list">Highlighted Pages List</a></li>
-                <li><a href="#sync">Synchronization</a></li>
+                <li><a href="#sync">Synchronization</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#cloud-sync">Cloud Sync (Beta)</a></li>
+                    </ul>
+                </li>
                 <li><a href="#import-export">Import & Export</a></li>
             </ul>
         </aside>
@@ -163,6 +167,29 @@
                     <li><strong>Eviction Policy:</strong> When storage is full, sync data for the oldest updated pages is automatically removed to make space. (Local data is preserved.)</li>
                     <li><strong>Mobile Unsupported:</strong> Sync is not supported on Firefox for Android.</li>
                 </ul>
+
+                <h3 id="cloud-sync">Cloud Sync (Beta)</h3>
+                <p>A separate feature for environments that don't support browser-native sync, such as Firefox for Android. Devices are linked using a <strong>sync code</strong> instead of an account login, and highlight data is encrypted on your device before upload, so the server never has access to the actual content.</p>
+
+                <h4>How to Use</h4>
+                <ol>
+                    <li>Click the extension icon in the toolbar to open the Popup, then click the <strong>Settings (⚙) icon</strong>.</li>
+                    <li>In the <strong>"Cloud Sync (Beta)"</strong> section of the Settings screen, click <strong>"Generate New Code"</strong> to create a sync code.</li>
+                    <li>On the other device you want to sync, open the Settings screen and enter the same code in the "Enter sync code from another device" field, then click <strong>"Connect"</strong>.</li>
+                    <li>Turn on the <strong>"Cloud Sync"</strong> switch on each device to activate syncing. The extension syncs automatically about every 15 minutes, or you can click <strong>"Sync Now"</strong> to sync immediately.</li>
+                </ol>
+
+                <div class="warning">
+                    <span class="warning-title">Caution</span>
+                    If you lose your sync code, data backed up to the cloud cannot be recovered. The code is partially masked on screen by default — use "Show" to reveal it in full or "Copy" to copy it to the clipboard. Keep it stored somewhere safe.
+                </div>
+
+                <p><strong>Disconnecting:</strong> Clicking "Forget Code" in the Settings screen disconnects sync on this device and forgets the sync code.</p>
+
+                <div class="note">
+                    <span class="note-title">Note</span>
+                    Using browser-native sync and Cloud Sync at the same time is not guaranteed to work correctly. We recommend using only one of the two.
+                </div>
             </section>
 
             <section id="import-export">
