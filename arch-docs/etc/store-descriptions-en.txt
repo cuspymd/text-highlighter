@@ -10,8 +10,10 @@ Key features
 
 Sync and privacy
 - Local-first storage with `storage.local`
-- Cross-device sync support via `storage.sync` when browser sync is enabled
-- No dedicated backend server, no analytics tracking, no account required
+- Browser-native cross-device sync via `storage.sync` when browser sync is enabled
+- Optional encrypted cloud sync for platforms where browser sync is unavailable, such as Firefox for Android
+- Cloud sync stores only encrypted data; the sync code is required to decrypt it on your devices
+- No analytics tracking and no account required
 
 Great for
 - Researchers, students, and knowledge workers
