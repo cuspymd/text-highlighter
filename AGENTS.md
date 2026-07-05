@@ -68,7 +68,7 @@ This is a cross-browser extension called "Marks: Text Highlighter". It supports 
 ## Localization
 
 Localization files are in `_locales/`.
-Current locales: `en`, `es`, `ja`, `ko`, `zh`.
+Current locales: `en`, `es`, `ja`, `ko`, `zh`, `pt`.
 
 ## Data and Storage
 
