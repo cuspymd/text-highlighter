@@ -1,0 +1,22 @@
+Marks: Text Highlighter foi feito para pessoas que leem, pesquisam e organizam informações na web.
+Marque linhas importantes instantaneamente, mantenha as marcações organizadas por página e volte ao contexto importante sem esforço.
+
+Principais recursos
+- Marque pelo controle na própria página: selecione o texto e use o controle exibido na página para aplicar uma cor com um clique.
+- Sistema multicolorido com cores personalizadas: comece com 5 cores padrão (amarelo, verde, azul, rosa, laranja) e adicione cores personalizadas de acordo com o seu fluxo de trabalho.
+- Ações rápidas do seu jeito: use as ações do menu de contexto (clique com o botão direito) ou atalhos de teclado, conforme sua preferência.
+- Organização por página: as marcações ficam vinculadas a cada URL e são restauradas automaticamente quando você revisita a página.
+- Navegação pelo minimapa: percorra e pule entre as marcações rapidamente, especialmente em páginas longas.
+
+Sincronização e privacidade
+- Armazenamento local-first com `storage.local`
+- Sincronização nativa entre dispositivos via `storage.sync` quando a sincronização do navegador está habilitada
+- Sincronização opcional na nuvem, criptografada, para plataformas onde a sincronização do navegador não está disponível, como o Firefox para Android
+- A sincronização na nuvem armazena apenas dados criptografados; o código de sincronização é necessário para descriptografá-los nos seus dispositivos
+- Sem rastreamento de análises e sem necessidade de conta
+
+Ideal para
+- Pesquisadores, estudantes e profissionais do conhecimento
+- Qualquer pessoa que queira um fluxo de leitura mais claro e anotações reutilizáveis na web
+
+Use o Marks para transformar a leitura diária na web em um processo de revisão mais limpo e rápido.

@@ -1,0 +1,314 @@
+{  "extensionName": {
+    "message": "Marks: Text Highlighter"
+  },
+  "extensionDescription": {
+    "message": "Extensão para selecionar texto em páginas da web e marcar com cores"
+  },
+  "highlightText": {
+    "message": "Marcar Texto"
+  },
+  "removeHighlight": {
+    "message": "Remover Marcação"
+  },
+  "yellowColor": {
+    "message": "Amarelo"
+  },
+  "greenColor": {
+    "message": "Verde"
+  },
+  "blueColor": {
+    "message": "Azul"
+  },
+  "pinkColor": {
+    "message": "Rosa"
+  },
+  "orangeColor": {
+    "message": "Laranja"
+  },
+  "deleteHighlight": {
+    "message": "Excluir Marcação"
+  },
+  "commandSlot1": {
+    "message": "Slot 1"
+  },
+  "commandSlot2": {
+    "message": "Slot 2"
+  },
+  "commandSlot3": {
+    "message": "Slot 3"
+  },
+  "commandSlot4": {
+    "message": "Slot 4"
+  },
+  "commandSlot5": {
+    "message": "Slot 5"
+  },
+  "popupTitle": {
+    "message": "Text Highlighter"
+  },
+  "popupDescription": {
+    "message": "Selecione o texto nas páginas da web e use a interface de controle para marcar."
+  },
+  "exportAll": {
+    "message": "Exportar"
+  },
+  "importHighlights": {
+    "message": "Importar"
+  },
+  "importHighlightsTooltip": {
+    "message": "Importar marcações de um arquivo JSON"
+  },
+  "exportAllTooltip": {
+    "message": "Exportar todas as marcações para um arquivo JSON"
+  },
+  "importOverwriteConfirm": {
+    "message": "Algumas páginas já possuem marcações. As marcações existentes dessas páginas serão excluídas e substituídas pelos dados importados. Continuar?"
+  },
+  "importInvalidFormat": {
+    "message": "Formato de arquivo de importação inválido."
+  },
+  "importUnsafeUrlSkipped": {
+    "message": "$1 página(s) com URLs inválidas ou inseguras foram ignoradas."
+  },
+  "importAllUnsafeUrl": {
+    "message": "Nenhuma página pôde ser importada porque todas as URLs são inválidas ou inseguras."
+  },
+  "importAllInvalidSchema": {
+    "message": "Nenhuma página pôde ser importada porque todos os dados falharam na validação do esquema."
+  },
+  "importSchemaInvalidItemsSkipped": {
+    "message": "$1 item(ns) inválido(s) foram ignorados durante a importação."
+  },
+  "importSuccess": {
+    "message": "Importação concluída."
+  },
+  "currentPageHighlights": {
+    "message": "Marcações da Página Atual"
+  },
+  "noHighlights": {
+    "message": "Nenhum texto marcado nesta página."
+  },
+  "deleteAllHighlights": {
+    "message": "Excluir Todas as Marcações da Página"
+  },
+  "viewAllPages": {
+    "message": "Lista de Páginas Marcadas"
+  },
+  "showMinimap": {
+    "message": "Mostrar Minimapa"
+  },
+  "showControlsOnSelection": {
+    "message": "Mostrar Interface de Controle ao Selecionar Texto"
+  },
+  "confirmClearAll": {
+    "message": "Excluir realmente todas as marcações desta página?"
+  },
+  "confirmDeleteHighlight": {
+    "message": "Excluir esta marcação?"
+  },
+  "pagesListTitle": {
+    "message": "Lista de Páginas Marcadas"
+  },
+  "noPagesFound": {
+    "message": "Nenhuma página marcada encontrada."
+  },
+  "highlightCount": {
+    "message": "Marcações"
+  },
+  "lastUpdated": {
+    "message": "Última Atualização"
+  },
+  "showDetails": {
+    "message": "Mostrar Detalhes"
+  },
+  "hideDetails": {
+    "message": "Ocultar"
+  },
+  "openPage": {
+    "message": "Abrir Página"
+  },
+  "deletePage": {
+    "message": "Excluir"
+  },
+  "confirmDeletePage": {
+    "message": "Excluir todas as marcações desta página?"
+  },
+  "noTitle": {
+    "message": "(Sem título)"
+  },
+  "unknown": {
+    "message": "Desconhecido"
+  },
+  "deleteAllPages": {
+    "message": "Excluir Todas as Páginas"
+  },
+  "confirmDeleteAllPages": {
+    "message": "Excluir TODAS as páginas marcadas?"
+  },
+  "deleteCustomColors": {
+    "message": "Excluir Cores Personalizadas"
+  },
+  "confirmDeleteCustomColors": {
+    "message": "Excluir TODAS as cores personalizadas?"
+  },
+  "deletedCustomColors": {
+    "message": "Cores personalizadas excluídas."
+  },
+  "addColor": {
+    "message": "Adicionar Cor"
+  },
+  "refresh": {
+    "message": "Atualizar",
+    "description": "Button text for refreshing the highlighted pages list"
+  },
+  "customColor": {
+    "message": "Cor Personalizada"
+  },
+  "noCustomColorsToDelete": {
+    "message": "Nenhuma cor personalizada para excluir."
+  },
+  "selectColor": {
+    "message": "Selecionar Cor"
+  },
+  "apply": {
+    "message": "Aplicar"
+  },
+  "cancel": {
+    "message": "Cancelar"
+  },
+  "ok": {
+    "message": "OK"
+  },
+  "searchTooltip": {
+    "message": "Pesquisar marcações"
+  },
+  "searchPlaceholder": {
+    "message": "Pesquisar..."
+  },
+  "sortNewestFirst": {
+    "message": "Ordenar por data (mais recente primeiro)"
+  },
+  "sortOldestFirst": {
+    "message": "Ordenar por data (mais antiga primeiro)"
+  },
+  "expandAllHighlights": {
+    "message": "Expandir todas as marcações"
+  },
+  "collapseAllHighlights": {
+    "message": "Recolher todas as marcações"
+  },
+  "moreActions": {
+    "message": "Mais ações"
+  },
+  "settingsTitle": {
+    "message": "Configurações"
+  },
+  "settingsIconLabel": {
+    "message": "Abrir Configurações"
+  },
+  "generalSection": {
+    "message": "Geral"
+  },
+  "customColorsSection": {
+    "message": "Cores Personalizadas"
+  },
+  "shortcutsSection": {
+    "message": "Atalhos de Teclado"
+  },
+  "addCustomColor": {
+    "message": "+ Adicionar Cor Personalizada"
+  },
+  "editColor": {
+    "message": "Alterar"
+  },
+  "removeColor": {
+    "message": "Remover"
+  },
+  "noCustomColors": {
+    "message": "Ainda não há cores personalizadas."
+  },
+  "editNameTooltip": {
+    "message": "Clique para editar o nome"
+  },
+  "nameAlreadyExists": {
+    "message": "O nome já existe."
+  },
+  "colorAlreadyExists": {
+    "message": "Esta cor já existe."
+  },
+  "shortcutSlot": {
+    "message": "Slot"
+  },
+  "notAssigned": {
+    "message": "(Não atribuído)"
+  },
+  "shortcutHint": {
+    "message": "As combinações de teclas podem ser alteradas nas configurações de atalhos do navegador (Chrome: chrome://extensions/shortcuts, Firefox: about:addons)."
+  },
+  "colorChangeWarning": {
+    "message": "As alterações não afetam as marcações existentes."
+  },
+  "cloudSyncSection": {
+    "message": "Sincronização na Nuvem (Beta)"
+  },
+  "cloudSyncIntro": {
+    "message": "Sincronize marcações entre dispositivos por meio de um backup criptografado na nuvem, para plataformas (como o Firefox para Android) onde a sincronização do navegador não está disponível. Seus dados são criptografados neste dispositivo antes do envio; o código de sincronização é a única forma de descriptografá-los."
+  },
+  "cloudSyncGenerateCode": {
+    "message": "Gerar Novo Código"
+  },
+  "cloudSyncPairCodePlaceholder": {
+    "message": "Digite o código de sincronização de outro dispositivo"
+  },
+  "cloudSyncPairCodeButton": {
+    "message": "Conectar"
+  },
+  "cloudSyncInvalidCode": {
+    "message": "Esse código de sincronização não parece correto. Verifique novamente e tente outra vez."
+  },
+  "cloudSyncYourCode": {
+    "message": "Seu Código de Sincronização"
+  },
+  "cloudSyncSaveCodeWarning": {
+    "message": "Guarde este código em um local seguro. Se você perdê-lo, estes dados não poderão ser recuperados."
+  },
+  "cloudSyncCopyCode": {
+    "message": "Copiar"
+  },
+  "cloudSyncShowCode": {
+    "message": "Mostrar"
+  },
+  "cloudSyncHideCode": {
+    "message": "Ocultar"
+  },
+  "cloudSyncCodeCopied": {
+    "message": "Copiado!"
+  },
+  "cloudSyncCopyFailed": {
+    "message": "Não foi possível copiar automaticamente. O código agora é exibido acima - copie-o manualmente."
+  },
+  "cloudSyncEnabledLabel": {
+    "message": "Sincronização na Nuvem"
+  },
+  "cloudSyncNowButton": {
+    "message": "Sincronizar Agora"
+  },
+  "cloudSyncSyncing": {
+    "message": "Sincronizando..."
+  },
+  "cloudSyncNeverSynced": {
+    "message": "Ainda não sincronizado"
+  },
+  "cloudSyncLastSyncedPrefix": {
+    "message": "Última sincronização: "
+  },
+  "cloudSyncErrorPrefix": {
+    "message": "Erro de sincronização: "
+  },
+  "cloudSyncResetButton": {
+    "message": "Esquecer Código"
+  },
+  "cloudSyncResetConfirm": {
+    "message": "Isso desconecta este dispositivo e esquece permanentemente o código de sincronização. Continuar?"
+  }
+}
