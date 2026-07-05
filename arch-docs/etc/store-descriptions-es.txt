@@ -10,8 +10,10 @@ Funciones principales
 
 Sincronización y privacidad
 - Almacenamiento local primero con `storage.local`
-- Sincronización entre dispositivos mediante `storage.sync` si activas la sincronización del navegador
-- Sin servidor backend propio, sin analíticas de seguimiento y sin necesidad de cuenta
+- Sincronización nativa entre dispositivos mediante `storage.sync` si activas la sincronización del navegador
+- Sincronización cifrada opcional en la nube para plataformas donde la sincronización del navegador no está disponible, como Firefox para Android
+- La sincronización en la nube guarda solo datos cifrados; el código de sincronización es necesario para descifrarlos en tus dispositivos
+- Sin analíticas de seguimiento y sin necesidad de cuenta
 
 Ideal para
 - Investigadores, estudiantes y profesionales que leen mucho
