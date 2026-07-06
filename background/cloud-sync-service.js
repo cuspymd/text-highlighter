@@ -350,27 +350,26 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
 
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });
 
-    let pushed = false;
     if (!forcePush && isBlobContentEqual(fittedBlob, remoteBlob)) {
       debugLog('Cloud sync: no changes since last push, skipping PUT.');
     } else {
       await pushRemoteBlob(keyId, encryptionKey, fittedBlob);
-      pushed = true;
+    }
+    // Reported/persisted regardless of whether a PUT actually happened: trimming is recomputed
+    // every cycle from the current local+remote merge, so it reflects what's excluded from the
+    // cloud copy right now — including when that copy already matches (nothing to push, but the
+    // exclusion is still in effect and the status notice shouldn't go silent about it).
+    if (trimmedCount > 0) {
+      debugLog(`Cloud sync payload exceeds the ${CLOUD_SYNC_MAX_BODY_BYTES}B limit; excluding ${trimmedCount} oldest page(s) from the cloud copy.`);
     }
 
-    const statusUpdate = {
+    await browserAPI.storage.local.set({
       [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: Date.now(),
       [CLOUD_SYNC_KEYS.LAST_ERROR]: null,
-    };
-    if (pushed) {
-      statusUpdate[CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT] = trimmedCount || null;
-      if (trimmedCount > 0) {
-        debugLog(`Cloud sync payload exceeded ${CLOUD_SYNC_MAX_BODY_BYTES}B limit; excluded ${trimmedCount} oldest page(s) from this push.`);
-      }
-    }
-    await browserAPI.storage.local.set(statusUpdate);
+      [CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT]: trimmedCount || null,
+    });
     debugLog('Cloud sync completed.');
-    return { success: true, trimmedCount: pushed ? trimmedCount : 0 };
+    return { success: true, trimmedCount };
   } catch (e) {
     debugLog('Cloud sync failed:', e.message);
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.LAST_ERROR]: e.message });

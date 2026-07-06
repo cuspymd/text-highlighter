@@ -291,8 +291,13 @@ describe('cloud-sync-service', () => {
       const result = await runCloudSync();
 
       expect(result.success).toBe(true);
-      expect(result.trimmedCount).toBe(0);
+      // Still reported even though the PUT itself was skipped (regression: PR #106 review) —
+      // the exclusion is real and the status notice must not go silent about it.
+      expect(result.trimmedCount).toBe(1);
       expect(global.fetch).toHaveBeenCalledTimes(1); // fitted (empty) blob already matches the empty remote placeholder.
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        cloudSyncLastTrimmedCount: 1,
+      }));
     });
 
     it('keeps the most recently updated pages and drops the oldest ones when combined data exceeds the limit', async () => {
@@ -366,6 +371,11 @@ describe('cloud-sync-service', () => {
 
       expect(result.success).toBe(true);
       expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; no PUT, since the fitted blob already matches remote.
+      // Still reported even though the PUT was skipped this round (regression: PR #106 review).
+      expect(result.trimmedCount).toBe(1);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        cloudSyncLastTrimmedCount: 1,
+      }));
     });
 
     it('still throws the size error when trimming every page cannot bring the payload under the limit', async () => {
