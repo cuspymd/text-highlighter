@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: 文本高亮器"
   },
   "extensionDescription": {
@@ -310,5 +311,9 @@
   },
   "cloudSyncResetConfirm": {
     "message": "这将断开此设备的连接，并永久忘记同步码。是否继续？"
+  },
+  "cloudSyncDataTooLargeStatus": {
+    "message": "你的同步数据为 $1。当前限制为 $2。",
+    "description": "Shown when encrypted cloud sync upload data exceeds the current size limit. $1 is current size, $2 is max size."
   }
 }
