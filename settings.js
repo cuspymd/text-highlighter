@@ -434,6 +434,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `${browserAPI.i18n.getMessage('cloudSyncErrorPrefix') || 'Sync error: '}${status.lastError}`;
   }
 
+  function formatTrimmedNotice(trimmedCount) {
+    if (!trimmedCount) return '';
+    const message = browserAPI.i18n.getMessage('cloudSyncPagesExcludedNotice', [String(trimmedCount)]) ||
+      `(${trimmedCount} older page(s) excluded due to the size limit)`;
+    return ` ${message}`;
+  }
+
   function renderCloudSyncStatus(status) {
     cloudSyncToggle.checked = !!status.enabled;
 
@@ -441,7 +448,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       cloudSyncStatusText.textContent = formatCloudSyncError(status);
       cloudSyncStatusText.classList.add('cloud-sync-error-text');
     } else if (status.lastSyncedAt) {
-      cloudSyncStatusText.textContent = `${browserAPI.i18n.getMessage('cloudSyncLastSyncedPrefix') || 'Last synced: '}${new Date(status.lastSyncedAt).toLocaleString()}`;
+      cloudSyncStatusText.textContent =
+        `${browserAPI.i18n.getMessage('cloudSyncLastSyncedPrefix') || 'Last synced: '}${new Date(status.lastSyncedAt).toLocaleString()}${formatTrimmedNotice(status.lastTrimmedCount)}`;
       cloudSyncStatusText.classList.remove('cloud-sync-error-text');
     } else {
       cloudSyncStatusText.textContent = browserAPI.i18n.getMessage('cloudSyncNeverSynced') || 'Not synced yet';

@@ -3,6 +3,7 @@ import {
   deriveSyncKeys,
   encryptBlob,
   decryptBlob,
+  estimateEncryptedEnvelopeBytes,
 } from '../shared/crypto-utils.js';
 
 describe('crypto-utils', () => {
@@ -69,4 +70,18 @@ describe('crypto-utils', () => {
     expect(e1.iv).not.toBe(e2.iv);
     expect(e1.ciphertext).not.toBe(e2.ciphertext);
   });
+
+  test.each([0, 1, 32, 1000, 700_000, 1_050_000])(
+    'estimateEncryptedEnvelopeBytes(%i) exactly predicts the real encrypted envelope size',
+    async (plaintextChars) => {
+      const { encryptionKey } = await deriveSyncKeys(generateSyncCode());
+      const blob = { text: 'x'.repeat(plaintextChars) };
+      const plaintextBytes = new TextEncoder().encode(JSON.stringify(blob)).byteLength;
+
+      const envelope = await encryptBlob(blob, encryptionKey);
+      const actualBytes = new TextEncoder().encode(JSON.stringify(envelope)).byteLength;
+
+      expect(estimateEncryptedEnvelopeBytes(plaintextBytes)).toBe(actualBytes);
+    }
+  );
 });

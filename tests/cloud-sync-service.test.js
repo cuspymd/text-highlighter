@@ -1,5 +1,5 @@
 import chrome from '../mocks/chrome.js';
-import { generateSyncCode, deriveSyncKeys, encryptBlob } from '../shared/crypto-utils.js';
+import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob } from '../shared/crypto-utils.js';
 import {
   mergeBlobs,
   isBlobContentEqual,
@@ -147,6 +147,7 @@ describe('cloud-sync-service', () => {
         lastSyncedAt: null,
         lastError: null,
         lastErrorDetails: null,
+        lastTrimmedCount: 0,
       });
     });
   });
@@ -244,7 +245,7 @@ describe('cloud-sync-service', () => {
       );
     });
 
-    it('includes current and maximum byte sizes when the upload data is too large', async () => {
+    it('drops a lone page that alone exceeds the size limit instead of failing the sync', async () => {
       const code = generateSyncCode();
       chrome.storage.local.get.mockImplementation((keys) => {
         if (keys === null) {
@@ -252,6 +253,63 @@ describe('cloud-sync-service', () => {
             'https://large.test': [{ groupId: 'g1', text: 'x'.repeat(1_050_000), updatedAt: 1 }],
             'https://large.test_meta': { title: 'Large', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
           });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({ status: 404, ok: false }) // GET
+        .mockResolvedValueOnce({ ok: true, status: 204 }); // PUT
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      expect(result.trimmedCount).toBe(1);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        cloudSyncLastTrimmedCount: 1,
+        cloudSyncLastError: null,
+      }));
+    });
+
+    it('keeps the most recently updated pages and drops the oldest ones when combined data exceeds the limit', async () => {
+      const code = generateSyncCode();
+      const { encryptionKey } = await deriveSyncKeys(code);
+
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            'https://old.test': [{ groupId: 'g1', text: 'x'.repeat(700_000), updatedAt: 1 }],
+            'https://old.test_meta': { title: 'Old', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+            'https://new.test': [{ groupId: 'g2', text: 'y'.repeat(700_000), updatedAt: 2 }],
+            'https://new.test_meta': { title: 'New', lastUpdated: '2024-06-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+
+      let pushedBody = null;
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({ status: 404, ok: false }) // GET
+        .mockImplementationOnce((url, options) => {
+          pushedBody = options.body;
+          return Promise.resolve({ ok: true, status: 204 }); // PUT
+        });
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      expect(result.trimmedCount).toBe(1);
+      expect(new TextEncoder().encode(pushedBody).byteLength).toBeLessThanOrEqual(1_000_000);
+
+      const decrypted = await decryptBlob(JSON.parse(pushedBody), encryptionKey);
+      expect(Object.keys(decrypted.pages)).toEqual(['https://new.test']);
+    });
+
+    it('still throws the size error when trimming every page cannot bring the payload under the limit', async () => {
+      const code = generateSyncCode();
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({ customColors: ['x'.repeat(1_050_000)] });
         }
         return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
       });
@@ -265,9 +323,7 @@ describe('cloud-sync-service', () => {
         currentBytes: expect.any(Number),
         maxBytes: 1_000_000,
       });
-      expect(result.errorDetails.currentBytes).toBeGreaterThan(result.errorDetails.maxBytes);
-      expect(result.error).toContain('1.00 MB limit');
-      expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; oversized payload is rejected before PUT.
+      expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; no page data left to trim, PUT never attempted.
       expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
         cloudSyncLastError: expect.stringContaining('Cloud sync data too large'),
         cloudSyncLastErrorDetails: result.errorDetails,

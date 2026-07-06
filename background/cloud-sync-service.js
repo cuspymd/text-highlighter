@@ -8,7 +8,7 @@ import {
   CLOUD_SYNC_ALARM_PERIOD_MINUTES,
   CLOUD_SYNC_MAX_BODY_BYTES,
 } from '../constants/cloud-sync-config.js';
-import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob } from '../shared/crypto-utils.js';
+import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob, estimateEncryptedEnvelopeBytes } from '../shared/crypto-utils.js';
 import { mergeHighlights, cleanupTombstones, mergeTombstonesByMax } from './sync-service.js';
 import { applySettingsFromSync, createOrUpdateContextMenus } from './settings-service.js';
 
@@ -23,6 +23,7 @@ const LOCAL_ONLY_KEYS = new Set([
   CLOUD_SYNC_KEYS.LAST_SYNCED_AT,
   CLOUD_SYNC_KEYS.LAST_ERROR,
   CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS,
+  CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT,
   CLOUD_SYNC_KEYS.DELETED_URLS,
   CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT,
   'settings', // storage.sync settings payload key, never present in storage.local but guard anyway
@@ -279,11 +280,45 @@ async function fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote = true
   }
 }
 
+/**
+ * Drop the oldest pages (by lastUpdated) from a blob until its predicted encrypted
+ * envelope size fits within maxBytes, mirroring how browser storage.sync evicts the
+ * oldest page once its own quota is exceeded (see syncSaveHighlights in sync-service.js).
+ * Sizing uses estimateEncryptedEnvelopeBytes so this loop never touches crypto.subtle —
+ * pushRemoteBlob does the one real encrypt call, on whatever this function returns.
+ */
+function trimBlobToFit(blob, maxBytes) {
+  let plaintextBytes = byteLength(JSON.stringify(blob));
+  if (estimateEncryptedEnvelopeBytes(plaintextBytes) <= maxBytes) {
+    return { blob, trimmedCount: 0 };
+  }
+
+  const trimmedPages = { ...blob.pages };
+  const oldestFirst = Object.keys(trimmedPages).sort(
+    (a, b) => pageTimestamp(trimmedPages[a]) - pageTimestamp(trimmedPages[b])
+  );
+
+  let trimmedCount = 0;
+  let candidateBlob = blob;
+  for (const url of oldestFirst) {
+    if (estimateEncryptedEnvelopeBytes(plaintextBytes) <= maxBytes) break;
+    delete trimmedPages[url];
+    trimmedCount++;
+    candidateBlob = { ...blob, pages: trimmedPages };
+    plaintextBytes = byteLength(JSON.stringify(candidateBlob));
+  }
+
+  return { blob: candidateBlob, trimmedCount };
+}
+
 async function pushRemoteBlob(keyId, encryptionKey, blob) {
-  const envelope = await encryptBlob(blob, encryptionKey);
+  const { blob: fittedBlob, trimmedCount } = trimBlobToFit(blob, CLOUD_SYNC_MAX_BODY_BYTES);
+
+  const envelope = await encryptBlob(fittedBlob, encryptionKey);
   const body = JSON.stringify(envelope);
   const bodyBytes = byteLength(body);
   if (bodyBytes > CLOUD_SYNC_MAX_BODY_BYTES) {
+    // Trimming removed every page and the remainder (settings/tombstones) is still over the limit.
     throw createCloudSyncSizeError(bodyBytes, CLOUD_SYNC_MAX_BODY_BYTES);
   }
 
@@ -293,6 +328,11 @@ async function pushRemoteBlob(keyId, encryptionKey, blob) {
     body,
   });
   if (!res.ok) throw new Error(`Failed to push cloud data (${res.status})`);
+
+  if (trimmedCount > 0) {
+    debugLog(`Cloud sync payload exceeded ${CLOUD_SYNC_MAX_BODY_BYTES}B limit; excluded ${trimmedCount} oldest page(s) from this push.`);
+  }
+  return { trimmedCount };
 }
 
 export async function getCloudSyncStatus() {
@@ -302,6 +342,7 @@ export async function getCloudSyncStatus() {
     CLOUD_SYNC_KEYS.LAST_SYNCED_AT,
     CLOUD_SYNC_KEYS.LAST_ERROR,
     CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS,
+    CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT,
   ]);
 
   return {
@@ -310,6 +351,7 @@ export async function getCloudSyncStatus() {
     lastSyncedAt: result[CLOUD_SYNC_KEYS.LAST_SYNCED_AT] || null,
     lastError: result[CLOUD_SYNC_KEYS.LAST_ERROR] || null,
     lastErrorDetails: result[CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS] || null,
+    lastTrimmedCount: result[CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT] || 0,
   };
 }
 
@@ -340,19 +382,24 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
 
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });
 
+    let trimmedCount = null; // null = no push happened this round; leave prior status untouched.
     if (!forcePush && isBlobContentEqual(merged, remoteBlob)) {
       debugLog('Cloud sync: no changes since last push, skipping PUT.');
     } else {
-      await pushRemoteBlob(keyId, encryptionKey, merged);
+      ({ trimmedCount } = await pushRemoteBlob(keyId, encryptionKey, merged));
     }
 
-    await browserAPI.storage.local.set({
+    const statusUpdate = {
       [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: Date.now(),
       [CLOUD_SYNC_KEYS.LAST_ERROR]: null,
       [CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS]: null,
-    });
+    };
+    if (trimmedCount !== null) {
+      statusUpdate[CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT] = trimmedCount || null;
+    }
+    await browserAPI.storage.local.set(statusUpdate);
     debugLog('Cloud sync completed.');
-    return { success: true };
+    return { success: true, trimmedCount: trimmedCount || 0 };
   } catch (e) {
     debugLog('Cloud sync failed:', e.message);
     const errorDetails = getErrorDetails(e);
@@ -413,6 +460,7 @@ export async function resetCloudSyncCode() {
     [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: null,
     [CLOUD_SYNC_KEYS.LAST_ERROR]: null,
     [CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS]: null,
+    [CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT]: null,
   });
 }
 
