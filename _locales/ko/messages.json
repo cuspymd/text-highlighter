@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: 텍스트 하이라이터"
   },
   "extensionDescription": {
@@ -310,5 +311,9 @@
   },
   "cloudSyncResetConfirm": {
     "message": "이 기기의 연결이 해제되고 동기화 코드를 완전히 잊어버립니다. 계속하시겠습니까?"
+  },
+  "cloudSyncDataTooLargeStatus": {
+    "message": "동기화 데이터가 $1입니다. 현재 제한은 $2입니다.",
+    "description": "Shown when encrypted cloud sync upload data exceeds the current size limit. $1 is current size, $2 is max size."
   }
 }

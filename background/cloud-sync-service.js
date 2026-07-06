@@ -22,10 +22,42 @@ const LOCAL_ONLY_KEYS = new Set([
   CLOUD_SYNC_KEYS.CODE,
   CLOUD_SYNC_KEYS.LAST_SYNCED_AT,
   CLOUD_SYNC_KEYS.LAST_ERROR,
+  CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS,
   CLOUD_SYNC_KEYS.DELETED_URLS,
   CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT,
   'settings', // storage.sync settings payload key, never present in storage.local but guard anyway
 ]);
+
+const CLOUD_SYNC_DATA_TOO_LARGE = 'CLOUD_SYNC_DATA_TOO_LARGE';
+
+function byteLength(text) {
+  return new TextEncoder().encode(text).byteLength;
+}
+
+function formatBytes(bytes) {
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(2)} MB`;
+  if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(1)} KB`;
+  return `${bytes} bytes`;
+}
+
+function createCloudSyncSizeError(currentBytes, maxBytes) {
+  const error = new Error(
+    `Cloud sync data too large (${formatBytes(currentBytes)} / ${formatBytes(maxBytes)} limit)`
+  );
+  error.code = CLOUD_SYNC_DATA_TOO_LARGE;
+  error.currentBytes = currentBytes;
+  error.maxBytes = maxBytes;
+  return error;
+}
+
+function getErrorDetails(error) {
+  if (error.code !== CLOUD_SYNC_DATA_TOO_LARGE) return null;
+  return {
+    code: error.code,
+    currentBytes: error.currentBytes,
+    maxBytes: error.maxBytes,
+  };
+}
 
 function emptyBlob() {
   return {
@@ -250,8 +282,9 @@ async function fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote = true
 async function pushRemoteBlob(keyId, encryptionKey, blob) {
   const envelope = await encryptBlob(blob, encryptionKey);
   const body = JSON.stringify(envelope);
-  if (new TextEncoder().encode(body).byteLength > CLOUD_SYNC_MAX_BODY_BYTES) {
-    throw new Error('Cloud sync data too large');
+  const bodyBytes = byteLength(body);
+  if (bodyBytes > CLOUD_SYNC_MAX_BODY_BYTES) {
+    throw createCloudSyncSizeError(bodyBytes, CLOUD_SYNC_MAX_BODY_BYTES);
   }
 
   const res = await fetch(`${CLOUD_SYNC_ENDPOINT_BASE}/blob/${keyId}`, {
@@ -268,6 +301,7 @@ export async function getCloudSyncStatus() {
     CLOUD_SYNC_KEYS.CODE,
     CLOUD_SYNC_KEYS.LAST_SYNCED_AT,
     CLOUD_SYNC_KEYS.LAST_ERROR,
+    CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS,
   ]);
 
   return {
@@ -275,6 +309,7 @@ export async function getCloudSyncStatus() {
     code: result[CLOUD_SYNC_KEYS.CODE] || null,
     lastSyncedAt: result[CLOUD_SYNC_KEYS.LAST_SYNCED_AT] || null,
     lastError: result[CLOUD_SYNC_KEYS.LAST_ERROR] || null,
+    lastErrorDetails: result[CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS] || null,
   };
 }
 
@@ -314,13 +349,18 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
     await browserAPI.storage.local.set({
       [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: Date.now(),
       [CLOUD_SYNC_KEYS.LAST_ERROR]: null,
+      [CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS]: null,
     });
     debugLog('Cloud sync completed.');
     return { success: true };
   } catch (e) {
     debugLog('Cloud sync failed:', e.message);
-    await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.LAST_ERROR]: e.message });
-    return { success: false, error: e.message };
+    const errorDetails = getErrorDetails(e);
+    await browserAPI.storage.local.set({
+      [CLOUD_SYNC_KEYS.LAST_ERROR]: e.message,
+      [CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS]: errorDetails,
+    });
+    return { success: false, error: e.message, errorDetails };
   }
 }
 
@@ -372,6 +412,7 @@ export async function resetCloudSyncCode() {
     [CLOUD_SYNC_KEYS.CODE]: null,
     [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: null,
     [CLOUD_SYNC_KEYS.LAST_ERROR]: null,
+    [CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS]: null,
   });
 }
 

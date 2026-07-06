@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: Text Highlighter"
   },
   "extensionDescription": {
@@ -310,5 +311,9 @@
   },
   "cloudSyncResetConfirm": {
     "message": "This disconnects this device and permanently forgets the sync code. Continue?"
+  },
+  "cloudSyncDataTooLargeStatus": {
+    "message": "Your sync data is $1. The current limit is $2.",
+    "description": "Shown when encrypted cloud sync upload data exceeds the current size limit. $1 is current size, $2 is max size."
   }
 }

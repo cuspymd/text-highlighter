@@ -1,4 +1,5 @@
-{  "extensionName": {
+{
+  "extensionName": {
     "message": "Marks: テキストハイライター"
   },
   "extensionDescription": {
@@ -310,5 +311,9 @@
   },
   "cloudSyncResetConfirm": {
     "message": "このデバイスの接続を解除し、同期コードを完全に削除します。続行しますか？"
+  },
+  "cloudSyncDataTooLargeStatus": {
+    "message": "同期データは $1 です。現在の上限は $2 です。",
+    "description": "Shown when encrypted cloud sync upload data exceeds the current size limit. $1 is current size, $2 is max size."
   }
 }

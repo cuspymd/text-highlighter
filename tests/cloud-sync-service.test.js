@@ -141,7 +141,13 @@ describe('cloud-sync-service', () => {
     it('returns disabled defaults when nothing is stored', async () => {
       chrome.storage.local.get.mockResolvedValueOnce({});
       const status = await getCloudSyncStatus();
-      expect(status).toEqual({ enabled: false, code: null, lastSyncedAt: null, lastError: null });
+      expect(status).toEqual({
+        enabled: false,
+        code: null,
+        lastSyncedAt: null,
+        lastError: null,
+        lastErrorDetails: null,
+      });
     });
   });
 
@@ -236,6 +242,36 @@ describe('cloud-sync-service', () => {
       expect(chrome.storage.local.set).toHaveBeenCalledWith(
         expect.objectContaining({ cloudSyncLastError: expect.any(String) })
       );
+    });
+
+    it('includes current and maximum byte sizes when the upload data is too large', async () => {
+      const code = generateSyncCode();
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            'https://large.test': [{ groupId: 'g1', text: 'x'.repeat(1_050_000), updatedAt: 1 }],
+            'https://large.test_meta': { title: 'Large', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+      global.fetch = jest.fn().mockResolvedValueOnce({ status: 404, ok: false });
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(false);
+      expect(result.errorDetails).toEqual({
+        code: 'CLOUD_SYNC_DATA_TOO_LARGE',
+        currentBytes: expect.any(Number),
+        maxBytes: 1_000_000,
+      });
+      expect(result.errorDetails.currentBytes).toBeGreaterThan(result.errorDetails.maxBytes);
+      expect(result.error).toContain('1.00 MB limit');
+      expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; oversized payload is rejected before PUT.
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        cloudSyncLastError: expect.stringContaining('Cloud sync data too large'),
+        cloudSyncLastErrorDetails: result.errorDetails,
+      }));
     });
   });
 
