@@ -245,12 +245,17 @@ describe('cloud-sync-service', () => {
     });
 
     it('drops a lone page that alone exceeds the size limit instead of failing the sync', async () => {
+      // A second, tiny page ensures there's still something new to push once the giant one is
+      // dropped — otherwise the fitted blob would coincidentally be as empty as the "no remote
+      // data yet" placeholder and the PUT would (correctly) be skipped, which is covered separately.
       const code = generateSyncCode();
       chrome.storage.local.get.mockImplementation((keys) => {
         if (keys === null) {
           return Promise.resolve({
             'https://large.test': [{ groupId: 'g1', text: 'x'.repeat(1_050_000), updatedAt: 1 }],
             'https://large.test_meta': { title: 'Large', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+            'https://small.test': [{ groupId: 'g2', text: 'small', updatedAt: 2 }],
+            'https://small.test_meta': { title: 'Small', lastUpdated: '2024-06-01T00:00:00.000Z', deletedGroupIds: {} },
           });
         }
         return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
@@ -268,6 +273,26 @@ describe('cloud-sync-service', () => {
         cloudSyncLastTrimmedCount: 1,
         cloudSyncLastError: null,
       }));
+    });
+
+    it('skips the PUT when trimming a lone oversized page leaves nothing new to sync', async () => {
+      const code = generateSyncCode();
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            'https://large.test': [{ groupId: 'g1', text: 'x'.repeat(1_050_000), updatedAt: 1 }],
+            'https://large.test_meta': { title: 'Large', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+      global.fetch = jest.fn().mockResolvedValueOnce({ status: 404, ok: false }); // GET only
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      expect(result.trimmedCount).toBe(0);
+      expect(global.fetch).toHaveBeenCalledTimes(1); // fitted (empty) blob already matches the empty remote placeholder.
     });
 
     it('keeps the most recently updated pages and drops the oldest ones when combined data exceeds the limit', async () => {
@@ -302,6 +327,45 @@ describe('cloud-sync-service', () => {
 
       const decrypted = await decryptBlob(JSON.parse(pushedBody), encryptionKey);
       expect(Object.keys(decrypted.pages)).toEqual(['https://new.test']);
+    });
+
+    it('does not re-PUT every cycle once the remote already holds the trimmed-down state (regression: PR #106 review)', async () => {
+      // Local storage still holds the oldest page (trimming never removes it locally, only from
+      // the pushed copy). If the equality check compared the *untrimmed* merged blob against
+      // remote, it would never match and every sync cycle would re-push identical content.
+      const code = generateSyncCode();
+      const { encryptionKey } = await deriveSyncKeys(code);
+
+      const remoteBlob = emptyBlob({
+        pages: {
+          'https://new.test': {
+            title: 'New',
+            lastUpdated: '2024-06-01T00:00:00.000Z',
+            highlights: [{ groupId: 'g2', text: 'y'.repeat(700_000), updatedAt: 2 }],
+            deletedGroupIds: {},
+          },
+        },
+      });
+      const envelope = await encryptBlob(remoteBlob, encryptionKey);
+
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            'https://old.test': [{ groupId: 'g1', text: 'x'.repeat(700_000), updatedAt: 1 }],
+            'https://old.test_meta': { title: 'Old', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+            'https://new.test': [{ groupId: 'g2', text: 'y'.repeat(700_000), updatedAt: 2 }],
+            'https://new.test_meta': { title: 'New', lastUpdated: '2024-06-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+
+      global.fetch = jest.fn().mockResolvedValueOnce({ ok: true, status: 200, json: async () => envelope });
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; no PUT, since the fitted blob already matches remote.
     });
 
     it('still throws the size error when trimming every page cannot bring the payload under the limit', async () => {

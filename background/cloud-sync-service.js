@@ -284,13 +284,11 @@ function trimBlobToFit(blob, maxBytes) {
 }
 
 async function pushRemoteBlob(keyId, encryptionKey, blob) {
-  const { blob: fittedBlob, trimmedCount } = trimBlobToFit(blob, CLOUD_SYNC_MAX_BODY_BYTES);
-
-  const envelope = await encryptBlob(fittedBlob, encryptionKey);
+  const envelope = await encryptBlob(blob, encryptionKey);
   const body = JSON.stringify(envelope);
   const bodyBytes = byteLength(body);
   if (bodyBytes > CLOUD_SYNC_MAX_BODY_BYTES) {
-    // Trimming removed every page and the remainder (settings/tombstones) is still over the limit.
+    // Caller already trimmed every page it could; the remainder (settings/tombstones) is still over the limit.
     throw new Error(`Cloud sync data too large (${bodyBytes} / ${CLOUD_SYNC_MAX_BODY_BYTES} bytes limit)`);
   }
 
@@ -300,11 +298,6 @@ async function pushRemoteBlob(keyId, encryptionKey, blob) {
     body,
   });
   if (!res.ok) throw new Error(`Failed to push cloud data (${res.status})`);
-
-  if (trimmedCount > 0) {
-    debugLog(`Cloud sync payload exceeded ${CLOUD_SYNC_MAX_BODY_BYTES}B limit; excluded ${trimmedCount} oldest page(s) from this push.`);
-  }
-  return { trimmedCount };
 }
 
 export async function getCloudSyncStatus() {
@@ -340,6 +333,11 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
     const localBlob = await buildLocalBlob();
     const remoteBlob = await fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote });
     const merged = mergeBlobs(localBlob, remoteBlob);
+    // Trimmed once here (not inside pushRemoteBlob) so the unchanged-content check below compares
+    // against what would actually be pushed — otherwise an over-limit profile re-triggers a PUT every
+    // cycle: local storage keeps every page, so re-merging with the (already trimmed) remote blob
+    // resurrects the trimmed-out pages into `merged`, which would never again equal `remoteBlob`.
+    const { blob: fittedBlob, trimmedCount } = trimBlobToFit(merged, CLOUD_SYNC_MAX_BODY_BYTES);
 
     const { removedUrls } = await applyMergedPagesToLocal(merged.pages, merged.deletedUrls, localBlob.pages);
     await broadcastMergedPages(merged.pages, localBlob.pages, removedUrls);
@@ -352,23 +350,27 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
 
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });
 
-    let trimmedCount = null; // null = no push happened this round; leave prior status untouched.
-    if (!forcePush && isBlobContentEqual(merged, remoteBlob)) {
+    let pushed = false;
+    if (!forcePush && isBlobContentEqual(fittedBlob, remoteBlob)) {
       debugLog('Cloud sync: no changes since last push, skipping PUT.');
     } else {
-      ({ trimmedCount } = await pushRemoteBlob(keyId, encryptionKey, merged));
+      await pushRemoteBlob(keyId, encryptionKey, fittedBlob);
+      pushed = true;
     }
 
     const statusUpdate = {
       [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: Date.now(),
       [CLOUD_SYNC_KEYS.LAST_ERROR]: null,
     };
-    if (trimmedCount !== null) {
+    if (pushed) {
       statusUpdate[CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT] = trimmedCount || null;
+      if (trimmedCount > 0) {
+        debugLog(`Cloud sync payload exceeded ${CLOUD_SYNC_MAX_BODY_BYTES}B limit; excluded ${trimmedCount} oldest page(s) from this push.`);
+      }
     }
     await browserAPI.storage.local.set(statusUpdate);
     debugLog('Cloud sync completed.');
-    return { success: true, trimmedCount: trimmedCount || 0 };
+    return { success: true, trimmedCount: pushed ? trimmedCount : 0 };
   } catch (e) {
     debugLog('Cloud sync failed:', e.message);
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.LAST_ERROR]: e.message });
