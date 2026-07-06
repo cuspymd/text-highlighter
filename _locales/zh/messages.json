@@ -312,10 +312,6 @@
   "cloudSyncResetConfirm": {
     "message": "这将断开此设备的连接，并永久忘记同步码。是否继续？"
   },
-  "cloudSyncDataTooLargeStatus": {
-    "message": "你的同步数据为 $1。当前限制为 $2。",
-    "description": "Shown when encrypted cloud sync upload data exceeds the current size limit. $1 is current size, $2 is max size."
-  },
   "cloudSyncPagesExcludedNotice": {
     "message": "（由于容量限制，已排除 $1 个较旧的页面）",
     "description": "Appended to the last-synced status when the oldest pages were dropped from the cloud sync upload to fit the size limit. $1 is the number of excluded pages."

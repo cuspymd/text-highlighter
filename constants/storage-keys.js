@@ -18,7 +18,6 @@ export const CLOUD_SYNC_KEYS = {
   CODE: 'cloudSyncCode',
   LAST_SYNCED_AT: 'cloudSyncLastSyncedAt',
   LAST_ERROR: 'cloudSyncLastError',
-  LAST_ERROR_DETAILS: 'cloudSyncLastErrorDetails',
   LAST_TRIMMED_COUNT: 'cloudSyncLastTrimmedCount',
   DELETED_URLS: 'cloudSyncDeletedUrls',
   SETTINGS_UPDATED_AT: 'cloudSyncSettingsUpdatedAt',

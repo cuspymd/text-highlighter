@@ -416,21 +416,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     ) || (isSyncCodeVisible ? 'Hide' : 'Show');
   }
 
-  function formatBytes(bytes) {
-    if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(2)} MB`;
-    if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(1)} KB`;
-    return `${bytes} bytes`;
-  }
-
   function formatCloudSyncError(status) {
-    const details = status.lastErrorDetails;
-    if (details && details.code === 'CLOUD_SYNC_DATA_TOO_LARGE') {
-      const currentSize = formatBytes(details.currentBytes);
-      const maxSize = formatBytes(details.maxBytes);
-      const message = browserAPI.i18n.getMessage('cloudSyncDataTooLargeStatus', [currentSize, maxSize]) ||
-        `Your sync data is ${currentSize}. The current limit is ${maxSize}.`;
-      return `${browserAPI.i18n.getMessage('cloudSyncErrorPrefix') || 'Sync error: '}${message}`;
-    }
     return `${browserAPI.i18n.getMessage('cloudSyncErrorPrefix') || 'Sync error: '}${status.lastError}`;
   }
 

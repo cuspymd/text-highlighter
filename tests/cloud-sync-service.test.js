@@ -146,7 +146,6 @@ describe('cloud-sync-service', () => {
         code: null,
         lastSyncedAt: null,
         lastError: null,
-        lastErrorDetails: null,
         lastTrimmedCount: 0,
       });
     });
@@ -318,15 +317,10 @@ describe('cloud-sync-service', () => {
       const result = await runCloudSync();
 
       expect(result.success).toBe(false);
-      expect(result.errorDetails).toEqual({
-        code: 'CLOUD_SYNC_DATA_TOO_LARGE',
-        currentBytes: expect.any(Number),
-        maxBytes: 1_000_000,
-      });
+      expect(result.error).toContain('Cloud sync data too large');
       expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; no page data left to trim, PUT never attempted.
       expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
         cloudSyncLastError: expect.stringContaining('Cloud sync data too large'),
-        cloudSyncLastErrorDetails: result.errorDetails,
       }));
     });
   });

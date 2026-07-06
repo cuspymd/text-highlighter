@@ -312,10 +312,6 @@
   "cloudSyncResetConfirm": {
     "message": "이 기기의 연결이 해제되고 동기화 코드를 완전히 잊어버립니다. 계속하시겠습니까?"
   },
-  "cloudSyncDataTooLargeStatus": {
-    "message": "동기화 데이터가 $1입니다. 현재 제한은 $2입니다.",
-    "description": "Shown when encrypted cloud sync upload data exceeds the current size limit. $1 is current size, $2 is max size."
-  },
   "cloudSyncPagesExcludedNotice": {
     "message": "(용량 제한으로 오래된 페이지 $1개가 제외됨)",
     "description": "Appended to the last-synced status when the oldest pages were dropped from the cloud sync upload to fit the size limit. $1 is the number of excluded pages."
