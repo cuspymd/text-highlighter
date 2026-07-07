@@ -275,7 +275,11 @@ describe('cloud-sync-service', () => {
       }));
     });
 
-    it('skips the PUT when trimming a lone oversized page leaves nothing new to sync', async () => {
+    it('still pushes an empty fitted blob when the remote is missing (404), so the KV record gets created (regression: PR #106 review)', async () => {
+      // A 404 yields the same empty shape as a genuinely-empty remote blob (see emptyBlob()).
+      // If trimming a lone oversized page also lands on an empty fitted blob, treating that as
+      // "unchanged, skip the PUT" would mean the remote key never gets created — leaving
+      // enableCloudSyncWithExistingCode's allowMissingRemote:false pairing fetch permanently 404ing.
       const code = generateSyncCode();
       chrome.storage.local.get.mockImplementation((keys) => {
         if (keys === null) {
@@ -286,15 +290,16 @@ describe('cloud-sync-service', () => {
         }
         return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
       });
-      global.fetch = jest.fn().mockResolvedValueOnce({ status: 404, ok: false }); // GET only
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({ status: 404, ok: false }) // GET
+        .mockResolvedValueOnce({ ok: true, status: 204 }); // PUT
 
       const result = await runCloudSync();
 
       expect(result.success).toBe(true);
-      // Still reported even though the PUT itself was skipped (regression: PR #106 review) —
-      // the exclusion is real and the status notice must not go silent about it.
       expect(result.trimmedCount).toBe(1);
-      expect(global.fetch).toHaveBeenCalledTimes(1); // fitted (empty) blob already matches the empty remote placeholder.
+      expect(global.fetch).toHaveBeenCalledTimes(2); // GET + PUT; the missing remote forces the push despite empty fitted content.
+      expect(global.fetch.mock.calls[1][1].method).toBe('PUT');
       expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
         cloudSyncLastTrimmedCount: 1,
       }));

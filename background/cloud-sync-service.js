@@ -236,17 +236,23 @@ async function broadcastMergedPages(mergedPages, localPagesBefore, removedUrls) 
   }
 }
 
+/**
+ * Returns { blob, remoteExisted }. remoteExisted is false only for the synthetic empty
+ * placeholder returned on 404 (allowMissingRemote) — callers that need to distinguish
+ * "remote is genuinely empty" from "remote was never created" (e.g. to decide whether an
+ * empty push is still necessary) must check it rather than inspecting the blob's content.
+ */
 async function fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote = true } = {}) {
   const res = await fetch(`${CLOUD_SYNC_ENDPOINT_BASE}/blob/${keyId}`);
   if (res.status === 404) {
-    if (allowMissingRemote) return emptyBlob();
+    if (allowMissingRemote) return { blob: emptyBlob(), remoteExisted: false };
     throw new Error('Cloud sync data not found (sync code may be incorrect)');
   }
   if (!res.ok) throw new Error(`Failed to fetch cloud data (${res.status})`);
 
   const envelope = await res.json();
   try {
-    return await decryptBlob(envelope, encryptionKey);
+    return { blob: await decryptBlob(envelope, encryptionKey), remoteExisted: true };
   } catch (e) {
     throw new Error('Failed to decrypt cloud data (sync code may be incorrect)');
   }
@@ -331,7 +337,7 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
   try {
     const { encryptionKey, keyId } = await deriveSyncKeys(status.code);
     const localBlob = await buildLocalBlob();
-    const remoteBlob = await fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote });
+    const { blob: remoteBlob, remoteExisted } = await fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote });
     const merged = mergeBlobs(localBlob, remoteBlob);
     // Trimmed once here (not inside pushRemoteBlob) so the unchanged-content check below compares
     // against what would actually be pushed — otherwise an over-limit profile re-triggers a PUT every
@@ -350,7 +356,10 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
 
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });
 
-    if (!forcePush && isBlobContentEqual(fittedBlob, remoteBlob)) {
+    // remoteExisted guards the skip: a 404 (allowMissingRemote) yields the same empty shape as a
+    // genuinely-empty remote blob, but skipping here would mean the KV record never gets created —
+    // leaving allowMissingRemote:false callers (pairing a new device) permanently unable to fetch it.
+    if (!forcePush && remoteExisted && isBlobContentEqual(fittedBlob, remoteBlob)) {
       debugLog('Cloud sync: no changes since last push, skipping PUT.');
     } else {
       await pushRemoteBlob(keyId, encryptionKey, fittedBlob);
