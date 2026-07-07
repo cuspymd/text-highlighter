@@ -8,7 +8,7 @@ import {
   CLOUD_SYNC_ALARM_PERIOD_MINUTES,
   CLOUD_SYNC_MAX_BODY_BYTES,
 } from '../constants/cloud-sync-config.js';
-import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob } from '../shared/crypto-utils.js';
+import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob, estimateEncryptedEnvelopeBytes } from '../shared/crypto-utils.js';
 import { mergeHighlights, cleanupTombstones, mergeTombstonesByMax } from './sync-service.js';
 import { applySettingsFromSync, createOrUpdateContextMenus } from './settings-service.js';
 
@@ -22,41 +22,14 @@ const LOCAL_ONLY_KEYS = new Set([
   CLOUD_SYNC_KEYS.CODE,
   CLOUD_SYNC_KEYS.LAST_SYNCED_AT,
   CLOUD_SYNC_KEYS.LAST_ERROR,
-  CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS,
+  CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT,
   CLOUD_SYNC_KEYS.DELETED_URLS,
   CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT,
   'settings', // storage.sync settings payload key, never present in storage.local but guard anyway
 ]);
 
-const CLOUD_SYNC_DATA_TOO_LARGE = 'CLOUD_SYNC_DATA_TOO_LARGE';
-
 function byteLength(text) {
   return new TextEncoder().encode(text).byteLength;
-}
-
-function formatBytes(bytes) {
-  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(2)} MB`;
-  if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(1)} KB`;
-  return `${bytes} bytes`;
-}
-
-function createCloudSyncSizeError(currentBytes, maxBytes) {
-  const error = new Error(
-    `Cloud sync data too large (${formatBytes(currentBytes)} / ${formatBytes(maxBytes)} limit)`
-  );
-  error.code = CLOUD_SYNC_DATA_TOO_LARGE;
-  error.currentBytes = currentBytes;
-  error.maxBytes = maxBytes;
-  return error;
-}
-
-function getErrorDetails(error) {
-  if (error.code !== CLOUD_SYNC_DATA_TOO_LARGE) return null;
-  return {
-    code: error.code,
-    currentBytes: error.currentBytes,
-    maxBytes: error.maxBytes,
-  };
 }
 
 function emptyBlob() {
@@ -263,20 +236,57 @@ async function broadcastMergedPages(mergedPages, localPagesBefore, removedUrls) 
   }
 }
 
+/**
+ * Returns { blob, remoteExisted }. remoteExisted is false only for the synthetic empty
+ * placeholder returned on 404 (allowMissingRemote) — callers that need to distinguish
+ * "remote is genuinely empty" from "remote was never created" (e.g. to decide whether an
+ * empty push is still necessary) must check it rather than inspecting the blob's content.
+ */
 async function fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote = true } = {}) {
   const res = await fetch(`${CLOUD_SYNC_ENDPOINT_BASE}/blob/${keyId}`);
   if (res.status === 404) {
-    if (allowMissingRemote) return emptyBlob();
+    if (allowMissingRemote) return { blob: emptyBlob(), remoteExisted: false };
     throw new Error('Cloud sync data not found (sync code may be incorrect)');
   }
   if (!res.ok) throw new Error(`Failed to fetch cloud data (${res.status})`);
 
   const envelope = await res.json();
   try {
-    return await decryptBlob(envelope, encryptionKey);
+    return { blob: await decryptBlob(envelope, encryptionKey), remoteExisted: true };
   } catch (e) {
     throw new Error('Failed to decrypt cloud data (sync code may be incorrect)');
   }
+}
+
+/**
+ * Drop the oldest pages (by lastUpdated) from a blob until its predicted encrypted
+ * envelope size fits within maxBytes, mirroring how browser storage.sync evicts the
+ * oldest page once its own quota is exceeded (see syncSaveHighlights in sync-service.js).
+ * Sizing uses estimateEncryptedEnvelopeBytes so this loop never touches crypto.subtle —
+ * pushRemoteBlob does the one real encrypt call, on whatever this function returns.
+ */
+function trimBlobToFit(blob, maxBytes) {
+  let plaintextBytes = byteLength(JSON.stringify(blob));
+  if (estimateEncryptedEnvelopeBytes(plaintextBytes) <= maxBytes) {
+    return { blob, trimmedCount: 0 };
+  }
+
+  const trimmedPages = { ...blob.pages };
+  const oldestFirst = Object.keys(trimmedPages).sort(
+    (a, b) => pageTimestamp(trimmedPages[a]) - pageTimestamp(trimmedPages[b])
+  );
+
+  let trimmedCount = 0;
+  let candidateBlob = blob;
+  for (const url of oldestFirst) {
+    if (estimateEncryptedEnvelopeBytes(plaintextBytes) <= maxBytes) break;
+    delete trimmedPages[url];
+    trimmedCount++;
+    candidateBlob = { ...blob, pages: trimmedPages };
+    plaintextBytes = byteLength(JSON.stringify(candidateBlob));
+  }
+
+  return { blob: candidateBlob, trimmedCount };
 }
 
 async function pushRemoteBlob(keyId, encryptionKey, blob) {
@@ -284,7 +294,8 @@ async function pushRemoteBlob(keyId, encryptionKey, blob) {
   const body = JSON.stringify(envelope);
   const bodyBytes = byteLength(body);
   if (bodyBytes > CLOUD_SYNC_MAX_BODY_BYTES) {
-    throw createCloudSyncSizeError(bodyBytes, CLOUD_SYNC_MAX_BODY_BYTES);
+    // Caller already trimmed every page it could; the remainder (settings/tombstones) is still over the limit.
+    throw new Error(`Cloud sync data too large (${bodyBytes} / ${CLOUD_SYNC_MAX_BODY_BYTES} bytes limit)`);
   }
 
   const res = await fetch(`${CLOUD_SYNC_ENDPOINT_BASE}/blob/${keyId}`, {
@@ -301,7 +312,7 @@ export async function getCloudSyncStatus() {
     CLOUD_SYNC_KEYS.CODE,
     CLOUD_SYNC_KEYS.LAST_SYNCED_AT,
     CLOUD_SYNC_KEYS.LAST_ERROR,
-    CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS,
+    CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT,
   ]);
 
   return {
@@ -309,7 +320,7 @@ export async function getCloudSyncStatus() {
     code: result[CLOUD_SYNC_KEYS.CODE] || null,
     lastSyncedAt: result[CLOUD_SYNC_KEYS.LAST_SYNCED_AT] || null,
     lastError: result[CLOUD_SYNC_KEYS.LAST_ERROR] || null,
-    lastErrorDetails: result[CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS] || null,
+    lastTrimmedCount: result[CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT] || 0,
   };
 }
 
@@ -326,8 +337,13 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
   try {
     const { encryptionKey, keyId } = await deriveSyncKeys(status.code);
     const localBlob = await buildLocalBlob();
-    const remoteBlob = await fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote });
+    const { blob: remoteBlob, remoteExisted } = await fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote });
     const merged = mergeBlobs(localBlob, remoteBlob);
+    // Trimmed once here (not inside pushRemoteBlob) so the unchanged-content check below compares
+    // against what would actually be pushed — otherwise an over-limit profile re-triggers a PUT every
+    // cycle: local storage keeps every page, so re-merging with the (already trimmed) remote blob
+    // resurrects the trimmed-out pages into `merged`, which would never again equal `remoteBlob`.
+    const { blob: fittedBlob, trimmedCount } = trimBlobToFit(merged, CLOUD_SYNC_MAX_BODY_BYTES);
 
     const { removedUrls } = await applyMergedPagesToLocal(merged.pages, merged.deletedUrls, localBlob.pages);
     await broadcastMergedPages(merged.pages, localBlob.pages, removedUrls);
@@ -340,27 +356,33 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
 
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });
 
-    if (!forcePush && isBlobContentEqual(merged, remoteBlob)) {
+    // remoteExisted guards the skip: a 404 (allowMissingRemote) yields the same empty shape as a
+    // genuinely-empty remote blob, but skipping here would mean the KV record never gets created —
+    // leaving allowMissingRemote:false callers (pairing a new device) permanently unable to fetch it.
+    if (!forcePush && remoteExisted && isBlobContentEqual(fittedBlob, remoteBlob)) {
       debugLog('Cloud sync: no changes since last push, skipping PUT.');
     } else {
-      await pushRemoteBlob(keyId, encryptionKey, merged);
+      await pushRemoteBlob(keyId, encryptionKey, fittedBlob);
+    }
+    // Reported/persisted regardless of whether a PUT actually happened: trimming is recomputed
+    // every cycle from the current local+remote merge, so it reflects what's excluded from the
+    // cloud copy right now — including when that copy already matches (nothing to push, but the
+    // exclusion is still in effect and the status notice shouldn't go silent about it).
+    if (trimmedCount > 0) {
+      debugLog(`Cloud sync payload exceeds the ${CLOUD_SYNC_MAX_BODY_BYTES}B limit; excluding ${trimmedCount} oldest page(s) from the cloud copy.`);
     }
 
     await browserAPI.storage.local.set({
       [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: Date.now(),
       [CLOUD_SYNC_KEYS.LAST_ERROR]: null,
-      [CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS]: null,
+      [CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT]: trimmedCount || null,
     });
     debugLog('Cloud sync completed.');
-    return { success: true };
+    return { success: true, trimmedCount };
   } catch (e) {
     debugLog('Cloud sync failed:', e.message);
-    const errorDetails = getErrorDetails(e);
-    await browserAPI.storage.local.set({
-      [CLOUD_SYNC_KEYS.LAST_ERROR]: e.message,
-      [CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS]: errorDetails,
-    });
-    return { success: false, error: e.message, errorDetails };
+    await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.LAST_ERROR]: e.message });
+    return { success: false, error: e.message };
   }
 }
 
@@ -412,7 +434,7 @@ export async function resetCloudSyncCode() {
     [CLOUD_SYNC_KEYS.CODE]: null,
     [CLOUD_SYNC_KEYS.LAST_SYNCED_AT]: null,
     [CLOUD_SYNC_KEYS.LAST_ERROR]: null,
-    [CLOUD_SYNC_KEYS.LAST_ERROR_DETAILS]: null,
+    [CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT]: null,
   });
 }
 

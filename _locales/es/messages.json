@@ -312,8 +312,8 @@
   "cloudSyncResetConfirm": {
     "message": "Esto desconecta este dispositivo y olvida permanentemente el código de sincronización. ¿Continuar?"
   },
-  "cloudSyncDataTooLargeStatus": {
-    "message": "Tus datos de sincronización ocupan $1. El límite actual es $2.",
-    "description": "Shown when encrypted cloud sync upload data exceeds the current size limit. $1 is current size, $2 is max size."
+  "cloudSyncPagesExcludedNotice": {
+    "message": "($1 página(s) antigua(s) excluida(s) por el límite de tamaño)",
+    "description": "Appended to the last-synced status when the oldest pages were dropped from the cloud sync upload to fit the size limit. $1 is the number of excluded pages."
   }
 }

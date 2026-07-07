@@ -7,9 +7,16 @@ const SYNC_CODE_BYTE_LENGTH = 32; // 256bit
 const HKDF_INFO_ENCRYPT = 'th-sync-encrypt-v1';
 const HKDF_INFO_KEYID = 'th-sync-keyid-v1';
 const GCM_IV_BYTE_LENGTH = 12;
+const GCM_TAG_BYTE_LENGTH = 16; // AES-GCM auth tag, appended to ciphertext; GCM has no block padding.
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
+
+function base64ByteLength(byteLength) {
+  return Math.ceil(byteLength / 3) * 4; // btoa always pads to a multiple of 4.
+}
+
+const ENVELOPE_SKELETON_BYTES = textEncoder.encode(JSON.stringify({ v: 1, iv: '', ciphertext: '' })).byteLength;
 
 function encodeCrockfordBase32(bytes) {
   let bits = 0;
@@ -142,6 +149,19 @@ export async function encryptBlob(blobObj, encryptionKey) {
     iv: bytesToBase64(iv),
     ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
   };
+}
+
+/**
+ * Predict the exact byte length of the JSON envelope encryptBlob() would produce for a
+ * given plaintext size, without performing any encryption. AES-GCM has no block padding
+ * (ciphertext = plaintext + fixed auth tag) and base64/JSON overhead is fully deterministic,
+ * so this lets callers size-check (and trim) a candidate payload with cheap string ops and
+ * pay for the actual crypto.subtle.encrypt call only once, on the final payload.
+ */
+export function estimateEncryptedEnvelopeBytes(plaintextBytes) {
+  const ivBase64Bytes = base64ByteLength(GCM_IV_BYTE_LENGTH);
+  const cipherBase64Bytes = base64ByteLength(plaintextBytes + GCM_TAG_BYTE_LENGTH);
+  return ENVELOPE_SKELETON_BYTES + ivBase64Bytes + cipherBase64Bytes;
 }
 
 /**

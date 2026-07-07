@@ -1,5 +1,5 @@
 import chrome from '../mocks/chrome.js';
-import { generateSyncCode, deriveSyncKeys, encryptBlob } from '../shared/crypto-utils.js';
+import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob } from '../shared/crypto-utils.js';
 import {
   mergeBlobs,
   isBlobContentEqual,
@@ -146,7 +146,7 @@ describe('cloud-sync-service', () => {
         code: null,
         lastSyncedAt: null,
         lastError: null,
-        lastErrorDetails: null,
+        lastTrimmedCount: 0,
       });
     });
   });
@@ -244,7 +244,42 @@ describe('cloud-sync-service', () => {
       );
     });
 
-    it('includes current and maximum byte sizes when the upload data is too large', async () => {
+    it('drops a lone page that alone exceeds the size limit instead of failing the sync', async () => {
+      // A second, tiny page ensures there's still something new to push once the giant one is
+      // dropped — otherwise the fitted blob would coincidentally be as empty as the "no remote
+      // data yet" placeholder and the PUT would (correctly) be skipped, which is covered separately.
+      const code = generateSyncCode();
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            'https://large.test': [{ groupId: 'g1', text: 'x'.repeat(1_050_000), updatedAt: 1 }],
+            'https://large.test_meta': { title: 'Large', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+            'https://small.test': [{ groupId: 'g2', text: 'small', updatedAt: 2 }],
+            'https://small.test_meta': { title: 'Small', lastUpdated: '2024-06-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({ status: 404, ok: false }) // GET
+        .mockResolvedValueOnce({ ok: true, status: 204 }); // PUT
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      expect(result.trimmedCount).toBe(1);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        cloudSyncLastTrimmedCount: 1,
+        cloudSyncLastError: null,
+      }));
+    });
+
+    it('still pushes an empty fitted blob when the remote is missing (404), so the KV record gets created (regression: PR #106 review)', async () => {
+      // A 404 yields the same empty shape as a genuinely-empty remote blob (see emptyBlob()).
+      // If trimming a lone oversized page also lands on an empty fitted blob, treating that as
+      // "unchanged, skip the PUT" would mean the remote key never gets created — leaving
+      // enableCloudSyncWithExistingCode's allowMissingRemote:false pairing fetch permanently 404ing.
       const code = generateSyncCode();
       chrome.storage.local.get.mockImplementation((keys) => {
         if (keys === null) {
@@ -255,22 +290,116 @@ describe('cloud-sync-service', () => {
         }
         return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
       });
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({ status: 404, ok: false }) // GET
+        .mockResolvedValueOnce({ ok: true, status: 204 }); // PUT
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      expect(result.trimmedCount).toBe(1);
+      expect(global.fetch).toHaveBeenCalledTimes(2); // GET + PUT; the missing remote forces the push despite empty fitted content.
+      expect(global.fetch.mock.calls[1][1].method).toBe('PUT');
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        cloudSyncLastTrimmedCount: 1,
+      }));
+    });
+
+    it('keeps the most recently updated pages and drops the oldest ones when combined data exceeds the limit', async () => {
+      const code = generateSyncCode();
+      const { encryptionKey } = await deriveSyncKeys(code);
+
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            'https://old.test': [{ groupId: 'g1', text: 'x'.repeat(700_000), updatedAt: 1 }],
+            'https://old.test_meta': { title: 'Old', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+            'https://new.test': [{ groupId: 'g2', text: 'y'.repeat(700_000), updatedAt: 2 }],
+            'https://new.test_meta': { title: 'New', lastUpdated: '2024-06-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+
+      let pushedBody = null;
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({ status: 404, ok: false }) // GET
+        .mockImplementationOnce((url, options) => {
+          pushedBody = options.body;
+          return Promise.resolve({ ok: true, status: 204 }); // PUT
+        });
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      expect(result.trimmedCount).toBe(1);
+      expect(new TextEncoder().encode(pushedBody).byteLength).toBeLessThanOrEqual(1_000_000);
+
+      const decrypted = await decryptBlob(JSON.parse(pushedBody), encryptionKey);
+      expect(Object.keys(decrypted.pages)).toEqual(['https://new.test']);
+    });
+
+    it('does not re-PUT every cycle once the remote already holds the trimmed-down state (regression: PR #106 review)', async () => {
+      // Local storage still holds the oldest page (trimming never removes it locally, only from
+      // the pushed copy). If the equality check compared the *untrimmed* merged blob against
+      // remote, it would never match and every sync cycle would re-push identical content.
+      const code = generateSyncCode();
+      const { encryptionKey } = await deriveSyncKeys(code);
+
+      const remoteBlob = emptyBlob({
+        pages: {
+          'https://new.test': {
+            title: 'New',
+            lastUpdated: '2024-06-01T00:00:00.000Z',
+            highlights: [{ groupId: 'g2', text: 'y'.repeat(700_000), updatedAt: 2 }],
+            deletedGroupIds: {},
+          },
+        },
+      });
+      const envelope = await encryptBlob(remoteBlob, encryptionKey);
+
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            'https://old.test': [{ groupId: 'g1', text: 'x'.repeat(700_000), updatedAt: 1 }],
+            'https://old.test_meta': { title: 'Old', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+            'https://new.test': [{ groupId: 'g2', text: 'y'.repeat(700_000), updatedAt: 2 }],
+            'https://new.test_meta': { title: 'New', lastUpdated: '2024-06-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+
+      global.fetch = jest.fn().mockResolvedValueOnce({ ok: true, status: 200, json: async () => envelope });
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; no PUT, since the fitted blob already matches remote.
+      // Still reported even though the PUT was skipped this round (regression: PR #106 review).
+      expect(result.trimmedCount).toBe(1);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        cloudSyncLastTrimmedCount: 1,
+      }));
+    });
+
+    it('still throws the size error when trimming every page cannot bring the payload under the limit', async () => {
+      const code = generateSyncCode();
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({ customColors: ['x'.repeat(1_050_000)] });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
       global.fetch = jest.fn().mockResolvedValueOnce({ status: 404, ok: false });
 
       const result = await runCloudSync();
 
       expect(result.success).toBe(false);
-      expect(result.errorDetails).toEqual({
-        code: 'CLOUD_SYNC_DATA_TOO_LARGE',
-        currentBytes: expect.any(Number),
-        maxBytes: 1_000_000,
-      });
-      expect(result.errorDetails.currentBytes).toBeGreaterThan(result.errorDetails.maxBytes);
-      expect(result.error).toContain('1.00 MB limit');
-      expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; oversized payload is rejected before PUT.
+      expect(result.error).toContain('Cloud sync data too large');
+      expect(global.fetch).toHaveBeenCalledTimes(1); // GET only; no page data left to trim, PUT never attempted.
       expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
         cloudSyncLastError: expect.stringContaining('Cloud sync data too large'),
-        cloudSyncLastErrorDetails: result.errorDetails,
       }));
     });
   });
