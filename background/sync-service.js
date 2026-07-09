@@ -240,6 +240,12 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
 }
 
 export async function syncRemoveHighlights(url) {
+  // Recorded first (a local-only write) so a runCloudSync() that races this
+  // function always sees the tombstone before it sees the highlights gone from
+  // storage.local, and correctly treats the page as deleted instead of
+  // resurrecting it from the still-present remote copy.
+  await recordCloudSyncTombstones([url]);
+
   const syncKey = urlToSyncKey(url);
   try {
     const meta = await getSyncMeta();
@@ -260,8 +266,6 @@ export async function syncRemoveHighlights(url) {
   } catch (e) {
     debugLog('Failed to remove highlights from sync:', e.message);
   }
-
-  await recordCloudSyncTombstones([url]);
 }
 
 export async function cleanupEmptyHighlightData(url) {
@@ -291,6 +295,10 @@ async function applyUserDeletionFromSync(url) {
  *   since the Cloudflare KV blob has no per-item size limit of its own.
  */
 export async function clearAllSyncedHighlights(localUrls = []) {
+  // Recorded first, before any storage.sync round-trip or local removal — see
+  // the comment in syncRemoveHighlights for why the ordering matters.
+  await recordCloudSyncTombstones(localUrls);
+
   try {
     const meta = await getSyncMeta();
     const syncKeysToRemove = meta.pages.map(p => p.syncKey);
@@ -311,8 +319,6 @@ export async function clearAllSyncedHighlights(localUrls = []) {
   } catch (e) {
     debugLog('Failed to clear synced highlights:', e.message);
   }
-
-  await recordCloudSyncTombstones(localUrls);
 }
 
 /**
