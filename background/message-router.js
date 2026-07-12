@@ -9,6 +9,7 @@ import {
   cleanupEmptyHighlightData,
   cleanupTombstones,
   saveSettingsToSync,
+  recordCloudSyncTombstones,
 } from './sync-service.js';
 import {
   getCloudSyncStatus,
@@ -167,8 +168,9 @@ async function handleSaveHighlights(message, sender) {
     await syncSaveHighlights(message.url, message.highlights, metaData.title, metaData.lastUpdated);
     return successResponse();
   } else {
-    await syncRemoveHighlights(message.url);
+    const tombstoneRecorded = await syncRemoveHighlights(message.url);
     await cleanupEmptyHighlightData(message.url);
+    if (!tombstoneRecorded) await recordCloudSyncTombstones([message.url]);
     return successResponse();
   }
 }
@@ -200,8 +202,9 @@ async function handleDeleteHighlight(message) {
     }
     return successResponse({ highlights: updatedHighlights });
   } else {
-    await syncRemoveHighlights(url);
+    const tombstoneRecorded = await syncRemoveHighlights(url);
     await cleanupEmptyHighlightData(url);
+    if (!tombstoneRecorded) await recordCloudSyncTombstones([url]);
     if (message.notifyRefresh) {
       await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
     }
@@ -211,8 +214,9 @@ async function handleDeleteHighlight(message) {
 
 async function handleClearAllHighlights(message) {
   const { url } = message;
-  await syncRemoveHighlights(url);
+  const tombstoneRecorded = await syncRemoveHighlights(url);
   await cleanupEmptyHighlightData(url);
+  if (!tombstoneRecorded) await recordCloudSyncTombstones([url]);
   if (message.notifyRefresh) {
     await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
   }
@@ -279,9 +283,10 @@ async function handleDeleteAllHighlightedPages(_message) {
   }
 
   if (keysToDelete.length > 0) {
-    await clearAllSyncedHighlights(urls);
+    const tombstoneRecorded = await clearAllSyncedHighlights(urls);
     await browserAPI.storage.local.remove(keysToDelete);
     debugLog('All highlighted pages deleted:', keysToDelete);
+    if (!tombstoneRecorded) await recordCloudSyncTombstones(urls);
   }
 
   return successResponse({ deletedCount: keysToDelete.length / 2 });
