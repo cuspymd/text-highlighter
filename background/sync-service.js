@@ -155,8 +155,12 @@ export async function saveSettingsToSync() {
 /**
  * Record a local tombstone for cloud sync (Cloudflare KV blob), independent of
  * browser storage.sync's own tombstone bookkeeping (sync_meta.deletedUrls).
+ * Returns whether the write succeeded so callers can retry (e.g. once the
+ * page's own highlight payload has been freed from storage.local, which is
+ * the most common reason this small write would fail: local storage sitting
+ * at or near its quota).
  */
-async function recordCloudSyncTombstones(urls) {
+export async function recordCloudSyncTombstones(urls) {
   try {
     const result = await browserAPI.storage.local.get(CLOUD_SYNC_KEYS.DELETED_URLS);
     const deletedUrls = result[CLOUD_SYNC_KEYS.DELETED_URLS] || {};
@@ -164,8 +168,10 @@ async function recordCloudSyncTombstones(urls) {
     for (const url of urls) deletedUrls[url] = now;
     cleanupTombstones(deletedUrls);
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: deletedUrls });
+    return true;
   } catch (e) {
     debugLog('Failed to record cloud sync tombstone(s):', e.message);
+    return false;
   }
 }
 
@@ -239,7 +245,20 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
   }
 }
 
+/**
+ * @returns {Promise<boolean>} whether the cloud sync tombstone write succeeded.
+ *   If false, the caller should retry recordCloudSyncTombstones([url]) after
+ *   freeing local storage (e.g. after cleanupEmptyHighlightData), since the
+ *   most likely failure cause — storage.local at/near quota — no longer
+ *   applies once the page's own highlight payload has been removed.
+ */
 export async function syncRemoveHighlights(url) {
+  // Recorded first (a local-only write) so a runCloudSync() that races this
+  // function always sees the tombstone before it sees the highlights gone from
+  // storage.local, and correctly treats the page as deleted instead of
+  // resurrecting it from the still-present remote copy.
+  const tombstoneRecorded = await recordCloudSyncTombstones([url]);
+
   const syncKey = urlToSyncKey(url);
   try {
     const meta = await getSyncMeta();
@@ -261,7 +280,7 @@ export async function syncRemoveHighlights(url) {
     debugLog('Failed to remove highlights from sync:', e.message);
   }
 
-  await recordCloudSyncTombstones([url]);
+  return tombstoneRecorded;
 }
 
 export async function cleanupEmptyHighlightData(url) {
@@ -289,8 +308,15 @@ async function applyUserDeletionFromSync(url) {
  *   clearing (may be a superset of sync_meta.pages, e.g. pages that never fit the 8KB
  *   per-item browser sync limit). Used to record cloud sync tombstones for every page,
  *   since the Cloudflare KV blob has no per-item size limit of its own.
+ * @returns {Promise<boolean>} whether the cloud sync tombstone write succeeded.
+ *   If false, the caller should retry recordCloudSyncTombstones(localUrls) after
+ *   freeing local storage — see syncRemoveHighlights for why.
  */
 export async function clearAllSyncedHighlights(localUrls = []) {
+  // Recorded first, before any storage.sync round-trip or local removal — see
+  // the comment in syncRemoveHighlights for why the ordering matters.
+  const tombstoneRecorded = await recordCloudSyncTombstones(localUrls);
+
   try {
     const meta = await getSyncMeta();
     const syncKeysToRemove = meta.pages.map(p => p.syncKey);
@@ -312,7 +338,7 @@ export async function clearAllSyncedHighlights(localUrls = []) {
     debugLog('Failed to clear synced highlights:', e.message);
   }
 
-  await recordCloudSyncTombstones(localUrls);
+  return tombstoneRecorded;
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   cleanupEmptyHighlightData,
   cleanupTombstones,
   saveSettingsToSync,
+  recordCloudSyncTombstones,
 } from './sync-service.js';
 import {
   getCloudSyncStatus,
@@ -147,10 +148,7 @@ async function handleSaveShortcutColorMap(message) {
   return successResponse();
 }
 
-async function handleSaveHighlights(message) {
-  const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-  const currentTab = tabs[0];
-
+async function handleSaveHighlights(message, sender) {
   if (message.highlights.length > 0) {
     const saveData = {};
     saveData[message.url] = message.highlights;
@@ -159,7 +157,7 @@ async function handleSaveHighlights(message) {
 
     const result = await browserAPI.storage.local.get([`${message.url}${STORAGE_KEYS.META_SUFFIX}`]);
     const metaData = result[`${message.url}${STORAGE_KEYS.META_SUFFIX}`] || {};
-    metaData.title = currentTab.title;
+    if (sender && sender.tab) metaData.title = sender.tab.title;
     metaData.lastUpdated = new Date().toISOString();
 
     const metaSaveData = {};
@@ -170,8 +168,9 @@ async function handleSaveHighlights(message) {
     await syncSaveHighlights(message.url, message.highlights, metaData.title, metaData.lastUpdated);
     return successResponse();
   } else {
+    const tombstoneRecorded = await syncRemoveHighlights(message.url);
     await cleanupEmptyHighlightData(message.url);
-    await syncRemoveHighlights(message.url);
+    if (!tombstoneRecorded) await recordCloudSyncTombstones([message.url]);
     return successResponse();
   }
 }
@@ -203,8 +202,9 @@ async function handleDeleteHighlight(message) {
     }
     return successResponse({ highlights: updatedHighlights });
   } else {
+    const tombstoneRecorded = await syncRemoveHighlights(url);
     await cleanupEmptyHighlightData(url);
-    await syncRemoveHighlights(url);
+    if (!tombstoneRecorded) await recordCloudSyncTombstones([url]);
     if (message.notifyRefresh) {
       await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
     }
@@ -214,8 +214,9 @@ async function handleDeleteHighlight(message) {
 
 async function handleClearAllHighlights(message) {
   const { url } = message;
+  const tombstoneRecorded = await syncRemoveHighlights(url);
   await cleanupEmptyHighlightData(url);
-  await syncRemoveHighlights(url);
+  if (!tombstoneRecorded) await recordCloudSyncTombstones([url]);
   if (message.notifyRefresh) {
     await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
   }
@@ -282,9 +283,10 @@ async function handleDeleteAllHighlightedPages(_message) {
   }
 
   if (keysToDelete.length > 0) {
+    const tombstoneRecorded = await clearAllSyncedHighlights(urls);
     await browserAPI.storage.local.remove(keysToDelete);
     debugLog('All highlighted pages deleted:', keysToDelete);
-    await clearAllSyncedHighlights(urls);
+    if (!tombstoneRecorded) await recordCloudSyncTombstones(urls);
   }
 
   return successResponse({ deletedCount: keysToDelete.length / 2 });
@@ -355,14 +357,14 @@ const ACTION_HANDLERS = {
  * Call once at service worker startup (top-level, before any async code).
  */
 export function registerMessageRouter() {
-  browserAPI.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const handler = ACTION_HANDLERS[message.action];
     if (!handler) {
       sendResponse(errorResponse(`Unknown action: ${message.action}`));
       return true;
     }
 
-    handler(message)
+    handler(message, sender)
       .then(result => sendResponse(result))
       .catch(e => {
         debugLog('Error in message handler:', e);
