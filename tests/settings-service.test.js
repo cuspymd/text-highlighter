@@ -10,6 +10,7 @@ import {
   applySettingsFromSync,
   broadcastSettingsToTabs,
   loadCustomColors,
+  getShortcutColorMap,
 } from '../background/settings-service.js';
 
 describe('settings-service', () => {
@@ -226,6 +227,47 @@ describe('settings-service', () => {
     it('should return colorsChanged: false when settings contain no color data', async () => {
       const result = await applySettingsFromSync({});
       expect(result.colorsChanged).toBe(false);
+    });
+
+    it('should adopt a shortcutColorMap from sync', async () => {
+      await applySettingsFromSync({ shortcutColorMap: { command_slot_1: 'custom_1' } });
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+        shortcutColorMap: { command_slot_1: 'custom_1' },
+      });
+      expect(getShortcutColorMap()).toEqual({ command_slot_1: 'custom_1' });
+    });
+
+    // A null map means "no custom mapping" and must be adopted like any other value.
+    // Skipping it left two devices claiming the same settings timestamp while disagreeing
+    // on content, which made every sync cycle push a blob at the other device forever.
+    it('should adopt a null shortcutColorMap instead of keeping the local one', async () => {
+      await applySettingsFromSync({ shortcutColorMap: { command_slot_1: 'custom_1' } });
+      chrome.storage.local.set.mockClear();
+
+      await applySettingsFromSync({ shortcutColorMap: null });
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({ shortcutColorMap: null });
+    });
+
+    it('should keep the in-memory shortcut map usable after adopting null', async () => {
+      await applySettingsFromSync({ shortcutColorMap: null });
+
+      const map = getShortcutColorMap();
+      expect(map).not.toBeNull();
+      expect(() => Object.keys(map)).not.toThrow();
+    });
+
+    it('should leave the shortcut map untouched when the field is absent', async () => {
+      await applySettingsFromSync({ shortcutColorMap: { command_slot_2: 'custom_2' } });
+      chrome.storage.local.set.mockClear();
+
+      await applySettingsFromSync({ minimapVisible: true });
+
+      expect(chrome.storage.local.set).not.toHaveBeenCalledWith(
+        expect.objectContaining({ shortcutColorMap: expect.anything() }),
+      );
+      expect(getShortcutColorMap()).toEqual({ command_slot_2: 'custom_2' });
     });
   });
 
