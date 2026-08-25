@@ -442,9 +442,16 @@ export async function applySettingsFromSync(newSettings) {
     await broadcastToAllTabs({ action: 'setSelectionControlsVisibility', visible: newSettings.selectionControlsVisible });
   }
 
-  if (newSettings.shortcutColorMap) {
+  // `null` is a value here ("no custom mapping"), not an absent field, so it has to be
+  // adopted like any other. Skipping it leaves this device's own map in place while
+  // runCloudSync still stamps the sender's settings timestamp onto it — two devices then
+  // claim the same timestamp while disagreeing on content, and push at each other on every
+  // sync cycle. Storage keeps the null so buildLocalBlob reads it back as null and both
+  // sides converge; the in-memory copy falls back to the defaults the way
+  // loadShortcutColorMap does, because callers index into it directly.
+  if (newSettings.shortcutColorMap !== undefined) {
     await browserAPI.storage.local.set({ [STORAGE_KEYS.SHORTCUT_COLOR_MAP]: newSettings.shortcutColorMap });
-    shortcutColorMap = newSettings.shortcutColorMap;
+    shortcutColorMap = newSettings.shortcutColorMap || { ...DEFAULT_SHORTCUT_COLOR_MAP };
   }
 
   return { colorsChanged };
