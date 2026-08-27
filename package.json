@@ -8,7 +8,8 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --no-cache",
     "deploy": "node ./scripts/deploy.cjs",
     "deploy:firefox": "node ./scripts/deploy.cjs firefox",
-    "version-deploy": "node ./scripts/version-deploy.cjs"
+    "version-deploy": "node ./scripts/version-deploy.cjs",
+    "link-skills": "node ./scripts/link-skills.cjs"
   },
   "author": "",
   "license": "MIT",

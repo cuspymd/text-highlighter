@@ -87,8 +87,11 @@ Release builds force debug off through `scripts/version-deploy.cjs` by updating:
 
 - `scripts/deploy.cjs`: copies production files into browser-specific dist directories
 - `scripts/version-deploy.cjs`: version bump + release build + zip packaging
+- `scripts/link-skills.cjs`: links `.claude/skills` to `.agents/skills` for Claude Code
 
 ## Skills
 
+Repository skills live in `.agents/skills/`, which is tracked in git. Claude Code only discovers skills under `.claude/skills/`, so run `npm run link-skills` once per clone to link `.claude/skills` to it instead of duplicating the files. Add new skills under `.agents/skills/<name>/SKILL.md` only.
+
 Reusable release workflow skill:
-- `skills/version-release/SKILL.md`
+- `.agents/skills/version-release/SKILL.md`

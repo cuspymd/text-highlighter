@@ -50,6 +50,18 @@ The Selection Controls feature (floating highlight icon on text selection) is au
 
 ## Development
 
+### Agent Skills
+
+Repository skills live in `.agents/skills/`, which is tracked in git and shared across agent tools. Claude Code only discovers skills under `.claude/skills/`, so link the two rather than keeping a second copy:
+
+```bash
+npm run link-skills
+```
+
+This creates `.claude/skills` as a link to `.agents/skills` (a directory junction on Windows, which needs no elevation). Run it once per clone — `.claude/` is gitignored, so the link is local to your machine. It is idempotent and safe to re-run. Restart Claude Code afterwards for the skills to be picked up.
+
+Add new skills to `.agents/skills/<name>/SKILL.md` only; the link exposes them automatically.
+
 ### Testing
 
 Run E2E tests using Playwright:
