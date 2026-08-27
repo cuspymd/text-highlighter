@@ -192,6 +192,21 @@ The extension uses a `browserAPI` compatibility layer to support Chrome and Fire
 
 On Firefox Android, unavailable APIs are conditionally guarded using `browser.runtime.getPlatformInfo()` to detect the platform at runtime.
 
+#### Cloud Sync Convergence
+
+Cloud sync (`background/cloud-sync-service.js`) runs a pull-merge-push cycle on a 15-minute alarm. The `PUT` is skipped when the merged blob matches the one just fetched, so an idle cycle costs a single `GET`.
+
+That guard rests on an invariant worth knowing before touching this code: **the merge must be a pure function of the two blobs, giving the same answer on every device.** A rule phrased as "prefer mine" breaks it, because each device resolves it in its own favour — neither ever adopts the other, and every cycle pushes. Nothing errors; the symptom is a setting that quietly never syncs, plus a KV write on every cycle from users who changed nothing.
+
+Two rules in `mergeBlobs` still resolve ties that way:
+
+- settings: on equal `updatedAt`, local wins (strict `>`)
+- page `title`: local wins whenever it is non-empty, regardless of recency
+
+Adoption has to be complete, too. `applySettingsFromSync` copies the sender's settings timestamp, so any field it declines to adopt leaves two devices claiming the same timestamp with different content — which is exactly the tie the rules above resolve badly. Treat `null` as a value, not as an absent field.
+
+See [#108](https://github.com/cuspymd/text-highlighter/pull/108) for a case that reached production, where a skipped `null` produced a `PUT` on roughly 20% of all sync cycles.
+
 ## Contribution
 
 1. Fork the project
