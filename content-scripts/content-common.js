@@ -25,6 +25,14 @@ function getMessage(key, substitutions = null) {
 // Timers for the temporary flash emphasis, keyed by highlight element.
 var highlightFlashTimers = new Map();
 
+// Collect every highlight span belonging to the group. Group ids can come
+// from imported data and may contain CSS selector syntax, so match on the
+// dataset value rather than building an attribute selector.
+function findHighlightElementsByGroupId(groupId) {
+  return Array.from(document.querySelectorAll('.text-highlighter-extension'))
+    .filter((element) => element.dataset.groupId === groupId);
+}
+
 // Smooth-scroll the page so the given highlight element is near the top.
 function scrollToHighlightElement(highlightElement) {
   if (!highlightElement) return;
@@ -47,8 +55,10 @@ function flashHighlightGroup(highlightElement) {
   if (!highlightElement) return;
 
   const groupId = highlightElement.dataset.groupId;
+  // Imported data may carry arbitrary group ids, so compare dataset values
+  // instead of interpolating the id into a CSS selector.
   const highlightElements = groupId
-    ? Array.from(document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`))
+    ? findHighlightElementsByGroupId(groupId)
     : [highlightElement];
 
   highlightElements.forEach((element) => {

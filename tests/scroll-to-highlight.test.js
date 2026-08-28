@@ -37,6 +37,10 @@ describe('scrollToHighlight message handling', () => {
     window.initMinimap = jest.fn();
     window.scrollToHighlightElement = jest.fn();
     window.flashHighlightGroup = jest.fn();
+    // Real implementation lives in content-common.js; mirror it here.
+    window.findHighlightElementsByGroupId = (groupId) =>
+      Array.from(document.querySelectorAll('.text-highlighter-extension'))
+        .filter((el) => el.dataset.groupId === groupId);
     window.MinimapManager = jest.fn(() => ({
       init: jest.fn(),
       setVisibility: jest.fn(),

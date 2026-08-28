@@ -164,10 +164,7 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   else if (message.action === 'scrollToHighlight') {
     const groupId = message.groupId != null ? String(message.groupId) : '';
-    const escapedGroupId = (window.CSS && typeof CSS.escape === 'function') ? CSS.escape(groupId) : groupId;
-    const target = groupId
-      ? document.querySelector(`.text-highlighter-extension[data-group-id='${escapedGroupId}']`)
-      : null;
+    const target = groupId ? findHighlightElementsByGroupId(groupId)[0] : null;
 
     if (target) {
       scrollToHighlightElement(target);
