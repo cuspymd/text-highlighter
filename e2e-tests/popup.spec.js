@@ -116,6 +116,33 @@ test.describe('Popup Tests', () => {
     await expect(h1Span).toHaveCount(0);
   });
 
+  test('Click highlight item in popup scrolls page to highlight and closes popup', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expect(h1Span).toHaveCount(1);
+
+    const tabId = await getCurrentTabId(background);
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+
+    const highlightItems = popupPage.locator('.highlight-item');
+    await expect(highlightItems).toHaveCount(1);
+    await expect(highlightItems.nth(0)).toHaveAttribute('role', 'button');
+
+    await highlightItems.nth(0).click();
+
+    // The flash emphasis marks every span in the group with data-highlighted
+    await expect(h1Span).toHaveAttribute('data-highlighted', 'true');
+
+    // Successful jump closes the popup
+    await expect.poll(() => popupPage.isClosed()).toBe(true);
+  });
+
   test('Verify that highlight deletion on same URL multi-tab is reflected immediately in all tabs', async ({ page, context, background, extensionId }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 

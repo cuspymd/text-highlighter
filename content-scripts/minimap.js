@@ -5,8 +5,6 @@ class MinimapManager {
     this.resizeObserver = null;
     this.throttleTimer = null;
     this.visible = true;
-    // Map to store highlight timers for each highlight element
-    this.highlightTimers = new Map();
     // Default minimap height (used when container is hidden)
     this.defaultMinimapHeight = 300;
     this.touchExpandTimer = null;
@@ -205,78 +203,14 @@ class MinimapManager {
     });
   }
 
-  // Scroll to highlight
+  // Scroll to highlight (shared helper in content-common.js)
   scrollToHighlight(highlightElement) {
-    if (!highlightElement) return;
-
-    const rect = highlightElement.getBoundingClientRect();
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const absoluteTop = rect.top + scrollTop;
-
-    // Adjust scroll position (to position slightly above)
-    const scrollToPosition = absoluteTop - 100;
-
-    // Smooth scroll
-    window.scrollTo({
-      top: scrollToPosition,
-      behavior: 'smooth'
-    });
+    scrollToHighlightElement(highlightElement);
   }
 
-  // Temporary emphasis effect for highlight group
+  // Temporary emphasis effect for highlight group (shared helper in content-common.js)
   highlightTemporarily(highlightElement) {
-    if (!highlightElement) return;
-
-    const groupId = highlightElement.dataset.groupId;
-    const highlightElements = groupId
-      ? Array.from(document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`))
-      : [highlightElement];
-
-    highlightElements.forEach((element) => {
-      const elementKey = element;
-
-      if (this.highlightTimers.has(elementKey)) {
-        clearTimeout(this.highlightTimers.get(elementKey));
-        this.highlightTimers.delete(elementKey);
-      }
-
-      const isAlreadyHighlighted = element.hasAttribute('data-highlighted');
-
-      if (!isAlreadyHighlighted) {
-        const originalStyles = {
-          boxShadow: element.style.boxShadow,
-          transition: element.style.transition,
-          zIndex: element.style.zIndex
-        };
-
-        element.dataset.originalBoxShadow = originalStyles.boxShadow;
-        element.dataset.originalTransition = originalStyles.transition;
-        element.dataset.originalZIndex = originalStyles.zIndex;
-
-        element.setAttribute('data-highlighted', 'true');
-      }
-
-      element.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.7), 0 0 0 6px rgba(0, 0, 0, 0.3)';
-      element.style.transition = 'box-shadow 0.3s';
-      element.style.zIndex = '10000'; // Display above other elements
-
-      const timerId = setTimeout(() => {
-        if (element.hasAttribute('data-highlighted')) {
-          element.style.boxShadow = element.dataset.originalBoxShadow || '';
-          element.style.transition = element.dataset.originalTransition || '';
-          element.style.zIndex = element.dataset.originalZIndex || '';
-
-          element.removeAttribute('data-highlighted');
-          delete element.dataset.originalBoxShadow;
-          delete element.dataset.originalTransition;
-          delete element.dataset.originalZIndex;
-        }
-
-        this.highlightTimers.delete(elementKey);
-      }, 1500);
-
-      this.highlightTimers.set(elementKey, timerId);
-    });
+    flashHighlightGroup(highlightElement);
   }
 
   // Set minimap visibility
@@ -346,10 +280,11 @@ class MinimapManager {
 
   // Clean up resources
   destroy() {
-    this.highlightTimers.forEach(timerId => {
+    // Flash timers live in the shared map in content-common.js
+    highlightFlashTimers.forEach(timerId => {
       clearTimeout(timerId);
     });
-    this.highlightTimers.clear();
+    highlightFlashTimers.clear();
 
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
