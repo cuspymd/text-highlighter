@@ -105,6 +105,23 @@ document.addEventListener('DOMContentLoaded', async function () {
         highlightItem.dataset.groupId = group.groupId;
         highlightItem.style.setProperty('--highlight-color', group.color);
 
+        // Click (or Enter/Space) jumps to the highlight on the page
+        highlightItem.setAttribute('role', 'button');
+        highlightItem.tabIndex = 0;
+        const jumpLabel = browserAPI.i18n.getMessage('jumpToHighlight');
+        if (jumpLabel) {
+          highlightItem.title = jumpLabel;
+        }
+        highlightItem.addEventListener('click', function () {
+          jumpToHighlight(group.groupId, tab.id);
+        });
+        highlightItem.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            jumpToHighlight(group.groupId, tab.id);
+          }
+        });
+
         // Truncate text if too long
         let displayText = group.text;
         if (displayText.length > 80) {
@@ -147,6 +164,24 @@ document.addEventListener('DOMContentLoaded', async function () {
       highlightsContainer.innerHTML = '';
       highlightsContainer.appendChild(noHighlights);
     }
+  }
+
+  // Scroll the page to the highlight group and close the popup
+  function jumpToHighlight(groupId, tabId) {
+    browserAPI.tabs.sendMessage(tabId, {
+      action: 'scrollToHighlight',
+      groupId: groupId
+    }, (response) => {
+      if (browserAPI.runtime.lastError || !response || !response.success) {
+        debugLog('scrollToHighlight failed:', browserAPI.runtime.lastError, response);
+        const message =
+          browserAPI.i18n.getMessage('highlightNotFoundOnPage') ||
+          'Could not find this highlight on the page.';
+        showAlertModal(message);
+        return;
+      }
+      window.close();
+    });
   }
 
   // Delete highlight (group basis)

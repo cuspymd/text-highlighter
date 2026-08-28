@@ -315,5 +315,11 @@
   "cloudSyncPagesExcludedNotice": {
     "message": "(용량 제한으로 오래된 페이지 $1개가 제외됨)",
     "description": "Appended to the last-synced status when the oldest pages were dropped from the cloud sync upload to fit the size limit. $1 is the number of excluded pages."
+  },
+  "jumpToHighlight": {
+    "message": "페이지의 하이라이트 위치로 이동"
+  },
+  "highlightNotFoundOnPage": {
+    "message": "페이지에서 이 하이라이트를 찾을 수 없습니다."
   }
 }

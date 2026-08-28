@@ -162,6 +162,20 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+  else if (message.action === 'scrollToHighlight') {
+    const groupId = message.groupId != null ? String(message.groupId) : '';
+    const target = groupId ? findHighlightElementsByGroupId(groupId)[0] : null;
+
+    if (target) {
+      scrollToHighlightElement(target);
+      flashHighlightGroup(target);
+      sendResponse({ success: true });
+    } else {
+      debugLog('scrollToHighlight: no element found for group:', groupId);
+      sendResponse({ success: false, reason: 'not-found' });
+    }
+    return true;
+  }
 });
 
 // Function to asynchronously get color information from Background Service Worker

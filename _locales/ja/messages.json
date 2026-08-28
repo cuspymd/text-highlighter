@@ -315,5 +315,11 @@
   "cloudSyncPagesExcludedNotice": {
     "message": "（サイズ制限のため古いページを$1件除外しました）",
     "description": "Appended to the last-synced status when the oldest pages were dropped from the cloud sync upload to fit the size limit. $1 is the number of excluded pages."
+  },
+  "jumpToHighlight": {
+    "message": "ページ内のハイライト位置へ移動"
+  },
+  "highlightNotFoundOnPage": {
+    "message": "ページ内でこのハイライトが見つかりませんでした。"
   }
 }

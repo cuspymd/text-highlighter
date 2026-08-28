@@ -315,5 +315,11 @@
   "cloudSyncPagesExcludedNotice": {
     "message": "($1 página(s) mais antiga(s) excluída(s) devido ao limite de tamanho)",
     "description": "Appended to the last-synced status when the oldest pages were dropped from the cloud sync upload to fit the size limit. $1 is the number of excluded pages."
+  },
+  "jumpToHighlight": {
+    "message": "Ir para este destaque na página"
+  },
+  "highlightNotFoundOnPage": {
+    "message": "Não foi possível encontrar este destaque na página."
   }
 }
