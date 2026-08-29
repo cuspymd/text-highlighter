@@ -385,8 +385,14 @@ function processRestoreGroups(groups, reason) {
 // of the normalized model and shifts every offset after it - which is why this
 // used to rebuild the model once per restored highlight. Instead, resolve all
 // the selectors first (pure string work, no DOM writes), then apply the matches
-// from the end of the document backwards so the region each pending match points
-// at is still untouched. The model is built once per pass.
+// from the end of the document backwards, so each application only disturbs
+// document positions the pending matches are already past.
+//
+// That keeps the *offsets* valid but not always the node references: two matches
+// inside one text node detach it for the second, so the apply loop rebuilds the
+// model when it finds a range pointing at a node that has left the document.
+// A page whose highlights sit in separate text nodes - the normal case - builds
+// the model once.
 //
 // Returns the groups that could not be placed, for the legacy span fallback.
 function restoreQuoteGroups(groups, reason) {
@@ -427,8 +433,23 @@ function restoreQuoteGroups(groups, reason) {
 
   matches.forEach(entry => {
     try {
-      const range = contentCore.normalizedOffsetsToRange(model, entry.start, entry.end);
-      if (range && applyHighlightFromRange(range, entry.group.color, entry.group.groupId)) {
+      let range = contentCore.normalizedOffsetsToRange(model, entry.start, entry.end);
+
+      if (!isRangeInDocument(range)) {
+        // An earlier application in this pass replaced the text node this match
+        // was resolved against - highlighting rebuilds a text node rather than
+        // splitting it, so two matches inside one node detach it for the second.
+        // Everything applied so far lies later in the document, so offsets below
+        // it are unchanged: a rebuilt model answers the same offsets with live
+        // nodes. Only a colliding match pays for this.
+        const rebuilt = buildRestoreModel();
+        if (rebuilt) {
+          model = rebuilt;
+          range = contentCore.normalizedOffsetsToRange(model, entry.start, entry.end);
+        }
+      }
+
+      if (isRangeInDocument(range) && applyHighlightFromRange(range, entry.group.color, entry.group.groupId)) {
         debugLog('Restored highlight using quote selector:', entry.group.groupId);
         return;
       }
@@ -469,6 +490,17 @@ function resolveUnclaimedMatch(model, group, claimed) {
 
 function overlapsClaimedRegion(claimed, region) {
   return claimed.some(taken => region.start < taken.end && region.end > taken.start);
+}
+
+// A range built from a stale model can point at a detached node. Highlighting
+// one of those silently succeeds against the orphan, so it has to be caught
+// before the range is applied rather than after.
+function isRangeInDocument(range) {
+  return Boolean(
+    range
+    && range.startContainer && range.startContainer.isConnected
+    && range.endContainer && range.endContainer.isConnected
+  );
 }
 
 // Blank out already-claimed regions so an exact-text search cannot land on them

@@ -168,6 +168,70 @@ describe('restoring highlight groups', () => {
     expect(new Set(byParagraph.map(entry => entry.groupId)).size).toBe(2);
   });
 
+  // Highlighting rebuilds a text node instead of splitting it, so applying one
+  // match detaches the node any other match in that node was resolved against.
+  describe('multiple groups inside a single text node', () => {
+    it('restores both when the groups carry no legacy spans to fall back on', () => {
+      document.body.innerHTML = '<p>alpha marker and later beta marker in one node.</p>';
+
+      const groups = [makeGroup('g1', 'alpha marker'), makeGroup('g2', 'beta marker')];
+      groups.forEach(group => { delete group.spans; });
+
+      loadContentScript();
+      restore(groups);
+
+      expect(highlightedTextFor('g1')).toBe('alpha marker');
+      expect(highlightedTextFor('g2')).toBe('beta marker');
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(2);
+    });
+
+    it('restores three groups sharing one text node', () => {
+      document.body.innerHTML = '<p>first mark then second mark then third mark done.</p>';
+
+      const groups = [
+        makeGroup('a', 'first mark'),
+        makeGroup('b', 'second mark'),
+        makeGroup('c', 'third mark'),
+      ];
+      groups.forEach(group => { delete group.spans; });
+
+      loadContentScript();
+      restore(groups);
+
+      expect(highlightedTextFor('a')).toBe('first mark');
+      expect(highlightedTextFor('b')).toBe('second mark');
+      expect(highlightedTextFor('c')).toBe('third mark');
+    });
+
+    it('rebuilds the model only for the groups that actually collide', () => {
+      document.body.innerHTML =
+        '<p>alpha marker and later beta marker in one node.</p>' +
+        '<p>Separate paragraph one</p><p>Separate paragraph two</p>';
+
+      const groups = [
+        makeGroup('g1', 'alpha marker'),
+        makeGroup('g2', 'beta marker'),
+        makeGroup('g3', 'Separate paragraph one'),
+        makeGroup('g4', 'Separate paragraph two'),
+      ];
+
+      loadContentScript();
+      const buildSpy = jest.spyOn(core, 'buildNormalizedTextModel');
+
+      try {
+        restore(groups);
+
+        groups.forEach(group => {
+          expect(highlightedTextFor(group.groupId)).toBe(group.text);
+        });
+        // One build for the pass, plus one for the single colliding match.
+        expect(buildSpy).toHaveBeenCalledTimes(2);
+      } finally {
+        buildSpy.mockRestore();
+      }
+    });
+  });
+
   it('falls back to legacy spans when the quote selector no longer resolves', () => {
     document.body.innerHTML = '<p>Surviving sentence stays put.</p>';
 
