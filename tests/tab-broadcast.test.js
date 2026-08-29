@@ -1,4 +1,4 @@
-import chrome from '../mocks/chrome.js';
+import chrome, { assertNoTabMessageCallback } from '../mocks/chrome.js';
 import { broadcastToAllTabs, broadcastToTabsByUrl, sendMessageToTab } from '../shared/tab-broadcast.js';
 
 describe('tab-broadcast', () => {
@@ -100,6 +100,22 @@ describe('tab-broadcast', () => {
       // The function should not throw, we just await it
       await broadcastToTabsByUrl(url, message);
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(1, message);
+    });
+  });
+
+  // The mock has to fail on a form the browser only fails on silently, so that
+  // a Chromium-green run cannot hide it.
+  describe('the promise-form guard', () => {
+    it('rejects a callback in the third argument', () => {
+      expect(() => assertNoTabMessageCallback([() => {}])).toThrow(/never runs on Firefox/);
+    });
+
+    it("rejects a callback after Chrome's options argument", () => {
+      expect(() => assertNoTabMessageCallback([{ frameId: 0 }, () => {}])).toThrow(/never runs on Firefox/);
+    });
+
+    it('allows options on their own', () => {
+      expect(() => assertNoTabMessageCallback([{ frameId: 0 }])).not.toThrow();
     });
   });
 });
