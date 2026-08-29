@@ -469,6 +469,43 @@ describe('restoring highlight groups', () => {
       expect(jest.getTimerCount()).toBe(0);
     });
 
+    it('resolves a retried group against the text the page had before restoring', () => {
+      // Two occurrences of the same word. The saved selector tells them apart by
+      // the words on either side of the second one - words that are themselves
+      // highlighted by the time the retry runs.
+      document.body.innerHTML =
+        '<p>note TARGET here highlighted phrase TARGET trailing words end</p>';
+
+      const before = makeGroup('before', 'highlighted phrase');
+      const after = makeGroup('after', 'trailing words');
+      const late = makeGroup('late', 'TARGET', 1);
+
+      // The page the restore actually starts from: the TARGETs have not loaded.
+      document.body.innerHTML = '<p>note here highlighted phrase trailing words end</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([before, after, late]);
+
+      expect(highlightedTextFor('before')).toBe('highlighted phrase');
+      expect(highlightedTextFor('after')).toBe('trailing words');
+      expect(highlightedTextFor('late')).toBe('');
+
+      // The late content arrives around the two highlights already applied.
+      const paragraph = document.querySelector('p');
+      paragraph.firstChild.nodeValue = 'note TARGET here ';
+      paragraph.childNodes[2].nodeValue = ' TARGET ';
+      jest.advanceTimersByTime(1500);
+
+      const placed = document.querySelector('[data-group-id="late"]');
+      expect(placed).not.toBeNull();
+
+      // It has to land on the second TARGET, the one the selector was built for.
+      const upToSpan = document.createRange();
+      upToSpan.setStart(paragraph, 0);
+      upToSpan.setEndBefore(placed);
+      expect(upToSpan.toString().split('TARGET')).toHaveLength(2);
+    });
+
     it('drops a pending retry when the page navigates', () => {
       document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
 

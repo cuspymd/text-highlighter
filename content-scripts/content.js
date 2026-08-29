@@ -417,12 +417,19 @@ function needsQuoteRestore(group) {
   return Boolean(group && group.selectors && group.selectors.quote);
 }
 
+// Text already inside a highlight span counts as page text here. A pass that
+// runs after other groups are applied - the delayed retry, or the popup asking
+// for one group - would otherwise resolve against a document with those
+// highlights cut out of it: every offset past them shifts, and the prefix and
+// suffix a selector uses to tell repeated phrases apart go missing. That picks
+// the wrong occurrence. Including them gives every pass the same page text the
+// first one saw.
 function buildRestoreModel() {
   if (!contentCore || typeof contentCore.buildNormalizedTextModel !== 'function') {
     return null;
   }
 
-  return contentCore.buildNormalizedTextModel(document.body);
+  return contentCore.buildNormalizedTextModel(document.body, { includeHighlightedText: true });
 }
 
 function processRestoreGroups(groups, reason) {
