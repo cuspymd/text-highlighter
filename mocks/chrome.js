@@ -1,5 +1,21 @@
 import { jest } from '@jest/globals';
 
+/**
+ * Tab messages must go out in the promise form: a callback never runs on Firefox,
+ * where the third argument is an options object. Chrome's four-argument overload
+ * puts the callback after those options, so every argument past the message has
+ * to be checked - a guard that only looks at the third one waves that form
+ * through. See "Extension API calls" in AGENTS.md.
+ */
+export function assertNoTabMessageCallback(optionalArgs) {
+  if (optionalArgs.some(arg => typeof arg === 'function')) {
+    throw new Error(
+      'tabs.sendMessage was called with a callback, which never runs on Firefox. ' +
+      'Use the promise form - send tab messages through sendMessageToTab().'
+    );
+  }
+}
+
 export default {
   runtime: {
     sendMessage: jest.fn((message, callback) => {
@@ -57,16 +73,10 @@ export default {
     get: jest.fn(tabId => Promise.resolve({ id: tabId, url: 'https://example.com/' })),
     create: jest.fn(() => Promise.resolve({ id: 1 })),
     update: jest.fn(() => Promise.resolve({})),
-    // The callback form never runs on Firefox, so it must not pass here either. A
-    // mock that only returns a promise stays silent about it, which is the very
-    // failure mode being guarded. See "Extension API calls" in AGENTS.md.
-    sendMessage: jest.fn((tabId, message, maybeCallback) => {
-      if (typeof maybeCallback === 'function') {
-        throw new Error(
-          'tabs.sendMessage was called with a callback, which never runs on Firefox. ' +
-          'Use the promise form - send tab messages through sendMessageToTab().'
-        );
-      }
+    // A mock that only returns a promise stays silent about the callback form,
+    // which is the very failure mode being guarded.
+    sendMessage: jest.fn((tabId, message, ...optionalArgs) => {
+      assertNoTabMessageCallback(optionalArgs);
       return Promise.resolve();
     }),
     onActivated: {

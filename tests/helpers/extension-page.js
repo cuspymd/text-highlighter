@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import fs from 'fs';
-import chrome from '../../mocks/chrome.js';
+import chrome, { assertNoTabMessageCallback } from '../../mocks/chrome.js';
 
 /**
  * Harness for the extension's page scripts (popup.js, pages-list.js, settings.js).
@@ -93,13 +93,8 @@ export async function loadPageScript(importPage) {
  * See "Extension API calls" in AGENTS.md.
  */
 export function respondToTab(handler) {
-  chrome.tabs.sendMessage.mockImplementation((tabId, message, maybeCallback) => {
-    if (typeof maybeCallback === 'function') {
-      throw new Error(
-        'tabs.sendMessage was called with a callback, which never runs on Firefox. ' +
-        'Use the promise form - send tab messages through sendMessageToTab().'
-      );
-    }
+  chrome.tabs.sendMessage.mockImplementation((tabId, message, ...optionalArgs) => {
+    assertNoTabMessageCallback(optionalArgs);
     return Promise.resolve(handler(message, tabId));
   });
 }
