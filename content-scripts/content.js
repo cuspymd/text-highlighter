@@ -354,64 +354,180 @@ function buildRestoreModel() {
 }
 
 function processRestoreGroups(groups, reason) {
-  let model = null;
-  let modelDirty = true;
+  const quoteGroups = [];
+  const legacyGroups = [];
 
   groups.forEach(group => {
+    if (needsQuoteRestore(group)) {
+      quoteGroups.push(group);
+    } else {
+      legacyGroups.push(group);
+    }
+  });
+
+  // Quote restores run first and share one text model. Legacy restores search
+  // the live DOM and mutate it, so running them afterwards keeps that shared
+  // model valid for the whole quote pass.
+  const unresolved = restoreQuoteGroups(quoteGroups, reason);
+
+  unresolved.concat(legacyGroups).forEach(group => {
     try {
-      let restoreModel = null;
-      if (needsQuoteRestore(group)) {
-        if (modelDirty) {
-          try {
-            model = buildRestoreModel();
-          } catch (e) {
-            debugLog(`Error building text model for ${reason}:`, e);
-            model = null;
-          }
-          modelDirty = false;
-        }
-        restoreModel = model;
-      }
-
-      const restored = tryRestoreHighlightGroup(group, restoreModel);
-      if (!restored) return;
-
-      // Any successful restore can wrap/split text nodes, so the normalized
-      // model must be rebuilt before the next quote-based restore.
-      modelDirty = true;
+      restoreLegacyGroup(group);
     } catch (error) {
       debugLog(`Error during ${reason}:`, error);
     }
   });
 }
 
-// Try to restore a highlight group using quote selectors first, then fallback
-function tryRestoreHighlightGroup(group, model) {
-  // 1. Try Quote-based restoration
-  if (group.selectors && group.selectors.quote && model && contentCore && typeof contentCore.resolveQuoteSelector === 'function') {
-    try {
-      const match = contentCore.resolveQuoteSelector(
-        model,
-        group.selectors.quote,
-        group.selectors.quote.exact || group.text,
-        { textPosition: group.selectors.textPosition }
-      );
+// Restore every quote-based group against a single text model.
+//
+// Applying a highlight wraps text nodes, which drops the highlighted text out
+// of the normalized model and shifts every offset after it - which is why this
+// used to rebuild the model once per restored highlight. Instead, resolve all
+// the selectors first (pure string work, no DOM writes), then apply the matches
+// from the end of the document backwards, so each application only disturbs
+// document positions the pending matches are already past.
+//
+// That keeps the *offsets* valid but not always the node references: two matches
+// inside one text node detach it for the second, so the apply loop rebuilds the
+// model when it finds a range pointing at a node that has left the document.
+// A page whose highlights sit in separate text nodes - the normal case - builds
+// the model once.
+//
+// Returns the groups that could not be placed, for the legacy span fallback.
+function restoreQuoteGroups(groups, reason) {
+  if (groups.length === 0) return [];
 
-      if (match) {
-        const range = contentCore.normalizedOffsetsToRange(model, match.start, match.end);
-        if (range) {
-          if (applyHighlightFromRange(range, group.color, group.groupId)) {
-            debugLog('Restored highlight using quote selector:', group.groupId);
-            return true;
-          }
-        }
-      }
-    } catch (e) {
-      debugLog('Quote restoration failed, falling back to legacy spans:', e);
-    }
+  let model = null;
+  try {
+    model = buildRestoreModel();
+  } catch (e) {
+    debugLog(`Error building text model for ${reason}:`, e);
   }
 
-  // 2. Legacy fallback
+  if (!model || !contentCore || typeof contentCore.resolveQuoteSelector !== 'function') {
+    return groups.slice();
+  }
+
+  const unresolved = [];
+  const claimed = [];
+  const matches = [];
+
+  groups.forEach(group => {
+    try {
+      const match = resolveUnclaimedMatch(model, group, claimed);
+      if (!match) {
+        unresolved.push(group);
+        return;
+      }
+
+      claimed.push(match);
+      matches.push({ group, start: match.start, end: match.end });
+    } catch (e) {
+      debugLog('Quote resolution failed, falling back to legacy spans:', e);
+      unresolved.push(group);
+    }
+  });
+
+  matches.sort((a, b) => b.start - a.start);
+
+  matches.forEach(entry => {
+    try {
+      let range = contentCore.normalizedOffsetsToRange(model, entry.start, entry.end);
+
+      if (!isRangeInDocument(range)) {
+        // An earlier application in this pass replaced the text node this match
+        // was resolved against - highlighting rebuilds a text node rather than
+        // splitting it, so two matches inside one node detach it for the second.
+        // Everything applied so far lies later in the document, so offsets below
+        // it are unchanged: a rebuilt model answers the same offsets with live
+        // nodes. Only a colliding match pays for this.
+        const rebuilt = buildRestoreModel();
+        if (rebuilt) {
+          model = rebuilt;
+          range = contentCore.normalizedOffsetsToRange(model, entry.start, entry.end);
+        }
+      }
+
+      if (isRangeInDocument(range) && applyHighlightFromRange(range, entry.group.color, entry.group.groupId)) {
+        debugLog('Restored highlight using quote selector:', entry.group.groupId);
+        return;
+      }
+
+      unresolved.push(entry.group);
+    } catch (e) {
+      debugLog('Quote restoration failed, falling back to legacy spans:', e);
+      unresolved.push(entry.group);
+    }
+  });
+
+  return unresolved;
+}
+
+// Resolve a group's quote selector to a region no earlier group has taken.
+// Rebuilding the model after each restore used to guarantee this implicitly,
+// because the restored text left the model. Retrying over a masked copy of the
+// model text reproduces that without a rebuild: masking preserves length, so
+// offsets still map onto the same segments.
+function resolveUnclaimedMatch(model, group, claimed) {
+  const exactText = group.selectors.quote.exact || group.text;
+  const hints = { textPosition: group.selectors.textPosition };
+
+  const match = contentCore.resolveQuoteSelector(model, group.selectors.quote, exactText, hints);
+  if (!match) return null;
+  if (!overlapsClaimedRegion(claimed, match)) return match;
+
+  const maskedModel = {
+    text: maskClaimedRegions(model.text, claimed),
+    segments: model.segments,
+  };
+
+  const retry = contentCore.resolveQuoteSelector(maskedModel, group.selectors.quote, exactText, hints);
+  if (!retry || overlapsClaimedRegion(claimed, retry)) return null;
+
+  return retry;
+}
+
+function overlapsClaimedRegion(claimed, region) {
+  return claimed.some(taken => region.start < taken.end && region.end > taken.start);
+}
+
+// A range built from a stale model can point at a detached node. Highlighting
+// one of those silently succeeds against the orphan, so it has to be caught
+// before the range is applied rather than after.
+function isRangeInDocument(range) {
+  return Boolean(
+    range
+    && range.startContainer && range.startContainer.isConnected
+    && range.endContainer && range.endContainer.isConnected
+  );
+}
+
+// Blank out already-claimed regions so an exact-text search cannot land on them
+// again. The filler must be a character the normalized model never contains, or
+// the mask could create a match of its own. Only reached when two highlights
+// resolve to the same occurrence, so the copy is rare.
+const CLAIMED_REGION_FILLER = '\u0000';
+
+function maskClaimedRegions(text, claimed) {
+  // split('') keeps one entry per UTF-16 code unit, matching the offsets that
+  // indexOf/substring produce inside resolveQuoteSelector. Array.from would
+  // group surrogate pairs and misalign every offset past the first emoji.
+  const chars = text.split('');
+
+  claimed.forEach(taken => {
+    const end = Math.min(taken.end, chars.length);
+    for (let i = Math.max(taken.start, 0); i < end; i++) {
+      chars[i] = CLAIMED_REGION_FILLER;
+    }
+  });
+
+  return chars.join('');
+}
+
+// Fallback for groups saved without quote selectors, and for quote groups that
+// could not be placed against the current DOM.
+function restoreLegacyGroup(group) {
   if (group.spans && group.spans.length > 0) {
      const success = highlightTextInDocument(
         document.body,
@@ -445,6 +561,8 @@ function applyHighlights() {
 function highlightTextInDocument(element, spanInfos, color, groupId) {
   if (!spanInfos || spanInfos.length === 0) return false;
 
+  const isDisplayed = createVisibilityResolver();
+
   // 1. Collect text nodes
   const walker = document.createTreeWalker(
     element,
@@ -465,12 +583,8 @@ function highlightTextInDocument(element, spanInfos, color, groupId) {
         ].includes(parentTagName)) {
           return NodeFilter.FILTER_REJECT;
         }
-        let el = parent;
-        while (el && el !== document.body && el !== document.documentElement) {
-          if (window.getComputedStyle(el).display === 'none') {
-            return NodeFilter.FILTER_REJECT;
-          }
-          el = el.parentNode;
+        if (!isDisplayed(parent)) {
+          return NodeFilter.FILTER_REJECT;
         }
         return NodeFilter.FILTER_ACCEPT;
       }
@@ -707,6 +821,17 @@ function convertSelectionRange(range) {
     return range;
   }
   return contentCore.convertSelectionRange(range, debugLog);
+}
+
+// Memoized visibility test for one tree walk. content-core.js is declared ahead
+// of this file in the manifest, so the fallback only guards against the core
+// module failing to evaluate; treating everything as hidden keeps a broken core
+// from highlighting text the user cannot see.
+function createVisibilityResolver() {
+  if (!contentCore || typeof contentCore.createVisibilityResolver !== 'function') {
+    return () => false;
+  }
+  return contentCore.createVisibilityResolver();
 }
 
 // Refactored highlightSelectedText function with tree traversal algorithm

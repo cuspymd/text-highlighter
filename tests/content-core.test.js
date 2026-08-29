@@ -253,6 +253,46 @@ describe('content-core', () => {
       const pos = TextHighlighterCore.rangeToTextPosition(model, range);
       expect(pos).toEqual({ start: 6, end: 11 }); // 'World'
     });
+
+    it('excludes text hidden by a display:none ancestor further up the chain', () => {
+      document.body.innerHTML =
+        '<div>Visible </div>' +
+        '<div style="display: none"><section><p>Hidden</p></section></div>' +
+        '<div>tail</div>';
+
+      const model = TextHighlighterCore.buildNormalizedTextModel(document.body);
+
+      expect(model.text).toBe('Visible tail');
+    });
+
+    it('resolves each ancestor element only once per build', () => {
+      const depth = ['<div id="a">', '<div id="b">', '<div id="c">'];
+      const paragraphs = Array.from({ length: 20 }, (_, i) => `<p>Line ${i}</p>`);
+      document.body.innerHTML = depth.join('') + paragraphs.join('') + '</div></div></div>';
+
+      const spy = jest.spyOn(window, 'getComputedStyle');
+
+      try {
+        TextHighlighterCore.buildNormalizedTextModel(document.body);
+
+        const resolved = spy.mock.calls.map(call => call[0]);
+        // 20 <p> ancestors plus the three shared wrappers, each resolved once.
+        expect(resolved).toHaveLength(23);
+        expect(new Set(resolved).size).toBe(23);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('does not reuse visibility results across separate builds', () => {
+      document.body.innerHTML = '<div id="wrapper"><p>Toggle</p></div>';
+
+      expect(TextHighlighterCore.buildNormalizedTextModel(document.body).text).toBe('Toggle');
+
+      document.getElementById('wrapper').style.display = 'none';
+
+      expect(TextHighlighterCore.buildNormalizedTextModel(document.body).text).toBe('');
+    });
   });
 
   describe('buildQuoteSelector', () => {
