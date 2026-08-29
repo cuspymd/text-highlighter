@@ -197,13 +197,9 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   else if (message.action === 'getRestoredGroupIds') {
-    const present = new Set();
-    document.querySelectorAll('.text-highlighter-extension[data-group-id]').forEach(span => {
-      present.add(span.dataset.groupId);
-    });
     sendResponse({
       success: true,
-      groupIds: Array.from(present),
+      groupIds: Array.from(collectRestoredGroupIds()),
       pendingRestoreMs: getPendingRestoreMs()
     });
     return true;
@@ -424,6 +420,17 @@ function needsQuoteRestore(group) {
 // suffix a selector uses to tell repeated phrases apart go missing. That picks
 // the wrong occurrence. Including them gives every pass the same page text the
 // first one saw.
+// One walk for a whole pass, rather than a query per group.
+function collectRestoredGroupIds() {
+  const restored = new Set();
+
+  document.querySelectorAll('.text-highlighter-extension[data-group-id]').forEach(span => {
+    restored.add(span.dataset.groupId);
+  });
+
+  return restored;
+}
+
 function buildRestoreModel() {
   if (!contentCore || typeof contentCore.buildNormalizedTextModel !== 'function') {
     return null;
@@ -436,7 +443,19 @@ function processRestoreGroups(groups, reason) {
   const quoteGroups = [];
   const legacyGroups = [];
 
+  // Restore passes can overlap - the load timer and a navigation pass both in
+  // flight, or a queued retry that another pass has already satisfied. A group
+  // that is already on the page must be left alone: its own highlighted text
+  // counts as page text to the restore model, so resolving it again finds that
+  // text and wraps it a second time, nesting a duplicate span inside the first.
+  const alreadyRestored = collectRestoredGroupIds();
+
   groups.forEach(group => {
+    if (alreadyRestored.has(String(group.groupId))) {
+      debugLog(`Skipping group already on the page during ${reason}:`, group.groupId);
+      return;
+    }
+
     if (needsQuoteRestore(group)) {
       quoteGroups.push(group);
     } else {

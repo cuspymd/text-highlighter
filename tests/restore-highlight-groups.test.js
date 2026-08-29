@@ -693,6 +693,22 @@ describe('restoring highlight groups', () => {
     });
   });
 
+  it('does not wrap a group again when a second pass runs over the same page', () => {
+    document.body.innerHTML = '<p>Present content is here.</p>';
+
+    loadContentScript({ highlightsResponse: {} });
+    restore([makeGroup('ok', 'Present content')]);
+    expect(document.querySelectorAll('[data-group-id="ok"]')).toHaveLength(1);
+
+    // Two restores can overlap - the load timer and a navigation pass both in
+    // flight, or a queued retry another pass has already satisfied. A group's
+    // own highlighted text counts as page text now, so this pass can find it.
+    window.applyHighlights();
+
+    expect(document.querySelectorAll('[data-group-id="ok"]')).toHaveLength(1);
+    expect(highlightedTextFor('ok')).toBe('Present content');
+  });
+
   it('leaves nothing highlighted when neither the quote nor the legacy spans match', () => {
     document.body.innerHTML = '<p>Anchor text for selector building.</p>';
     const group = makeGroup('gone', 'Anchor text');
