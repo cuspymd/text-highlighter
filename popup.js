@@ -6,10 +6,12 @@ import { sendMessageToTab } from './shared/tab-broadcast.js';
 
 const URL_PARAMS  = new URLSearchParams(window.location.search);
 
-// Ceiling on the total time the popup defers marking entries missing while the
-// page finishes restoring. Generous enough to cover a cold service worker, which
-// is what puts the page's own timers well past their nominal delays.
-const PENDING_RESTORE_MAX_WAIT_MS = 4000;
+// Safety stop for the poll that waits out a page's restore, so a page reporting
+// a restore that never arrives cannot leave a timer running for the life of the
+// popup. It is not a deadline for deciding: reaching it means the answer is
+// still unknown, and an unknown entry is left alone. So it can afford to be well
+// past any real restore, cold service worker included.
+const PENDING_RESTORE_POLL_LIMIT_MS = 15000;
 
 async function getActiveTab() {
   // Open popup.html?tab=5 to use tab ID 5, etc.
@@ -194,12 +196,21 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // The page has not finished restoring - its initial pass, or the delayed
     // retry. Marking now would dim entries that are about to appear, and
-    // nothing takes the mark back. The page says how long to hold off; ask
-    // again until it stops saying so, but only within a budget, so a page that
-    // never finishes still ends up with a list the user can act on.
+    // nothing takes the mark back. The page says how long to hold off, so ask
+    // again until it stops saying so.
     const pendingMs = Number(response.pendingRestoreMs) || 0;
-    if (pendingMs > 0 && waitedMs < PENDING_RESTORE_MAX_WAIT_MS) {
-      const wait = Math.min(pendingMs, PENDING_RESTORE_MAX_WAIT_MS - waitedMs);
+    if (pendingMs > 0) {
+      if (waitedMs >= PENDING_RESTORE_POLL_LIMIT_MS) {
+        // Out of patience, but the page still says a restore is coming, so what
+        // it has told us is "not yet", never "not there". Leave the entries
+        // alone: that is the same thing this does when the page does not answer
+        // at all, and it errs the safe way - an entry that is really gone still
+        // looks normal, instead of a working one being dimmed and made dead.
+        debugLog('Restore still pending after', waitedMs, 'ms - leaving entries unmarked');
+        return;
+      }
+
+      const wait = Math.min(pendingMs, PENDING_RESTORE_POLL_LIMIT_MS - waitedMs);
       setTimeout(() => markMissingHighlights(tabId, renderedItems, waitedMs + wait), wait);
       return;
     }
