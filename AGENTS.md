@@ -59,6 +59,21 @@ This is a cross-browser extension called "Marks: Text Highlighter". It supports 
 
 - `constants/storage-keys.js`: storage key definitions shared across modules
 
+### Testing page scripts
+
+`popup.js`, `pages-list.js` and `settings.js` are not importable modules: each
+one is a single `DOMContentLoaded` closure with no exports. `tests/helpers/extension-page.js`
+drives them the way the browser does - it puts the page's own `<body>` into jsdom,
+loads the script, and hands back its handler to await. See `tests/popup.test.js`.
+
+Two things it takes care of, both of which fail confusingly otherwise:
+
+- The handler is captured rather than dispatched. It is `async`, so
+  `dispatchEvent` returns before the page has loaded anything.
+- Waiting is done with `advance()` (`jest.advanceTimersByTimeAsync`). The popup's
+  restore poll alternates timers with awaited round trips, so the synchronous
+  `advanceTimersByTime` leaves the continuation unrun.
+
 ## Browser and Manifest Notes
 
 - Chrome manifest: `manifest.json`
@@ -99,6 +114,10 @@ the promise and returns `null` when nothing is listening. It is the only place
 in the extension that calls `tabs.sendMessage`, which leaves no call site with a
 third argument to get wrong. `broadcastToAllTabs` / `broadcastToTabsByUrl` in the
 same module cover the many-tab cases.
+
+The `tabs.sendMessage` mock in `mocks/chrome.js` throws when a callback is
+passed, so the form that goes dead on Firefox fails the unit suite by name
+instead of going quiet the way the browser does.
 
 Note that `runtime.sendMessage` in the content scripts and `pages-list.js` is
 still callback-style and has not been verified against a Firefox build.

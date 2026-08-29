@@ -14,6 +14,7 @@ export default {
       addListener: jest.fn(),
     },
     getPlatformInfo: jest.fn(() => Promise.resolve({ os: 'mac' })),
+    getURL: jest.fn(path => `chrome-extension://test/${path}`),
     lastError: null,
   },
   i18n: {
@@ -53,10 +54,30 @@ export default {
   },
   tabs: {
     query: jest.fn(() => Promise.resolve([])),
-    sendMessage: jest.fn(() => Promise.resolve()),
+    get: jest.fn(tabId => Promise.resolve({ id: tabId, url: 'https://example.com/' })),
+    create: jest.fn(() => Promise.resolve({ id: 1 })),
+    update: jest.fn(() => Promise.resolve({})),
+    // The callback form never runs on Firefox, so it must not pass here either. A
+    // mock that only returns a promise stays silent about it, which is the very
+    // failure mode being guarded. See "Extension API calls" in AGENTS.md.
+    sendMessage: jest.fn((tabId, message, maybeCallback) => {
+      if (typeof maybeCallback === 'function') {
+        throw new Error(
+          'tabs.sendMessage was called with a callback, which never runs on Firefox. ' +
+          'Use the promise form - send tab messages through sendMessageToTab().'
+        );
+      }
+      return Promise.resolve();
+    }),
     onActivated: {
       addListener: jest.fn(),
     },
+  },
+  // Absent on Firefox Android, so pages that use it check for it first.
+  windows: {
+    getAll: jest.fn(() => Promise.resolve([])),
+    create: jest.fn(() => Promise.resolve({ id: 1 })),
+    update: jest.fn(() => Promise.resolve({})),
   },
   commands: {
     getAll: jest.fn(() => Promise.resolve([])),
