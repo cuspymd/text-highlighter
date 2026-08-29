@@ -5,6 +5,10 @@ import { initializeThemeWatcher } from './shared/theme.js';
 
 const URL_PARAMS  = new URLSearchParams(window.location.search);
 
+// Ceiling on how long the popup defers marking entries missing while the page
+// finishes a queued restore pass. The page's own delays are well under this.
+const PENDING_RESTORE_MAX_WAIT_MS = 2000;
+
 async function getActiveTab() {
   // Open popup.html?tab=5 to use tab ID 5, etc.
   if (URL_PARAMS.has("tab")) {
@@ -176,7 +180,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Ask the page which highlights it actually managed to restore, and mark the
   // rest. Without this a missing highlight is a list entry that looks normal and
   // does nothing when clicked.
-  function markMissingHighlights(tabId, renderedItems) {
+  function markMissingHighlights(tabId, renderedItems, alreadyWaited = false) {
     browserAPI.tabs.sendMessage(tabId, { action: 'getRestoredGroupIds' }, (response) => {
       if (browserAPI.runtime.lastError || !response || !response.success) {
         // No content script on this page, or it never answered. Leave the list
@@ -185,8 +189,24 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
       }
 
+      // The page still has restore work queued - its initial pass, or the
+      // delayed retry. Opening the popup inside that window would otherwise dim
+      // entries that are about to appear, and nothing takes the mark back. Wait
+      // it out once; if the answer is still pending after that, mark anyway
+      // rather than leaving the list in a state the user cannot act on.
+      const pendingMs = Number(response.pendingRestoreMs) || 0;
+      if (pendingMs > 0 && !alreadyWaited) {
+        setTimeout(
+          () => markMissingHighlights(tabId, renderedItems, true),
+          Math.min(pendingMs, PENDING_RESTORE_MAX_WAIT_MS)
+        );
+        return;
+      }
+
       const present = new Set((response.groupIds || []).map(String));
       renderedItems.forEach((item, groupId) => {
+        // The list may have been re-rendered while this was in flight.
+        if (!item.isConnected) return;
         if (!present.has(groupId)) {
           markItemMissing(item, groupId, tabId);
         }

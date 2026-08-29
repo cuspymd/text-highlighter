@@ -70,6 +70,21 @@ describe('restoring highlight groups', () => {
     };
   }
 
+  // A group whose text is not on the page yet, standing in for content that
+  // loads after the initial restore has already run.
+  function lateGroup(groupId, exactText) {
+    return {
+      groupId,
+      color: '#ffff00',
+      text: exactText,
+      selectors: {
+        quote: { exact: exactText, prefix: '', suffix: '' },
+        textPosition: { start: 0, end: exactText.length },
+      },
+      spans: [{ text: exactText, position: 0 }],
+    };
+  }
+
   function restore(groups) {
     window.TextHighlighterState.set({ highlights: groups });
     window.applyHighlights();
@@ -355,24 +370,51 @@ describe('restoring highlight groups', () => {
       expect(highlightedTextFor('after')).toBe('gamma');
       expect(document.querySelector('[data-group-id="after"]').isConnected).toBe(true);
     });
+
+    it('rolls back the spans of a group that fails partway through', () => {
+      document.body.innerHTML = '<p>alpha beta gamma delta</p>';
+
+      loadContentScript();
+      restore([legacyGroup('partial', 'alpha', 'never-here')]);
+
+      // 'alpha' was wrapped before the group turned into a failure. Leaving that
+      // span behind would report the group as restored and hide 'alpha' from the
+      // next restore's walker.
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+      expect(document.querySelector('p').textContent).toBe('alpha beta gamma delta');
+      expect(document.querySelector('p').childNodes).toHaveLength(1);
+    });
+
+    it('does not report a group that failed partway through as restored', () => {
+      document.body.innerHTML = '<p>alpha beta gamma delta</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([legacyGroup('partial', 'alpha', 'never-here')]);
+
+      let response;
+      messageListener({ action: 'getRestoredGroupIds' }, {}, value => { response = value; });
+      expect(response.groupIds).toEqual([]);
+    });
+
+    it('retries a partially applied group against its own first span', () => {
+      document.body.innerHTML = '<p>alpha beta</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      // 'omega' is not on the page yet, so this group fails after wrapping
+      // 'alpha'. A leftover span there would hide the only 'alpha' from the
+      // retry's walker, which would then either find nothing or, on a page with
+      // a second 'alpha', anchor the group to the wrong one.
+      restore([legacyGroup('partial', 'alpha', 'omega')]);
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+
+      document.body.innerHTML += '<p>omega arrives late</p>';
+      jest.advanceTimersByTime(1500);
+
+      expect(highlightedTextFor('partial')).toBe('alphaomega');
+    });
   });
 
   describe('delayed retry', () => {
-    // A group whose text is not on the page yet, standing in for content that
-    // loads after the initial restore has already run.
-    function lateGroup(groupId, exactText) {
-      return {
-        groupId,
-        color: '#ffff00',
-        text: exactText,
-        selectors: {
-          quote: { exact: exactText, prefix: '', suffix: '' },
-          textPosition: { start: 0, end: exactText.length },
-        },
-        spans: [{ text: exactText, position: 0 }],
-      };
-    }
-
     it('restores a group whose text only appears after the initial pass', () => {
       document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
 
@@ -455,6 +497,45 @@ describe('restoring highlight groups', () => {
       expect(send({ action: 'getRestoredGroupIds' })).toEqual({
         success: true,
         groupIds: ['ok'],
+        pendingRestoreMs: 0,
+      });
+    });
+
+    it('reports how long the page still has restore work queued for', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([lateGroup('late', 'Late content')]);
+
+      // A retry is queued, so the entry is not missing yet - just not restored
+      // yet. The popup waits this out instead of dimming it.
+      const pending = send({ action: 'getRestoredGroupIds' });
+      expect(pending.groupIds).toEqual([]);
+      expect(pending.pendingRestoreMs).toBeGreaterThan(0);
+
+      document.body.innerHTML += '<p>Late content arrives.</p>';
+      jest.advanceTimersByTime(1500);
+
+      expect(send({ action: 'getRestoredGroupIds' })).toEqual({
+        success: true,
+        groupIds: ['late'],
+        pendingRestoreMs: 0,
+      });
+    });
+
+    it('stops reporting pending work once the queued retry has run', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([lateGroup('late', 'Late content')]);
+      jest.advanceTimersByTime(1500);
+
+      // The retry ran and found nothing. Now the entry really is missing, and
+      // the popup has to mark it rather than keep waiting.
+      expect(send({ action: 'getRestoredGroupIds' })).toEqual({
+        success: true,
+        groupIds: [],
+        pendingRestoreMs: 0,
       });
     });
 
@@ -474,7 +555,7 @@ describe('restoring highlight groups', () => {
 
       loadContentScript({ highlightsResponse: {} });
       restore([group]);
-      expect(send({ action: 'getRestoredGroupIds' })).toEqual({ success: true, groupIds: [] });
+      expect(send({ action: 'getRestoredGroupIds' }).groupIds).toEqual([]);
 
       document.body.innerHTML += '<p>Late content arrives.</p>';
 
