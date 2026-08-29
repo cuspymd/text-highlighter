@@ -21,7 +21,7 @@
 
 ### 2. 하이라이트 목록에서 해당 위치로 점프가 안 됨 — 팝업은 완료 (#110), 페이지 목록은 남음
 
-팝업의 하이라이트 항목은 클릭하면 해당 하이라이트로 스크롤한다(#110). 미니맵의 `scrollToHighlight()`(`minimap.js`)를 재사용했다.
+팝업의 하이라이트 항목은 클릭하면 해당 하이라이트로 스크롤한다(#110). 팝업이 `scrollToHighlight` 메시지를 보내면 `content.js`의 핸들러가 `content-common.js`의 공용 헬퍼 `scrollToHighlightElement()`를 호출한다. 미니맵의 `MinimapManager.scrollToHighlight()`도 같은 헬퍼를 감싼 것일 뿐이라, **미니맵이 꺼져 있어도 팝업에서의 이동은 동작한다.**
 
 남은 것: 페이지 목록(`pages-list.js`)의 "Open Page"는 여전히 페이지만 열 뿐 특정 하이라이트로 이동하지 못한다.
 
