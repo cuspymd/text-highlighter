@@ -178,38 +178,52 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   }
 
+  // Firefox's browserAPI is the native `browser` object, whose tabs.sendMessage
+  // takes options as its third argument and answers with a promise - a callback
+  // passed there is never called. Chrome MV3 returns a promise too, and rejects
+  // instead of setting lastError when nothing is listening, so the promise form
+  // is the one that works on both. Same shape as shared/tab-broadcast.js.
+  async function sendToTab(tabId, message) {
+    try {
+      return await browserAPI.tabs.sendMessage(tabId, message);
+    } catch (error) {
+      debugLog('Message to tab failed:', message.action, error);
+      return null;
+    }
+  }
+
   // Ask the page which highlights it actually managed to restore, and mark the
   // rest. Without this a missing highlight is a list entry that looks normal and
   // does nothing when clicked.
-  function markMissingHighlights(tabId, renderedItems, waitedMs = 0) {
-    browserAPI.tabs.sendMessage(tabId, { action: 'getRestoredGroupIds' }, (response) => {
-      if (browserAPI.runtime.lastError || !response || !response.success) {
-        // No content script on this page, or it never answered. Leave the list
-        // alone rather than marking every entry as missing.
-        debugLog('getRestoredGroupIds failed:', browserAPI.runtime.lastError, response);
-        return;
-      }
+  async function markMissingHighlights(tabId, renderedItems, waitedMs = 0) {
+    const response = await sendToTab(tabId, { action: 'getRestoredGroupIds' });
 
-      // The page has not finished restoring - its initial pass, or the delayed
-      // retry. Marking now would dim entries that are about to appear, and
-      // nothing takes the mark back. The page says how long to hold off; ask
-      // again until it stops saying so, but only within a budget, so a page that
-      // never finishes still ends up with a list the user can act on.
-      const pendingMs = Number(response.pendingRestoreMs) || 0;
-      if (pendingMs > 0 && waitedMs < PENDING_RESTORE_MAX_WAIT_MS) {
-        const wait = Math.min(pendingMs, PENDING_RESTORE_MAX_WAIT_MS - waitedMs);
-        setTimeout(() => markMissingHighlights(tabId, renderedItems, waitedMs + wait), wait);
-        return;
-      }
+    if (!response || !response.success) {
+      // No content script on this page, or it never answered. Leave the list
+      // alone rather than marking every entry as missing.
+      debugLog('getRestoredGroupIds gave no answer:', response);
+      return;
+    }
 
-      const present = new Set((response.groupIds || []).map(String));
-      renderedItems.forEach((item, groupId) => {
-        // The list may have been re-rendered while this was in flight.
-        if (!item.isConnected) return;
-        if (!present.has(groupId)) {
-          markItemMissing(item, groupId, tabId);
-        }
-      });
+    // The page has not finished restoring - its initial pass, or the delayed
+    // retry. Marking now would dim entries that are about to appear, and
+    // nothing takes the mark back. The page says how long to hold off; ask
+    // again until it stops saying so, but only within a budget, so a page that
+    // never finishes still ends up with a list the user can act on.
+    const pendingMs = Number(response.pendingRestoreMs) || 0;
+    if (pendingMs > 0 && waitedMs < PENDING_RESTORE_MAX_WAIT_MS) {
+      const wait = Math.min(pendingMs, PENDING_RESTORE_MAX_WAIT_MS - waitedMs);
+      setTimeout(() => markMissingHighlights(tabId, renderedItems, waitedMs + wait), wait);
+      return;
+    }
+
+    const present = new Set((response.groupIds || []).map(String));
+    renderedItems.forEach((item, groupId) => {
+      // The list may have been re-rendered while this was in flight.
+      if (!item.isConnected) return;
+      if (!present.has(groupId)) {
+        markItemMissing(item, groupId, tabId);
+      }
     });
   }
 
@@ -236,26 +250,26 @@ document.addEventListener('DOMContentLoaded', async function () {
     retryBtn.className = 'retry-btn';
     retryBtn.textContent = browserAPI.i18n.getMessage('retryFindHighlight') || 'Find again';
 
-    retryBtn.addEventListener('click', function (e) {
+    retryBtn.addEventListener('click', async function (e) {
       e.stopPropagation();
       retryBtn.disabled = true;
 
-      browserAPI.tabs.sendMessage(tabId, {
+      const response = await sendToTab(tabId, {
         action: 'retryRestoreHighlight',
         groupId: groupId
-      }, (response) => {
-        if (!browserAPI.runtime.lastError && response && response.restored) {
-          clearItemMissing(item, note);
-          jumpToHighlight(groupId, tabId);
-          return;
-        }
-
-        debugLog('retryRestoreHighlight failed:', browserAPI.runtime.lastError, response);
-        retryBtn.disabled = false;
-        noteText.textContent =
-          browserAPI.i18n.getMessage('retryFindHighlightFailed') ||
-          'Still not found. The page content may have changed.';
       });
+
+      if (response && response.restored) {
+        clearItemMissing(item, note);
+        jumpToHighlight(groupId, tabId);
+        return;
+      }
+
+      debugLog('retryRestoreHighlight did not restore:', response);
+      retryBtn.disabled = false;
+      noteText.textContent =
+        browserAPI.i18n.getMessage('retryFindHighlightFailed') ||
+        'Still not found. The page content may have changed.';
     });
 
     note.appendChild(noteText);
@@ -272,21 +286,22 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   // Scroll the page to the highlight group and close the popup
-  function jumpToHighlight(groupId, tabId) {
-    browserAPI.tabs.sendMessage(tabId, {
+  async function jumpToHighlight(groupId, tabId) {
+    const response = await sendToTab(tabId, {
       action: 'scrollToHighlight',
       groupId: groupId
-    }, (response) => {
-      if (browserAPI.runtime.lastError || !response || !response.success) {
-        debugLog('scrollToHighlight failed:', browserAPI.runtime.lastError, response);
-        const message =
-          browserAPI.i18n.getMessage('highlightNotFoundOnPage') ||
-          'Could not find this highlight on the page.';
-        showAlertModal(message);
-        return;
-      }
-      window.close();
     });
+
+    if (!response || !response.success) {
+      debugLog('scrollToHighlight failed:', response);
+      const message =
+        browserAPI.i18n.getMessage('highlightNotFoundOnPage') ||
+        'Could not find this highlight on the page.';
+      showAlertModal(message);
+      return;
+    }
+
+    window.close();
   }
 
   // Delete highlight (group basis)
