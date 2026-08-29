@@ -184,6 +184,36 @@ describe('restoring highlight groups', () => {
     expect(highlightedTextFor('legacy')).toBe('Surviving sentence');
   });
 
+  it('resolves each ancestor only once during a legacy span restore', () => {
+    const paragraphs = Array.from({ length: 20 }, (_, i) => `<p>Line ${i}</p>`).join('');
+    document.body.innerHTML = `<div id="a"><div id="b"><div id="c">${paragraphs}</div></div></div>`;
+
+    // No selectors at all, so this group skips the quote pass (and its text
+    // model) and goes straight to the legacy DOM search.
+    const group = {
+      groupId: 'legacy-only',
+      color: '#ffff00',
+      text: 'Line 19',
+      spans: [{ text: 'Line 19', position: 0 }],
+    };
+
+    loadContentScript();
+    const styleSpy = jest.spyOn(window, 'getComputedStyle');
+
+    try {
+      restore([group]);
+
+      expect(highlightedTextFor('legacy-only')).toBe('Line 19');
+
+      const resolved = styleSpy.mock.calls.map(call => call[0]);
+      // 20 <p> ancestors plus the three shared wrappers, each resolved once.
+      expect(resolved).toHaveLength(23);
+      expect(new Set(resolved).size).toBe(23);
+    } finally {
+      styleSpy.mockRestore();
+    }
+  });
+
   it('leaves nothing highlighted when neither the quote nor the legacy spans match', () => {
     document.body.innerHTML = '<p>Anchor text for selector building.</p>';
     const group = makeGroup('gone', 'Anchor text');

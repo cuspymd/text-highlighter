@@ -473,31 +473,29 @@
   }
 
   /**
-   * Build a normalized text model from a root node.
-   * @param {Node} root - The root element to build the model from (e.g., document.body).
-   * @returns {Object} { text: string, segments: Array }
+   * Create a memoized "is this element rendered" test for one tree walk.
+   *
+   * getComputedStyle forces a style recalc, and walking every text node's
+   * ancestor chain re-resolves the same elements once per sibling. The returned
+   * function stops at the first cached ancestor and writes the outcome back onto
+   * every element on the path, so later text nodes under the same ancestors
+   * resolve in a single lookup.
+   *
+   * Layout cannot change during a synchronous walk, but it can between walks, so
+   * callers must create a resolver per pass rather than sharing a long-lived one.
+   *
+   * @returns {function(Element): boolean}
    */
-  function buildNormalizedTextModel(root) {
-    let normalizedText = '';
-    const segments = [];
-    let currentLength = 0;
+  function createVisibilityResolver() {
+    const cache = new Map();
 
-    // getComputedStyle forces a style recalc, and walking every text node's
-    // ancestor chain re-resolves the same elements once per sibling. Layout
-    // cannot change while the tree walk runs, so results are memoized for the
-    // duration of this build; a fresh cache per call avoids stale entries.
-    const visibilityCache = new Map();
-
-    // Walk up to the body/root boundary, stopping at the first cached ancestor,
-    // then write the outcome back onto every element on the path so later text
-    // nodes under the same ancestors resolve in a single lookup.
-    function isDisplayedChain(element) {
+    return function isDisplayed(element) {
       const path = [];
       let el = element;
       let displayed = true;
 
       while (el && el !== document.body && el !== document.documentElement) {
-        const cached = visibilityCache.get(el);
+        const cached = cache.get(el);
         if (cached !== undefined) {
           displayed = cached;
           break;
@@ -513,10 +511,23 @@
         el = el.parentNode;
       }
 
-      path.forEach(visited => visibilityCache.set(visited, displayed));
+      path.forEach(visited => cache.set(visited, displayed));
 
       return displayed;
-    }
+    };
+  }
+
+  /**
+   * Build a normalized text model from a root node.
+   * @param {Node} root - The root element to build the model from (e.g., document.body).
+   * @returns {Object} { text: string, segments: Array }
+   */
+  function buildNormalizedTextModel(root) {
+    let normalizedText = '';
+    const segments = [];
+    let currentLength = 0;
+
+    const isDisplayed = createVisibilityResolver();
 
     const walker = document.createTreeWalker(
       root,
@@ -532,7 +543,7 @@
           if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
             return NodeFilter.FILTER_REJECT;
           }
-          if (!isDisplayedChain(parent)) {
+          if (!isDisplayed(parent)) {
             return NodeFilter.FILTER_REJECT;
           }
           return NodeFilter.FILTER_ACCEPT;
@@ -854,6 +865,7 @@
     processSelectionRange,
     selectionOverlapsHighlight,
     buildHighlightGroup,
+    createVisibilityResolver,
     buildNormalizedTextModel,
     rangeToTextPosition,
     buildQuoteSelector,

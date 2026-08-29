@@ -529,6 +529,8 @@ function applyHighlights() {
 function highlightTextInDocument(element, spanInfos, color, groupId) {
   if (!spanInfos || spanInfos.length === 0) return false;
 
+  const isDisplayed = createVisibilityResolver();
+
   // 1. Collect text nodes
   const walker = document.createTreeWalker(
     element,
@@ -549,12 +551,8 @@ function highlightTextInDocument(element, spanInfos, color, groupId) {
         ].includes(parentTagName)) {
           return NodeFilter.FILTER_REJECT;
         }
-        let el = parent;
-        while (el && el !== document.body && el !== document.documentElement) {
-          if (window.getComputedStyle(el).display === 'none') {
-            return NodeFilter.FILTER_REJECT;
-          }
-          el = el.parentNode;
+        if (!isDisplayed(parent)) {
+          return NodeFilter.FILTER_REJECT;
         }
         return NodeFilter.FILTER_ACCEPT;
       }
@@ -791,6 +789,17 @@ function convertSelectionRange(range) {
     return range;
   }
   return contentCore.convertSelectionRange(range, debugLog);
+}
+
+// Memoized visibility test for one tree walk. content-core.js is declared ahead
+// of this file in the manifest, so the fallback only guards against the core
+// module failing to evaluate; treating everything as hidden keeps a broken core
+// from highlighting text the user cannot see.
+function createVisibilityResolver() {
+  if (!contentCore || typeof contentCore.createVisibilityResolver !== 'function') {
+    return () => false;
+  }
+  return contentCore.createVisibilityResolver();
 }
 
 // Refactored highlightSelectedText function with tree traversal algorithm
