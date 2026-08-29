@@ -482,6 +482,42 @@
     const segments = [];
     let currentLength = 0;
 
+    // getComputedStyle forces a style recalc, and walking every text node's
+    // ancestor chain re-resolves the same elements once per sibling. Layout
+    // cannot change while the tree walk runs, so results are memoized for the
+    // duration of this build; a fresh cache per call avoids stale entries.
+    const visibilityCache = new Map();
+
+    // Walk up to the body/root boundary, stopping at the first cached ancestor,
+    // then write the outcome back onto every element on the path so later text
+    // nodes under the same ancestors resolve in a single lookup.
+    function isDisplayedChain(element) {
+      const path = [];
+      let el = element;
+      let displayed = true;
+
+      while (el && el !== document.body && el !== document.documentElement) {
+        const cached = visibilityCache.get(el);
+        if (cached !== undefined) {
+          displayed = cached;
+          break;
+        }
+
+        path.push(el);
+
+        if (window.getComputedStyle(el).display === 'none') {
+          displayed = false;
+          break;
+        }
+
+        el = el.parentNode;
+      }
+
+      path.forEach(visited => visibilityCache.set(visited, displayed));
+
+      return displayed;
+    }
+
     const walker = document.createTreeWalker(
       root,
       NodeFilter.SHOW_TEXT,
@@ -496,12 +532,8 @@
           if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
             return NodeFilter.FILTER_REJECT;
           }
-          let el = parent;
-          while (el && el !== document.body && el !== document.documentElement) {
-            if (window.getComputedStyle(el).display === 'none') {
-              return NodeFilter.FILTER_REJECT;
-            }
-            el = el.parentNode;
+          if (!isDisplayedChain(parent)) {
+            return NodeFilter.FILTER_REJECT;
           }
           return NodeFilter.FILTER_ACCEPT;
         }
