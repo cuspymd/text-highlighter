@@ -5,9 +5,10 @@ import { initializeThemeWatcher } from './shared/theme.js';
 
 const URL_PARAMS  = new URLSearchParams(window.location.search);
 
-// Ceiling on how long the popup defers marking entries missing while the page
-// finishes a queued restore pass. The page's own delays are well under this.
-const PENDING_RESTORE_MAX_WAIT_MS = 2000;
+// Ceiling on the total time the popup defers marking entries missing while the
+// page finishes restoring. Generous enough to cover a cold service worker, which
+// is what puts the page's own timers well past their nominal delays.
+const PENDING_RESTORE_MAX_WAIT_MS = 4000;
 
 async function getActiveTab() {
   // Open popup.html?tab=5 to use tab ID 5, etc.
@@ -180,7 +181,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Ask the page which highlights it actually managed to restore, and mark the
   // rest. Without this a missing highlight is a list entry that looks normal and
   // does nothing when clicked.
-  function markMissingHighlights(tabId, renderedItems, alreadyWaited = false) {
+  function markMissingHighlights(tabId, renderedItems, waitedMs = 0) {
     browserAPI.tabs.sendMessage(tabId, { action: 'getRestoredGroupIds' }, (response) => {
       if (browserAPI.runtime.lastError || !response || !response.success) {
         // No content script on this page, or it never answered. Leave the list
@@ -189,17 +190,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
       }
 
-      // The page still has restore work queued - its initial pass, or the
-      // delayed retry. Opening the popup inside that window would otherwise dim
-      // entries that are about to appear, and nothing takes the mark back. Wait
-      // it out once; if the answer is still pending after that, mark anyway
-      // rather than leaving the list in a state the user cannot act on.
+      // The page has not finished restoring - its initial pass, or the delayed
+      // retry. Marking now would dim entries that are about to appear, and
+      // nothing takes the mark back. The page says how long to hold off; ask
+      // again until it stops saying so, but only within a budget, so a page that
+      // never finishes still ends up with a list the user can act on.
       const pendingMs = Number(response.pendingRestoreMs) || 0;
-      if (pendingMs > 0 && !alreadyWaited) {
-        setTimeout(
-          () => markMissingHighlights(tabId, renderedItems, true),
-          Math.min(pendingMs, PENDING_RESTORE_MAX_WAIT_MS)
-        );
+      if (pendingMs > 0 && waitedMs < PENDING_RESTORE_MAX_WAIT_MS) {
+        const wait = Math.min(pendingMs, PENDING_RESTORE_MAX_WAIT_MS - waitedMs);
+        setTimeout(() => markMissingHighlights(tabId, renderedItems, waitedMs + wait), wait);
         return;
       }
 

@@ -18,11 +18,18 @@ const RESTORE_RETRY_DELAY_MS = 1500;
 let restoreRetryTimeout = null;
 let hasScheduledRestoreRetry = false;
 
-// A restore pass that has been queued but has not run yet. The popup asks for
-// this so it can wait rather than marking entries missing that are simply not
-// restored yet - a mark it would never take back.
+// Whether a restore pass is still coming. The popup asks for this so it can
+// wait rather than marking entries missing that are simply not restored yet - a
+// mark it would never take back.
+//
+// This has to be a state and not a deadline. The path to the first restore runs
+// through two message round trips - colors, then the stored highlights - and a
+// cold service worker can make either of them long. A timestamp set up front
+// would report "done" while the page had not even asked for its highlights yet.
+// The deadline below only says when it is worth asking again.
+let restorePending = true;
 let pendingRestoreDeadline = 0;
-const PENDING_RESTORE_REPORT_BUFFER_MS = 150;
+const PENDING_RESTORE_RECHECK_MS = 300;
 
 window.TextHighlighterState = {
   get() {
@@ -139,14 +146,19 @@ window.addEventListener('message', (event) => {
 
 injectNavigationBridge();
 
-markRestorePending(500);
+// The restore is already pending here, from the initial value of restorePending:
+// this round trip is part of the wait, and the popup can open during it. The
+// deadline is only set once the timer it describes actually exists.
 getColorsFromBackground().then(() => {
+  markRestorePending(500);
   setTimeout(() => {
     loadHighlights();
     createHighlightControls();
   }, 500);
 }).catch(error => {
   console.error('Failed to load colors from background:', error);
+  // Nothing will call loadHighlights now, so no restore is coming.
+  clearRestorePending();
   createHighlightControls();
 });
 
@@ -270,6 +282,8 @@ function loadHighlights() {
         applyHighlights();
       } else {
         debugLog('No highlights found or invalid response');
+        // No pass is coming, so stop reporting one as pending.
+        clearRestorePending();
       }
 
       initMinimap();
@@ -615,20 +629,23 @@ function restoreLegacyGroup(group, batch = null) {
 }
 
 function markRestorePending(delayMs) {
+  restorePending = true;
   pendingRestoreDeadline = Math.max(pendingRestoreDeadline, Date.now() + delayMs);
 }
 
 function clearRestorePending() {
+  restorePending = false;
   pendingRestoreDeadline = 0;
 }
 
-// Zero once the queued pass has run, and once its deadline has passed even if it
-// never did - a stuck deadline must not make the popup wait forever. The buffer
-// covers the pass itself, which the caller is also waiting on.
+// Zero once the pass has actually run. While one is still coming, how long to
+// wait before asking again: until the queued timer is due, or a short recheck
+// once it is, since what is left then is a message round trip of unknown length.
+// The caller caps its own total wait, so a page that never finishes restoring
+// does not hold the popup forever.
 function getPendingRestoreMs() {
-  if (!pendingRestoreDeadline) return 0;
-  const remaining = pendingRestoreDeadline - Date.now();
-  return remaining > 0 ? remaining + PENDING_RESTORE_REPORT_BUFFER_MS : 0;
+  if (!restorePending) return 0;
+  return Math.max(pendingRestoreDeadline - Date.now(), PENDING_RESTORE_RECHECK_MS);
 }
 
 function clearRestoreRetryTimeout() {

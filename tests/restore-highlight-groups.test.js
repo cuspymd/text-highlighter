@@ -14,7 +14,15 @@ describe('restoring highlight groups', () => {
   // `getHighlights` defaults to an empty list. Tests that drive timers pass
   // `{}` instead, so the content script's own deferred load cannot call
   // applyHighlights again and reset the state under test.
-  function loadContentScript({ highlightsResponse = { highlights: [] } } = {}) {
+  // `deferColors` / `deferHighlights` leave one of the two round trips on the
+  // path to the first restore unanswered, standing in for a cold service worker.
+  // `failColors` answers the first one in the shape that rejects.
+  function loadContentScript({
+    highlightsResponse = { highlights: [] },
+    deferColors = false,
+    deferHighlights = false,
+    failColors = false,
+  } = {}) {
     window.debugLog = jest.fn();
     window.hideHighlightControls = jest.fn();
     window.createHighlightControls = jest.fn();
@@ -30,8 +38,14 @@ describe('restoring highlight groups', () => {
       runtime: {
         sendMessage: jest.fn((message, callback) => {
           if (!callback) return;
-          if (message.action === 'getColors') return callback({ colors: [] });
-          if (message.action === 'getHighlights') return callback(highlightsResponse);
+          if (message.action === 'getColors') {
+            if (deferColors) return;
+            return callback(failColors ? {} : { colors: [] });
+          }
+          if (message.action === 'getHighlights') {
+            if (deferHighlights) return;
+            return callback(highlightsResponse);
+          }
           callback({ success: true });
         }),
         getURL: jest.fn(() => 'chrome-extension://test/content-scripts/navigation-bridge.js'),
@@ -521,6 +535,48 @@ describe('restoring highlight groups', () => {
         groupIds: ['late'],
         pendingRestoreMs: 0,
       });
+    });
+
+    it('keeps reporting pending while the page is still fetching its colors', () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      // The timer that leads to the first restore is not even scheduled until
+      // this round trip answers, so no elapsed time may make the page look done.
+      loadContentScript({ deferColors: true });
+      jest.advanceTimersByTime(60000);
+
+      const pending = send({ action: 'getRestoredGroupIds' });
+      expect(pending.groupIds).toEqual([]);
+      expect(pending.pendingRestoreMs).toBeGreaterThan(0);
+    });
+
+    it('keeps reporting pending while the stored highlights are on the way', async () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      loadContentScript({ deferHighlights: true });
+      await Promise.resolve();
+      // The 500ms timer has fired and loadHighlights has asked, but the answer
+      // that would run the restore has not come back.
+      jest.advanceTimersByTime(60000);
+
+      const asked = global.browserAPI.runtime.sendMessage.mock.calls
+        .some(([message]) => message.action === 'getHighlights');
+      expect(asked).toBe(true);
+
+      expect(send({ action: 'getRestoredGroupIds' }).pendingRestoreMs).toBeGreaterThan(0);
+    });
+
+    it('stops reporting pending when no restore is coming at all', async () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      // Colors never arrive, so nothing will call loadHighlights. Reporting this
+      // as pending forever would make the popup wait out its whole budget on
+      // every page where the background is unreachable.
+      loadContentScript({ failColors: true });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(send({ action: 'getRestoredGroupIds' }).pendingRestoreMs).toBe(0);
     });
 
     it('stops reporting pending work once the queued retry has run', () => {
