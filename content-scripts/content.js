@@ -370,11 +370,15 @@ function processRestoreGroups(groups, reason) {
   // model valid for the whole quote pass.
   const unresolved = restoreQuoteGroups(quoteGroups, reason);
 
+  const batch = createLegacyRestoreBatch(document.body);
+
   unresolved.concat(legacyGroups).forEach(group => {
     try {
-      restoreLegacyGroup(group);
+      restoreLegacyGroup(group, batch);
     } catch (error) {
       debugLog(`Error during ${reason}:`, error);
+      // The DOM may have been left half-modified, so stop trusting the list.
+      batch.invalidate();
     }
   });
 }
@@ -527,13 +531,14 @@ function maskClaimedRegions(text, claimed) {
 
 // Fallback for groups saved without quote selectors, and for quote groups that
 // could not be placed against the current DOM.
-function restoreLegacyGroup(group) {
+function restoreLegacyGroup(group, batch = null) {
   if (group.spans && group.spans.length > 0) {
      const success = highlightTextInDocument(
         document.body,
         group.spans,
         group.color,
-        group.groupId
+        group.groupId,
+        batch
      );
      if (success) {
         debugLog('Restored highlight using legacy spans:', group.groupId);
@@ -557,15 +562,12 @@ function applyHighlights() {
   updateMinimapMarkers();
 }
 
-// Find text in document and apply highlight for a group of spans
-function highlightTextInDocument(element, spanInfos, color, groupId) {
-  if (!spanInfos || spanInfos.length === 0) return false;
-
+// Walk the document once for the text nodes a legacy restore may search.
+function collectRestorableTextNodes(root) {
   const isDisplayed = createVisibilityResolver();
 
-  // 1. Collect text nodes
   const walker = document.createTreeWalker(
-    element,
+    root,
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: function (node) {
@@ -591,11 +593,44 @@ function highlightTextInDocument(element, spanInfos, color, groupId) {
     },
     false
   );
+
   const textNodes = [];
   let currentNode;
   while (currentNode = walker.nextNode()) {
     textNodes.push(currentNode);
   }
+  return textNodes;
+}
+
+// Share one text node list across a run of legacy restores.
+//
+// Collecting the list is a full document walk, and it used to run once per
+// group. A group that matches nothing leaves the DOM untouched - which is the
+// shape of a batch of unplaceable highlights, and exactly what a delayed retry
+// would process - so the list is collected once and dropped only when a group is
+// about to change the DOM.
+function createLegacyRestoreBatch(root) {
+  let textNodes = null;
+
+  return {
+    textNodes() {
+      if (!textNodes) {
+        textNodes = collectRestorableTextNodes(root);
+      }
+      return textNodes;
+    },
+    invalidate() {
+      textNodes = null;
+    },
+  };
+}
+
+// Find text in document and apply highlight for a group of spans
+function highlightTextInDocument(element, spanInfos, color, groupId, batch = null) {
+  if (!spanInfos || spanInfos.length === 0) return false;
+
+  // 1. Collect text nodes
+  const textNodes = batch ? batch.textNodes() : collectRestorableTextNodes(element);
   if (textNodes.length === 0) {
     debugLog('No suitable text nodes found for group:', groupId);
     return false;
@@ -637,6 +672,12 @@ function highlightTextInDocument(element, spanInfos, color, groupId) {
     }
   }
   // 3. Apply highlight to the first span
+  //
+  // Past this point the DOM changes, including when a later span in this group
+  // is not found and the group still reports failure, so any shared node list is
+  // dropped here rather than on success.
+  if (batch) batch.invalidate();
+
   let currentNodeIdx = textNodes.indexOf(bestCandidate.node);
   let currentCharIdx = bestCandidate.idx;
   let highlightSpans = [];
