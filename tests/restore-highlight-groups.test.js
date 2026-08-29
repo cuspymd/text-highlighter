@@ -278,6 +278,75 @@ describe('restoring highlight groups', () => {
     }
   });
 
+  describe('batched legacy restores', () => {
+    function legacyGroup(groupId, ...texts) {
+      return {
+        groupId,
+        color: '#ffff00',
+        text: texts.join(''),
+        spans: texts.map(text => ({ text, position: 0 })),
+      };
+    }
+
+    it('walks the document once for a batch of unplaceable groups', () => {
+      const paragraphs = Array.from({ length: 20 }, (_, i) => `<p>Line ${i}</p>`).join('');
+      document.body.innerHTML = `<div id="a"><div id="b"><div id="c">${paragraphs}</div></div></div>`;
+
+      const groups = Array.from({ length: 8 }, (_, i) => legacyGroup(`miss${i}`, `absent text ${i}`));
+
+      loadContentScript();
+      const styleSpy = jest.spyOn(window, 'getComputedStyle');
+
+      try {
+        restore(groups);
+
+        expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+
+        // None of these groups touches the DOM, so the collected node list stays
+        // valid: one walk over 23 elements for the whole batch, not one each.
+        const resolved = styleSpy.mock.calls.map(call => call[0]);
+        expect(resolved).toHaveLength(23);
+      } finally {
+        styleSpy.mockRestore();
+      }
+    });
+
+    it('still places every group when the batch does mutate the document', () => {
+      document.body.innerHTML =
+        '<p>first legacy target</p><p>second legacy target</p><p>third legacy target</p>';
+
+      const groups = [
+        legacyGroup('l1', 'first legacy'),
+        legacyGroup('l2', 'second legacy'),
+        legacyGroup('l3', 'third legacy'),
+      ];
+
+      loadContentScript();
+      restore(groups);
+
+      expect(highlightedTextFor('l1')).toBe('first legacy');
+      expect(highlightedTextFor('l2')).toBe('second legacy');
+      expect(highlightedTextFor('l3')).toBe('third legacy');
+    });
+
+    it('drops the shared list when a group mutates the document and then fails', () => {
+      document.body.innerHTML = '<p>alpha beta gamma delta</p>';
+
+      const groups = [
+        // 'alpha' is wrapped before 'never-here' turns the group into a failure,
+        // so the DOM changed even though the group reports failure.
+        legacyGroup('partial', 'alpha', 'never-here'),
+        legacyGroup('after', 'gamma'),
+      ];
+
+      loadContentScript();
+      restore(groups);
+
+      expect(highlightedTextFor('after')).toBe('gamma');
+      expect(document.querySelector('[data-group-id="after"]').isConnected).toBe(true);
+    });
+  });
+
   it('leaves nothing highlighted when neither the quote nor the legacy spans match', () => {
     document.body.innerHTML = '<p>Anchor text for selector building.</p>';
     const group = makeGroup('gone', 'Anchor text');
