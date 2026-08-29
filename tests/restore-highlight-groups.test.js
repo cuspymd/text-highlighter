@@ -1,12 +1,28 @@
 import fs from 'fs';
 import '../content-scripts/content-core.js';
 
+// content-common.js declares its helpers as plain globals, so it has to be
+// evaluated the way the manifest loads it rather than imported as a module.
+const commonSource = fs.readFileSync(new URL('../content-scripts/content-common.js', import.meta.url), 'utf8');
 const contentSource = fs.readFileSync(new URL('../content-scripts/content.js', import.meta.url), 'utf8');
 
 describe('restoring highlight groups', () => {
   const core = window.TextHighlighterCore;
 
-  function loadContentScript() {
+  let messageListener = null;
+
+  // `getHighlights` defaults to an empty list. Tests that drive timers pass
+  // `{}` instead, so the content script's own deferred load cannot call
+  // applyHighlights again and reset the state under test.
+  // `deferColors` / `deferHighlights` leave one of the two round trips on the
+  // path to the first restore unanswered, standing in for a cold service worker.
+  // `failColors` answers the first one in the shape that rejects.
+  function loadContentScript({
+    highlightsResponse = { highlights: [] },
+    deferColors = false,
+    deferHighlights = false,
+    failColors = false,
+  } = {}) {
     window.debugLog = jest.fn();
     window.hideHighlightControls = jest.fn();
     window.createHighlightControls = jest.fn();
@@ -22,18 +38,25 @@ describe('restoring highlight groups', () => {
       runtime: {
         sendMessage: jest.fn((message, callback) => {
           if (!callback) return;
-          if (message.action === 'getColors') return callback({ colors: [] });
-          if (message.action === 'getHighlights') return callback({ highlights: [] });
+          if (message.action === 'getColors') {
+            if (deferColors) return;
+            return callback(failColors ? {} : { colors: [] });
+          }
+          if (message.action === 'getHighlights') {
+            if (deferHighlights) return;
+            return callback(highlightsResponse);
+          }
           callback({ success: true });
         }),
         getURL: jest.fn(() => 'chrome-extension://test/content-scripts/navigation-bridge.js'),
-        onMessage: { addListener: jest.fn() },
+        onMessage: { addListener: jest.fn(listener => { messageListener = listener; }) },
       },
       storage: {
         local: { get: jest.fn((keys, callback) => callback({ minimapVisible: false })) },
       },
     };
 
+    window.eval(commonSource);
     window.eval(contentSource);
   }
 
@@ -61,6 +84,21 @@ describe('restoring highlight groups', () => {
     };
   }
 
+  // A group whose text is not on the page yet, standing in for content that
+  // loads after the initial restore has already run.
+  function lateGroup(groupId, exactText) {
+    return {
+      groupId,
+      color: '#ffff00',
+      text: exactText,
+      selectors: {
+        quote: { exact: exactText, prefix: '', suffix: '' },
+        textPosition: { start: 0, end: exactText.length },
+      },
+      spans: [{ text: exactText, position: 0 }],
+    };
+  }
+
   function restore(groups) {
     window.TextHighlighterState.set({ highlights: groups });
     window.applyHighlights();
@@ -79,6 +117,7 @@ describe('restoring highlight groups', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    messageListener = null;
     document.head.innerHTML = '';
     document.body.innerHTML = '';
 
@@ -345,6 +384,329 @@ describe('restoring highlight groups', () => {
       expect(highlightedTextFor('after')).toBe('gamma');
       expect(document.querySelector('[data-group-id="after"]').isConnected).toBe(true);
     });
+
+    it('rolls back the spans of a group that fails partway through', () => {
+      document.body.innerHTML = '<p>alpha beta gamma delta</p>';
+
+      loadContentScript();
+      restore([legacyGroup('partial', 'alpha', 'never-here')]);
+
+      // 'alpha' was wrapped before the group turned into a failure. Leaving that
+      // span behind would report the group as restored and hide 'alpha' from the
+      // next restore's walker.
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+      expect(document.querySelector('p').textContent).toBe('alpha beta gamma delta');
+      expect(document.querySelector('p').childNodes).toHaveLength(1);
+    });
+
+    it('does not report a group that failed partway through as restored', () => {
+      document.body.innerHTML = '<p>alpha beta gamma delta</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([legacyGroup('partial', 'alpha', 'never-here')]);
+
+      let response;
+      messageListener({ action: 'getRestoredGroupIds' }, {}, value => { response = value; });
+      expect(response.groupIds).toEqual([]);
+    });
+
+    it('retries a partially applied group against its own first span', () => {
+      document.body.innerHTML = '<p>alpha beta</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      // 'omega' is not on the page yet, so this group fails after wrapping
+      // 'alpha'. A leftover span there would hide the only 'alpha' from the
+      // retry's walker, which would then either find nothing or, on a page with
+      // a second 'alpha', anchor the group to the wrong one.
+      restore([legacyGroup('partial', 'alpha', 'omega')]);
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+
+      document.body.innerHTML += '<p>omega arrives late</p>';
+      jest.advanceTimersByTime(1500);
+
+      expect(highlightedTextFor('partial')).toBe('alphaomega');
+    });
+  });
+
+  describe('delayed retry', () => {
+    it('restores a group whose text only appears after the initial pass', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([lateGroup('late', 'Late content')]);
+
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+
+      document.body.innerHTML += '<p>Late content arrives.</p>';
+      jest.advanceTimersByTime(1500);
+
+      expect(highlightedTextFor('late')).toBe('Late content');
+    });
+
+    it('retries once and no more, even if the text turns up later still', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([lateGroup('late', 'Late content')]);
+
+      // The one retry fires while the text is still missing.
+      jest.advanceTimersByTime(1500);
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+
+      document.body.innerHTML += '<p>Late content arrives far too late.</p>';
+      jest.advanceTimersByTime(60000);
+
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+    });
+
+    it('schedules nothing when every group restored', () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([makeGroup('ok', 'Present content')]);
+
+      expect(highlightedTextFor('ok')).toBe('Present content');
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it('resolves a retried group against the text the page had before restoring', () => {
+      // Two occurrences of the same word. The saved selector tells them apart by
+      // the words on either side of the second one - words that are themselves
+      // highlighted by the time the retry runs.
+      document.body.innerHTML =
+        '<p>note TARGET here highlighted phrase TARGET trailing words end</p>';
+
+      const before = makeGroup('before', 'highlighted phrase');
+      const after = makeGroup('after', 'trailing words');
+      const late = makeGroup('late', 'TARGET', 1);
+
+      // The page the restore actually starts from: the TARGETs have not loaded.
+      document.body.innerHTML = '<p>note here highlighted phrase trailing words end</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([before, after, late]);
+
+      expect(highlightedTextFor('before')).toBe('highlighted phrase');
+      expect(highlightedTextFor('after')).toBe('trailing words');
+      expect(highlightedTextFor('late')).toBe('');
+
+      // The late content arrives around the two highlights already applied.
+      const paragraph = document.querySelector('p');
+      paragraph.firstChild.nodeValue = 'note TARGET here ';
+      paragraph.childNodes[2].nodeValue = ' TARGET ';
+      jest.advanceTimersByTime(1500);
+
+      const placed = document.querySelector('[data-group-id="late"]');
+      expect(placed).not.toBeNull();
+
+      // It has to land on the second TARGET, the one the selector was built for.
+      const upToSpan = document.createRange();
+      upToSpan.setStart(paragraph, 0);
+      upToSpan.setEndBefore(placed);
+      expect(upToSpan.toString().split('TARGET')).toHaveLength(2);
+    });
+
+    it('drops a pending retry when the page navigates', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([lateGroup('late', 'Late content')]);
+
+      // The retry is queued against the previous URL's groups, so navigating
+      // away has to cancel it rather than let it apply here.
+      window.location.hash = '#next';
+      window.dispatchEvent(new MessageEvent('message', {
+        source: window,
+        data: {
+          source: 'text-highlighter-navigation-bridge',
+          type: 'location-changed',
+          href: window.location.href,
+          trigger: 'test',
+        },
+      }));
+
+      document.body.innerHTML += '<p>Late content arrives.</p>';
+      jest.advanceTimersByTime(60000);
+
+      expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
+    });
+  });
+
+  describe('popup retry messages', () => {
+    function send(message) {
+      let response;
+      messageListener(message, {}, value => { response = value; });
+      return response;
+    }
+
+    it('reports which groups are actually on the page', () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([makeGroup('ok', 'Present content')]);
+
+      expect(send({ action: 'getRestoredGroupIds' })).toEqual({
+        success: true,
+        groupIds: ['ok'],
+        pendingRestoreMs: 0,
+      });
+    });
+
+    it('reports how long the page still has restore work queued for', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([lateGroup('late', 'Late content')]);
+
+      // A retry is queued, so the entry is not missing yet - just not restored
+      // yet. The popup waits this out instead of dimming it.
+      const pending = send({ action: 'getRestoredGroupIds' });
+      expect(pending.groupIds).toEqual([]);
+      expect(pending.pendingRestoreMs).toBeGreaterThan(0);
+
+      document.body.innerHTML += '<p>Late content arrives.</p>';
+      jest.advanceTimersByTime(1500);
+
+      expect(send({ action: 'getRestoredGroupIds' })).toEqual({
+        success: true,
+        groupIds: ['late'],
+        pendingRestoreMs: 0,
+      });
+    });
+
+    it('keeps reporting pending while the page is still fetching its colors', () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      // The timer that leads to the first restore is not even scheduled until
+      // this round trip answers, so no elapsed time may make the page look done.
+      loadContentScript({ deferColors: true });
+      jest.advanceTimersByTime(60000);
+
+      const pending = send({ action: 'getRestoredGroupIds' });
+      expect(pending.groupIds).toEqual([]);
+      expect(pending.pendingRestoreMs).toBeGreaterThan(0);
+    });
+
+    it('keeps reporting pending while the stored highlights are on the way', async () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      loadContentScript({ deferHighlights: true });
+      await Promise.resolve();
+      // The 500ms timer has fired and loadHighlights has asked, but the answer
+      // that would run the restore has not come back.
+      jest.advanceTimersByTime(60000);
+
+      const asked = global.browserAPI.runtime.sendMessage.mock.calls
+        .some(([message]) => message.action === 'getHighlights');
+      expect(asked).toBe(true);
+
+      expect(send({ action: 'getRestoredGroupIds' }).pendingRestoreMs).toBeGreaterThan(0);
+    });
+
+    it('stops reporting pending when no restore is coming at all', async () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      // Colors never arrive, so nothing will call loadHighlights. Reporting this
+      // as pending forever would make the popup wait out its whole budget on
+      // every page where the background is unreachable.
+      loadContentScript({ failColors: true });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(send({ action: 'getRestoredGroupIds' }).pendingRestoreMs).toBe(0);
+    });
+
+    it('stops reporting pending work once the queued retry has run', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([lateGroup('late', 'Late content')]);
+      jest.advanceTimersByTime(1500);
+
+      // The retry ran and found nothing. Now the entry really is missing, and
+      // the popup has to mark it rather than keep waiting.
+      expect(send({ action: 'getRestoredGroupIds' })).toEqual({
+        success: true,
+        groupIds: [],
+        pendingRestoreMs: 0,
+      });
+    });
+
+    it('restores a group on request once its text is on the page', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      const group = {
+        groupId: 'late',
+        color: '#ffff00',
+        text: 'Late content',
+        selectors: {
+          quote: { exact: 'Late content', prefix: '', suffix: '' },
+          textPosition: { start: 0, end: 12 },
+        },
+        spans: [{ text: 'Late content', position: 0 }],
+      };
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([group]);
+      expect(send({ action: 'getRestoredGroupIds' }).groupIds).toEqual([]);
+
+      document.body.innerHTML += '<p>Late content arrives.</p>';
+
+      expect(send({ action: 'retryRestoreHighlight', groupId: 'late' })).toEqual({
+        success: true,
+        restored: true,
+      });
+      expect(highlightedTextFor('late')).toBe('Late content');
+    });
+
+    it('reports failure when the text is still not on the page', () => {
+      document.body.innerHTML = '<p>Only this paragraph exists so far.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([{
+        groupId: 'gone',
+        color: '#ffff00',
+        text: 'Vanished content',
+        selectors: {
+          quote: { exact: 'Vanished content', prefix: '', suffix: '' },
+          textPosition: { start: 0, end: 16 },
+        },
+        spans: [{ text: 'Vanished content', position: 0 }],
+      }]);
+
+      expect(send({ action: 'retryRestoreHighlight', groupId: 'gone' })).toEqual({
+        success: true,
+        restored: false,
+      });
+    });
+
+    it('rejects a group id the page does not know about', () => {
+      document.body.innerHTML = '<p>Present content is here.</p>';
+
+      loadContentScript({ highlightsResponse: {} });
+      restore([makeGroup('ok', 'Present content')]);
+
+      expect(send({ action: 'retryRestoreHighlight', groupId: 'nope' })).toEqual({
+        success: false,
+        reason: 'unknown-group',
+      });
+    });
+  });
+
+  it('does not wrap a group again when a second pass runs over the same page', () => {
+    document.body.innerHTML = '<p>Present content is here.</p>';
+
+    loadContentScript({ highlightsResponse: {} });
+    restore([makeGroup('ok', 'Present content')]);
+    expect(document.querySelectorAll('[data-group-id="ok"]')).toHaveLength(1);
+
+    // Two restores can overlap - the load timer and a navigation pass both in
+    // flight, or a queued retry another pass has already satisfied. A group's
+    // own highlighted text counts as page text now, so this pass can find it.
+    window.applyHighlights();
+
+    expect(document.querySelectorAll('[data-group-id="ok"]')).toHaveLength(1);
+    expect(highlightedTextFor('ok')).toBe('Present content');
   });
 
   it('leaves nothing highlighted when neither the quote nor the legacy spans match', () => {

@@ -321,5 +321,17 @@
   },
   "highlightNotFoundOnPage": {
     "message": "Could not find this highlight on the page."
+  },
+  "highlightMissingOnPage": {
+    "message": "Not found on this page",
+    "description": "Shown on a popup highlight entry whose text could not be located in the current page."
+  },
+  "retryFindHighlight": {
+    "message": "Find again",
+    "description": "Button on a popup highlight entry that asks the page to search for that highlight again."
+  },
+  "retryFindHighlightFailed": {
+    "message": "Still not found. The page content may have changed.",
+    "description": "Shown when the retry search still could not locate the highlight."
   }
 }

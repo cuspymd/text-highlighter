@@ -321,5 +321,17 @@
   },
   "highlightNotFoundOnPage": {
     "message": "ページ内でこのハイライトが見つかりませんでした。"
+  },
+  "highlightMissingOnPage": {
+    "message": "このページでは見つかりません",
+    "description": "Shown on a popup highlight entry whose text could not be located in the current page."
+  },
+  "retryFindHighlight": {
+    "message": "再検索",
+    "description": "Button on a popup highlight entry that asks the page to search for that highlight again."
+  },
+  "retryFindHighlightFailed": {
+    "message": "まだ見つかりません。ページの内容が変わった可能性があります。",
+    "description": "Shown when the retry search still could not locate the highlight."
   }
 }

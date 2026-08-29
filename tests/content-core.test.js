@@ -284,6 +284,30 @@ describe('content-core', () => {
       }
     });
 
+    it('leaves out text inside highlight spans by default', () => {
+      document.body.innerHTML =
+        '<p>alpha <span class="text-highlighter-extension">beta</span> gamma</p>';
+
+      expect(TextHighlighterCore.buildNormalizedTextModel(document.body).text)
+        .toBe('alpha  gamma');
+    });
+
+    it('reads a highlighted page as the same text as the page before highlighting', () => {
+      document.body.innerHTML = '<p>alpha beta gamma</p>';
+      const clean = TextHighlighterCore.buildNormalizedTextModel(document.body).text;
+
+      // What the document looks like once a restore has applied one group. A
+      // later pass has to resolve its own selectors against the text above, not
+      // against this one with the highlight cut out of it.
+      document.body.innerHTML =
+        '<p>alpha <span class="text-highlighter-extension">beta</span> gamma</p>';
+
+      const model = TextHighlighterCore.buildNormalizedTextModel(
+        document.body, { includeHighlightedText: true });
+
+      expect(model.text).toBe(clean);
+    });
+
     it('does not reuse visibility results across separate builds', () => {
       document.body.innerHTML = '<div id="wrapper"><p>Toggle</p></div>';
 

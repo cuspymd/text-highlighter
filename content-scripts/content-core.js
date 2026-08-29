@@ -520,9 +520,15 @@
   /**
    * Build a normalized text model from a root node.
    * @param {Node} root - The root element to build the model from (e.g., document.body).
+   * @param {Object} [options]
+   * @param {boolean} [options.includeHighlightedText] - Count text already inside
+   *   highlight spans as page text. A restore needs this, so that a pass running
+   *   after some highlights are applied still sees the offsets and surrounding
+   *   context the saved selectors were resolved against.
    * @returns {Object} { text: string, segments: Array }
    */
-  function buildNormalizedTextModel(root) {
+  function buildNormalizedTextModel(root, options = {}) {
+    const includeHighlightedText = options.includeHighlightedText === true;
     let normalizedText = '';
     const segments = [];
     let currentLength = 0;
@@ -536,7 +542,9 @@
         acceptNode: function(node) {
           const parent = node.parentNode;
           if (!parent) return NodeFilter.FILTER_REJECT;
-          if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
+          if (!includeHighlightedText
+            && parent.classList
+            && parent.classList.contains('text-highlighter-extension')) {
             return NodeFilter.FILTER_REJECT;
           }
           const parentTagName = parent.tagName && parent.tagName.toUpperCase();

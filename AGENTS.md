@@ -50,7 +50,7 @@ This is a cross-browser extension called "Marks: Text Highlighter". It supports 
 
 ### Shared Modules
 
-- `shared/browser-api.js`: browser compatibility wrapper (`browser`/`chrome`)
+- `shared/browser-api.js`: picks the extension namespace (`browser` on Firefox, `chrome` on Chrome). Not a polyfill - it returns that object unchanged, so the two APIs' differences reach the caller. See "Extension API calls" below.
 - `shared/logger.js`: debug logging switch and logger helpers
 - `shared/modal.js`, `shared/modal.css`, `shared/localized-modal.js`: reusable modal system
 - `shared/import-export-schema.js`: import/export data schema utilities
@@ -64,6 +64,44 @@ This is a cross-browser extension called "Marks: Text Highlighter". It supports 
 - Chrome manifest: `manifest.json`
 - Firefox manifest: `manifest-firefox.json`
 - Firefox-specific settings (gecko id/min versions) are defined in `manifest-firefox.json`
+
+### Extension API calls
+
+`browserAPI` is the raw `browser`/`chrome` object, not a polyfill. Firefox and
+Chrome disagree about how async extension APIs answer, so **always use the
+promise form and never pass a callback**:
+
+```js
+// Do this - works on both
+try {
+  const response = await browserAPI.tabs.sendMessage(tabId, message);
+} catch (error) {
+  // nothing listening on that tab
+}
+
+// Not this - the callback never runs on Firefox
+browserAPI.tabs.sendMessage(tabId, message, (response) => { ... });
+```
+
+On Firefox the third argument is an options object, so a callback passed there
+is simply never called - the code goes silently dead rather than failing loudly.
+Chrome MV3 returns a promise too, so the promise form costs nothing there.
+
+For the same reason, `browserAPI.runtime.lastError` is Chrome-only bookkeeping:
+with promises, a missing receiver arrives as a rejection. Catch it instead.
+
+This is easy to get wrong because the E2E suite runs on Chromium only, where the
+callback form still works - a Chrome-green test run says nothing about Firefox.
+
+So tab messages do not go through `browserAPI` directly. Send them with
+`sendMessageToTab(tabId, message)` from `shared/tab-broadcast.js`, which awaits
+the promise and returns `null` when nothing is listening. It is the only place
+in the extension that calls `tabs.sendMessage`, which leaves no call site with a
+third argument to get wrong. `broadcastToAllTabs` / `broadcastToTabsByUrl` in the
+same module cover the many-tab cases.
+
+Note that `runtime.sendMessage` in the content scripts and `pages-list.js` is
+still callback-style and has not been verified against a Firefox build.
 
 ## Localization
 

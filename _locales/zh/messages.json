@@ -321,5 +321,17 @@
   },
   "highlightNotFoundOnPage": {
     "message": "在页面中找不到此高亮。"
+  },
+  "highlightMissingOnPage": {
+    "message": "在此页面上找不到",
+    "description": "Shown on a popup highlight entry whose text could not be located in the current page."
+  },
+  "retryFindHighlight": {
+    "message": "重新查找",
+    "description": "Button on a popup highlight entry that asks the page to search for that highlight again."
+  },
+  "retryFindHighlightFailed": {
+    "message": "仍未找到。页面内容可能已更改。",
+    "description": "Shown when the retry search still could not locate the highlight."
   }
 }

@@ -321,5 +321,17 @@
   },
   "highlightNotFoundOnPage": {
     "message": "Não foi possível encontrar este destaque na página."
+  },
+  "highlightMissingOnPage": {
+    "message": "Não encontrado nesta página",
+    "description": "Shown on a popup highlight entry whose text could not be located in the current page."
+  },
+  "retryFindHighlight": {
+    "message": "Procurar novamente",
+    "description": "Button on a popup highlight entry that asks the page to search for that highlight again."
+  },
+  "retryFindHighlightFailed": {
+    "message": "Ainda não encontrado. O conteúdo da página pode ter mudado.",
+    "description": "Shown when the retry search still could not locate the highlight."
   }
 }

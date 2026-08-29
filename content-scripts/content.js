@@ -9,6 +9,28 @@ let minimapManager = null;
 const NAVIGATION_BRIDGE_SOURCE = 'text-highlighter-navigation-bridge';
 let pendingNavigationRestoreTimer = null;
 
+// Content that arrives after the initial restore - lazy-loaded comments, an
+// expanded section, an SPA view still settling - leaves highlights unrestorable
+// even though their text turns up moments later. One delayed pass over just the
+// failures recovers those. It is deliberately a single timer and not a
+// MutationObserver: an observer would re-run the restore on ordinary page churn.
+const RESTORE_RETRY_DELAY_MS = 1500;
+let restoreRetryTimeout = null;
+let hasScheduledRestoreRetry = false;
+
+// Whether a restore pass is still coming. The popup asks for this so it can
+// wait rather than marking entries missing that are simply not restored yet - a
+// mark it would never take back.
+//
+// This has to be a state and not a deadline. The path to the first restore runs
+// through two message round trips - colors, then the stored highlights - and a
+// cold service worker can make either of them long. A timestamp set up front
+// would report "done" while the page had not even asked for its highlights yet.
+// The deadline below only says when it is worth asking again.
+let restorePending = true;
+let pendingRestoreDeadline = 0;
+const PENDING_RESTORE_RECHECK_MS = 300;
+
 window.TextHighlighterState = {
   get() {
     return {
@@ -87,10 +109,16 @@ function handleUrlChange(nextUrl, trigger = 'unknown') {
   clearAllHighlights();
   updateMinimapMarkers();
 
+  // A retry queued for the previous URL holds that page's groups, so it must not
+  // outlive the navigation.
+  clearRestoreRetryTimeout();
+  hasScheduledRestoreRetry = false;
+
   if (pendingNavigationRestoreTimer) {
     clearTimeout(pendingNavigationRestoreTimer);
   }
 
+  markRestorePending(1000);
   pendingNavigationRestoreTimer = setTimeout(() => {
     pendingNavigationRestoreTimer = null;
     loadHighlights();
@@ -118,13 +146,19 @@ window.addEventListener('message', (event) => {
 
 injectNavigationBridge();
 
+// The restore is already pending here, from the initial value of restorePending:
+// this round trip is part of the wait, and the popup can open during it. The
+// deadline is only set once the timer it describes actually exists.
 getColorsFromBackground().then(() => {
+  markRestorePending(500);
   setTimeout(() => {
     loadHighlights();
     createHighlightControls();
   }, 500);
 }).catch(error => {
   console.error('Failed to load colors from background:', error);
+  // Nothing will call loadHighlights now, so no restore is coming.
+  clearRestorePending();
   createHighlightControls();
 });
 
@@ -160,6 +194,35 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if (message.action === 'setSelectionControlsVisibility') {
     setSelectionControlsVisibility(message.visible);
     sendResponse({ success: true });
+    return true;
+  }
+  else if (message.action === 'getRestoredGroupIds') {
+    sendResponse({
+      success: true,
+      groupIds: Array.from(collectRestoredGroupIds()),
+      pendingRestoreMs: getPendingRestoreMs()
+    });
+    return true;
+  }
+  else if (message.action === 'retryRestoreHighlight') {
+    const groupId = message.groupId != null ? String(message.groupId) : '';
+    const group = highlights.find(candidate => String(candidate.groupId) === groupId);
+
+    if (!group) {
+      debugLog('retryRestoreHighlight: unknown group:', groupId);
+      sendResponse({ success: false, reason: 'unknown-group' });
+      return true;
+    }
+
+    if (findHighlightElementsByGroupId(groupId).length > 0) {
+      sendResponse({ success: true, restored: true });
+      return true;
+    }
+
+    const failed = processRestoreGroups([group], 'popup retry');
+    updateMinimapMarkers();
+
+    sendResponse({ success: true, restored: failed.length === 0 });
     return true;
   }
   else if (message.action === 'scrollToHighlight') {
@@ -215,6 +278,8 @@ function loadHighlights() {
         applyHighlights();
       } else {
         debugLog('No highlights found or invalid response');
+        // No pass is coming, so stop reporting one as pending.
+        clearRestorePending();
       }
 
       initMinimap();
@@ -236,6 +301,21 @@ function saveHighlights() {
   );
 }
 
+// Put highlighted text back the way it was: move the span's children out, drop
+// the span, then rejoin the text nodes the wrap had split, so a later text
+// search sees one continuous node again.
+function unwrapHighlightSpans(spans) {
+  spans.forEach(span => {
+    const parent = span.parentNode;
+    if (!parent) return;
+    while (span.firstChild) {
+      parent.insertBefore(span.firstChild, span);
+    }
+    parent.removeChild(span);
+    parent.normalize();
+  });
+}
+
 function removeHighlight(highlightElement = null) {
   if (!highlightElement) {
     const selection = window.getSelection();
@@ -254,13 +334,7 @@ function removeHighlight(highlightElement = null) {
     const groupId = highlightElement.dataset.groupId;
     // Delete all spans in the group
     const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
-    groupSpans.forEach(span => {
-      const parent = span.parentNode;
-      while (span.firstChild) {
-        parent.insertBefore(span.firstChild, span);
-      }
-      parent.removeChild(span);
-    });
+    unwrapHighlightSpans(groupSpans);
     // Remove group from highlights array
     highlights = highlights.filter(g => g.groupId !== groupId);
     if (groupId) {
@@ -312,13 +386,7 @@ function changeHighlightColor(highlightElement, newColor) {
 function clearAllHighlights() {
   debugLog('Clearing all highlights');
   const highlightElements = document.querySelectorAll('.text-highlighter-extension');
-  highlightElements.forEach(element => {
-    const parent = element.parentNode;
-    while (element.firstChild) {
-      parent.insertBefore(element.firstChild, element);
-    }
-    parent.removeChild(element);
-  });
+  unwrapHighlightSpans(highlightElements);
 }
 
 // Helper to apply highlight from a DOM Range
@@ -345,19 +413,49 @@ function needsQuoteRestore(group) {
   return Boolean(group && group.selectors && group.selectors.quote);
 }
 
+// Text already inside a highlight span counts as page text here. A pass that
+// runs after other groups are applied - the delayed retry, or the popup asking
+// for one group - would otherwise resolve against a document with those
+// highlights cut out of it: every offset past them shifts, and the prefix and
+// suffix a selector uses to tell repeated phrases apart go missing. That picks
+// the wrong occurrence. Including them gives every pass the same page text the
+// first one saw.
+// One walk for a whole pass, rather than a query per group.
+function collectRestoredGroupIds() {
+  const restored = new Set();
+
+  document.querySelectorAll('.text-highlighter-extension[data-group-id]').forEach(span => {
+    restored.add(span.dataset.groupId);
+  });
+
+  return restored;
+}
+
 function buildRestoreModel() {
   if (!contentCore || typeof contentCore.buildNormalizedTextModel !== 'function') {
     return null;
   }
 
-  return contentCore.buildNormalizedTextModel(document.body);
+  return contentCore.buildNormalizedTextModel(document.body, { includeHighlightedText: true });
 }
 
 function processRestoreGroups(groups, reason) {
   const quoteGroups = [];
   const legacyGroups = [];
 
+  // Restore passes can overlap - the load timer and a navigation pass both in
+  // flight, or a queued retry that another pass has already satisfied. A group
+  // that is already on the page must be left alone: its own highlighted text
+  // counts as page text to the restore model, so resolving it again finds that
+  // text and wraps it a second time, nesting a duplicate span inside the first.
+  const alreadyRestored = collectRestoredGroupIds();
+
   groups.forEach(group => {
+    if (alreadyRestored.has(String(group.groupId))) {
+      debugLog(`Skipping group already on the page during ${reason}:`, group.groupId);
+      return;
+    }
+
     if (needsQuoteRestore(group)) {
       quoteGroups.push(group);
     } else {
@@ -371,16 +469,22 @@ function processRestoreGroups(groups, reason) {
   const unresolved = restoreQuoteGroups(quoteGroups, reason);
 
   const batch = createLegacyRestoreBatch(document.body);
+  const failed = [];
 
   unresolved.concat(legacyGroups).forEach(group => {
     try {
-      restoreLegacyGroup(group, batch);
+      if (!restoreLegacyGroup(group, batch)) {
+        failed.push(group);
+      }
     } catch (error) {
       debugLog(`Error during ${reason}:`, error);
       // The DOM may have been left half-modified, so stop trusting the list.
       batch.invalidate();
+      failed.push(group);
     }
   });
+
+  return failed;
 }
 
 // Restore every quote-based group against a single text model.
@@ -550,16 +654,68 @@ function restoreLegacyGroup(group, batch = null) {
   return false;
 }
 
+function markRestorePending(delayMs) {
+  restorePending = true;
+  pendingRestoreDeadline = Math.max(pendingRestoreDeadline, Date.now() + delayMs);
+}
+
+function clearRestorePending() {
+  restorePending = false;
+  pendingRestoreDeadline = 0;
+}
+
+// Zero once the pass has actually run. While one is still coming, how long to
+// wait before asking again: until the queued timer is due, or a short recheck
+// once it is, since what is left then is a message round trip of unknown length.
+// The caller caps its own total wait, so a page that never finishes restoring
+// does not hold the popup forever.
+function getPendingRestoreMs() {
+  if (!restorePending) return 0;
+  return Math.max(pendingRestoreDeadline - Date.now(), PENDING_RESTORE_RECHECK_MS);
+}
+
+function clearRestoreRetryTimeout() {
+  if (restoreRetryTimeout) {
+    clearTimeout(restoreRetryTimeout);
+    restoreRetryTimeout = null;
+  }
+}
+
+// One retry per restore cycle. A page that genuinely no longer contains the text
+// would otherwise pay for the pass again and again with nothing to show.
+function scheduleSingleRestoreRetry(failedGroups) {
+  if (hasScheduledRestoreRetry || !failedGroups || failedGroups.length === 0) {
+    return;
+  }
+
+  hasScheduledRestoreRetry = true;
+  clearRestoreRetryTimeout();
+  markRestorePending(RESTORE_RETRY_DELAY_MS);
+
+  restoreRetryTimeout = setTimeout(() => {
+    restoreRetryTimeout = null;
+    debugLog('Retrying failed highlight restores once after delay:', failedGroups.length, 'groups');
+    processRestoreGroups(failedGroups, 'delayed restore retry');
+    clearRestorePending();
+    updateMinimapMarkers();
+  }, RESTORE_RETRY_DELAY_MS);
+}
+
 // Apply highlights to the page using saved highlight information
 function applyHighlights() {
   debugLog('Applying highlights, count:', highlights.length);
+
+  clearRestoreRetryTimeout();
+  hasScheduledRestoreRetry = false;
 
   highlights.forEach(group => {
     debugLog('Applying highlight group:', group);
   });
 
-  processRestoreGroups(highlights, 'initial restore');
+  const failed = processRestoreGroups(highlights, 'initial restore');
+  clearRestorePending();
   updateMinimapMarkers();
+  scheduleSingleRestoreRetry(failed);
 }
 
 // Walk the document once for the text nodes a legacy restore may search.
@@ -720,6 +876,12 @@ function highlightTextInDocument(element, spanInfos, color, groupId, batch = nul
     }
     if (!found) {
       debugLog('Span text not found in sequence:', spanText);
+      // Do not strand the group half applied. Text already wrapped is skipped by
+      // the next restore's walker, so a retry could no longer find this group's
+      // own first span and might attach the rest of it to another occurrence of
+      // the same text - and the leftover span would read as a restored group to
+      // getRestoredGroupIds. Put the DOM back instead.
+      unwrapHighlightSpans(highlightSpans);
       return false;
     }
   }

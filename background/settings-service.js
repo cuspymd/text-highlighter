@@ -1,6 +1,6 @@
 import { browserAPI } from '../shared/browser-api.js';
 import { debugLog, errorLog } from '../shared/logger.js';
-import { broadcastToAllTabs } from '../shared/tab-broadcast.js';
+import { broadcastToAllTabs, sendMessageToTab } from '../shared/tab-broadcast.js';
 import { STORAGE_KEYS, SYNC_KEYS } from '../constants/storage-keys.js';
 import { saveSettingsToSync } from './sync-service.js';
 
@@ -392,21 +392,17 @@ export async function broadcastSettingsToTabs(changedSettings) {
 
   const tabs = await browserAPI.tabs.query({});
   for (const tab of tabs) {
-    try {
-      if (changedSettings.minimapVisible !== undefined) {
-        await browserAPI.tabs.sendMessage(tab.id, {
-          action: 'setMinimapVisibility',
-          visible: changedSettings.minimapVisible,
-        });
-      }
-      if (changedSettings.selectionControlsVisible !== undefined) {
-        await browserAPI.tabs.sendMessage(tab.id, {
-          action: 'setSelectionControlsVisibility',
-          visible: changedSettings.selectionControlsVisible,
-        });
-      }
-    } catch (e) {
-      // Some tabs may not have content script injected.
+    if (changedSettings.minimapVisible !== undefined) {
+      await sendMessageToTab(tab.id, {
+        action: 'setMinimapVisibility',
+        visible: changedSettings.minimapVisible,
+      });
+    }
+    if (changedSettings.selectionControlsVisible !== undefined) {
+      await sendMessageToTab(tab.id, {
+        action: 'setSelectionControlsVisibility',
+        visible: changedSettings.selectionControlsVisible,
+      });
     }
   }
 }

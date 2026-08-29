@@ -1,5 +1,6 @@
 import { browserAPI } from '../shared/browser-api.js';
 import { debugLog } from '../shared/logger.js';
+import { sendMessageToTab } from '../shared/tab-broadcast.js';
 import {
   isMobile,
   getCurrentColors,
@@ -26,16 +27,12 @@ export function initContextMenus() {
 
         if (color) {
           debugLog('Sending highlight action to tab:', tab.id);
-          try {
-            const response = await browserAPI.tabs.sendMessage(tab.id, {
-              action: 'highlight',
-              color: color.color,
-              text: info.selectionText,
-            });
-            debugLog('Highlight action response:', response);
-          } catch (error) {
-            debugLog('Error sending highlight action:', error);
-          }
+          const response = await sendMessageToTab(tab.id, {
+            action: 'highlight',
+            color: color.color,
+            text: info.selectionText,
+          });
+          debugLog('Highlight action response:', response);
         }
       }
     });
@@ -58,15 +55,11 @@ export function initContextMenus() {
 
         if (targetColor) {
           debugLog('Sending highlight action to tab:', activeTab.id, 'with color:', targetColor);
-          try {
-            const response = await browserAPI.tabs.sendMessage(activeTab.id, {
-              action: 'highlight',
-              color: targetColor,
-            });
-            debugLog('Highlight action response:', response);
-          } catch (error) {
-            debugLog('Error sending highlight action:', error);
-          }
+          const response = await sendMessageToTab(activeTab.id, {
+            action: 'highlight',
+            color: targetColor,
+          });
+          debugLog('Highlight action response:', response);
         }
       }
     });

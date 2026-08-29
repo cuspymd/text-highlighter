@@ -2,8 +2,16 @@ import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 import { initializeThemeWatcher } from './shared/theme.js';
+import { sendMessageToTab } from './shared/tab-broadcast.js';
 
 const URL_PARAMS  = new URLSearchParams(window.location.search);
+
+// Safety stop for the poll that waits out a page's restore, so a page reporting
+// a restore that never arrives cannot leave a timer running for the life of the
+// popup. It is not a deadline for deciding: reaching it means the answer is
+// still unknown, and an unknown entry is left alone. So it can afford to be well
+// past any real restore, cold service worker included.
+const PENDING_RESTORE_POLL_LIMIT_MS = 15000;
 
 async function getActiveTab() {
   // Open popup.html?tab=5 to use tab ID 5, etc.
@@ -99,6 +107,8 @@ document.addEventListener('DOMContentLoaded', async function () {
       noHighlights.style.display = 'none';
       highlightsContainer.innerHTML = '';
 
+      const renderedItems = new Map();
+
       highlights.forEach(group => {
         const highlightItem = document.createElement('div');
         highlightItem.className = 'highlight-item';
@@ -113,9 +123,11 @@ document.addEventListener('DOMContentLoaded', async function () {
           highlightItem.title = jumpLabel;
         }
         highlightItem.addEventListener('click', function () {
+          if (highlightItem.classList.contains('is-missing')) return;
           jumpToHighlight(group.groupId, tab.id);
         });
         highlightItem.addEventListener('keydown', function (e) {
+          if (highlightItem.classList.contains('is-missing')) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             jumpToHighlight(group.groupId, tab.id);
@@ -158,7 +170,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         highlightItem.appendChild(textSpan);
         highlightItem.appendChild(deleteBtn);
         highlightsContainer.appendChild(highlightItem);
+        renderedItems.set(String(group.groupId), highlightItem);
       });
+
+      markMissingHighlights(tab.id, renderedItems);
     } else {
       noHighlights.style.display = 'block';
       highlightsContainer.innerHTML = '';
@@ -166,22 +181,125 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   }
 
-  // Scroll the page to the highlight group and close the popup
-  function jumpToHighlight(groupId, tabId) {
-    browserAPI.tabs.sendMessage(tabId, {
-      action: 'scrollToHighlight',
-      groupId: groupId
-    }, (response) => {
-      if (browserAPI.runtime.lastError || !response || !response.success) {
-        debugLog('scrollToHighlight failed:', browserAPI.runtime.lastError, response);
-        const message =
-          browserAPI.i18n.getMessage('highlightNotFoundOnPage') ||
-          'Could not find this highlight on the page.';
-        showAlertModal(message);
+  // Ask the page which highlights it actually managed to restore, and mark the
+  // rest. Without this a missing highlight is a list entry that looks normal and
+  // does nothing when clicked.
+  async function markMissingHighlights(tabId, renderedItems, waitedMs = 0) {
+    const response = await sendMessageToTab(tabId, { action: 'getRestoredGroupIds' });
+
+    if (!response || !response.success) {
+      // No content script on this page, or it never answered. Leave the list
+      // alone rather than marking every entry as missing.
+      debugLog('getRestoredGroupIds gave no answer:', response);
+      return;
+    }
+
+    // The page has not finished restoring - its initial pass, or the delayed
+    // retry. Marking now would dim entries that are about to appear, and
+    // nothing takes the mark back. The page says how long to hold off, so ask
+    // again until it stops saying so.
+    const pendingMs = Number(response.pendingRestoreMs) || 0;
+    if (pendingMs > 0) {
+      if (waitedMs >= PENDING_RESTORE_POLL_LIMIT_MS) {
+        // Out of patience, but the page still says a restore is coming, so what
+        // it has told us is "not yet", never "not there". Leave the entries
+        // alone: that is the same thing this does when the page does not answer
+        // at all, and it errs the safe way - an entry that is really gone still
+        // looks normal, instead of a working one being dimmed and made dead.
+        debugLog('Restore still pending after', waitedMs, 'ms - leaving entries unmarked');
         return;
       }
-      window.close();
+
+      const wait = Math.min(pendingMs, PENDING_RESTORE_POLL_LIMIT_MS - waitedMs);
+      setTimeout(() => markMissingHighlights(tabId, renderedItems, waitedMs + wait), wait);
+      return;
+    }
+
+    const present = new Set((response.groupIds || []).map(String));
+    renderedItems.forEach((item, groupId) => {
+      // The list may have been re-rendered while this was in flight.
+      if (!item.isConnected) return;
+      if (!present.has(groupId)) {
+        markItemMissing(item, groupId, tabId);
+      }
     });
+  }
+
+  // Turn an entry into a dead-but-explained state with a way out of it: the
+  // retry runs the page's restore for just this group, which recovers the common
+  // case where the text arrived after the initial restore had already run.
+  function markItemMissing(item, groupId, tabId) {
+    const missingLabel =
+      browserAPI.i18n.getMessage('highlightMissingOnPage') || 'Not found on this page';
+
+    item.classList.add('is-missing');
+    item.removeAttribute('role');
+    item.tabIndex = -1;
+    item.title = missingLabel;
+
+    const note = document.createElement('div');
+    note.className = 'missing-note';
+
+    const noteText = document.createElement('span');
+    noteText.textContent = missingLabel;
+
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'retry-btn';
+    retryBtn.textContent = browserAPI.i18n.getMessage('retryFindHighlight') || 'Find again';
+
+    retryBtn.addEventListener('click', async function (e) {
+      e.stopPropagation();
+      retryBtn.disabled = true;
+
+      const response = await sendMessageToTab(tabId, {
+        action: 'retryRestoreHighlight',
+        groupId: groupId
+      });
+
+      if (response && response.restored) {
+        clearItemMissing(item, note);
+        jumpToHighlight(groupId, tabId);
+        return;
+      }
+
+      debugLog('retryRestoreHighlight did not restore:', response);
+      retryBtn.disabled = false;
+      noteText.textContent =
+        browserAPI.i18n.getMessage('retryFindHighlightFailed') ||
+        'Still not found. The page content may have changed.';
+    });
+
+    note.appendChild(noteText);
+    note.appendChild(retryBtn);
+    item.appendChild(note);
+  }
+
+  function clearItemMissing(item, note) {
+    item.classList.remove('is-missing');
+    note.remove();
+    item.setAttribute('role', 'button');
+    item.tabIndex = 0;
+    item.title = browserAPI.i18n.getMessage('jumpToHighlight') || '';
+  }
+
+  // Scroll the page to the highlight group and close the popup
+  async function jumpToHighlight(groupId, tabId) {
+    const response = await sendMessageToTab(tabId, {
+      action: 'scrollToHighlight',
+      groupId: groupId
+    });
+
+    if (!response || !response.success) {
+      debugLog('scrollToHighlight failed:', response);
+      const message =
+        browserAPI.i18n.getMessage('highlightNotFoundOnPage') ||
+        'Could not find this highlight on the page.';
+      showAlertModal(message);
+      return;
+    }
+
+    window.close();
   }
 
   // Delete highlight (group basis)
@@ -222,54 +340,51 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   // View list of highlighted pages
-  function openPagesList() {
+  async function openPagesList() {
     debugLog('Opening all pages list');
     const targetUrl = browserAPI.runtime.getURL('pages-list.html');
 
     // browserAPI.windows is not available on Firefox Android
     if (browserAPI.windows) {
-      browserAPI.windows.getAll({populate: true}, function(windows) {
-        let found = false;
-        for (const win of windows) {
-          for (const tab of win.tabs) {
-            if (tab.url && tab.url.startsWith(targetUrl)) {
-              browserAPI.windows.update(win.id, {focused: true});
-              browserAPI.tabs.update(tab.id, {active: true});
-              browserAPI.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
-              found = true;
-              break;
-            }
-          }
-          if (found) break;
-        }
-        if (!found) {
-          const w = 860, h = 600;
-          const left = Math.round((window.screen.width - w) / 2);
-          const top = Math.round((window.screen.height - h) / 2);
-          browserAPI.windows.create({
-            url: targetUrl,
-            type: 'popup',
-            width: w,
-            height: h,
-            left,
-            top,
-          });
-        }
+      const windows = await browserAPI.windows.getAll({ populate: true });
+
+      for (const win of windows) {
+        const openTab = (win.tabs || []).find(tab => tab.url && tab.url.startsWith(targetUrl));
+        if (!openTab) continue;
+
+        browserAPI.windows.update(win.id, { focused: true });
+        browserAPI.tabs.update(openTab.id, { active: true });
+        await sendMessageToTab(openTab.id, { action: 'refreshPagesList' });
+        return;
+      }
+
+      const w = 860, h = 600;
+      const left = Math.round((window.screen.width - w) / 2);
+      const top = Math.round((window.screen.height - h) / 2);
+      await browserAPI.windows.create({
+        url: targetUrl,
+        type: 'popup',
+        width: w,
+        height: h,
+        left,
+        top,
       });
-    } else {
-      // Mobile fallback: use tabs API only
-      browserAPI.tabs.query({}, function(tabs) {
-        const existingTab = tabs.find(tab => tab.url && tab.url.startsWith(targetUrl));
-        if (existingTab) {
-          browserAPI.tabs.update(existingTab.id, {active: true});
-          browserAPI.tabs.sendMessage(existingTab.id, {action: 'refreshPagesList'});
-        } else {
-          browserAPI.tabs.create({ url: targetUrl });
-        }
-        // Close the popup so the user sees the page directly
-        window.close();
-      });
+      return;
     }
+
+    // Mobile fallback: use tabs API only
+    const tabs = await browserAPI.tabs.query({});
+    const existingTab = tabs.find(tab => tab.url && tab.url.startsWith(targetUrl));
+
+    if (existingTab) {
+      browserAPI.tabs.update(existingTab.id, { active: true });
+      await sendMessageToTab(existingTab.id, { action: 'refreshPagesList' });
+    } else {
+      await browserAPI.tabs.create({ url: targetUrl });
+    }
+
+    // Close the popup so the user sees the page directly
+    window.close();
   }
 
   viewAllPagesBtn.addEventListener('click', openPagesList);
