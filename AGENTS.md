@@ -92,8 +92,16 @@ with promises, a missing receiver arrives as a rejection. Catch it instead.
 
 This is easy to get wrong because the E2E suite runs on Chromium only, where the
 callback form still works - a Chrome-green test run says nothing about Firefox.
-When touching extension API calls, check the promise form by reading the code;
-`shared/tab-broadcast.js` and `background/settings-service.js` are the reference.
+
+So tab messages do not go through `browserAPI` directly. Send them with
+`sendMessageToTab(tabId, message)` from `shared/tab-broadcast.js`, which awaits
+the promise and returns `null` when nothing is listening. It is the only place
+in the extension that calls `tabs.sendMessage`, which leaves no call site with a
+third argument to get wrong. `broadcastToAllTabs` / `broadcastToTabsByUrl` in the
+same module cover the many-tab cases.
+
+Note that `runtime.sendMessage` in the content scripts and `pages-list.js` is
+still callback-style and has not been verified against a Firefox build.
 
 ## Localization
 

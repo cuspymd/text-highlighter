@@ -2,6 +2,7 @@ import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 import { initializeThemeWatcher } from './shared/theme.js';
+import { sendMessageToTab } from './shared/tab-broadcast.js';
 
 const URL_PARAMS  = new URLSearchParams(window.location.search);
 
@@ -178,25 +179,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   }
 
-  // Firefox's browserAPI is the native `browser` object, whose tabs.sendMessage
-  // takes options as its third argument and answers with a promise - a callback
-  // passed there is never called. Chrome MV3 returns a promise too, and rejects
-  // instead of setting lastError when nothing is listening, so the promise form
-  // is the one that works on both. Same shape as shared/tab-broadcast.js.
-  async function sendToTab(tabId, message) {
-    try {
-      return await browserAPI.tabs.sendMessage(tabId, message);
-    } catch (error) {
-      debugLog('Message to tab failed:', message.action, error);
-      return null;
-    }
-  }
-
   // Ask the page which highlights it actually managed to restore, and mark the
   // rest. Without this a missing highlight is a list entry that looks normal and
   // does nothing when clicked.
   async function markMissingHighlights(tabId, renderedItems, waitedMs = 0) {
-    const response = await sendToTab(tabId, { action: 'getRestoredGroupIds' });
+    const response = await sendMessageToTab(tabId, { action: 'getRestoredGroupIds' });
 
     if (!response || !response.success) {
       // No content script on this page, or it never answered. Leave the list
@@ -254,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       e.stopPropagation();
       retryBtn.disabled = true;
 
-      const response = await sendToTab(tabId, {
+      const response = await sendMessageToTab(tabId, {
         action: 'retryRestoreHighlight',
         groupId: groupId
       });
@@ -287,7 +274,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Scroll the page to the highlight group and close the popup
   async function jumpToHighlight(groupId, tabId) {
-    const response = await sendToTab(tabId, {
+    const response = await sendMessageToTab(tabId, {
       action: 'scrollToHighlight',
       groupId: groupId
     });
@@ -342,54 +329,51 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   // View list of highlighted pages
-  function openPagesList() {
+  async function openPagesList() {
     debugLog('Opening all pages list');
     const targetUrl = browserAPI.runtime.getURL('pages-list.html');
 
     // browserAPI.windows is not available on Firefox Android
     if (browserAPI.windows) {
-      browserAPI.windows.getAll({populate: true}, function(windows) {
-        let found = false;
-        for (const win of windows) {
-          for (const tab of win.tabs) {
-            if (tab.url && tab.url.startsWith(targetUrl)) {
-              browserAPI.windows.update(win.id, {focused: true});
-              browserAPI.tabs.update(tab.id, {active: true});
-              browserAPI.tabs.sendMessage(tab.id, {action: 'refreshPagesList'});
-              found = true;
-              break;
-            }
-          }
-          if (found) break;
-        }
-        if (!found) {
-          const w = 860, h = 600;
-          const left = Math.round((window.screen.width - w) / 2);
-          const top = Math.round((window.screen.height - h) / 2);
-          browserAPI.windows.create({
-            url: targetUrl,
-            type: 'popup',
-            width: w,
-            height: h,
-            left,
-            top,
-          });
-        }
+      const windows = await browserAPI.windows.getAll({ populate: true });
+
+      for (const win of windows) {
+        const openTab = (win.tabs || []).find(tab => tab.url && tab.url.startsWith(targetUrl));
+        if (!openTab) continue;
+
+        browserAPI.windows.update(win.id, { focused: true });
+        browserAPI.tabs.update(openTab.id, { active: true });
+        await sendMessageToTab(openTab.id, { action: 'refreshPagesList' });
+        return;
+      }
+
+      const w = 860, h = 600;
+      const left = Math.round((window.screen.width - w) / 2);
+      const top = Math.round((window.screen.height - h) / 2);
+      await browserAPI.windows.create({
+        url: targetUrl,
+        type: 'popup',
+        width: w,
+        height: h,
+        left,
+        top,
       });
-    } else {
-      // Mobile fallback: use tabs API only
-      browserAPI.tabs.query({}, function(tabs) {
-        const existingTab = tabs.find(tab => tab.url && tab.url.startsWith(targetUrl));
-        if (existingTab) {
-          browserAPI.tabs.update(existingTab.id, {active: true});
-          browserAPI.tabs.sendMessage(existingTab.id, {action: 'refreshPagesList'});
-        } else {
-          browserAPI.tabs.create({ url: targetUrl });
-        }
-        // Close the popup so the user sees the page directly
-        window.close();
-      });
+      return;
     }
+
+    // Mobile fallback: use tabs API only
+    const tabs = await browserAPI.tabs.query({});
+    const existingTab = tabs.find(tab => tab.url && tab.url.startsWith(targetUrl));
+
+    if (existingTab) {
+      browserAPI.tabs.update(existingTab.id, { active: true });
+      await sendMessageToTab(existingTab.id, { action: 'refreshPagesList' });
+    } else {
+      await browserAPI.tabs.create({ url: targetUrl });
+    }
+
+    // Close the popup so the user sees the page directly
+    window.close();
   }
 
   viewAllPagesBtn.addEventListener('click', openPagesList);

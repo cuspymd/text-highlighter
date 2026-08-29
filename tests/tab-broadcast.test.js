@@ -1,9 +1,34 @@
 import chrome from '../mocks/chrome.js';
-import { broadcastToAllTabs, broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
+import { broadcastToAllTabs, broadcastToTabsByUrl, sendMessageToTab } from '../shared/tab-broadcast.js';
 
 describe('tab-broadcast', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('sendMessageToTab', () => {
+    it('should return the tab response', async () => {
+      const message = { action: 'test' };
+      chrome.tabs.sendMessage.mockResolvedValueOnce({ success: true });
+
+      await expect(sendMessageToTab(7, message)).resolves.toEqual({ success: true });
+    });
+
+    it('should call with only a tab id and a message', async () => {
+      const message = { action: 'test' };
+
+      await sendMessageToTab(7, message);
+
+      // Exactly two arguments. Firefox reads a third as options, so a callback
+      // there is never called - see AGENTS.md "Extension API calls".
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, message);
+    });
+
+    it('should return null when nothing is listening on the tab', async () => {
+      chrome.tabs.sendMessage.mockRejectedValueOnce(new Error('no receiver'));
+
+      await expect(sendMessageToTab(7, { action: 'test' })).resolves.toBeNull();
+    });
   });
 
   describe('broadcastToAllTabs', () => {
