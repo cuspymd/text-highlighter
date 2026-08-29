@@ -143,6 +143,79 @@ test.describe('Popup Tests', () => {
     await expect.poll(() => popupPage.isClosed()).toBe(true);
   });
 
+  test('Highlight missing from the page is marked, and "find again" restores it', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+    await expect(h1.locator('span.text-highlighter-extension')).toHaveCount(1);
+
+    const heading = await h1.textContent();
+
+    // Take the text off the page so the highlight genuinely cannot be placed.
+    await page.evaluate(() => {
+      document.querySelector('h1').textContent = 'Replaced heading';
+    });
+    await expect(page.locator('span.text-highlighter-extension')).toHaveCount(0);
+
+    const tabId = await getCurrentTabId(background);
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+
+    const highlightItem = popupPage.locator('.highlight-item').nth(0);
+    await expect(highlightItem).toHaveClass(/is-missing/);
+    // A missing entry must not advertise itself as a jump target
+    await expect(highlightItem).not.toHaveAttribute('role', 'button');
+
+    // The text turns up afterwards, standing in for content that loads late.
+    // Nothing re-runs the restore on its own, so the entry stays missing until
+    // the user asks for it.
+    await page.evaluate((text) => {
+      document.querySelector('h1').textContent = text;
+    }, heading);
+    await expect(page.locator('span.text-highlighter-extension')).toHaveCount(0);
+
+    await highlightItem.locator('.retry-btn').click();
+
+    await expect(page.locator('span.text-highlighter-extension')).toHaveCount(1);
+    await expect.poll(() => popupPage.isClosed()).toBe(true);
+  });
+
+  test('"Find again" reports failure when the text is gone from the page', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+    await expect(h1.locator('span.text-highlighter-extension')).toHaveCount(1);
+
+    // The page no longer contains the highlighted text at all.
+    await page.evaluate(() => {
+      document.querySelector('h1').textContent = 'Replaced heading';
+    });
+
+    const tabId = await getCurrentTabId(background);
+    const popupPage = await context.newPage();
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+
+    const highlightItem = popupPage.locator('.highlight-item').nth(0);
+    await expect(highlightItem).toHaveClass(/is-missing/);
+
+    const failureMessage = await popupPage.evaluate(
+      (key) => chrome.i18n.getMessage(key),
+      'retryFindHighlightFailed'
+    );
+
+    await highlightItem.locator('.retry-btn').click();
+
+    await expect(highlightItem.locator('.missing-note span')).toHaveText(failureMessage);
+    // A failed retry leaves the popup open so the message can be read
+    expect(popupPage.isClosed()).toBe(false);
+
+    await popupPage.close();
+  });
+
   test('Verify that highlight deletion on same URL multi-tab is reflected immediately in all tabs', async ({ page, context, background, extensionId }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 

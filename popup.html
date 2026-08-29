@@ -208,6 +208,67 @@
         font-size: 13px;
       }
 
+      /* A highlight whose text is not on the page: the entry stays readable but
+         stops looking like something that will jump anywhere. */
+      .highlight-item.is-missing {
+        flex-direction: column;
+        align-items: flex-start;
+        cursor: default;
+        border-style: dashed;
+      }
+
+      .highlight-item.is-missing:hover {
+        border-color: var(--border);
+        box-shadow: none;
+      }
+
+      .highlight-item.is-missing .highlight-text {
+        color: var(--muted);
+      }
+
+      .highlight-item.is-missing::before {
+        opacity: 0.4;
+      }
+
+      .missing-note {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .retry-btn {
+        flex: none;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 11px;
+        font-family: inherit;
+        line-height: 1;
+        padding: 4px 10px;
+        cursor: pointer;
+        transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+      }
+
+      .retry-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--surface-strong);
+      }
+
+      .retry-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+
+      .retry-btn[disabled] {
+        opacity: 0.6;
+        cursor: default;
+      }
+
       #no-highlights {
         border: 1px dashed var(--border);
         border-radius: 12px;

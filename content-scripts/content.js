@@ -9,6 +9,15 @@ let minimapManager = null;
 const NAVIGATION_BRIDGE_SOURCE = 'text-highlighter-navigation-bridge';
 let pendingNavigationRestoreTimer = null;
 
+// Content that arrives after the initial restore - lazy-loaded comments, an
+// expanded section, an SPA view still settling - leaves highlights unrestorable
+// even though their text turns up moments later. One delayed pass over just the
+// failures recovers those. It is deliberately a single timer and not a
+// MutationObserver: an observer would re-run the restore on ordinary page churn.
+const RESTORE_RETRY_DELAY_MS = 1500;
+let restoreRetryTimeout = null;
+let hasScheduledRestoreRetry = false;
+
 window.TextHighlighterState = {
   get() {
     return {
@@ -87,6 +96,11 @@ function handleUrlChange(nextUrl, trigger = 'unknown') {
   clearAllHighlights();
   updateMinimapMarkers();
 
+  // A retry queued for the previous URL holds that page's groups, so it must not
+  // outlive the navigation.
+  clearRestoreRetryTimeout();
+  hasScheduledRestoreRetry = false;
+
   if (pendingNavigationRestoreTimer) {
     clearTimeout(pendingNavigationRestoreTimer);
   }
@@ -160,6 +174,35 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if (message.action === 'setSelectionControlsVisibility') {
     setSelectionControlsVisibility(message.visible);
     sendResponse({ success: true });
+    return true;
+  }
+  else if (message.action === 'getRestoredGroupIds') {
+    const present = new Set();
+    document.querySelectorAll('.text-highlighter-extension[data-group-id]').forEach(span => {
+      present.add(span.dataset.groupId);
+    });
+    sendResponse({ success: true, groupIds: Array.from(present) });
+    return true;
+  }
+  else if (message.action === 'retryRestoreHighlight') {
+    const groupId = message.groupId != null ? String(message.groupId) : '';
+    const group = highlights.find(candidate => String(candidate.groupId) === groupId);
+
+    if (!group) {
+      debugLog('retryRestoreHighlight: unknown group:', groupId);
+      sendResponse({ success: false, reason: 'unknown-group' });
+      return true;
+    }
+
+    if (findHighlightElementsByGroupId(groupId).length > 0) {
+      sendResponse({ success: true, restored: true });
+      return true;
+    }
+
+    const failed = processRestoreGroups([group], 'popup retry');
+    updateMinimapMarkers();
+
+    sendResponse({ success: true, restored: failed.length === 0 });
     return true;
   }
   else if (message.action === 'scrollToHighlight') {
@@ -371,16 +414,22 @@ function processRestoreGroups(groups, reason) {
   const unresolved = restoreQuoteGroups(quoteGroups, reason);
 
   const batch = createLegacyRestoreBatch(document.body);
+  const failed = [];
 
   unresolved.concat(legacyGroups).forEach(group => {
     try {
-      restoreLegacyGroup(group, batch);
+      if (!restoreLegacyGroup(group, batch)) {
+        failed.push(group);
+      }
     } catch (error) {
       debugLog(`Error during ${reason}:`, error);
       // The DOM may have been left half-modified, so stop trusting the list.
       batch.invalidate();
+      failed.push(group);
     }
   });
+
+  return failed;
 }
 
 // Restore every quote-based group against a single text model.
@@ -550,16 +599,45 @@ function restoreLegacyGroup(group, batch = null) {
   return false;
 }
 
+function clearRestoreRetryTimeout() {
+  if (restoreRetryTimeout) {
+    clearTimeout(restoreRetryTimeout);
+    restoreRetryTimeout = null;
+  }
+}
+
+// One retry per restore cycle. A page that genuinely no longer contains the text
+// would otherwise pay for the pass again and again with nothing to show.
+function scheduleSingleRestoreRetry(failedGroups) {
+  if (hasScheduledRestoreRetry || !failedGroups || failedGroups.length === 0) {
+    return;
+  }
+
+  hasScheduledRestoreRetry = true;
+  clearRestoreRetryTimeout();
+
+  restoreRetryTimeout = setTimeout(() => {
+    restoreRetryTimeout = null;
+    debugLog('Retrying failed highlight restores once after delay:', failedGroups.length, 'groups');
+    processRestoreGroups(failedGroups, 'delayed restore retry');
+    updateMinimapMarkers();
+  }, RESTORE_RETRY_DELAY_MS);
+}
+
 // Apply highlights to the page using saved highlight information
 function applyHighlights() {
   debugLog('Applying highlights, count:', highlights.length);
+
+  clearRestoreRetryTimeout();
+  hasScheduledRestoreRetry = false;
 
   highlights.forEach(group => {
     debugLog('Applying highlight group:', group);
   });
 
-  processRestoreGroups(highlights, 'initial restore');
+  const failed = processRestoreGroups(highlights, 'initial restore');
   updateMinimapMarkers();
+  scheduleSingleRestoreRetry(failed);
 }
 
 // Walk the document once for the text nodes a legacy restore may search.

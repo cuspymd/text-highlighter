@@ -99,6 +99,8 @@ document.addEventListener('DOMContentLoaded', async function () {
       noHighlights.style.display = 'none';
       highlightsContainer.innerHTML = '';
 
+      const renderedItems = new Map();
+
       highlights.forEach(group => {
         const highlightItem = document.createElement('div');
         highlightItem.className = 'highlight-item';
@@ -113,9 +115,11 @@ document.addEventListener('DOMContentLoaded', async function () {
           highlightItem.title = jumpLabel;
         }
         highlightItem.addEventListener('click', function () {
+          if (highlightItem.classList.contains('is-missing')) return;
           jumpToHighlight(group.groupId, tab.id);
         });
         highlightItem.addEventListener('keydown', function (e) {
+          if (highlightItem.classList.contains('is-missing')) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             jumpToHighlight(group.groupId, tab.id);
@@ -158,12 +162,94 @@ document.addEventListener('DOMContentLoaded', async function () {
         highlightItem.appendChild(textSpan);
         highlightItem.appendChild(deleteBtn);
         highlightsContainer.appendChild(highlightItem);
+        renderedItems.set(String(group.groupId), highlightItem);
       });
+
+      markMissingHighlights(tab.id, renderedItems);
     } else {
       noHighlights.style.display = 'block';
       highlightsContainer.innerHTML = '';
       highlightsContainer.appendChild(noHighlights);
     }
+  }
+
+  // Ask the page which highlights it actually managed to restore, and mark the
+  // rest. Without this a missing highlight is a list entry that looks normal and
+  // does nothing when clicked.
+  function markMissingHighlights(tabId, renderedItems) {
+    browserAPI.tabs.sendMessage(tabId, { action: 'getRestoredGroupIds' }, (response) => {
+      if (browserAPI.runtime.lastError || !response || !response.success) {
+        // No content script on this page, or it never answered. Leave the list
+        // alone rather than marking every entry as missing.
+        debugLog('getRestoredGroupIds failed:', browserAPI.runtime.lastError, response);
+        return;
+      }
+
+      const present = new Set((response.groupIds || []).map(String));
+      renderedItems.forEach((item, groupId) => {
+        if (!present.has(groupId)) {
+          markItemMissing(item, groupId, tabId);
+        }
+      });
+    });
+  }
+
+  // Turn an entry into a dead-but-explained state with a way out of it: the
+  // retry runs the page's restore for just this group, which recovers the common
+  // case where the text arrived after the initial restore had already run.
+  function markItemMissing(item, groupId, tabId) {
+    const missingLabel =
+      browserAPI.i18n.getMessage('highlightMissingOnPage') || 'Not found on this page';
+
+    item.classList.add('is-missing');
+    item.removeAttribute('role');
+    item.tabIndex = -1;
+    item.title = missingLabel;
+
+    const note = document.createElement('div');
+    note.className = 'missing-note';
+
+    const noteText = document.createElement('span');
+    noteText.textContent = missingLabel;
+
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'retry-btn';
+    retryBtn.textContent = browserAPI.i18n.getMessage('retryFindHighlight') || 'Find again';
+
+    retryBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      retryBtn.disabled = true;
+
+      browserAPI.tabs.sendMessage(tabId, {
+        action: 'retryRestoreHighlight',
+        groupId: groupId
+      }, (response) => {
+        if (!browserAPI.runtime.lastError && response && response.restored) {
+          clearItemMissing(item, note);
+          jumpToHighlight(groupId, tabId);
+          return;
+        }
+
+        debugLog('retryRestoreHighlight failed:', browserAPI.runtime.lastError, response);
+        retryBtn.disabled = false;
+        noteText.textContent =
+          browserAPI.i18n.getMessage('retryFindHighlightFailed') ||
+          'Still not found. The page content may have changed.';
+      });
+    });
+
+    note.appendChild(noteText);
+    note.appendChild(retryBtn);
+    item.appendChild(note);
+  }
+
+  function clearItemMissing(item, note) {
+    item.classList.remove('is-missing');
+    note.remove();
+    item.setAttribute('role', 'button');
+    item.tabIndex = 0;
+    item.title = browserAPI.i18n.getMessage('jumpToHighlight') || '';
   }
 
   // Scroll the page to the highlight group and close the popup
