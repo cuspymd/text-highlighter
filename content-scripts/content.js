@@ -26,10 +26,12 @@ let hasScheduledRestoreRetry = false;
 // through two message round trips - colors, then the stored highlights - and a
 // cold service worker can make either of them long. A timestamp set up front
 // would report "done" while the page had not even asked for its highlights yet.
-// The deadline below only says when it is worth asking again.
-let restorePending = true;
-let pendingRestoreDeadline = 0;
+// The deadline it keeps only says when it is worth asking again.
 const PENDING_RESTORE_RECHECK_MS = 300;
+const restoreCore = window.TextHighlighterRestoreCore;
+const restorePendingState = restoreCore.createRestorePendingState({
+  recheckMs: PENDING_RESTORE_RECHECK_MS,
+});
 
 window.TextHighlighterState = {
   get() {
@@ -401,7 +403,7 @@ function applyHighlightFromRange(range, color, groupId) {
 }
 
 function needsQuoteRestore(group) {
-  return Boolean(group && group.selectors && group.selectors.quote);
+  return restoreCore.needsQuoteRestore(group);
 }
 
 // Text already inside a highlight span counts as page text here. A pass that
@@ -569,59 +571,19 @@ function restoreQuoteGroups(groups, reason) {
 // model text reproduces that without a rebuild: masking preserves length, so
 // offsets still map onto the same segments.
 function resolveUnclaimedMatch(model, group, claimed) {
-  const exactText = group.selectors.quote.exact || group.text;
-  const hints = { textPosition: group.selectors.textPosition };
-
-  const match = contentCore.resolveQuoteSelector(model, group.selectors.quote, exactText, hints);
-  if (!match) return null;
-  if (!overlapsClaimedRegion(claimed, match)) return match;
-
-  const maskedModel = {
-    text: maskClaimedRegions(model.text, claimed),
-    segments: model.segments,
-  };
-
-  const retry = contentCore.resolveQuoteSelector(maskedModel, group.selectors.quote, exactText, hints);
-  if (!retry || overlapsClaimedRegion(claimed, retry)) return null;
-
-  return retry;
+  return restoreCore.resolveUnclaimedMatch(contentCore, model, group, claimed);
 }
 
 function overlapsClaimedRegion(claimed, region) {
-  return claimed.some(taken => region.start < taken.end && region.end > taken.start);
+  return restoreCore.overlapsClaimedRegion(claimed, region);
 }
 
-// A range built from a stale model can point at a detached node. Highlighting
-// one of those silently succeeds against the orphan, so it has to be caught
-// before the range is applied rather than after.
 function isRangeInDocument(range) {
-  return Boolean(
-    range
-    && range.startContainer && range.startContainer.isConnected
-    && range.endContainer && range.endContainer.isConnected
-  );
+  return restoreCore.isRangeInDocument(range);
 }
-
-// Blank out already-claimed regions so an exact-text search cannot land on them
-// again. The filler must be a character the normalized model never contains, or
-// the mask could create a match of its own. Only reached when two highlights
-// resolve to the same occurrence, so the copy is rare.
-const CLAIMED_REGION_FILLER = '\u0000';
 
 function maskClaimedRegions(text, claimed) {
-  // split('') keeps one entry per UTF-16 code unit, matching the offsets that
-  // indexOf/substring produce inside resolveQuoteSelector. Array.from would
-  // group surrogate pairs and misalign every offset past the first emoji.
-  const chars = text.split('');
-
-  claimed.forEach(taken => {
-    const end = Math.min(taken.end, chars.length);
-    for (let i = Math.max(taken.start, 0); i < end; i++) {
-      chars[i] = CLAIMED_REGION_FILLER;
-    }
-  });
-
-  return chars.join('');
+  return restoreCore.maskClaimedRegions(text, claimed);
 }
 
 // Fallback for groups saved without quote selectors, and for quote groups that
@@ -646,23 +608,15 @@ function restoreLegacyGroup(group, batch = null) {
 }
 
 function markRestorePending(delayMs) {
-  restorePending = true;
-  pendingRestoreDeadline = Math.max(pendingRestoreDeadline, Date.now() + delayMs);
+  restorePendingState.mark(delayMs);
 }
 
 function clearRestorePending() {
-  restorePending = false;
-  pendingRestoreDeadline = 0;
+  restorePendingState.clear();
 }
 
-// Zero once the pass has actually run. While one is still coming, how long to
-// wait before asking again: until the queued timer is due, or a short recheck
-// once it is, since what is left then is a message round trip of unknown length.
-// The caller caps its own total wait, so a page that never finishes restoring
-// does not hold the popup forever.
 function getPendingRestoreMs() {
-  if (!restorePending) return 0;
-  return Math.max(pendingRestoreDeadline - Date.now(), PENDING_RESTORE_RECHECK_MS);
+  return restorePendingState.remainingMs();
 }
 
 function clearRestoreRetryTimeout() {

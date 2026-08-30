@@ -92,10 +92,26 @@ Two things it takes care of, both of which fail confusingly otherwise:
   restore poll alternates timers with awaited round trips, so the synchronous
   `advanceTimersByTime` leaves the continuation unrun.
 
+## Content script structure
+
+Logic that needs no extension API lives in its own file, wrapped in an IIFE that
+publishes a namespace on `window`: `content-core.js` (text anchoring),
+`restore-core.js` (which group claims which region, and whether a restore is
+still coming), `color-core.js` (the picker's colour maths). `content.js` and
+`controls.js` keep same-named wrappers that delegate, so call sites read as
+before.
+
+The point is testability. Those files are importable, so a test calls them
+directly and the coverage instrumenter sees them - the evaluated scripts report
+0% whether or not a test drove them. Put new pure logic there rather than in
+`content.js`, and add the file to `content_scripts.js` in **both** manifests,
+before the scripts that read it. The build copies the whole directory, so
+nothing else needs changing.
+
 ## Testing content scripts
 
-The content scripts are not importable either: the manifest injects them in
-order and they find each other through `window`. `tests/helpers/content-script.js`
+The scripts themselves are not importable: the manifest injects them in order
+and they find each other through `window`. `tests/helpers/content-script.js`
 loads them the way the manifest does. Use it rather than evaluating sources by
 hand - the point is that every test goes through `mocks/chrome.js`, so a guard
 added there reaches all of them.

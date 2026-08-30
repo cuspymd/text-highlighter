@@ -2,6 +2,14 @@ import { jest } from '@jest/globals';
 import fs from 'fs';
 import chrome from '../../mocks/chrome.js';
 
+// The pure-logic modules the evaluated scripts read off `window`. They are real
+// modules rather than sources to evaluate, so importing them here both publishes
+// their namespaces before anything needs them and lets the coverage instrumenter
+// see them - which is the whole reason that logic moved out of the scripts.
+import '../../content-scripts/content-core.js';
+import '../../content-scripts/restore-core.js';
+import '../../content-scripts/color-core.js';
+
 /**
  * Harness for the content scripts.
  *
@@ -24,6 +32,7 @@ const SOURCES = {
 
 // Loading order is the manifest's, not the caller's.
 const LOAD_ORDER = ['common', 'minimap', 'controls', 'content'];
+
 
 const sourceCache = new Map();
 

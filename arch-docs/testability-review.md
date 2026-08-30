@@ -212,7 +212,7 @@ content script에 해줍니다 — `window` 전역 스텁과 `browserAPI` 주입
 | 1 | `pages-list.js` / `settings.js` 하네스 테스트 | 1,328줄이 0% → 커버 | 낮음 — 하네스 이미 있음 | **완료** |
 | 2 | content script 부트스트랩 헬퍼로 목 통합 | 문제 2·3 해소, 가드가 실제로 닿음 | 낮음 — 기존 테스트 5개 정리 | **완료** |
 | 3 | `message-router` 핸들러 테스트 확충 | 단일 진입점 13% → 대폭 상승 | 낮음 — seam 이미 좋음 | **완료** |
-| 4 | `content.js`/`controls.js` 순수 로직 추출 | 문제 1 해소, 2,558줄이 보이게 됨 | **높음** — 마지막에 | |
+| 4 | `content.js`/`controls.js` 순수 로직 추출 | 문제 1 해소, 2,558줄이 보이게 됨 | **높음** — 마지막에 | **1차 완료** |
 
 1~3은 **구조를 안 건드리고** 테스트만 쓰는 일이라 위험이 거의 없습니다.
 4는 실제 리팩터링이라 1~3으로 안전망을 깐 뒤에 하는 게 맞습니다.
@@ -295,6 +295,41 @@ content script에 해줍니다 — `window` 전역 스텁과 `browserAPI` 주입
 서비스 모듈을 목으로 막지 않고 실제로 돌렸습니다. 그래서 라우터 테스트가
 `settings-service`와 `sync-service`까지 같이 끌어올렸습니다 — 라우터가 실제로
 그 코드를 부르기 때문입니다.
+
+### 순서 4 결과 (1차)
+
+`content-core.js`가 이미 증명한 패턴 — 브라우저 API를 안 쓰는 순수 함수를 IIFE로 감싸
+`window` 네임스페이스에 노출 — 을 두 군데로 넓혔습니다.
+
+| 새 모듈 | 내용 | 커버리지 |
+| --- | --- | ---: |
+| `content-scripts/restore-core.js` (163줄) | `needsQuoteRestore`, `overlapsClaimedRegion`, `maskClaimedRegions`, `isRangeInDocument`, `resolveUnclaimedMatch`, `createRestorePendingState` | **100%** |
+| `content-scripts/color-core.js` (115줄) | `hsvToRgb`, `hslToHex`, `rgbToHex` | **97.2%** (Lines 100%) |
+
+`content.js`와 `controls.js`는 같은 이름의 얇은 위임 함수만 남겨서 호출부를 하나도 안 고쳤습니다.
+두 파일 모두 manifest에 등록했고(Chrome·Firefox 양쪽), 빌드는 `content-scripts` 디렉터리를
+통째로 복사하므로 배포 설정은 그대로입니다.
+
+| | 순서 3 이후 | 순서 4 이후 |
+| --- | ---: | ---: |
+| 전체 Stmts | 50.92% | **53.23%** |
+| 테스트 수 | 354 | **402** |
+| `content.js` | 1,132줄 | 1,089줄 |
+| `controls.js` | 1,423줄 | 1,347줄 |
+
+**상태 기계가 진짜 이득이었습니다.** `restorePending`/`pendingRestoreDeadline` 모듈 변수가
+`createRestorePendingState()` 팩토리가 되면서, "새 페이지에서는 항상 pending으로 시작한다",
+"두 패스가 겹치면 늦은 쪽 마감을 지킨다", "마감이 지나면 recheck 간격으로 답한다" 같은 규칙이
+전부 직접 검증됩니다. 예전에는 `content.js` 전체를 eval하고 타이머를 돌려야 간접적으로만
+확인할 수 있었습니다.
+
+검증: `npm test` 402개 통과(3회 연속), `npx playwright test` 56개 통과(실제 Chromium),
+Chrome·Firefox 빌드 양쪽 생성 확인.
+
+**남은 일.** `content.js`·`controls.js` 본문은 여전히 eval이라 0%로 보고됩니다. 이번에 뺀 것은
+논쟁의 여지 없이 순수한 부분이고, 다음 후보는 DOM을 읽지만 확장 API는 안 쓰는 것들입니다 —
+`collectRestorableTextNodes`, `calculateSelectionIconPosition`, `getFirstTextNodePosition`.
+이들은 jsdom 픽스처가 필요해서 성격이 한 단계 다르니, 별도로 진행하는 게 맞습니다.
 
 ## 7) #117과의 관계
 

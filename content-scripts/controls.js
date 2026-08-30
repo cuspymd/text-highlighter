@@ -1,3 +1,5 @@
+const colorCore = window.TextHighlighterColorCore;
+
 // Highlight controller UI container
 let highlightControlsContainer = null;
 let activeHighlightElement = null;
@@ -498,97 +500,18 @@ function addCustomColor(color) {
 }
 
 // HSV to RGB conversion function
+// Colour maths lives in color-core.js, which the manifest loads first. These
+// stay as names the rest of this file already calls.
 function hsvToRgb(h, s, v) {
-  h = h / 360;
-  s = s / 100;
-  v = v / 100;
-  
-  const c = v * s;
-  const x = c * (1 - Math.abs((h * 6) % 2 - 1));
-  const m = v - c;
-  
-  let r, g, b;
-  
-  if (h >= 0 && h < 1/6) {
-    r = c; g = x; b = 0;
-  } else if (h >= 1/6 && h < 2/6) {
-    r = x; g = c; b = 0;
-  } else if (h >= 2/6 && h < 3/6) {
-    r = 0; g = c; b = x;
-  } else if (h >= 3/6 && h < 4/6) {
-    r = 0; g = x; b = c;
-  } else if (h >= 4/6 && h < 5/6) {
-    r = x; g = 0; b = c;
-  } else {
-    r = c; g = 0; b = x;
-  }
-  
-  return {
-    r: Math.round((r + m) * 255),
-    g: Math.round((g + m) * 255),
-    b: Math.round((b + m) * 255)
-  };
+  return colorCore.hsvToRgb(h, s, v);
 }
 
-// Initialize HSV sliders (reusable function)
-// RGB to Hex conversion function
 function rgbToHex(rgb) {
-  if (rgb.startsWith('#')) return rgb;
-  
-  // Handle HSL format
-  if (rgb.startsWith('hsl')) {
-    return hslToHex(rgb);
-  }
-  
-  const match = rgb.match(/\d+/g);
-  if (!match) return '#FF6B6B';
-  
-  const r = parseInt(match[0]);
-  const g = parseInt(match[1]);
-  const b = parseInt(match[2]);
-  
-  return '#' + [r, g, b].map(x => {
-    const hex = x.toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  }).join('');
+  return colorCore.rgbToHex(rgb);
 }
 
-// HSL to Hex conversion function
 function hslToHex(hsl) {
-  const match = hsl.match(/\d+/g);
-  if (!match) return '#FF6B6B';
-  
-  const h = parseInt(match[0]) / 360;
-  const s = parseInt(match[1]) / 100;
-  const l = parseInt(match[2]) / 100;
-  
-  const hue2rgb = (p, q, t) => {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1/6) return p + (q - p) * 6 * t;
-    if (t < 1/2) return q;
-    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-    return p;
-  };
-  
-  let r, g, b;
-  
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1/3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1/3);
-  }
-  
-  const toHex = (c) => {
-    const hex = Math.round(c * 255).toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  };
-  
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  return colorCore.hslToHex(hsl);
 }
 
 function initHSVSliders(picker) {
