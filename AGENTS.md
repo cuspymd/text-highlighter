@@ -70,6 +70,14 @@ everywhere, for one shape and one error path: a background that is not listening
 rejects, which `await` and `catch` handle the same way on both browsers, rather
 than arriving as `lastError` on one and nothing at all on the other.
 
+That rejection has to be caught, and the promise form makes it easy to forget.
+The callback form delivered a sleeping service worker as an undefined response,
+so a caller's `if (!response || !response.success)` already handled it; `await`
+without a catch turns the same case into an unhandled rejection, and the click
+that triggered it silently does nothing. `sendToBackground(message)` from
+`shared/runtime-message.js` awaits and returns `null` there, which lands on that
+same branch. Page scripts should use it.
+
 Both mocks in `mocks/chrome.js` throw when a callback is passed, so either form
 fails the unit suite by name. `tests/runtime-message-guard.test.js` and the
 guard block in `tests/tab-broadcast.test.js` cover the guards themselves.

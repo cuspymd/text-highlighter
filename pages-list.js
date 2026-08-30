@@ -2,6 +2,7 @@ import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { validateImportPayload } from './shared/import-export-schema.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
+import { sendToBackground } from './shared/runtime-message.js';
 import { initializeThemeWatcher } from './shared/theme.js';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -97,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Load all highlighted pages data
   async function loadAllHighlightedPages() {
-    const response = await browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' });
+    const response = await sendToBackground({ action: 'getAllHighlightedPages' });
 
     if (response && response.success) {
       debugLog('Received all highlighted pages from background:', response.pages);
@@ -439,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Delete all highlights for a page
   async function deletePageHighlights(url) {
-    const response = await browserAPI.runtime.sendMessage({
+    const response = await sendToBackground({
       action: 'clearAllHighlights',
       url: url,
       notifyRefresh: false  // No need to notify as we're not on the page
@@ -455,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Function to delete all highlighted pages
   async function deleteAllPages() {
-    const response = await browserAPI.runtime.sendMessage({ action: 'deleteAllHighlightedPages' });
+    const response = await sendToBackground({ action: 'deleteAllHighlightedPages' });
 
     if (response && response.success) {
       debugLog('All pages deleted successfully, count:', response.deletedCount);
@@ -579,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function () {
           const validatedPages = validation.pages;
 
           // Get all current storage to check for overlap
-          const existing = await browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' });
+          const existing = await sendToBackground({ action: 'getAllHighlightedPages' });
           if (!existing || !existing.success) {
             await showAlertModal(getMessage('importError', 'Error checking existing highlights.'));
             return;
@@ -668,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (exportAllBtn) {
     exportAllBtn.addEventListener('click', async function () {
       closeMoreMenu();
-      const response = await browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' });
+      const response = await sendToBackground({ action: 'getAllHighlightedPages' });
 
       if (!response || !response.success) {
         await showAlertModal(getMessage('exportError', 'Error exporting highlights.'));

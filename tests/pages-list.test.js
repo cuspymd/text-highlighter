@@ -34,7 +34,16 @@ describe('pages-list', () => {
 
   beforeAll(async () => {
     stubPageEnvironment();
-    openPagesList = await loadPageScript(() => import('../pages-list.js'));
+    const runHandler = await loadPageScript(() => import('../pages-list.js'));
+
+    // The handler kicks the first load off without awaiting it, so opening the
+    // page has to settle that too. Flushing here rather than in every test
+    // keeps the tests independent of how many awaits the load path happens to
+    // go through.
+    openPagesList = async () => {
+      await runHandler();
+      await flush();
+    };
   });
 
   beforeEach(() => {
@@ -83,6 +92,16 @@ describe('pages-list', () => {
       await flush();
     }
     throw new Error(`Timed out waiting for ${description}`);
+  }
+
+  /**
+   * A background that is asleep or restarting, which rejects rather than
+   * answering. Every path has to reach the same place an unsuccessful answer
+   * would, instead of ending in an unhandled rejection that leaves the click
+   * looking like it did nothing.
+   */
+  function backgroundIsAway() {
+    chrome.runtime.sendMessage.mockRejectedValue(new Error('Receiving end does not exist'));
   }
 
   function backgroundMessages(action) {
@@ -647,6 +666,79 @@ describe('pages-list', () => {
       await flush();
 
       expect(document.getElementById('more-menu').hidden).toBe(true);
+    });
+  });
+
+  // ===================================================================
+  // A background that never answers
+  // ===================================================================
+
+  describe('when the background does not answer', () => {
+    it('shows the empty state instead of hanging on load', async () => {
+      backgroundIsAway();
+      await openPagesList();
+
+      expect(pageItems()).toHaveLength(0);
+      expect(document.getElementById('no-pages').style.display).toBe('block');
+    });
+
+    it('reports the failure when exporting', async () => {
+      await openPagesList();
+      backgroundIsAway();
+
+      document.getElementById('export-all-btn').click();
+      await flush();
+
+      expect(alertText()).toBe('exportError');
+    });
+
+    it('refreshes the list when deleting everything gets no answer', async () => {
+      await openPagesList();
+      backgroundIsAway();
+
+      document.getElementById('delete-all-btn').click();
+      await confirmModal(true);
+
+      expect(pageItems()).toHaveLength(0);
+    });
+
+    it('leaves the list alone when deleting one page gets no answer', async () => {
+      await openPagesList();
+      backgroundIsAway();
+
+      itemFor(OLDER.url).querySelector('.btn-delete').click();
+      await confirmModal(true);
+
+      expect(renderedUrls()).toEqual([NEWER.url, OLDER.url]);
+    });
+
+    it('reports the failure when an import cannot check what is already stored', async () => {
+      await openPagesList();
+      const input = document.getElementById('import-file');
+      const payload = {
+        pages: [{
+          url: 'https://example.com/imported',
+          title: 'Imported',
+          lastUpdated: '2026-05-01T00:00:00.000Z',
+          highlights: [{
+            groupId: 'i1',
+            color: '#ffd54f',
+            text: 'imported text',
+            spans: [{ text: 'imported text', position: 1, spanId: 's1' }],
+          }],
+        }],
+      };
+      const file = new File([JSON.stringify(payload)], 'highlights.json', {
+        type: 'application/json',
+      });
+      Object.defineProperty(input, 'files', { value: [file], configurable: true });
+      backgroundIsAway();
+
+      input.dispatchEvent(new Event('change'));
+      await waitFor(() => alertText() !== null, 'the import to report something');
+
+      expect(alertText()).toBe('importError');
+      expect(chrome.storage.local.set).not.toHaveBeenCalled();
     });
   });
 
