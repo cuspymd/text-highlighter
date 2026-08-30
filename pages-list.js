@@ -2,6 +2,7 @@ import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { validateImportPayload } from './shared/import-export-schema.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
+import { sendToBackground } from './shared/runtime-message.js';
 import { initializeThemeWatcher } from './shared/theme.js';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -96,16 +97,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Load all highlighted pages data
-  function loadAllHighlightedPages() {
-    browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, (response) => {
-      if (response && response.success) {
-        debugLog('Received all highlighted pages from background:', response.pages);
-        displayPages(response.pages);
-      } else {
-        debugLog('Error loading highlighted pages:', response);
-        displayPages([]);
-      }
-    });
+  async function loadAllHighlightedPages() {
+    const response = await sendToBackground({ action: 'getAllHighlightedPages' });
+
+    if (response && response.success) {
+      debugLog('Received all highlighted pages from background:', response.pages);
+      displayPages(response.pages);
+    } else {
+      debugLog('Error loading highlighted pages:', response);
+      displayPages([]);
+    }
   }
 
   function normalizeSearchTerm(searchTerm) {
@@ -438,34 +439,34 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Delete all highlights for a page
-  function deletePageHighlights(url) {
-    browserAPI.runtime.sendMessage({
+  async function deletePageHighlights(url) {
+    const response = await sendToBackground({
       action: 'clearAllHighlights',
       url: url,
       notifyRefresh: false  // No need to notify as we're not on the page
-    }, (response) => {
-      if (response && response.success) {
-        debugLog('All highlights cleared through background for page:', url);
-        loadAllHighlightedPages();  // Refresh the page list
-      } else {
-        debugLog('Error clearing highlights:', response);
-      }
     });
+
+    if (response && response.success) {
+      debugLog('All highlights cleared through background for page:', url);
+      await loadAllHighlightedPages();  // Refresh the page list
+    } else {
+      debugLog('Error clearing highlights:', response);
+    }
   }
 
   // Function to delete all highlighted pages
-  function deleteAllPages() {
-    browserAPI.runtime.sendMessage({ action: 'deleteAllHighlightedPages' }, (response) => {
-      if (response && response.success) {
-        debugLog('All pages deleted successfully, count:', response.deletedCount);
-        // Clear the UI immediately without reloading from storage
-        displayPages([]);
-      } else {
-        debugLog('Error deleting all pages:', response);
-        // On error, refresh the list to show current state
-        loadAllHighlightedPages();
-      }
-    });
+  async function deleteAllPages() {
+    const response = await sendToBackground({ action: 'deleteAllHighlightedPages' });
+
+    if (response && response.success) {
+      debugLog('All pages deleted successfully, count:', response.deletedCount);
+      // Clear the UI immediately without reloading from storage
+      displayPages([]);
+    } else {
+      debugLog('Error deleting all pages:', response);
+      // On error, refresh the list to show current state
+      await loadAllHighlightedPages();
+    }
   }
 
   // Initialization
@@ -579,38 +580,38 @@ document.addEventListener('DOMContentLoaded', function () {
           const validatedPages = validation.pages;
 
           // Get all current storage to check for overlap
-          browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, async (response) => {
-            if (response && response.success) {
-              const existingUrls = response.pages.map(p => p.url);
-              const importUrls = validatedPages.map(p => p.url);
-              const overlap = importUrls.filter(url => existingUrls.includes(url));
-              let proceed = true;
-              if (overlap.length > 0) {
-                const confirmMsg = getMessage('importOverwriteConfirm', 'Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?');
-                proceed = await showConfirmModal(confirmMsg);
-              }
-              if (!proceed) return;
-              // Prepare operations: delete old, add new
-              const ops = {};
-              overlap.forEach(url => {
-                ops[url] = null;
-                ops[`${url}_meta`] = null;
-              });
-              validatedPages.forEach(page => {
-                ops[page.url] = page.highlights || [];
-                ops[`${page.url}_meta`] = {
-                  title: page.title || '',
-                  lastUpdated: page.lastUpdated || new Date().toISOString()
-                };
-              });
-              browserAPI.storage.local.set(ops, async () => {
-                await showAlertModal(getMessage('importSuccess', 'Import completed.'));
-                loadAllHighlightedPages();
-              });
-            } else {
-              await showAlertModal(getMessage('importError', 'Error checking existing highlights.'));
-            }
+          const existing = await sendToBackground({ action: 'getAllHighlightedPages' });
+          if (!existing || !existing.success) {
+            await showAlertModal(getMessage('importError', 'Error checking existing highlights.'));
+            return;
+          }
+
+          const existingUrls = existing.pages.map(p => p.url);
+          const importUrls = validatedPages.map(p => p.url);
+          const overlap = importUrls.filter(url => existingUrls.includes(url));
+          if (overlap.length > 0) {
+            const confirmMsg = getMessage('importOverwriteConfirm', 'Some pages already have highlights. Existing highlights for those pages will be deleted and replaced with imported data. Proceed?');
+            const proceed = await showConfirmModal(confirmMsg);
+            if (!proceed) return;
+          }
+
+          // Prepare operations: delete old, add new
+          const ops = {};
+          overlap.forEach(url => {
+            ops[url] = null;
+            ops[`${url}_meta`] = null;
           });
+          validatedPages.forEach(page => {
+            ops[page.url] = page.highlights || [];
+            ops[`${page.url}_meta`] = {
+              title: page.title || '',
+              lastUpdated: page.lastUpdated || new Date().toISOString()
+            };
+          });
+
+          await browserAPI.storage.local.set(ops);
+          await showAlertModal(getMessage('importSuccess', 'Import completed.'));
+          await loadAllHighlightedPages();
         } catch (err) {
           await showAlertModal(getMessage('importInvalidFormat', 'Invalid import file format.'));
         }
@@ -666,28 +667,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Export all highlights event
   if (exportAllBtn) {
-    exportAllBtn.addEventListener('click', function () {
+    exportAllBtn.addEventListener('click', async function () {
       closeMoreMenu();
-      browserAPI.runtime.sendMessage({ action: 'getAllHighlightedPages' }, async (response) => {
-        if (response && response.success) {
-          const exportData = response.pages;
-          if (exportData.length === 0) {
-            await showAlertModal(getMessage('noHighlightsToExport', 'No highlights to export.'));
-            return;
-          }
-          const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), pages: exportData }, null, 2)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'all-highlights-' + new Date().getTime() + '.json';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        } else {
-          await showAlertModal(getMessage('exportError', 'Error exporting highlights.'));
-        }
-      });
+      const response = await sendToBackground({ action: 'getAllHighlightedPages' });
+
+      if (!response || !response.success) {
+        await showAlertModal(getMessage('exportError', 'Error exporting highlights.'));
+        return;
+      }
+
+      const exportData = response.pages;
+      if (exportData.length === 0) {
+        await showAlertModal(getMessage('noHighlightsToExport', 'No highlights to export.'));
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), pages: exportData }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'all-highlights-' + new Date().getTime() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     });
   }
 

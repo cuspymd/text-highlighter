@@ -16,12 +16,29 @@ export function assertNoTabMessageCallback(optionalArgs) {
   }
 }
 
+/**
+ * Background messages go out in the promise form too. The signature differs from
+ * the tab one - the callback is the second argument here - but the reason to
+ * refuse it is the same: one shape for both browsers, and one shape for the
+ * error handling, since a background that is not listening rejects rather than
+ * setting lastError.
+ */
+export function assertNoRuntimeMessageCallback(optionalArgs) {
+  if (optionalArgs.some(arg => typeof arg === 'function')) {
+    throw new Error(
+      'runtime.sendMessage was called with a callback. Use the promise form: ' +
+      'await it, and catch the rejection a missing background gives you.'
+    );
+  }
+}
+
 export default {
   runtime: {
-    sendMessage: jest.fn((message, callback) => {
-      if (message.action === 'saveHighlights') {
-        if (callback) callback({ success: true });
-      }
+    // A mock that only returns a promise stays silent about the callback form,
+    // which is the very failure mode being guarded.
+    sendMessage: jest.fn((message, ...optionalArgs) => {
+      assertNoRuntimeMessageCallback(optionalArgs);
+      return Promise.resolve({ success: true });
     }),
     onMessage: {
       addListener: jest.fn(),

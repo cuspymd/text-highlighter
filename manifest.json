@@ -68,6 +68,8 @@
         "content-scripts/content-common.js",
         "content-scripts/minimap.js",
         "content-scripts/content-core.js",
+        "content-scripts/restore-core.js",
+        "content-scripts/color-core.js",
         "content-scripts/controls.js",
         "content-scripts/content.js"
       ],

@@ -1,7 +1,10 @@
-import fs from 'fs';
-
-const commonSource = fs.readFileSync(new URL('../content-scripts/content-common.js', import.meta.url), 'utf8');
-const controlsSource = fs.readFileSync(new URL('../content-scripts/controls.js', import.meta.url), 'utf8');
+import { jest } from '@jest/globals';
+import chrome from '../mocks/chrome.js';
+import {
+  loadContentScripts,
+  respondToBackground,
+  resetContentScriptEnvironment,
+} from './helpers/content-script.js';
 
 describe('controls -> content API integration', () => {
   const api = {
@@ -11,39 +14,29 @@ describe('controls -> content API integration', () => {
     refreshColors: jest.fn(),
   };
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    resetContentScriptEnvironment();
+
+    respondToBackground(message =>
+      (message.action === 'getPlatformInfo' ? { isMobile: false } : {})
+    );
+    chrome.storage.local.get.mockResolvedValue({ selectionControlsVisible: true });
+    chrome.i18n.getMessage.mockImplementation(() => '');
+
+    // Both are read by controls.js as it builds the UI, so they have to be in
+    // place before it is evaluated.
     window.currentColors = [
       { color: '#ffff00', nameKey: 'yellow' },
       { color: '#aaffaa', nameKey: 'green' },
     ];
-    window.debugLog = () => {};
     window.TextHighlighterContentAPI = api;
 
-    global.browser = {
-      runtime: {
-        sendMessage: jest.fn((message, callback) => {
-          if (!callback) return;
-          if (message.action === 'getPlatformInfo') {
-            callback({ isMobile: false });
-            return;
-          }
-          callback({});
-        }),
-        getURL: jest.fn(() => 'chrome-extension://id/images/icon48.png'),
-      },
-      storage: {
-        local: {
-          get: jest.fn((keys, callback) => callback({ selectionControlsVisible: true })),
-        },
-      },
-      i18n: {
-        getMessage: jest.fn(() => ''),
-      },
-    };
-
-    window.eval(commonSource);
-    window.eval(controlsSource);
+    loadContentScripts(['common', 'controls']);
     window.createHighlightControls();
+  });
+
+  afterAll(() => {
+    resetContentScriptEnvironment();
   });
 
   beforeEach(() => {
@@ -52,53 +45,48 @@ describe('controls -> content API integration', () => {
     api.changeHighlightColor.mockClear();
   });
 
-  it('calls removeHighlightByElement via TextHighlighterContentAPI on delete button click', () => {
+  function flush() {
+    return new Promise(resolve => setTimeout(resolve, 0));
+  }
+
+  function addHighlightSpan(groupId) {
     const span = document.createElement('span');
     span.className = 'text-highlighter-extension';
-    span.dataset.groupId = 'g1';
+    span.dataset.groupId = groupId;
     span.textContent = 'sample';
     document.body.appendChild(span);
+    return span;
+  }
+
+  it('calls removeHighlightByElement via TextHighlighterContentAPI on delete button click', () => {
+    const span = addHighlightSpan('g1');
 
     window.showControlUi(span, { clientX: 10, clientY: 10 });
-    const deleteButton = document.querySelector('.delete-highlight');
-    deleteButton.click();
+    document.querySelector('.delete-highlight').click();
 
     expect(api.removeHighlightByElement).toHaveBeenCalledWith(span);
   });
 
   it('calls changeHighlightColor via TextHighlighterContentAPI on color button click', () => {
-    const span = document.createElement('span');
-    span.className = 'text-highlighter-extension';
-    span.dataset.groupId = 'g2';
-    span.textContent = 'sample';
-    document.body.appendChild(span);
+    const span = addHighlightSpan('g2');
 
     window.showControlUi(span, { clientX: 20, clientY: 20 });
-    const colorButton = document.querySelector('.text-highlighter-color-buttons .color-button');
-    colorButton.click();
+    document.querySelector('.text-highlighter-color-buttons .color-button').click();
 
     expect(api.changeHighlightColor).toHaveBeenCalledWith(span, '#ffff00');
   });
 
   it('positions highlight controls slightly above the click point', () => {
-    const span = document.createElement('span');
-    span.className = 'text-highlighter-extension';
-    span.dataset.groupId = 'g3';
-    span.textContent = 'sample';
-    document.body.appendChild(span);
+    const span = addHighlightSpan('g3');
 
     window.showControlUi(span, { clientX: 100, clientY: 100 });
 
-    const controls = document.querySelector('.text-highlighter-controls');
-    expect(controls.style.top).toBe('48px');
+    expect(document.querySelector('.text-highlighter-controls').style.top).toBe('48px');
   });
 
-  it('anchors mobile highlight controls to the highlight rect instead of the touch point', () => {
-    const span = document.createElement('span');
-    span.className = 'text-highlighter-extension';
-    span.dataset.groupId = 'g4';
-    span.textContent = 'sample';
-    document.body.appendChild(span);
+  // Last, because the mobile flag it sets stays set for the rest of the file.
+  it('anchors mobile highlight controls to the highlight rect instead of the touch point', async () => {
+    const span = addHighlightSpan('g4');
 
     span.getBoundingClientRect = jest.fn(() => ({
       top: 120,
@@ -111,26 +99,22 @@ describe('controls -> content API integration', () => {
 
     const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
-    const originalSendMessage = global.browser.runtime.sendMessage;
 
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 844 });
-    global.browser.runtime.sendMessage = jest.fn((message, callback) => {
-      if (!callback) return;
-      if (message.action === 'getPlatformInfo') {
-        callback({ isMobile: true });
-        return;
-      }
-      callback({});
-    });
+    respondToBackground(message =>
+      (message.action === 'getPlatformInfo' ? { isMobile: true } : {})
+    );
+
+    // The platform answer now arrives as a promise, so the detection has to
+    // land before the controls are positioned.
     window.initializeSelectionControls();
+    await flush();
 
     window.showControlUi(span, { clientX: 120, clientY: 700 });
 
-    const controls = document.querySelector('.text-highlighter-controls');
-    expect(controls.style.top).toBe('68px');
+    expect(document.querySelector('.text-highlighter-controls').style.top).toBe('68px');
 
-    global.browser.runtime.sendMessage = originalSendMessage;
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
   });
