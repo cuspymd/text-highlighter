@@ -211,7 +211,7 @@ content script에 해줍니다 — `window` 전역 스텁과 `browserAPI` 주입
 | --- | --- | --- | --- | --- |
 | 1 | `pages-list.js` / `settings.js` 하네스 테스트 | 1,328줄이 0% → 커버 | 낮음 — 하네스 이미 있음 | **완료** |
 | 2 | content script 부트스트랩 헬퍼로 목 통합 | 문제 2·3 해소, 가드가 실제로 닿음 | 낮음 — 기존 테스트 5개 정리 | **완료** |
-| 3 | `message-router` 핸들러 테스트 확충 | 단일 진입점 13% → 대폭 상승 | 낮음 — seam 이미 좋음 | |
+| 3 | `message-router` 핸들러 테스트 확충 | 단일 진입점 13% → 대폭 상승 | 낮음 — seam 이미 좋음 | **완료** |
 | 4 | `content.js`/`controls.js` 순수 로직 추출 | 문제 1 해소, 2,558줄이 보이게 됨 | **높음** — 마지막에 | |
 
 1~3은 **구조를 안 건드리고** 테스트만 쓰는 일이라 위험이 거의 없습니다.
@@ -266,6 +266,35 @@ content script에 해줍니다 — `window` 전역 스텁과 `browserAPI` 주입
 
 남은 콜백은 `content.js:950`의 `storage.local.get` 하나입니다. 양쪽 브라우저에서 동작하고
 하네스 스텁도 두 형태를 다 응대하지만, 유일하게 형태가 다른 자리입니다.
+
+### 순서 3 결과
+
+`tests/message-router.test.js`를 6개에서 57개로 늘려 핸들러 24개를 전부 덮었습니다.
+소스는 고치지 않았습니다.
+
+| | 이전 | 이후 |
+| --- | ---: | ---: |
+| `message-router.js` Stmts | 13.47% | **95.85%** (Lines·Funcs 100%) |
+| `settings-service.js` | 65.69% | **90.37%** |
+| `sync-service.js` | 40.28% | **56.11%** |
+| `background/` 계층 | 50.65% | **79.30%** |
+| 전체 Stmts | 44.66% | **50.92%** |
+| 테스트 수 | 305 | 354 |
+
+두 가지가 이걸 가능하게 했습니다.
+
+- **`jest.resetModules()`가 ESM에서도 동작합니다.** `settings-service`는 불러온 커스텀 색을
+  모듈 상태(`hasLoadedCustomColors`)에 캐시하고 sync 서비스들도 자기 상태를 듭니다. 테스트마다
+  모듈 그래프를 새로 만들면 앞 테스트의 색이 다음 테스트에 남지 않고, 실행 순서가 결과를
+  바꾸지 않습니다. `shared/browser-api.js`는 전역 `chrome`을 읽으므로 새 그래프도 같은 목을 봅니다.
+- **저장소를 실제 객체로 받쳤습니다.** 기본 목은 모든 `get`에 `{}`를 돌려주는데, 그러면
+  읽고-고쳐-쓰는 핸들러가 전부 "빈 프로필에서 동작하는" 것처럼 보입니다. 인메모리 스토어를
+  깔아주니 `deleteHighlight`의 tombstone, `saveHighlights`의 메타 갱신,
+  `deleteAllHighlightedPages`의 설정 키 보존 같은 것이 실제로 검증됩니다.
+
+서비스 모듈을 목으로 막지 않고 실제로 돌렸습니다. 그래서 라우터 테스트가
+`settings-service`와 `sync-service`까지 같이 끌어올렸습니다 — 라우터가 실제로
+그 코드를 부르기 때문입니다.
 
 ## 7) #117과의 관계
 
