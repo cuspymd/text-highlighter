@@ -1,108 +1,72 @@
-import fs from 'fs';
-
-const contentSource = fs.readFileSync(new URL('../content-scripts/content.js', import.meta.url), 'utf8');
+import { jest } from '@jest/globals';
+import chrome from '../mocks/chrome.js';
+import {
+  loadContentScripts,
+  respondToBackground,
+  respondToStorage,
+  resetContentScriptEnvironment,
+} from './helpers/content-script.js';
 
 describe('content navigation bridge message handling', () => {
-  let sendMessageMock;
-
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.useFakeTimers();
-    document.head.innerHTML = '';
-    document.body.innerHTML = '';
+    jest.clearAllMocks();
+    resetContentScriptEnvironment();
 
-    sendMessageMock = jest.fn((message, callback) => {
-      if (!callback) return;
-
-      if (message.action === 'getColors') {
-        callback({ colors: [] });
-        return;
-      }
-
-      if (message.action === 'getHighlights') {
-        callback({ highlights: [] });
-        return;
-      }
-
-      callback({ success: true });
+    respondToBackground(message => {
+      if (message.action === 'getColors') return { colors: [] };
+      if (message.action === 'getHighlights') return { highlights: [] };
+      return { success: true };
     });
+    respondToStorage({ minimapVisible: true });
 
-    window.TextHighlighterCore = {};
-    window.debugLog = jest.fn();
-    window.hideHighlightControls = jest.fn();
-    window.clearAllHighlights = jest.fn();
-    window.updateMinimapMarkers = jest.fn();
-    window.createHighlightControls = jest.fn();
-    window.applyHighlights = jest.fn();
-    window.initMinimap = jest.fn();
-    window.MinimapManager = jest.fn(() => ({
-      init: jest.fn(),
-      setVisibility: jest.fn(),
-      updateMarkers: jest.fn(),
-    }));
+    loadContentScripts(['content']);
 
-    global.browserAPI = {
-      runtime: {
-        sendMessage: sendMessageMock,
-        getURL: jest.fn(() => 'chrome-extension://test/content-scripts/navigation-bridge.js'),
-        onMessage: {
-          addListener: jest.fn(),
-        },
-      },
-      storage: {
-        local: {
-          get: jest.fn((keys, callback) => callback({ minimapVisible: true })),
-        },
-      },
-    };
-
-    window.eval(contentSource);
-    jest.advanceTimersByTime(500);
-    sendMessageMock.mockClear();
+    // Past the deferred first load, so the calls under test are the only ones.
+    await jest.advanceTimersByTimeAsync(500);
+    chrome.runtime.sendMessage.mockClear();
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    resetContentScriptEnvironment();
   });
 
-  it('ignores location-changed messages whose href does not match the actual page URL', () => {
+  function announceLocation(href) {
     window.dispatchEvent(new MessageEvent('message', {
       source: window,
       data: {
         source: 'text-highlighter-navigation-bridge',
         type: 'location-changed',
-        href: 'https://example.com/forged',
+        href,
         trigger: 'test',
       },
     }));
+  }
 
-    jest.advanceTimersByTime(1000);
+  function highlightsRequestedFor(url) {
+    return chrome.runtime.sendMessage.mock.calls.some(
+      ([message]) => message.action === 'getHighlights' && message.url === url
+    );
+  }
+
+  it('ignores location-changed messages whose href does not match the actual page URL', async () => {
+    announceLocation('https://example.com/forged');
+
+    await jest.advanceTimersByTimeAsync(1000);
 
     expect(window.hideHighlightControls).not.toHaveBeenCalled();
-    expect(sendMessageMock).not.toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'getHighlights', url: 'https://example.com/forged' }),
-      expect.any(Function)
-    );
+    expect(highlightsRequestedFor('https://example.com/forged')).toBe(false);
   });
 
-  it('accepts location-changed messages when href matches the actual page URL', () => {
+  it('accepts location-changed messages when href matches the actual page URL', async () => {
     window.location.hash = '#next';
     const actualHref = window.location.href;
 
-    window.dispatchEvent(new MessageEvent('message', {
-      source: window,
-      data: {
-        source: 'text-highlighter-navigation-bridge',
-        type: 'location-changed',
-        href: actualHref,
-        trigger: 'test',
-      },
-    }));
+    announceLocation(actualHref);
 
-    jest.advanceTimersByTime(1000);
+    await jest.advanceTimersByTimeAsync(1000);
 
-    expect(sendMessageMock).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'getHighlights', url: actualHref }),
-      expect.any(Function)
-    );
+    expect(highlightsRequestedFor(actualHref)).toBe(true);
   });
 });

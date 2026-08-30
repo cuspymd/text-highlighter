@@ -487,12 +487,14 @@ function showCustomColorPicker(triggerButton) {
 // Custom color addition function
 function addCustomColor(color) {
   lastAddedColor = color;
-  browserAPI.runtime.sendMessage({ action: 'addColor', color: color }, (response) => {
-    if (response && response.colors) {
-      currentColors = response.colors;
-      refreshHighlightControlsColors();
-    }
-  });
+  browserAPI.runtime.sendMessage({ action: 'addColor', color: color })
+    .then(response => {
+      if (response && response.colors) {
+        currentColors = response.colors;
+        refreshHighlightControlsColors();
+      }
+    })
+    .catch(error => debugLog('Failed to add custom color:', error));
 }
 
 // HSV to RGB conversion function
@@ -831,30 +833,38 @@ function hideHighlightControls() {
 
 // ============ SELECTION CONTROLS FUNCTIONS ============
 
+// Detect the platform, then load the stored setting it decides the default for.
+// A background that never answers leaves the setting at its initial value, the
+// same as the early return this replaced.
+async function loadSelectionControlsSetting() {
+  let response;
+  try {
+    response = await browserAPI.runtime.sendMessage({ action: 'getPlatformInfo' });
+  } catch (error) {
+    debugLog('Error getting platform info:', error);
+    return;
+  }
+
+  if (response && response.isMobile) {
+    isMobilePlatform = true;
+    debugLog('Mobile platform detected in controls.js');
+  }
+
+  const result = await browserAPI.storage.local.get(['selectionControlsVisible']);
+  if (isMobilePlatform) {
+    // On mobile, always enable - controls are essential for operation
+    selectionControlsEnabled = true;
+  } else {
+    selectionControlsEnabled = result.selectionControlsVisible !== false;
+  }
+  debugLog('Selection controls enabled:', selectionControlsEnabled);
+}
+
 // Initialize selection controls feature
 function initializeSelectionControls() {
-  // Detect mobile platform from background script
-  browserAPI.runtime.sendMessage({ action: 'getPlatformInfo' }, (response) => {
-    if (browserAPI.runtime.lastError) {
-      debugLog('Error getting platform info:', browserAPI.runtime.lastError);
-      return;
-    }
-    if (response && response.isMobile) {
-      isMobilePlatform = true;
-      debugLog('Mobile platform detected in controls.js');
-    }
-
-    // Load selection controls setting from storage (after platform detection)
-    browserAPI.storage.local.get(['selectionControlsVisible'], (result) => {
-      if (isMobilePlatform) {
-        // On mobile, always enable - controls are essential for operation
-        selectionControlsEnabled = true;
-      } else {
-        selectionControlsEnabled = result.selectionControlsVisible !== false;
-      }
-      debugLog('Selection controls enabled:', selectionControlsEnabled);
-    });
-  });
+  // Not awaited: the listeners below have to be in place before the round trip
+  // finishes, the way they were when this was a callback.
+  loadSelectionControlsSetting();
 
   // Add mouseup event listener to detect text selection
   document.addEventListener('mouseup', handleSelectionMouseUp);

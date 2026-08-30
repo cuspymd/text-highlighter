@@ -1,22 +1,16 @@
-import fs from 'fs';
-
-const commonSource = fs.readFileSync(new URL('../content-scripts/content-common.js', import.meta.url), 'utf8');
+import { jest } from '@jest/globals';
+import { loadContentScripts, resetContentScriptEnvironment } from './helpers/content-script.js';
 
 describe('flashHighlightGroup', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    document.body.innerHTML = '';
-
-    window.browserAPI = {
-      i18n: { getMessage: jest.fn(() => '') },
-    };
-
-    window.eval(commonSource);
+    resetContentScriptEnvironment();
+    loadContentScripts(['common']);
   });
 
   afterEach(() => {
     jest.useRealTimers();
-    delete window.browserAPI;
+    resetContentScriptEnvironment();
   });
 
   function addHighlightSpan(groupId, text) {

@@ -210,7 +210,7 @@ content script에 해줍니다 — `window` 전역 스텁과 `browserAPI` 주입
 | 순서 | 작업 | 이득 | 비용 | 상태 |
 | --- | --- | --- | --- | --- |
 | 1 | `pages-list.js` / `settings.js` 하네스 테스트 | 1,328줄이 0% → 커버 | 낮음 — 하네스 이미 있음 | **완료** |
-| 2 | content script 부트스트랩 헬퍼로 목 통합 | 문제 2·3 해소, 가드가 실제로 닿음 | 낮음 — 기존 테스트 5개 정리 | |
+| 2 | content script 부트스트랩 헬퍼로 목 통합 | 문제 2·3 해소, 가드가 실제로 닿음 | 낮음 — 기존 테스트 5개 정리 | **완료** |
 | 3 | `message-router` 핸들러 테스트 확충 | 단일 진입점 13% → 대폭 상승 | 낮음 — seam 이미 좋음 | |
 | 4 | `content.js`/`controls.js` 순수 로직 추출 | 문제 1 해소, 2,558줄이 보이게 됨 | **높음** — 마지막에 | |
 
@@ -245,6 +245,27 @@ content script에 해줍니다 — `window` 전역 스텁과 `browserAPI` 주입
 클립보드 폴백(`document.execCommand`)입니다. 둘 다 jsdom에서 재현 가치가 낮습니다.
 
 ---
+
+### 순서 2 결과
+
+`tests/helpers/content-script.js`를 추가하고 content script 테스트 5개를 전부 그리로 옮겼습니다.
+같이 `runtime.sendMessage` 11곳을 promise 형태로 정리했습니다.
+
+- **목이 한 벌이 됐습니다.** 다섯 테스트가 세우던 인라인 `browserAPI`가 사라지고 모두
+  `mocks/chrome.js`를 씁니다. `controls-content-api`만 쓰던 `global.browser`도 없어졌습니다.
+- **가드가 실제로 닿습니다.** `mocks/chrome.js`의 `runtime.sendMessage`가 이제 콜백을 받으면
+  던집니다. 예전엔 오히려 콜백을 불러주며 잘못된 형태를 승인했습니다.
+  `tests/runtime-message-guard.test.js`가 가드 자체를 검증합니다.
+- **이웃 전역 목록이 한 곳에 모였습니다.** `controls.js`에 함수를 추가할 때 테스트 네 개를
+  같이 고칠 일이 없어졌습니다.
+
+검증: `npm test` 305개 통과, `npx playwright test` 56개 통과(실제 Chromium).
+
+문제 2와 3은 해소됐습니다. **문제 1(커버리지 측정 불가)은 그대로입니다** — 여전히 `window.eval`이라
+`content.js`·`controls.js`는 0%로 보고됩니다. 그건 순서 4가 푸는 문제입니다.
+
+남은 콜백은 `content.js:950`의 `storage.local.get` 하나입니다. 양쪽 브라우저에서 동작하고
+하네스 스텁도 두 형태를 다 응대하지만, 유일하게 형태가 다른 자리입니다.
 
 ## 7) #117과의 관계
 
