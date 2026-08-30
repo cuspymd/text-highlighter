@@ -1,10 +1,11 @@
 # AGENTS.md
 
 This file provides guidance to coding agents when working with this repository.
+It covers only what the code does not say for itself - the traps, the reasons,
+and the commands. For structure, read the tree.
 
-## Project Overview
-
-This is a cross-browser extension called "Marks: Text Highlighter". It supports multi-color text highlighting, highlight management, minimap navigation, keyboard shortcuts, and multilingual UI.
+"Marks: Text Highlighter" is a cross-browser (Chrome + Firefox) text highlighting
+extension.
 
 ## Essential Commands
 
@@ -25,66 +26,13 @@ This is a cross-browser extension called "Marks: Text Highlighter". It supports 
 - Chrome: load unpacked extension from `dist/` via `chrome://extensions`
 - Firefox: load temporary add-on from `dist-firefox/manifest.json` via `about:debugging`
 
-## Architecture
+## Extension API calls
 
-### Entry Points
-
-- `background.js`: extension background entry point
-- `content-scripts/content.js`: content entry point loaded on all pages
-- `popup.js` + `popup.html`: popup UI
-- `pages-list.js` + `pages-list.html`: page-level highlight list UI
-
-### Background Modules
-
-- `background/context-menu.js`: context menu behavior
-- `background/message-router.js`: runtime message routing
-- `background/settings-service.js`: extension settings management
-- `background/sync-service.js`: synchronization and conflict handling
-
-### Content Modules
-
-- `content-scripts/content-common.js`: shared content-side APIs/utilities
-- `content-scripts/content-core.js`: highlight core logic
-- `content-scripts/controls.js`: in-page highlight controls
-- `content-scripts/minimap.js`: minimap UI and interactions
-
-### Shared Modules
-
-- `shared/browser-api.js`: picks the extension namespace (`browser` on Firefox, `chrome` on Chrome). Not a polyfill - it returns that object unchanged, so the two APIs' differences reach the caller. See "Extension API calls" below.
-- `shared/logger.js`: debug logging switch and logger helpers
-- `shared/modal.js`, `shared/modal.css`, `shared/localized-modal.js`: reusable modal system
-- `shared/import-export-schema.js`: import/export data schema utilities
-
-### Constants
-
-- `constants/storage-keys.js`: storage key definitions shared across modules
-
-### Testing page scripts
-
-`popup.js`, `pages-list.js` and `settings.js` are not importable modules: each
-one is a single `DOMContentLoaded` closure with no exports. `tests/helpers/extension-page.js`
-drives them the way the browser does - it puts the page's own `<body>` into jsdom,
-loads the script, and hands back its handler to await. See `tests/popup.test.js`.
-
-Two things it takes care of, both of which fail confusingly otherwise:
-
-- The handler is captured rather than dispatched. It is `async`, so
-  `dispatchEvent` returns before the page has loaded anything.
-- Waiting is done with `advance()` (`jest.advanceTimersByTimeAsync`). The popup's
-  restore poll alternates timers with awaited round trips, so the synchronous
-  `advanceTimersByTime` leaves the continuation unrun.
-
-## Browser and Manifest Notes
-
-- Chrome manifest: `manifest.json`
-- Firefox manifest: `manifest-firefox.json`
-- Firefox-specific settings (gecko id/min versions) are defined in `manifest-firefox.json`
-
-### Extension API calls
-
-`browserAPI` is the raw `browser`/`chrome` object, not a polyfill. Firefox and
-Chrome disagree about how async extension APIs answer, so **always use the
-promise form and never pass a callback**:
+`shared/browser-api.js` picks the extension namespace (`browser` on Firefox,
+`chrome` on Chrome). It is not a polyfill - it returns that object unchanged, so
+the two APIs' differences reach the caller. Firefox and Chrome disagree about how
+async extension APIs answer, so **always use the promise form and never pass a
+callback**:
 
 ```js
 // Do this - works on both
@@ -122,33 +70,36 @@ instead of going quiet the way the browser does.
 Note that `runtime.sendMessage` in the content scripts and `pages-list.js` is
 still callback-style and has not been verified against a Firefox build.
 
-## Localization
+## Testing page scripts
 
-Localization files are in `_locales/`.
-Current locales: `en`, `es`, `ja`, `ko`, `zh`, `pt`.
+`popup.js`, `pages-list.js` and `settings.js` are not importable modules: each
+one is a single `DOMContentLoaded` closure with no exports. `tests/helpers/extension-page.js`
+drives them the way the browser does - it puts the page's own `<body>` into jsdom,
+loads the script, and hands back its handler to await. See `tests/popup.test.js`.
 
-## Data and Storage
+Two things it takes care of, both of which fail confusingly otherwise:
 
-- Highlights and metadata are stored in extension local storage.
-- Page metadata uses `${url}_meta` keys.
-- Custom colors are stored separately from highlight groups.
-- Sync/tombstone handling is implemented in background sync modules.
+- The handler is captured rather than dispatched. It is `async`, so
+  `dispatchEvent` returns before the page has loaded anything.
+- Waiting is done with `advance()` (`jest.advanceTimersByTimeAsync`). The popup's
+  restore poll alternates timers with awaited round trips, so the synchronous
+  `advanceTimersByTime` leaves the continuation unrun.
 
 ## Debug Mode
 
-Release builds force debug off through `scripts/version-deploy.cjs` by updating:
-- `shared/logger.js`
-- `content-scripts/content-common.js`
+Release builds force debug off through `scripts/version-deploy.cjs` by rewriting
+`shared/logger.js` and `content-scripts/content-common.js`. Keep the debug flag
+declarations in those two files in a shape that script can still match.
 
-## Scripts
+## Data and Storage
 
-- `scripts/deploy.cjs`: copies production files into browser-specific dist directories
-- `scripts/version-deploy.cjs`: version bump + release build + zip packaging
-- `scripts/link-skills.cjs`: links `.claude/skills` to `.agents/skills` for Claude Code
+Highlights and metadata live in extension local storage, keyed per page.
+`constants/storage-keys.js` is the authority on key shapes - read it rather than
+composing keys by hand. Translations live in `_locales/`.
 
 ## Skills
 
-Repository skills live in `.agents/skills/`, which is tracked in git. Claude Code only discovers skills under `.claude/skills/`, so run `npm run link-skills` once per clone to link `.claude/skills` to it instead of duplicating the files. Add new skills under `.agents/skills/<name>/SKILL.md` only.
-
-Reusable release workflow skill:
-- `.agents/skills/version-release/SKILL.md`
+Repository skills live in `.agents/skills/`, which is tracked in git. Claude Code
+only discovers skills under `.claude/skills/`, so run `npm run link-skills` once
+per clone to link `.claude/skills` to it instead of duplicating the files. Add
+new skills under `.agents/skills/<name>/SKILL.md` only.
