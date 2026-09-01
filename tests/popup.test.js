@@ -281,5 +281,27 @@ describe('popup', () => {
       expect(document.getElementById('clear-all').disabled).toBe(true);
       expect(tabMessages('getRestoredGroupIds')).toHaveLength(0);
     });
+
+    // The note is re-appended to an emptied container on every render, and the
+    // i18n pass writes textContent over any element carrying a data-i18n key.
+    // Either one would take the tips with it if the markup were nested another way.
+    it('keeps the usage tips and the guide link inside the note', async () => {
+      setStoredHighlights([]);
+
+      await openPopup();
+      await advance();
+
+      const note = document.getElementById('no-highlights');
+      expect(note.parentElement.id).toBe('highlights-container');
+      expect(note.querySelector('.empty-title').textContent).toBe('noHighlights');
+      expect([...note.querySelectorAll('.empty-tips li')].map(li => li.textContent)).toEqual([
+        'popupTipSelect',
+        'popupTipPick',
+        'popupTipManage',
+      ]);
+      expect(note.querySelector('.empty-guide-link').getAttribute('href')).toBe(
+        'onboarding.html'
+      );
+    });
   });
 });

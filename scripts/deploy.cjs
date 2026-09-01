@@ -18,6 +18,8 @@ const filesToCopy = [
   'styles.css',
   'pages-list.html',
   'pages-list.js',
+  'onboarding.html',
+  'onboarding.js',
 ];
 
 // Manifest file selection based on target browser

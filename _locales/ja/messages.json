@@ -333,5 +333,68 @@
   "retryFindHighlightFailed": {
     "message": "まだ見つかりません。ページの内容が変わった可能性があります。",
     "description": "Shown when the retry search still could not locate the highlight."
+  },
+  "onboardingPageTitle": {
+    "message": "Marks をはじめる"
+  },
+  "onboardingIntro": {
+    "message": "Marks はウェブページのテキストにハイライトを付け、次に訪れたときに同じ場所を復元します。できることをまとめました。"
+  },
+  "onboardingCreateTitle": {
+    "message": "ハイライトを作る"
+  },
+  "onboardingCreateBody": {
+    "message": "ページ上でテキストを選択すると、そばにハイライターのアイコンが表示されます。アイコンをクリックするとカラーパレットが開き、色を選ぶと塗られます。"
+  },
+  "onboardingEditTitle": {
+    "message": "色の変更と削除"
+  },
+  "onboardingEditBody": {
+    "message": "既存のハイライトをクリックするとコントロールが表示されます。そこから色を変えたり削除したりできます。"
+  },
+  "onboardingContextMenuTitle": {
+    "message": "右クリックメニューを使う"
+  },
+  "onboardingContextMenuBody": {
+    "message": "テキストを選択して右クリックすると、アイコンを使わずにコンテキストメニューから直接ハイライトできます。"
+  },
+  "onboardingShortcutsTitle": {
+    "message": "ショートカットキー"
+  },
+  "onboardingShortcutsBody": {
+    "message": "5 つのショートカットスロットで、選択したテキストをすぐに塗れます。スロット 1〜4 には Ctrl+Shift+1〜4（macOS では Command+Shift）が既定で割り当てられており、スロット 5 は自分で割り当てるまで動きません。どのスロットがどの色かは設定で決めます。"
+  },
+  "onboardingMinimapTitle": {
+    "message": "ミニマップ"
+  },
+  "onboardingMinimapBody": {
+    "message": "ページ右端の目印がハイライトの位置を示します。クリックするとその場所へ移動します。設定で非表示にできます。"
+  },
+  "onboardingManageTitle": {
+    "message": "ハイライトを見つけ直す"
+  },
+  "onboardingManageBody": {
+    "message": "ツールバーのアイコンから現在のページのハイライト一覧を開けます。項目をクリックするとその位置までスクロールします。ハイライトしたページ一覧では、これまでに塗ったすべてのページをまとめて確認でき、エクスポート・インポートでバックアップできます。"
+  },
+  "onboardingSettingsLink": {
+    "message": "設定を開く"
+  },
+  "helpSection": {
+    "message": "ヘルプ"
+  },
+  "openGuide": {
+    "message": "使い方を見る"
+  },
+  "popupTipSelect": {
+    "message": "ページ上でテキストを選択すると、ハイライターのアイコンが表示されます。"
+  },
+  "popupTipPick": {
+    "message": "アイコンをクリックして色を選びます。"
+  },
+  "popupTipManage": {
+    "message": "ハイライトをクリックすると、色の変更や削除ができます。"
+  },
+  "popupGuideLink": {
+    "message": "使い方を詳しく見る"
   }
 }

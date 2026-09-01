@@ -1,0 +1,324 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="onboardingPageTitle">Getting Started with Marks</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --surface: #f5f5f7;
+        --surface-strong: #ffffff;
+        --text: #1b1b1f;
+        --muted: #64646b;
+        --border: #e1e1e6;
+        --accent: #8b5cf6;
+        --mark: #fde68a;
+        --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121212;
+          --surface: #1c1c1e;
+          --surface-strong: #222226;
+          --text: #f4f4f5;
+          --muted: #ababba;
+          --border: #36363c;
+          --accent: #a78bfa;
+          --mark: #a3833a;
+          --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 40px 20px 64px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, "Segoe UI Variable", "Segoe UI", -apple-system, sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+
+      .guide-shell {
+        max-width: 760px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .guide-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        object-fit: contain;
+        flex-shrink: 0;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+
+      .intro {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .step-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow-1);
+        padding: 18px;
+      }
+
+      .step-figure {
+        flex-shrink: 0;
+        width: 120px;
+        height: 76px;
+        border-radius: 10px;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .step-figure svg {
+        width: 104px;
+        height: 60px;
+      }
+
+      .step-body {
+        min-width: 0;
+      }
+
+      h2 {
+        margin: 0 0 4px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .step-body p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .guide-footer {
+        display: flex;
+        justify-content: center;
+        padding-top: 4px;
+      }
+
+      .btn {
+        display: inline-block;
+        min-height: 36px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface-strong);
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn:hover {
+        background: var(--surface);
+      }
+
+      .btn-primary {
+        color: var(--accent);
+        border-color: rgba(139, 92, 246, 0.45);
+      }
+
+      .btn-primary:hover {
+        background: rgba(139, 92, 246, 0.05);
+      }
+
+      @media (max-width: 560px) {
+        .step-card {
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .step-figure {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="guide-shell">
+      <header class="guide-header">
+        <img class="brand-icon" src="images/icon48.png" alt="" aria-hidden="true" />
+        <div>
+          <h1 data-i18n="onboardingPageTitle">Getting Started with Marks</h1>
+          <p class="intro" data-i18n="onboardingIntro">
+            Marks lets you highlight text on any web page and finds it again the next time you
+            visit. Here is everything it can do.
+          </p>
+        </div>
+      </header>
+
+      <!-- Create a highlight -->
+      <section class="step-card">
+        <div class="step-figure">
+          <svg viewBox="0 0 104 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <rect x="6" y="12" width="70" height="7" rx="3.5" fill="var(--border)" />
+            <rect x="6" y="26" width="52" height="10" rx="4" fill="var(--mark)" />
+            <rect x="6" y="43" width="44" height="7" rx="3.5" fill="var(--border)" />
+            <circle cx="72" cy="42" r="12" fill="var(--accent)" />
+            <path d="M66 45.5 74.5 37l3.5 3.5-8.5 8.5H66Z" fill="#fff" />
+          </svg>
+        </div>
+        <div class="step-body">
+          <h2 data-i18n="onboardingCreateTitle">Highlight text</h2>
+          <p data-i18n="onboardingCreateBody">
+            Select text on a page and a highlighter icon appears next to it. Click the icon to open
+            the color palette, then pick a color.
+          </p>
+        </div>
+      </section>
+
+      <!-- Change or remove -->
+      <section class="step-card">
+        <div class="step-figure">
+          <svg viewBox="0 0 104 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <rect x="14" y="34" width="60" height="10" rx="4" fill="var(--mark)" />
+            <rect x="14" y="10" width="76" height="18" rx="9" fill="var(--surface)" stroke="var(--border)" />
+            <circle cx="27" cy="19" r="5" fill="#fde68a" />
+            <circle cx="41" cy="19" r="5" fill="#86efac" />
+            <circle cx="55" cy="19" r="5" fill="#93c5fd" />
+            <path d="M74 15l8 8M82 15l-8 8" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="step-body">
+          <h2 data-i18n="onboardingEditTitle">Change the color or remove it</h2>
+          <p data-i18n="onboardingEditBody">
+            Click an existing highlight to bring up its controls. From there you can switch its
+            color or delete it.
+          </p>
+        </div>
+      </section>
+
+      <!-- Context menu -->
+      <section class="step-card">
+        <div class="step-figure">
+          <svg viewBox="0 0 104 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <rect x="6" y="10" width="34" height="9" rx="4.5" fill="var(--mark)" />
+            <rect x="34" y="18" width="60" height="36" rx="6" fill="var(--surface)" stroke="var(--border)" />
+            <rect x="41" y="26" width="34" height="5" rx="2.5" fill="var(--border)" />
+            <rect x="41" y="35" width="46" height="5" rx="2.5" fill="var(--accent)" />
+            <rect x="41" y="44" width="28" height="5" rx="2.5" fill="var(--border)" />
+          </svg>
+        </div>
+        <div class="step-body">
+          <h2 data-i18n="onboardingContextMenuTitle">Use the right-click menu</h2>
+          <p data-i18n="onboardingContextMenuBody">
+            Select text and right-click to highlight straight from the context menu, without using
+            the icon.
+          </p>
+        </div>
+      </section>
+
+      <!-- Shortcuts -->
+      <section class="step-card">
+        <div class="step-figure">
+          <svg viewBox="0 0 104 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <rect x="8" y="20" width="26" height="20" rx="5" fill="var(--surface)" stroke="var(--border)" />
+            <rect x="39" y="20" width="26" height="20" rx="5" fill="var(--surface)" stroke="var(--border)" />
+            <rect x="70" y="20" width="20" height="20" rx="5" fill="var(--surface)" stroke="var(--accent)" />
+            <rect x="14" y="28" width="14" height="4" rx="2" fill="var(--muted)" />
+            <rect x="45" y="28" width="14" height="4" rx="2" fill="var(--muted)" />
+            <rect x="77" y="28" width="6" height="4" rx="2" fill="var(--accent)" />
+          </svg>
+        </div>
+        <div class="step-body">
+          <h2 data-i18n="onboardingShortcutsTitle">Keyboard shortcuts</h2>
+          <p data-i18n="onboardingShortcutsBody">
+            Five shortcut slots highlight the selected text right away. Slots 1 to 4 come with
+            Ctrl+Shift+1 through 4 (Command+Shift on macOS); slot 5 has no key until you assign one.
+            Which color each slot uses is set in Settings.
+          </p>
+        </div>
+      </section>
+
+      <!-- Minimap -->
+      <section class="step-card">
+        <div class="step-figure">
+          <svg viewBox="0 0 104 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <rect x="10" y="6" width="70" height="48" rx="6" fill="var(--surface)" stroke="var(--border)" />
+            <rect x="18" y="14" width="44" height="4" rx="2" fill="var(--border)" />
+            <rect x="18" y="23" width="52" height="4" rx="2" fill="var(--border)" />
+            <rect x="18" y="32" width="38" height="4" rx="2" fill="var(--border)" />
+            <rect x="18" y="41" width="46" height="4" rx="2" fill="var(--border)" />
+            <rect x="86" y="6" width="8" height="48" rx="4" fill="var(--surface-strong)" stroke="var(--border)" />
+            <rect x="87" y="14" width="6" height="5" rx="2" fill="#fde68a" />
+            <rect x="87" y="28" width="6" height="5" rx="2" fill="#86efac" />
+            <rect x="87" y="40" width="6" height="5" rx="2" fill="#93c5fd" />
+          </svg>
+        </div>
+        <div class="step-body">
+          <h2 data-i18n="onboardingMinimapTitle">Minimap</h2>
+          <p data-i18n="onboardingMinimapBody">
+            Marks along the right edge of the page show where your highlights are. Click one to jump
+            to it. You can turn the minimap off in Settings.
+          </p>
+        </div>
+      </section>
+
+      <!-- Manage -->
+      <section class="step-card">
+        <div class="step-figure">
+          <svg viewBox="0 0 104 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <rect x="24" y="6" width="56" height="48" rx="6" fill="var(--surface)" stroke="var(--border)" />
+            <rect x="31" y="14" width="26" height="5" rx="2.5" fill="var(--accent)" />
+            <rect x="31" y="25" width="42" height="8" rx="3" fill="var(--surface-strong)" stroke="var(--border)" />
+            <rect x="34" y="28" width="20" height="3" rx="1.5" fill="var(--mark)" />
+            <rect x="31" y="38" width="42" height="8" rx="3" fill="var(--surface-strong)" stroke="var(--border)" />
+            <rect x="34" y="41" width="28" height="3" rx="1.5" fill="var(--mark)" />
+          </svg>
+        </div>
+        <div class="step-body">
+          <h2 data-i18n="onboardingManageTitle">Find your highlights again</h2>
+          <p data-i18n="onboardingManageBody">
+            The toolbar icon lists the highlights on the current page - click one to scroll to it.
+            The highlighted pages list collects every page you have highlighted, and lets you export
+            or import them as a backup.
+          </p>
+        </div>
+      </section>
+
+      <footer class="guide-footer">
+        <a class="btn btn-primary" href="settings.html" data-i18n="onboardingSettingsLink">
+          Open Settings
+        </a>
+      </footer>
+    </div>
+
+    <script type="module" src="onboarding.js"></script>
+  </body>
+</html>

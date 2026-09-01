@@ -333,5 +333,68 @@
   "retryFindHighlightFailed": {
     "message": "여전히 찾을 수 없습니다. 페이지 내용이 바뀐 것 같습니다.",
     "description": "Shown when the retry search still could not locate the highlight."
+  },
+  "onboardingPageTitle": {
+    "message": "Marks 시작하기"
+  },
+  "onboardingIntro": {
+    "message": "Marks는 웹 페이지의 텍스트에 색을 칠하고, 다음에 다시 방문했을 때 그 자리를 찾아줍니다. 할 수 있는 일을 모아뒀습니다."
+  },
+  "onboardingCreateTitle": {
+    "message": "하이라이트 만들기"
+  },
+  "onboardingCreateBody": {
+    "message": "페이지에서 텍스트를 선택하면 옆에 하이라이터 아이콘이 나타납니다. 아이콘을 클릭하면 색상 팔레트가 열리고, 원하는 색을 고르면 칠해집니다."
+  },
+  "onboardingEditTitle": {
+    "message": "색 바꾸기와 삭제"
+  },
+  "onboardingEditBody": {
+    "message": "칠해진 하이라이트를 클릭하면 컨트롤이 나타납니다. 여기서 색을 바꾸거나 삭제할 수 있습니다."
+  },
+  "onboardingContextMenuTitle": {
+    "message": "우클릭 메뉴 사용하기"
+  },
+  "onboardingContextMenuBody": {
+    "message": "텍스트를 선택하고 우클릭하면 아이콘을 거치지 않고 컨텍스트 메뉴에서 바로 칠할 수 있습니다."
+  },
+  "onboardingShortcutsTitle": {
+    "message": "단축키"
+  },
+  "onboardingShortcutsBody": {
+    "message": "단축키 슬롯 5개로 선택한 텍스트를 즉시 칠할 수 있습니다. 슬롯 1~4에는 Ctrl+Shift+1~4(macOS는 Command+Shift)가 기본으로 지정돼 있고, 슬롯 5는 직접 지정해야 동작합니다. 슬롯마다 어떤 색을 쓸지는 설정에서 정합니다."
+  },
+  "onboardingMinimapTitle": {
+    "message": "미니맵"
+  },
+  "onboardingMinimapBody": {
+    "message": "페이지 오른쪽 가장자리의 표시가 하이라이트 위치를 보여줍니다. 클릭하면 그 자리로 이동합니다. 설정에서 끌 수 있습니다."
+  },
+  "onboardingManageTitle": {
+    "message": "하이라이트 다시 찾기"
+  },
+  "onboardingManageBody": {
+    "message": "툴바 아이콘을 누르면 현재 페이지의 하이라이트 목록이 뜨고, 항목을 클릭하면 그 위치로 이동합니다. 하이라이트된 페이지 목록에서는 지금까지 칠한 모든 페이지를 모아 보고 내보내기·가져오기로 백업할 수 있습니다."
+  },
+  "onboardingSettingsLink": {
+    "message": "설정 열기"
+  },
+  "helpSection": {
+    "message": "도움말"
+  },
+  "openGuide": {
+    "message": "사용법 보기"
+  },
+  "popupTipSelect": {
+    "message": "페이지에서 텍스트를 선택하면 하이라이터 아이콘이 나타납니다."
+  },
+  "popupTipPick": {
+    "message": "아이콘을 클릭하고 색을 고르세요."
+  },
+  "popupTipManage": {
+    "message": "하이라이트를 클릭하면 색을 바꾸거나 지울 수 있습니다."
+  },
+  "popupGuideLink": {
+    "message": "사용법 자세히 보기"
   }
 }
