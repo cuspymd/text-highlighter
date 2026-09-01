@@ -333,5 +333,68 @@
   "retryFindHighlightFailed": {
     "message": "Sigue sin encontrarse. Puede que el contenido de la página haya cambiado.",
     "description": "Shown when the retry search still could not locate the highlight."
+  },
+  "onboardingPageTitle": {
+    "message": "Primeros pasos con Marks"
+  },
+  "onboardingIntro": {
+    "message": "Marks te permite resaltar texto en cualquier página web y lo vuelve a encontrar la próxima vez que la visitas. Esto es todo lo que puede hacer."
+  },
+  "onboardingCreateTitle": {
+    "message": "Crear un resaltado"
+  },
+  "onboardingCreateBody": {
+    "message": "Selecciona texto en una página y aparecerá un icono de resaltador junto a él. Haz clic en el icono para abrir la paleta de colores y elige un color."
+  },
+  "onboardingEditTitle": {
+    "message": "Cambiar el color o eliminarlo"
+  },
+  "onboardingEditBody": {
+    "message": "Haz clic en un resaltado existente para mostrar sus controles. Desde ahí puedes cambiar su color o eliminarlo."
+  },
+  "onboardingContextMenuTitle": {
+    "message": "Usar el menú contextual"
+  },
+  "onboardingContextMenuBody": {
+    "message": "Selecciona texto y haz clic derecho para resaltar directamente desde el menú contextual, sin usar el icono."
+  },
+  "onboardingShortcutsTitle": {
+    "message": "Atajos de teclado"
+  },
+  "onboardingShortcutsBody": {
+    "message": "Cinco ranuras de atajo resaltan al instante el texto seleccionado. Las ranuras 1 a 4 vienen con Ctrl+Shift+1 a 4 (Command+Shift en macOS); la ranura 5 no tiene tecla hasta que le asignes una. El color de cada ranura se define en Configuración."
+  },
+  "onboardingMinimapTitle": {
+    "message": "Minimapa"
+  },
+  "onboardingMinimapBody": {
+    "message": "Las marcas en el borde derecho de la página muestran dónde están tus resaltados. Haz clic en una para ir hasta ella. Puedes desactivar el minimapa en Configuración."
+  },
+  "onboardingManageTitle": {
+    "message": "Vuelve a encontrar tus resaltados"
+  },
+  "onboardingManageBody": {
+    "message": "El icono de la barra de herramientas muestra los resaltados de la página actual; haz clic en uno para desplazarte hasta él. La lista de páginas resaltadas reúne todas las páginas que has resaltado y te permite exportarlas o importarlas como copia de seguridad."
+  },
+  "onboardingSettingsLink": {
+    "message": "Abrir Configuración"
+  },
+  "helpSection": {
+    "message": "Ayuda"
+  },
+  "openGuide": {
+    "message": "Ver la guía de uso"
+  },
+  "popupTipSelect": {
+    "message": "Selecciona texto en la página y aparecerá un icono de resaltador."
+  },
+  "popupTipPick": {
+    "message": "Haz clic en el icono y elige un color."
+  },
+  "popupTipManage": {
+    "message": "Haz clic en un resaltado para cambiar su color o eliminarlo."
+  },
+  "popupGuideLink": {
+    "message": "Ver la guía completa"
   }
 }

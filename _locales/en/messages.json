@@ -333,5 +333,68 @@
   "retryFindHighlightFailed": {
     "message": "Still not found. The page content may have changed.",
     "description": "Shown when the retry search still could not locate the highlight."
+  },
+  "onboardingPageTitle": {
+    "message": "Getting Started with Marks"
+  },
+  "onboardingIntro": {
+    "message": "Marks lets you highlight text on any web page and finds it again the next time you visit. Here is everything it can do."
+  },
+  "onboardingCreateTitle": {
+    "message": "Highlight text"
+  },
+  "onboardingCreateBody": {
+    "message": "Select text on a page and a highlighter icon appears next to it. Click the icon to open the color palette, then pick a color."
+  },
+  "onboardingEditTitle": {
+    "message": "Change the color or remove it"
+  },
+  "onboardingEditBody": {
+    "message": "Click an existing highlight to bring up its controls. From there you can switch its color or delete it."
+  },
+  "onboardingContextMenuTitle": {
+    "message": "Use the right-click menu"
+  },
+  "onboardingContextMenuBody": {
+    "message": "Select text and right-click to highlight straight from the context menu, without using the icon."
+  },
+  "onboardingShortcutsTitle": {
+    "message": "Keyboard shortcuts"
+  },
+  "onboardingShortcutsBody": {
+    "message": "Five shortcut slots highlight the selected text right away. Slots 1 to 4 come with Ctrl+Shift+1 through 4 (Command+Shift on macOS); slot 5 has no key until you assign one. Which color each slot uses is set in Settings."
+  },
+  "onboardingMinimapTitle": {
+    "message": "Minimap"
+  },
+  "onboardingMinimapBody": {
+    "message": "Marks along the right edge of the page show where your highlights are. Click one to jump to it. You can turn the minimap off in Settings."
+  },
+  "onboardingManageTitle": {
+    "message": "Find your highlights again"
+  },
+  "onboardingManageBody": {
+    "message": "The toolbar icon lists the highlights on the current page - click one to scroll to it. The highlighted pages list collects every page you have highlighted, and lets you export or import them as a backup."
+  },
+  "onboardingSettingsLink": {
+    "message": "Open Settings"
+  },
+  "helpSection": {
+    "message": "Help"
+  },
+  "openGuide": {
+    "message": "View Usage Guide"
+  },
+  "popupTipSelect": {
+    "message": "Select text on the page - a highlighter icon appears."
+  },
+  "popupTipPick": {
+    "message": "Click the icon and choose a color."
+  },
+  "popupTipManage": {
+    "message": "Click a highlight to change its color or remove it."
+  },
+  "popupGuideLink": {
+    "message": "See the full guide"
   }
 }

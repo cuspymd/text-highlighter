@@ -10,6 +10,7 @@ import { initContextMenus } from './background/context-menu.js';
 import { registerMessageRouter } from './background/message-router.js';
 import { initSyncListener, migrateLocalToSync } from './background/sync-service.js';
 import { initCloudSyncAlarm, runCloudSync } from './background/cloud-sync-service.js';
+import { openGuideOnInstall } from './background/onboarding.js';
 
 // ===================================================================
 // Top-level listener registration
@@ -32,8 +33,9 @@ initSyncListener({
 
 initCloudSyncAlarm();
 
-browserAPI.runtime.onInstalled.addListener(async () => {
+browserAPI.runtime.onInstalled.addListener(async (details) => {
   if (DEBUG_MODE) console.log('Extension installed/updated. Debug mode:', DEBUG_MODE);
+  await openGuideOnInstall(details);
 });
 
 // ===================================================================

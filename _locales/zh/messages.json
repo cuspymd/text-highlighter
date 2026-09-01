@@ -333,5 +333,68 @@
   "retryFindHighlightFailed": {
     "message": "仍未找到。页面内容可能已更改。",
     "description": "Shown when the retry search still could not locate the highlight."
+  },
+  "onboardingPageTitle": {
+    "message": "开始使用 Marks"
+  },
+  "onboardingIntro": {
+    "message": "Marks 可以在网页上高亮文本，并在你下次访问时把它们找回来。以下是它能做的事。"
+  },
+  "onboardingCreateTitle": {
+    "message": "创建高亮"
+  },
+  "onboardingCreateBody": {
+    "message": "在页面上选择文本，旁边会出现高亮图标。点击图标打开调色板，选择颜色即可高亮。"
+  },
+  "onboardingEditTitle": {
+    "message": "更改颜色或删除"
+  },
+  "onboardingEditBody": {
+    "message": "点击已有的高亮会弹出控制按钮，可以更换颜色或将其删除。"
+  },
+  "onboardingContextMenuTitle": {
+    "message": "使用右键菜单"
+  },
+  "onboardingContextMenuBody": {
+    "message": "选择文本后点击右键，无需使用图标，可直接从上下文菜单高亮。"
+  },
+  "onboardingShortcutsTitle": {
+    "message": "快捷键"
+  },
+  "onboardingShortcutsBody": {
+    "message": "五个快捷键槽位可立即高亮选中的文本。槽位 1 到 4 默认使用 Ctrl+Shift+1 至 4（macOS 上为 Command+Shift）；槽位 5 需要自行指定后才能使用。每个槽位对应的颜色在设置中调整。"
+  },
+  "onboardingMinimapTitle": {
+    "message": "小地图"
+  },
+  "onboardingMinimapBody": {
+    "message": "页面右侧边缘的标记显示高亮所在的位置，点击即可跳转。可以在设置中关闭小地图。"
+  },
+  "onboardingManageTitle": {
+    "message": "重新找到你的高亮"
+  },
+  "onboardingManageBody": {
+    "message": "点击工具栏图标可查看当前页面的高亮列表，点击某一项即可滚动到该位置。在已高亮页面列表中可以查看所有已高亮的页面，并通过导出和导入进行备份。"
+  },
+  "onboardingSettingsLink": {
+    "message": "打开设置"
+  },
+  "helpSection": {
+    "message": "帮助"
+  },
+  "openGuide": {
+    "message": "查看使用说明"
+  },
+  "popupTipSelect": {
+    "message": "在页面上选择文本，高亮图标就会出现。"
+  },
+  "popupTipPick": {
+    "message": "点击图标并选择颜色。"
+  },
+  "popupTipManage": {
+    "message": "点击高亮可更改颜色或删除。"
+  },
+  "popupGuideLink": {
+    "message": "查看完整使用说明"
   }
 }

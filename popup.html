@@ -279,6 +279,33 @@
         padding: 14px 10px;
       }
 
+      .empty-title {
+        margin: 0;
+      }
+
+      .empty-tips {
+        margin: 10px 0 0;
+        padding-left: 20px;
+        text-align: left;
+        line-height: 1.45;
+      }
+
+      .empty-tips li + li {
+        margin-top: 4px;
+      }
+
+      .empty-guide-link {
+        display: inline-block;
+        margin-top: 10px;
+        color: var(--accent);
+        font-size: 12px;
+        text-decoration: none;
+      }
+
+      .empty-guide-link:hover {
+        text-decoration: underline;
+      }
+
       .delete-btn {
         position: absolute;
         right: 8px;
@@ -467,7 +494,22 @@
       <section class="section-card">
         <h2 class="section-title" data-i18n="currentPageHighlights">Current Page Highlights</h2>
         <div id="highlights-container" class="highlights-list">
-          <div id="no-highlights" data-i18n="noHighlights">No highlighted text on this page.</div>
+          <div id="no-highlights">
+            <p class="empty-title" data-i18n="noHighlights">No highlighted text on this page.</p>
+            <ol class="empty-tips">
+              <li data-i18n="popupTipSelect">Select text on the page - a highlighter icon appears.</li>
+              <li data-i18n="popupTipPick">Click the icon and choose a color.</li>
+              <li data-i18n="popupTipManage">Click a highlight to change its color or remove it.</li>
+            </ol>
+            <a
+              class="empty-guide-link"
+              href="onboarding.html"
+              target="_blank"
+              rel="noopener"
+              data-i18n="popupGuideLink"
+              >See the full guide</a
+            >
+          </div>
         </div>
       </section>
 

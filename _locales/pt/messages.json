@@ -333,5 +333,68 @@
   "retryFindHighlightFailed": {
     "message": "Ainda não encontrado. O conteúdo da página pode ter mudado.",
     "description": "Shown when the retry search still could not locate the highlight."
+  },
+  "onboardingPageTitle": {
+    "message": "Primeiros passos com o Marks"
+  },
+  "onboardingIntro": {
+    "message": "O Marks permite marcar texto em qualquer página da web e o encontra novamente na próxima visita. Veja tudo o que ele faz."
+  },
+  "onboardingCreateTitle": {
+    "message": "Criar uma marcação"
+  },
+  "onboardingCreateBody": {
+    "message": "Selecione o texto em uma página e um ícone de marca-texto aparecerá ao lado. Clique no ícone para abrir a paleta de cores e escolha uma cor."
+  },
+  "onboardingEditTitle": {
+    "message": "Alterar a cor ou excluir"
+  },
+  "onboardingEditBody": {
+    "message": "Clique em uma marcação existente para exibir os controles. A partir dali você pode trocar a cor ou excluí-la."
+  },
+  "onboardingContextMenuTitle": {
+    "message": "Usar o menu de contexto"
+  },
+  "onboardingContextMenuBody": {
+    "message": "Selecione o texto e clique com o botão direito para marcar direto pelo menu de contexto, sem usar o ícone."
+  },
+  "onboardingShortcutsTitle": {
+    "message": "Atalhos de Teclado"
+  },
+  "onboardingShortcutsBody": {
+    "message": "Cinco espaços de atalho marcam o texto selecionado na hora. Os espaços de 1 a 4 vêm com Ctrl+Shift+1 a 4 (Command+Shift no macOS); o espaço 5 não tem tecla até você definir uma. A cor de cada espaço é definida nas Configurações."
+  },
+  "onboardingMinimapTitle": {
+    "message": "Minimapa"
+  },
+  "onboardingMinimapBody": {
+    "message": "As marcas na borda direita da página mostram onde estão suas marcações. Clique em uma para ir até ela. É possível desativar o minimapa nas Configurações."
+  },
+  "onboardingManageTitle": {
+    "message": "Encontre suas marcações novamente"
+  },
+  "onboardingManageBody": {
+    "message": "O ícone da barra de ferramentas lista as marcações da página atual; clique em uma para rolar até ela. A lista de páginas marcadas reúne todas as páginas que você marcou e permite exportá-las ou importá-las como backup."
+  },
+  "onboardingSettingsLink": {
+    "message": "Abrir Configurações"
+  },
+  "helpSection": {
+    "message": "Ajuda"
+  },
+  "openGuide": {
+    "message": "Ver o guia de uso"
+  },
+  "popupTipSelect": {
+    "message": "Selecione o texto na página e um ícone de marca-texto aparecerá."
+  },
+  "popupTipPick": {
+    "message": "Clique no ícone e escolha uma cor."
+  },
+  "popupTipManage": {
+    "message": "Clique em uma marcação para trocar a cor ou excluí-la."
+  },
+  "popupGuideLink": {
+    "message": "Ver o guia completo"
   }
 }

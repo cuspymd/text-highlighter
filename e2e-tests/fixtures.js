@@ -3,6 +3,33 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// The extension opens its usage guide on install, and a persistent context is
+// a fresh install on every run. The guide arrives as an extra tab and takes the
+// active slot, so anything addressing "the active tab" - sendHighlightMessage,
+// the popup's own tab lookup - would talk to the guide rather than the page
+// under test. Close it the way a user would, before any test starts.
+//
+// Not finding it is a failure rather than a skip: this is the only place that
+// exercises the real install path, so a guide that stopped opening should be
+// heard about here.
+async function closeOnboardingTab(context, timeoutMs = 20_000) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const guide = context.pages().find(page => page.url().includes('/onboarding.html'));
+    if (guide) {
+      await guide.close();
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+
+  throw new Error(
+    'The onboarding guide never opened on install. Tabs: ' +
+      context.pages().map(page => page.url()).join(', ')
+  );
+}
+
 export const test = base.extend({
   context: [async ({ }, use) => {
     const pathToExtension = path.join(__dirname, '../');
@@ -40,6 +67,8 @@ export const test = base.extend({
     if (!context) {
       throw new Error(`Failed to start extension service worker after ${maxAttempts} attempts`);
     }
+
+    await closeOnboardingTab(context);
 
     await use(context);
     await context.close();
