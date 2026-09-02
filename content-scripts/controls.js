@@ -45,6 +45,7 @@ function enableTouchDragForControls(container) {
 
   let dragging = false;
   let moved = false;
+  let startedInScroller = false;
   let pointerId = null;
   let startX = 0;
   let startY = 0;
@@ -58,6 +59,13 @@ function enableTouchDragForControls(container) {
 
     dragging = true;
     moved = false;
+    // A touch that starts on an overflowing colour strip scrolls it
+    // horizontally (touch-action: pan-x), so only its vertical component
+    // moves the bar. Otherwise the two gestures fight over the first pixels.
+    const scroller = e.target && typeof e.target.closest === 'function'
+      ? e.target.closest('.text-highlighter-color-buttons')
+      : null;
+    startedInScroller = !!(scroller && scroller.classList.contains('is-scrollable'));
     pointerId = e.pointerId;
     startX = e.clientX;
     startY = e.clientY;
@@ -74,7 +82,7 @@ function enableTouchDragForControls(container) {
   container.addEventListener('pointermove', (e) => {
     if (!dragging || e.pointerId !== pointerId) return;
 
-    const dx = e.clientX - startX;
+    const dx = startedInScroller ? 0 : e.clientX - startX;
     const dy = e.clientY - startY;
     if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
       moved = true;
@@ -117,6 +125,7 @@ function enableTouchDragForControls(container) {
 
     dragging = false;
     moved = false;
+    startedInScroller = false;
 
     if (typeof container.releasePointerCapture === 'function') {
       try {
@@ -205,27 +214,80 @@ function createHighlightControls() {
     }
     e.stopPropagation();
   });
+  // The colours sit in a horizontally scrollable strip so the bar never grows
+  // past the viewport on narrow screens. The delete and '+' buttons stay
+  // outside the strip and are always reachable.
+  const colorScrollWrapper = document.createElement('div');
+  colorScrollWrapper.className = 'text-highlighter-color-scroll';
   const colorButtonsContainer = document.createElement('div');
   colorButtonsContainer.className = 'text-highlighter-color-buttons';
-  currentColors.forEach((colorInfo, idx) => {
-    // Insert a separator after the 5 default colors (only if custom colors exist)
-    if (idx === 5 && currentColors.length > 5) {
-      appendColorSeparator(colorButtonsContainer);
-    }
-    const colorButton = createColorButton(colorInfo);
-    colorButtonsContainer.appendChild(colorButton);
-  });
+  appendColorButtons(colorButtonsContainer);
+  colorScrollWrapper.appendChild(colorButtonsContainer);
   highlightControlsContainer.appendChild(deleteButton);
-  highlightControlsContainer.appendChild(colorButtonsContainer);
+  highlightControlsContainer.appendChild(colorScrollWrapper);
   highlightControlsContainer.addEventListener('click', function (e) {
     e.stopPropagation();
   });
 
   // -------------- '+' button (add new color) --------------
   const addColorBtn = createAddColorButton();
-  colorButtonsContainer.appendChild(addColorBtn);
+  highlightControlsContainer.appendChild(addColorBtn);
   getUiMountRoot().appendChild(highlightControlsContainer);
   enableTouchDragForControls(highlightControlsContainer);
+  bindColorScrollHints(highlightControlsContainer);
+}
+
+// Fill a colour strip: the five defaults, a separator, then the custom colours.
+function appendColorButtons(colorButtonsContainer) {
+  currentColors.forEach((colorInfo, idx) => {
+    if (idx === 5 && currentColors.length > 5) {
+      appendColorSeparator(colorButtonsContainer);
+    }
+    const colorButton = createColorButton(colorInfo);
+    colorButtonsContainer.appendChild(colorButton);
+  });
+}
+
+// Show a fade on whichever side of the colour strip still has colours hidden,
+// and hand horizontal touch gestures to the strip only while it overflows.
+function updateColorScrollHints(container) {
+  if (!container) return;
+  const scroller = container.querySelector('.text-highlighter-color-buttons');
+  if (!scroller) return;
+  const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+  const scrollable = maxScroll > 1;
+  scroller.classList.toggle('is-scrollable', scrollable);
+  const wrapper = scroller.parentElement;
+  if (wrapper && wrapper.classList.contains('text-highlighter-color-scroll')) {
+    wrapper.classList.toggle('can-scroll-left', scrollable && scroller.scrollLeft > 1);
+    wrapper.classList.toggle('can-scroll-right', scrollable && scroller.scrollLeft < maxScroll - 1);
+  }
+}
+
+function bindColorScrollHints(container) {
+  if (!container) return;
+  const scroller = container.querySelector('.text-highlighter-color-buttons');
+  if (!scroller) return;
+  scroller.addEventListener('scroll', () => {
+    const wrapper = scroller.parentElement;
+    if (wrapper && scroller.scrollLeft > 1) {
+      wrapper.classList.add('has-scrolled');
+    }
+    updateColorScrollHints(container);
+  }, { passive: true });
+}
+
+// The bar is display: none until it gets the visible class, so it has to be
+// laid out briefly to know how wide it is.
+function measureControlsWidth(container) {
+  const previousDisplay = container.style.display;
+  const previousVisibility = container.style.visibility;
+  container.style.display = 'flex';
+  container.style.visibility = 'hidden';
+  const width = container.getBoundingClientRect().width;
+  container.style.display = previousDisplay;
+  container.style.visibility = previousVisibility;
+  return width;
 }
 
 // create colorButton (reusable function)
@@ -674,20 +736,9 @@ function refreshHighlightControlsColors() {
   // Clear existing buttons
   colorButtonsContainer.innerHTML = '';
 
-
-  // Re-create color buttons
-  currentColors.forEach((colorInfo, idx) => {
-    if (idx === 5 && currentColors.length > 5) {
-      appendColorSeparator(colorButtonsContainer);
-    }
-    const colorButton = createColorButton(colorInfo);
-    colorButtonsContainer.appendChild(colorButton);
-  });
-
-  // Recreate + button
-  const addColorBtn = createAddColorButton();
-
-  colorButtonsContainer.appendChild(addColorBtn);
+  // Re-create color buttons (the '+' button lives outside the strip and stays)
+  appendColorButtons(colorButtonsContainer);
+  updateColorScrollHints(highlightControlsContainer);
 }
 
 // Display highlight controller UI
@@ -696,7 +747,8 @@ function showControlUi(highlightElement, e) {
 
   activeHighlightElement = highlightElement;
   const controlsHeight = 44;
-  const controlsWidth = 320;
+  // jsdom reports 0, so keep the old estimate as the fallback.
+  const controlsWidth = measureControlsWidth(highlightControlsContainer) || 320;
   const highlightControlsVerticalOffset = 52;
   const highlightControlsSpacing = 8;
   const viewportPadding = 10;
@@ -738,11 +790,16 @@ function showControlUi(highlightElement, e) {
 
   highlightControlsContainer.style.top = `${topPosition}px`;
   highlightControlsContainer.style.left = `${leftPosition}px`;
+  const colorScroller = highlightControlsContainer.querySelector('.text-highlighter-color-buttons');
+  if (colorScroller) {
+    colorScroller.scrollLeft = 0;
+  }
   // remove/add visible class to ensure pop animation always plays
   highlightControlsContainer.classList.remove('visible');
   void highlightControlsContainer.offsetWidth; // Force reflow to initialize
   setTimeout(() => {
     highlightControlsContainer.classList.add('visible');
+    updateColorScrollHints(highlightControlsContainer);
   }, 10);
 }
 
@@ -1194,6 +1251,9 @@ function showSelectionControls(mouseX, mouseY) {
   selectionControlsContainer.style.top = `${topPosition}px`;
   selectionControlsContainer.style.visibility = 'visible';
   enableTouchDragForControls(selectionControlsContainer);
+  // cloneNode dropped the scroll listener along with the rest.
+  bindColorScrollHints(selectionControlsContainer);
+  updateColorScrollHints(selectionControlsContainer);
 
   // Guard against ghost clicks: on Firefox Mobile, a synthetic click fires at the
   // pointerdown coordinates even after preventDefault(), hitting color buttons that
