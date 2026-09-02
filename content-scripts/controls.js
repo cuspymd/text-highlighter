@@ -235,6 +235,18 @@ function createHighlightControls() {
   getUiMountRoot().appendChild(highlightControlsContainer);
   enableTouchDragForControls(highlightControlsContainer);
   bindColorScrollHints(highlightControlsContainer);
+  // A rotation can make a strip that fitted overflow (or the reverse) while a
+  // bar is open, and the touch-action handoff depends on knowing which.
+  window.addEventListener('resize', refreshOpenColorScrollHints, { passive: true });
+}
+
+function refreshOpenColorScrollHints() {
+  if (highlightControlsContainer && highlightControlsContainer.classList.contains('visible')) {
+    updateColorScrollHints(highlightControlsContainer);
+  }
+  if (selectionControlsContainer && selectionControlsContainer.isConnected) {
+    updateColorScrollHints(selectionControlsContainer);
+  }
 }
 
 // Fill a colour strip: the five defaults, a separator, then the custom colours.
@@ -1184,6 +1196,14 @@ function showSelectionControls(mouseX, mouseY) {
   if (deleteButton) {
     deleteButton.remove();
   }
+
+  // Remove the add color button too (it would change the selection), and do it
+  // before the bar is measured so neither its position nor the colour strip's
+  // overflow hints count a button that is about to disappear.
+  const addColorButton = selectionControlsContainer.querySelector('.add-color-button');
+  if (addColorButton) {
+    addColorButton.remove();
+  }
   
   // Temporarily position off-screen to get dimensions
   selectionControlsContainer.style.left = '-9999px';
@@ -1287,12 +1307,6 @@ function showSelectionControls(mouseX, mouseY) {
       }
     });
   });
-  
-  // Remove the add color button from selection controls to prevent selection changes
-  const addColorButton = selectionControlsContainer.querySelector('.add-color-button');
-  if (addColorButton) {
-    addColorButton.remove();
-  }
   
   // Add click event to stop propagation
   selectionControlsContainer.addEventListener('click', function(e) {

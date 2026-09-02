@@ -33,6 +33,9 @@
   position: fixed;
   display: none;
   align-items: center;
+  /* The bar keeps its own reading order on RTL pages, and the colour strip's
+     scrollLeft stays positive so the overflow hints can trust it. */
+  direction: ltr;
   z-index: 2147483647;
   background: var(--th-surface);
   border: 1px solid var(--th-surface-border);

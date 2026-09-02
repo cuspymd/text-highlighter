@@ -114,6 +114,24 @@ describe('controls colour strip', () => {
     expect(controls().lastElementChild.classList.contains('add-color-button')).toBe(true);
   });
 
+  it('recomputes the hints when the viewport is resized while the bar is open', async () => {
+    const span = document.createElement('span');
+    span.className = 'text-highlighter-extension';
+    document.body.appendChild(span);
+    stubMetrics(strip(), { scrollWidth: 300, clientWidth: 300, scrollLeft: 0 });
+    window.showControlUi(span, { clientX: 20, clientY: 20 });
+    // The bar becomes visible on a 10 ms timer.
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(strip().classList.contains('is-scrollable')).toBe(false);
+
+    // Rotating to portrait narrows the strip; the colours no longer fit.
+    stubMetrics(strip(), { scrollWidth: 300, clientWidth: 200, scrollLeft: 0 });
+    window.dispatchEvent(new Event('resize'));
+
+    expect(strip().classList.contains('is-scrollable')).toBe(true);
+    expect(strip().parentElement.classList.contains('can-scroll-right')).toBe(true);
+  });
+
   it('resets the strip to its start each time the bar is shown', () => {
     const span = document.createElement('span');
     span.className = 'text-highlighter-extension';
