@@ -158,6 +158,19 @@ async function handleSaveHighlights(message, sender) {
     const result = await browserAPI.storage.local.get([`${message.url}${STORAGE_KEYS.META_SUFFIX}`]);
     const metaData = result[`${message.url}${STORAGE_KEYS.META_SUFFIX}`] || {};
     if (sender && sender.tab) metaData.title = sender.tab.title;
+
+    // Groups this save merged away. Their tombstones land in the same write as
+    // the list without them, so a sync cannot bring them back and no separate
+    // delete can race this save for the page's list.
+    if (Array.isArray(message.deletedGroupIds) && message.deletedGroupIds.length > 0) {
+      const deletedGroupIds = metaData.deletedGroupIds || {};
+      const deletedAt = Date.now();
+      message.deletedGroupIds.forEach(groupId => {
+        deletedGroupIds[groupId] = deletedAt;
+      });
+      cleanupTombstones(deletedGroupIds);
+      metaData.deletedGroupIds = deletedGroupIds;
+    }
     metaData.lastUpdated = new Date().toISOString();
 
     const metaSaveData = {};

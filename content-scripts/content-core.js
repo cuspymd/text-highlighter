@@ -532,6 +532,21 @@
   }
 
   /**
+   * The groups whose spans the range touches, in document order.
+   * @param {Range} range
+   * @returns {Set<string>}
+   */
+  function overlappingHighlightGroupIds(range) {
+    const groupIds = new Set();
+    document.querySelectorAll('.text-highlighter-extension[data-group-id]').forEach(highlight => {
+      if (range.intersectsNode(highlight)) {
+        groupIds.add(highlight.dataset.groupId);
+      }
+    });
+    return groupIds;
+  }
+
+  /**
    * Create a memoized "is this element rendered" test for one tree walk.
    *
    * getComputedStyle forces a style recalc, and walking every text node's
@@ -869,6 +884,29 @@
   }
 
   /**
+   * The region of page text a group's spans cover, in the model's offsets.
+   *
+   * The spans are the group's live elements in document order. The region runs
+   * from the first text in the first span to the last text in the last span, so
+   * it also covers any unhighlighted text between spans of the same group -
+   * which is the text a merge with that group should keep. The model must
+   * include highlighted text, or the spans' own text nodes are not in it.
+   *
+   * @param {Object} model
+   * @param {HTMLElement[]} spans
+   * @returns {{start: number, end: number}|null}
+   */
+  function highlightGroupTextRegion(model, spans) {
+    if (!spans || spans.length === 0) return null;
+
+    const range = document.createRange();
+    range.setStart(spans[0], 0);
+    range.setEnd(spans[spans.length - 1], spans[spans.length - 1].childNodes.length);
+
+    return rangeToTextPosition(model, range);
+  }
+
+  /**
    * @param {object} params
    * @param {string} params.groupId
    * @param {string} params.color
@@ -923,6 +961,8 @@
     convertSelectionRange,
     processSelectionRange,
     selectionOverlapsHighlight,
+    overlappingHighlightGroupIds,
+    highlightGroupTextRegion,
     buildHighlightGroup,
     createVisibilityResolver,
     buildNormalizedTextModel,

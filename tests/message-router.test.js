@@ -498,6 +498,45 @@ describe('message-router', () => {
     });
   });
 
+  describe('saveHighlights with deletedGroupIds', () => {
+    // Recent enough to survive the tombstone cleanup a save runs.
+    const earlierTombstone = Date.now() - 1000;
+
+    beforeEach(() => {
+      local[PAGE] = [
+        { groupId: 'g1', color: '#ffff00', text: 'first' },
+        { groupId: 'g2', color: '#80cbc4', text: 'second' },
+      ];
+      local[`${PAGE}${STORAGE_KEYS.META_SUFFIX}`] = {
+        title: 'Article title',
+        deletedGroupIds: { g0: earlierTombstone },
+      };
+    });
+
+    it('records tombstones for the groups a merge replaced, alongside the new list', async () => {
+      await send({
+        action: 'saveHighlights',
+        url: PAGE,
+        highlights: [{ groupId: 'g3', color: '#ffff00', text: 'first second' }],
+        deletedGroupIds: ['g1', 'g2'],
+      });
+
+      expect(local[PAGE].map(group => group.groupId)).toEqual(['g3']);
+      expect(Object.keys(meta(PAGE).deletedGroupIds).sort()).toEqual(['g0', 'g1', 'g2']);
+      expect(meta(PAGE).deletedGroupIds.g1).toBeGreaterThan(0);
+    });
+
+    it('keeps existing tombstones when a save names none', async () => {
+      await send({
+        action: 'saveHighlights',
+        url: PAGE,
+        highlights: [{ groupId: 'g1', color: '#ffff00', text: 'first' }],
+      });
+
+      expect(meta(PAGE).deletedGroupIds).toEqual({ g0: earlierTombstone });
+    });
+  });
+
   describe('clearAllHighlights', () => {
     it('drops the page and its metadata', async () => {
       local[PAGE] = [{ groupId: 'g1', color: '#ffff00' }];
