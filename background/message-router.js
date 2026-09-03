@@ -150,19 +150,32 @@ async function handleSaveShortcutColorMap(message) {
 
 async function handleSaveHighlights(message, sender) {
   if (message.highlights.length > 0) {
-    const saveData = {};
-    saveData[message.url] = message.highlights;
-    await browserAPI.storage.local.set(saveData);
-    debugLog('Saved highlights for URL:', message.url, message.highlights);
-
-    const result = await browserAPI.storage.local.get([`${message.url}${STORAGE_KEYS.META_SUFFIX}`]);
-    const metaData = result[`${message.url}${STORAGE_KEYS.META_SUFFIX}`] || {};
+    const metaKey = `${message.url}${STORAGE_KEYS.META_SUFFIX}`;
+    const result = await browserAPI.storage.local.get([metaKey]);
+    const metaData = result[metaKey] || {};
     if (sender && sender.tab) metaData.title = sender.tab.title;
+
+    // Groups this save merged away. Their tombstones go into the same
+    // storage.local.set as the list without them: a save from another tab on
+    // this url that lands between two separate writes would read the new list
+    // with the old metadata and write the tombstones away again, and a sync
+    // could then bring the merged groups back.
+    if (Array.isArray(message.deletedGroupIds) && message.deletedGroupIds.length > 0) {
+      const deletedGroupIds = metaData.deletedGroupIds || {};
+      const deletedAt = Date.now();
+      message.deletedGroupIds.forEach(groupId => {
+        deletedGroupIds[groupId] = deletedAt;
+      });
+      cleanupTombstones(deletedGroupIds);
+      metaData.deletedGroupIds = deletedGroupIds;
+    }
     metaData.lastUpdated = new Date().toISOString();
 
-    const metaSaveData = {};
-    metaSaveData[`${message.url}${STORAGE_KEYS.META_SUFFIX}`] = metaData;
-    await browserAPI.storage.local.set(metaSaveData);
+    await browserAPI.storage.local.set({
+      [message.url]: message.highlights,
+      [metaKey]: metaData,
+    });
+    debugLog('Saved highlights for URL:', message.url, message.highlights);
     debugLog('Saved page metadata:', metaData);
 
     await syncSaveHighlights(message.url, message.highlights, metaData.title, metaData.lastUpdated);
@@ -175,8 +188,14 @@ async function handleSaveHighlights(message, sender) {
   }
 }
 
-async function handleDeleteHighlight(message) {
+// The tab that asked for the delete has already taken the group off its page,
+// so it is left out of the refresh. A refresh there would replace the whole
+// page with the storage state as of this delete - and a highlight the user made
+// in the meantime is in that tab and in the save behind this one, but not in
+// that state, so it would vanish until the next reload.
+async function handleDeleteHighlight(message, sender) {
   const { url, groupId } = message;
+  const excludeTabId = sender && sender.tab ? sender.tab.id : undefined;
   const result = await browserAPI.storage.local.get([url, `${url}${STORAGE_KEYS.META_SUFFIX}`]);
   const highlights = result[url] || [];
   const meta = result[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
@@ -198,7 +217,7 @@ async function handleDeleteHighlight(message) {
     await syncSaveHighlights(url, updatedHighlights, meta.title || '', lastUpdated);
 
     if (message.notifyRefresh) {
-      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: updatedHighlights });
+      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: updatedHighlights }, { excludeTabId });
     }
     return successResponse({ highlights: updatedHighlights });
   } else {
@@ -206,7 +225,7 @@ async function handleDeleteHighlight(message) {
     await cleanupEmptyHighlightData(url);
     if (!tombstoneRecorded) await recordCloudSyncTombstones([url]);
     if (message.notifyRefresh) {
-      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
+      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] }, { excludeTabId });
     }
     return successResponse({ highlights: [] });
   }

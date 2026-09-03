@@ -485,6 +485,78 @@ describe('message-router', () => {
 
       expect(tabMessages('refreshHighlights')[0].message.highlights).toEqual([]);
     });
+
+    it('does not send the refresh back to the tab that asked for the delete', async () => {
+      openTabs(PAGE, PAGE);
+
+      await send(
+        { action: 'deleteHighlight', url: PAGE, groupId: 'g1', notifyRefresh: true },
+        { tab: { id: 1, url: PAGE } }
+      );
+
+      expect(tabMessages('refreshHighlights').map(entry => entry.tabId)).toEqual([2]);
+    });
+  });
+
+  describe('saveHighlights with deletedGroupIds', () => {
+    // Recent enough to survive the tombstone cleanup a save runs.
+    const earlierTombstone = Date.now() - 1000;
+
+    beforeEach(() => {
+      local[PAGE] = [
+        { groupId: 'g1', color: '#ffff00', text: 'first' },
+        { groupId: 'g2', color: '#80cbc4', text: 'second' },
+      ];
+      local[`${PAGE}${STORAGE_KEYS.META_SUFFIX}`] = {
+        title: 'Article title',
+        deletedGroupIds: { g0: earlierTombstone },
+      };
+    });
+
+    it('records tombstones for the groups a merge replaced, alongside the new list', async () => {
+      await send({
+        action: 'saveHighlights',
+        url: PAGE,
+        highlights: [{ groupId: 'g3', color: '#ffff00', text: 'first second' }],
+        deletedGroupIds: ['g1', 'g2'],
+      });
+
+      expect(local[PAGE].map(group => group.groupId)).toEqual(['g3']);
+      expect(Object.keys(meta(PAGE).deletedGroupIds).sort()).toEqual(['g0', 'g1', 'g2']);
+      expect(meta(PAGE).deletedGroupIds.g1).toBeGreaterThan(0);
+    });
+
+    it('writes the list and its tombstones in one storage write', async () => {
+      await send({
+        action: 'saveHighlights',
+        url: PAGE,
+        highlights: [{ groupId: 'g3', color: '#ffff00', text: 'first second' }],
+        deletedGroupIds: ['g1', 'g2'],
+      });
+
+      // A save from another tab between two separate writes would read the
+      // new list with the old metadata and write the tombstones away again, so
+      // no write may carry the list without them. (The sync layer repeats the
+      // pair afterwards, tombstones included.)
+      const listWrites = chrome.storage.local.set.mock.calls
+        .map(([items]) => items)
+        .filter(items => PAGE in items);
+      expect(listWrites.length).toBeGreaterThan(0);
+      listWrites.forEach(items => {
+        const written = items[`${PAGE}${STORAGE_KEYS.META_SUFFIX}`];
+        expect(written && Object.keys(written.deletedGroupIds).sort()).toEqual(['g0', 'g1', 'g2']);
+      });
+    });
+
+    it('keeps existing tombstones when a save names none', async () => {
+      await send({
+        action: 'saveHighlights',
+        url: PAGE,
+        highlights: [{ groupId: 'g1', color: '#ffff00', text: 'first' }],
+      });
+
+      expect(meta(PAGE).deletedGroupIds).toEqual({ g0: earlierTombstone });
+    });
   });
 
   describe('clearAllHighlights', () => {

@@ -288,11 +288,16 @@ async function loadHighlights() {
   initMinimap();
 }
 
-function saveHighlights() {
+// `deletedGroupIds` names groups this save drops, so the background can record
+// their tombstones in the same write. Sending a separate deleteHighlight first
+// would race this save: both rewrite the page's list, and whichever the
+// background finishes second wins.
+function saveHighlights(deletedGroupIds = []) {
   browserAPI.runtime.sendMessage({
     action: 'saveHighlights',
     url: currentUrl,
     highlights: highlights,
+    ...(deletedGroupIds.length > 0 ? { deletedGroupIds } : {}),
     timestamp: new Date().toISOString()
   })
     .then(response => debugLog('Highlights saved:', response?.success))
@@ -988,19 +993,25 @@ function highlightSelectedText(color) {
   const selectedText = selection.toString();
   if (selectedText.trim() === '') return;
 
-  // Check if the selection overlaps with an existing highlight to prevent nesting.
-  const rangeToCheck = selection.getRangeAt(0);
-  if (
-    contentCore
-    && typeof contentCore.selectionOverlapsHighlight === 'function'
-    && contentCore.selectionOverlapsHighlight(rangeToCheck)
-  ) {
-    debugLog('Selection overlaps with an existing highlight. Aborting highlight creation.');
+  const range = selection.getRangeAt(0);
+
+  // A selection that touches existing highlights merges with them rather than
+  // nesting inside them: one new group in the chosen colour covers the
+  // selection and every group it touched. That is how a highlight is extended,
+  // recoloured, or joined to its neighbour - none of which needs the old
+  // delete-and-reselect detour.
+  const overlapping = (
+    contentCore && typeof contentCore.overlappingHighlightGroupIds === 'function'
+  )
+    ? contentCore.overlappingHighlightGroupIds(range)
+    : new Set();
+  if (overlapping.size > 0) {
+    debugLog('Selection overlaps existing highlights, merging:', Array.from(overlapping));
+    mergeSelectionIntoHighlights(range, overlapping, color);
     selection.removeAllRanges();
     return;
   }
 
-  const range = selection.getRangeAt(0);
   debugLog('Highlight Selection Debug:', {
     selectedText: selectedText.replace(/\s+/g, ' ').trim(),
     range: describeRangeForDebug(range),
@@ -1016,14 +1027,93 @@ function highlightSelectedText(color) {
   const convertedRange = convertSelectionRange(range);
   debugLog('Converted Highlight Range Debug:', describeRangeForDebug(convertedRange));
 
+  createHighlightGroup(convertedRange, color, selectedText);
+  selection.removeAllRanges();
+}
+
+// Replace the groups a selection touches with one group over their union.
+//
+// Everything happens in the text model's offsets, not the DOM: the selection
+// and each touched group become [start, end) regions, the union is taken, the
+// old spans are unwrapped, and the union is applied the way a restore applies a
+// resolved selector. Unwrapping changes no page text, so the offsets survive
+// the rebuild. Highlighting through nested spans never comes up.
+//
+// A selection that stays inside a single group and reaches no further than it
+// is a recolour, and the group is kept rather than replaced.
+function mergeSelectionIntoHighlights(range, groupIds, color) {
+  const model = buildRestoreModel();
+  const selected = model ? contentCore.rangeToTextPosition(model, convertSelectionRange(range)) : null;
+  if (!selected) {
+    debugLog('Could not place the selection in the page text; highlights left as they are');
+    return false;
+  }
+
+  const groups = [];
+  for (const groupId of groupIds) {
+    const spans = findHighlightElementsByGroupId(groupId);
+    const region = contentCore.highlightGroupTextRegion(model, spans);
+    if (!region) {
+      // Unwrapping a group whose text cannot be placed would lose it for good.
+      debugLog('Could not place highlight group in the page text; not merging:', groupId);
+      return false;
+    }
+    groups.push({ groupId, spans, region });
+  }
+
+  const union = { start: selected.start, end: selected.end };
+  groups.forEach(({ region }) => {
+    union.start = Math.min(union.start, region.start);
+    union.end = Math.max(union.end, region.end);
+  });
+
+  if (groups.length === 1
+    && groups[0].region.start === union.start
+    && groups[0].region.end === union.end) {
+    changeHighlightColor(groups[0].spans[0], color);
+    return true;
+  }
+
+  const removed = groups.map(({ groupId }) => groupId);
+  groups.forEach(({ spans }) => unwrapHighlightSpans(spans));
+  highlights = highlights.filter(group => !removed.includes(String(group.groupId)));
+  if (activeHighlightElement && removed.includes(activeHighlightElement.dataset.groupId)) {
+    activeHighlightElement = null;
+    hideHighlightControls();
+  }
+
+  const rebuilt = buildRestoreModel();
+  const mergedRange = rebuilt
+    ? contentCore.normalizedOffsetsToRange(rebuilt, union.start, union.end)
+    : null;
+  if (!mergedRange) {
+    // The old groups are already off the page; keep storage in step with it.
+    debugLog('Could not build a range for the merged highlight:', union);
+    saveHighlights(removed);
+    updateMinimapMarkers();
+    return false;
+  }
+
+  const mergedText = rebuilt.text.substring(union.start, union.end);
+  return createHighlightGroup(mergedRange, color, mergedText, { deletedGroupIds: removed });
+}
+
+// Wrap `range` in a new group, save it, and report whether anything was created.
+function createHighlightGroup(convertedRange, color, selectedText, { deletedGroupIds = [] } = {}) {
   try {
     const groupId = Date.now().toString();
 
-    // Generate selectors for robust restoration
+    // Generate selectors for robust restoration.
+    //
+    // Built against the same page text a restore resolves against - other
+    // highlights included. Leaving them out cuts their text from the prefix,
+    // suffix and offsets the selector carries, so a page with a highlight on
+    // either side of this one saved context with holes in it, and a repeated
+    // phrase could restore onto the wrong occurrence.
     let selectors = null;
     if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
       try {
-        const model = contentCore.buildNormalizedTextModel(document.body);
+        const model = contentCore.buildNormalizedTextModel(document.body, { includeHighlightedText: true });
         const quote = contentCore.buildQuoteSelector(model, convertedRange);
         const textPosition = contentCore.rangeToTextPosition(model, convertedRange);
         if (quote && textPosition) {
@@ -1063,13 +1153,14 @@ function highlightSelectedText(color) {
         addHighlightEventListeners(span);
       });
       highlights.push(group);
-      saveHighlights();
+      saveHighlights(deletedGroupIds);
       updateMinimapMarkers();
+      return true;
     }
   } catch (error) {
     debugLog('Error highlighting selected text:', error);
   }
-  selection.removeAllRanges();
+  return false;
 }
 
 /**

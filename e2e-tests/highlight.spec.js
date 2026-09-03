@@ -605,7 +605,7 @@ test.describe('Chrome Extension Tests', () => {
     await expectHighlightSpan(h1SpanAfterReload, { color: newColorRgb, text: h1Text });
   });
 
-  test('Re-highlighting part of an already highlighted text should not create overlapping highlights', async ({ page, background }) => {
+  test('Re-highlighting part of an already highlighted text recolours it without nesting', async ({ page, background }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
     const paragraph = page.locator('p').first();
@@ -657,12 +657,45 @@ test.describe('Chrome Extension Tests', () => {
     // 4. Run highlight command again (in green)
     await sendHighlightMessage(background, 'green');
 
-    // 5. Verify that no overlapping highlights are created (span count should still be 1)
+    // 5. Verify that no nested highlight is created (span count should still be 1)
     const allSpans = paragraph.locator('span.text-highlighter-extension');
     await expect(allSpans).toHaveCount(1);
 
-    // 6. Verify that the color or content of the existing highlight has not changed
-    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: initialText });
+    // 6. The selection stayed inside the highlight, so the highlight keeps its
+    //    text and takes the new colour
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(0, 128, 0)', text: initialText });
+
+    // 7. And the recolour survives a reload
+    await page.reload();
+    const spanAfterReload = page.locator('p').first().locator('span.text-highlighter-extension');
+    await expect(spanAfterReload).toHaveCount(1);
+    await expectHighlightSpan(spanAfterReload, { color: 'rgb(0, 128, 0)', text: initialText });
+  });
+
+  test('Highlighting across an existing highlight merges the two into one group', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const paragraph = page.locator('p').first();
+
+    // 1. Highlight "sample" in yellow
+    await selectTextInElement(paragraph, 'sample');
+    await sendHighlightMessage(background, 'yellow');
+    await expect(paragraph.locator('span.text-highlighter-extension')).toHaveCount(1);
+
+    // 2. Select a range that starts before it and ends inside it, and highlight in green
+    await selectTextInElement(paragraph, 'This is a sam');
+    await sendHighlightMessage(background, 'green');
+
+    // 3. One green highlight covers the union of both
+    const spans = paragraph.locator('span.text-highlighter-extension');
+    await expect(spans).toHaveCount(1);
+    await expectHighlightSpan(spans, { color: 'rgb(0, 128, 0)', text: 'This is a sample' });
+
+    // 4. The merge survives a reload
+    await page.reload();
+    const spansAfterReload = page.locator('p').first().locator('span.text-highlighter-extension');
+    await expect(spansAfterReload).toHaveCount(1);
+    await expectHighlightSpan(spansAfterReload, { color: 'rgb(0, 128, 0)', text: 'This is a sample' });
   });
 
 });

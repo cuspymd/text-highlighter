@@ -38,10 +38,11 @@ export async function broadcastToAllTabs(message) {
  * 특정 URL과 일치하는 탭에만 메시지를 전송한다.
  * content script가 주입되지 않은 탭의 에러는 무시한다.
  */
-export async function broadcastToTabsByUrl(url, message) {
+export async function broadcastToTabsByUrl(url, message, { excludeTabId } = {}) {
   const tabs = await browserAPI.tabs.query({ url });
   for (const tab of tabs) {
     if (!tab || !tab.id) continue;
+    if (excludeTabId !== undefined && tab.id === excludeTabId) continue;
     await sendMessageToTab(tab.id, message);
   }
 }
