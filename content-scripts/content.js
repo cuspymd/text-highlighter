@@ -1019,11 +1019,17 @@ function highlightSelectedText(color) {
   try {
     const groupId = Date.now().toString();
 
-    // Generate selectors for robust restoration
+    // Generate selectors for robust restoration.
+    //
+    // Built against the same page text a restore resolves against - other
+    // highlights included. Leaving them out cuts their text from the prefix,
+    // suffix and offsets the selector carries, so a page with a highlight on
+    // either side of this one saved context with holes in it, and a repeated
+    // phrase could restore onto the wrong occurrence.
     let selectors = null;
     if (contentCore && typeof contentCore.buildNormalizedTextModel === 'function') {
       try {
-        const model = contentCore.buildNormalizedTextModel(document.body);
+        const model = contentCore.buildNormalizedTextModel(document.body, { includeHighlightedText: true });
         const quote = contentCore.buildQuoteSelector(model, convertedRange);
         const textPosition = contentCore.rangeToTextPosition(model, convertedRange);
         if (quote && textPosition) {
