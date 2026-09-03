@@ -89,6 +89,16 @@ describe('tab-broadcast', () => {
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(1, message);
     });
 
+    it('leaves out the excluded tab', async () => {
+      const url = 'https://example.com/*';
+      chrome.tabs.query.mockResolvedValue([{ id: 1 }, { id: 2 }, { id: 3 }]);
+      const message = { action: 'test' };
+
+      await broadcastToTabsByUrl(url, message, { excludeTabId: 2 });
+
+      expect(chrome.tabs.sendMessage.mock.calls.map(([tabId]) => tabId)).toEqual([1, 3]);
+    });
+
     it('should handle errors gracefully', async () => {
       const url = 'https://example.com/*';
       const tabs = [{ id: 1 }];

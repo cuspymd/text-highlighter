@@ -175,8 +175,14 @@ async function handleSaveHighlights(message, sender) {
   }
 }
 
-async function handleDeleteHighlight(message) {
+// The tab that asked for the delete has already taken the group off its page,
+// so it is left out of the refresh. A refresh there would replace the whole
+// page with the storage state as of this delete - and a highlight the user made
+// in the meantime is in that tab and in the save behind this one, but not in
+// that state, so it would vanish until the next reload.
+async function handleDeleteHighlight(message, sender) {
   const { url, groupId } = message;
+  const excludeTabId = sender && sender.tab ? sender.tab.id : undefined;
   const result = await browserAPI.storage.local.get([url, `${url}${STORAGE_KEYS.META_SUFFIX}`]);
   const highlights = result[url] || [];
   const meta = result[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
@@ -198,7 +204,7 @@ async function handleDeleteHighlight(message) {
     await syncSaveHighlights(url, updatedHighlights, meta.title || '', lastUpdated);
 
     if (message.notifyRefresh) {
-      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: updatedHighlights });
+      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: updatedHighlights }, { excludeTabId });
     }
     return successResponse({ highlights: updatedHighlights });
   } else {
@@ -206,7 +212,7 @@ async function handleDeleteHighlight(message) {
     await cleanupEmptyHighlightData(url);
     if (!tombstoneRecorded) await recordCloudSyncTombstones([url]);
     if (message.notifyRefresh) {
-      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] });
+      await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: [] }, { excludeTabId });
     }
     return successResponse({ highlights: [] });
   }

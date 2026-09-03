@@ -485,6 +485,17 @@ describe('message-router', () => {
 
       expect(tabMessages('refreshHighlights')[0].message.highlights).toEqual([]);
     });
+
+    it('does not send the refresh back to the tab that asked for the delete', async () => {
+      openTabs(PAGE, PAGE);
+
+      await send(
+        { action: 'deleteHighlight', url: PAGE, groupId: 'g1', notifyRefresh: true },
+        { tab: { id: 1, url: PAGE } }
+      );
+
+      expect(tabMessages('refreshHighlights').map(entry => entry.tabId)).toEqual([2]);
+    });
   });
 
   describe('clearAllHighlights', () => {
