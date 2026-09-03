@@ -526,6 +526,28 @@ describe('message-router', () => {
       expect(meta(PAGE).deletedGroupIds.g1).toBeGreaterThan(0);
     });
 
+    it('writes the list and its tombstones in one storage write', async () => {
+      await send({
+        action: 'saveHighlights',
+        url: PAGE,
+        highlights: [{ groupId: 'g3', color: '#ffff00', text: 'first second' }],
+        deletedGroupIds: ['g1', 'g2'],
+      });
+
+      // A save from another tab between two separate writes would read the
+      // new list with the old metadata and write the tombstones away again, so
+      // no write may carry the list without them. (The sync layer repeats the
+      // pair afterwards, tombstones included.)
+      const listWrites = chrome.storage.local.set.mock.calls
+        .map(([items]) => items)
+        .filter(items => PAGE in items);
+      expect(listWrites.length).toBeGreaterThan(0);
+      listWrites.forEach(items => {
+        const written = items[`${PAGE}${STORAGE_KEYS.META_SUFFIX}`];
+        expect(written && Object.keys(written.deletedGroupIds).sort()).toEqual(['g0', 'g1', 'g2']);
+      });
+    });
+
     it('keeps existing tombstones when a save names none', async () => {
       await send({
         action: 'saveHighlights',

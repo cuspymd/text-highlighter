@@ -150,18 +150,16 @@ async function handleSaveShortcutColorMap(message) {
 
 async function handleSaveHighlights(message, sender) {
   if (message.highlights.length > 0) {
-    const saveData = {};
-    saveData[message.url] = message.highlights;
-    await browserAPI.storage.local.set(saveData);
-    debugLog('Saved highlights for URL:', message.url, message.highlights);
-
-    const result = await browserAPI.storage.local.get([`${message.url}${STORAGE_KEYS.META_SUFFIX}`]);
-    const metaData = result[`${message.url}${STORAGE_KEYS.META_SUFFIX}`] || {};
+    const metaKey = `${message.url}${STORAGE_KEYS.META_SUFFIX}`;
+    const result = await browserAPI.storage.local.get([metaKey]);
+    const metaData = result[metaKey] || {};
     if (sender && sender.tab) metaData.title = sender.tab.title;
 
-    // Groups this save merged away. Their tombstones land in the same write as
-    // the list without them, so a sync cannot bring them back and no separate
-    // delete can race this save for the page's list.
+    // Groups this save merged away. Their tombstones go into the same
+    // storage.local.set as the list without them: a save from another tab on
+    // this url that lands between two separate writes would read the new list
+    // with the old metadata and write the tombstones away again, and a sync
+    // could then bring the merged groups back.
     if (Array.isArray(message.deletedGroupIds) && message.deletedGroupIds.length > 0) {
       const deletedGroupIds = metaData.deletedGroupIds || {};
       const deletedAt = Date.now();
@@ -173,9 +171,11 @@ async function handleSaveHighlights(message, sender) {
     }
     metaData.lastUpdated = new Date().toISOString();
 
-    const metaSaveData = {};
-    metaSaveData[`${message.url}${STORAGE_KEYS.META_SUFFIX}`] = metaData;
-    await browserAPI.storage.local.set(metaSaveData);
+    await browserAPI.storage.local.set({
+      [message.url]: message.highlights,
+      [metaKey]: metaData,
+    });
+    debugLog('Saved highlights for URL:', message.url, message.highlights);
     debugLog('Saved page metadata:', metaData);
 
     await syncSaveHighlights(message.url, message.highlights, metaData.title, metaData.lastUpdated);
