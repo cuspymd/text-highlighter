@@ -30,6 +30,62 @@
    */
 
   /**
+   * Move range boundaries that sit on elements onto the text nodes they mean.
+   *
+   * Browsers hand back element boundaries for triple-clicks, shift-clicks and
+   * selections that end right after an inline element: `(p, 2)` for "after the
+   * second child of p". The highlighter walks text nodes and reads boundaries
+   * as text offsets, so an element boundary either drops the element's selected
+   * children or highlights the ones before the offset. A boundary that already
+   * sits in a text node is left alone; the same range object comes back when
+   * nothing needed moving.
+   *
+   * Whitespace-only nodes are skipped in both directions: the last text node
+   * before a "next paragraph, offset 0" boundary is usually the indentation
+   * between the two blocks, and highlighting from it would give the saved quote
+   * a stray trailing space.
+   *
+   * @param {Range} range
+   * @returns {Range}
+   */
+  function clampRangeToTextNodes(range) {
+    const startIsText = range.startContainer.nodeType === Node.TEXT_NODE;
+    const endIsText = range.endContainer.nodeType === Node.TEXT_NODE;
+    if (startIsText && endIsText) return range;
+
+    const root = range.commonAncestorContainer;
+    if (root.nodeType === Node.TEXT_NODE) return range;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        return node.nodeValue && node.nodeValue.trim() !== ''
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
+      },
+    }, false);
+
+    let first = null;
+    let last = null;
+    let node;
+    while (node = walker.nextNode()) {
+      const startInside = range.comparePoint(node, 0) === 0;
+      const endInside = range.comparePoint(node, node.nodeValue.length) === 0;
+      if (!first && startInside) first = node;
+      if (endInside) last = node;
+    }
+
+    const startNode = startIsText ? range.startContainer : first;
+    const endNode = endIsText ? range.endContainer : last;
+    if (!startNode || !endNode) return range;
+
+    const converted = document.createRange();
+    converted.setStart(startNode, startIsText ? range.startOffset : 0);
+    converted.setEnd(endNode, endIsText ? range.endOffset : endNode.nodeValue.length);
+    if (converted.collapsed) return range;
+    return converted;
+  }
+
+  /**
    * Convert selection range when all containers are the same node.
    * @param {Range} range
    * @param {Function} logger
@@ -255,12 +311,12 @@
             endOffset: convertedRange.endOffset,
           });
 
-          return convertedRange;
+          return clampRangeToTextNodes(convertedRange);
         }
       }
     }
 
-    return range;
+    return clampRangeToTextNodes(range);
   }
 
   /**
@@ -271,6 +327,9 @@
    * @returns {HTMLElement[]}
    */
   function processSelectionRange(range, color, groupId) {
+    // The walk below reads both boundaries as text offsets.
+    range = clampRangeToTextNodes(range);
+
     const commonAncestor = range.commonAncestorContainer;
     const startContainer = range.startContainer;
     const endContainer = range.endContainer;
@@ -603,6 +662,18 @@
    * @returns {Object|null} { start: number, end: number }
    */
   function rangeToTextPosition(model, range) {
+    // An element boundary has no offset in the model. It used to be estimated
+    // from the raw selection string, whose newlines and indentation made the
+    // saved quote longer than the text on screen - it spilled into the next
+    // block, or started before the selection when the start was the element.
+    range = clampRangeToTextNodes(range);
+    if (
+      range.startContainer.nodeType !== Node.TEXT_NODE
+      || range.endContainer.nodeType !== Node.TEXT_NODE
+    ) {
+      return null;
+    }
+
     let startPos = -1;
     let endPos = -1;
 
@@ -630,29 +701,8 @@
       return -1;
     }
 
-    // Start container
-    if (range.startContainer.nodeType === Node.TEXT_NODE) {
-      startPos = findNormalizedOffset(range.startContainer, range.startOffset, false);
-    } else {
-      // Find first text node in start container
-      const walker = document.createTreeWalker(range.startContainer, NodeFilter.SHOW_TEXT, null, false);
-      const textNode = walker.nextNode();
-      if (textNode) startPos = findNormalizedOffset(textNode, 0, false);
-    }
-
-    // End container
-    if (range.endContainer.nodeType === Node.TEXT_NODE) {
-      endPos = findNormalizedOffset(range.endContainer, range.endOffset, true);
-    } else {
-      // Find last text node in end container or next node
-       // This is a simplification, might need more robust end resolution
-      endPos = startPos + range.toString().length; // Rough fallback
-    }
-
-    // If endPos couldn't be accurately resolved from text node, estimate it
-    if (endPos === -1 && startPos !== -1) {
-       endPos = startPos + range.toString().length;
-    }
+    startPos = findNormalizedOffset(range.startContainer, range.startOffset, false);
+    endPos = findNormalizedOffset(range.endContainer, range.endOffset, true);
 
     if (startPos !== -1 && endPos !== -1 && endPos >= startPos) {
       return { start: startPos, end: endPos };
@@ -869,6 +919,7 @@
   }
 
   window.TextHighlighterCore = {
+    clampRangeToTextNodes,
     convertSelectionRange,
     processSelectionRange,
     selectionOverlapsHighlight,
