@@ -225,6 +225,9 @@
   "removeColor": {
     "message": "Remove"
   },
+  "removeAllColors": {
+    "message": "Remove All"
+  },
   "noCustomColors": {
     "message": "No custom colors yet."
   },

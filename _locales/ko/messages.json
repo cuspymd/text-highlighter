@@ -225,6 +225,9 @@
   "removeColor": {
     "message": "삭제"
   },
+  "removeAllColors": {
+    "message": "모두 삭제"
+  },
   "noCustomColors": {
     "message": "사용자 정의 색상이 없습니다."
   },

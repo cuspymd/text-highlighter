@@ -1,6 +1,7 @@
 import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
+import { sendToBackground } from './shared/runtime-message.js';
 import { initializeThemeWatcher } from './shared/theme.js';
 
 function initializeI18n() {
@@ -66,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Custom Colors ---
   const customColorsList = document.getElementById('custom-colors-list');
   const addCustomColorBtn = document.getElementById('add-custom-color-btn');
+  const clearCustomColorsBtn = document.getElementById('clear-custom-colors-btn');
   const colorPicker = document.getElementById('color-picker-hidden');
 
   let activeColorIdForUpdate = null;
@@ -181,6 +183,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderCustomColorsList(customColors) {
     customColorsList.innerHTML = '';
 
+    // With one colour its own row's Remove is enough; the bulk button is for
+    // the case the rows make tedious.
+    clearCustomColorsBtn.hidden = customColors.length < 2;
+
     if (customColors.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty-text';
@@ -237,6 +243,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeColorIdForUpdate = null;
     colorPicker.value = '#ff0000';
     colorPicker.click();
+  });
+
+  clearCustomColorsBtn.addEventListener('click', async () => {
+    const confirmed = await showConfirmModal(
+      browserAPI.i18n.getMessage('confirmDeleteCustomColors') || 'Delete ALL custom colors?'
+    );
+    if (!confirmed) return;
+
+    // The confirm can sit open long enough for the worker to go back to sleep,
+    // and a rejection here would end the click in an unhandled rejection.
+    const response = await sendToBackground({ action: 'clearCustomColors' });
+    if (response && response.success) {
+      renderCustomColorsList((response.colors || []).filter(c => c.id.startsWith('custom_')));
+      await loadShortcuts(); // Refresh options and drop any that were assigned
+    }
   });
 
   async function handleRemoveColor(colorObj) {

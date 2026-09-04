@@ -455,8 +455,8 @@ test.describe('Popup Tests', () => {
     const settingsPage = await context.newPage();
     await settingsPage.goto(`chrome-extension://${extensionId}/settings.html`);
 
-    // Click the first remove button in custom colors section
-    const removeBtn = settingsPage.locator('.btn-danger').first();
+    // The first colour row's own Remove, not the section's Remove All
+    const removeBtn = settingsPage.locator('#custom-colors-list .color-row .btn-danger').first();
     await removeBtn.click();
 
     // Go back to content page and verify it's removed
@@ -468,6 +468,55 @@ test.describe('Popup Tests', () => {
 
     const colorButtons = controls.locator('.color-button');
     await expect(colorButtons).toHaveCount(5);
+
+    await settingsPage.close();
+  });
+
+  test('Remove All on the settings page clears every custom colour at once', async ({ page, context, background, extensionId }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const h1 = page.locator('h1');
+    await h1.click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+
+    const h1Span = h1.locator('span.text-highlighter-extension');
+    await expect(h1Span).toBeVisible();
+
+    await h1Span.click();
+    const controls = page.locator('.text-highlighter-controls');
+    await expect(controls).toBeVisible();
+
+    const colorButtons = controls.locator('.color-button');
+    const builtInCount = await colorButtons.count();
+
+    // Two colours, because the bulk button is for the case one Remove per row
+    // is the tedious part.
+    const customHexes = ['#4ECDC4', '#45B7D1'];
+    for (const [index, hex] of customHexes.entries()) {
+      await controls.locator('.add-color-button').click();
+      const picker = page.locator('.custom-color-picker');
+      await expect(picker).toBeVisible();
+      await picker.locator(`[data-color="${hex}"]`).click();
+      await expect(colorButtons).toHaveCount(builtInCount + index + 1);
+    }
+
+    const settingsPage = await context.newPage();
+    await settingsPage.goto(`chrome-extension://${extensionId}/settings.html`);
+
+    const colorRows = settingsPage.locator('#custom-colors-list .color-row');
+    await expect(colorRows).toHaveCount(customHexes.length);
+
+    const removeAllBtn = settingsPage.locator('#clear-custom-colors-btn');
+    await expect(removeAllBtn).toBeVisible();
+    await removeAllBtn.click();
+    await settingsPage.locator('.modal-confirm').click();
+
+    await expect(colorRows).toHaveCount(0);
+    // Nothing left to clear, so the button takes itself away again.
+    await expect(removeAllBtn).toBeHidden();
+
+    await page.bringToFront();
+    await expect(colorButtons).toHaveCount(builtInCount);
 
     await settingsPage.close();
   });

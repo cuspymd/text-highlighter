@@ -254,6 +254,45 @@ describe('settings', () => {
       expect(colorNames()).toEqual(['Ocean']);
     });
 
+    it('offers the bulk delete only once a second color makes the rows tedious', async () => {
+      respondToBackground({ getColors: { success: true, colors: [BUILT_IN_COLOR] } });
+      await openSettings();
+      expect(byId('clear-custom-colors-btn').hidden).toBe(true);
+
+      respondToBackground({ getColors: { success: true, colors: [BUILT_IN_COLOR, CUSTOM_COLOR] } });
+      await openSettings();
+      expect(byId('clear-custom-colors-btn').hidden).toBe(true);
+
+      respondToBackground({});
+      await openSettings();
+      expect(byId('clear-custom-colors-btn').hidden).toBe(false);
+    });
+
+    it('leaves the colors alone when the bulk delete is cancelled', async () => {
+      await openSettings();
+
+      byId('clear-custom-colors-btn').click();
+      await confirmModal(false);
+
+      expect(backgroundMessages('clearCustomColors')).toHaveLength(0);
+      expect(colorNames()).toEqual(['customColor 1', 'Ocean']);
+    });
+
+    it('clears every custom color once the bulk delete is confirmed', async () => {
+      await openSettings();
+      respondToBackground({
+        clearCustomColors: { success: true, colors: [BUILT_IN_COLOR] },
+        getColors: { success: true, colors: [BUILT_IN_COLOR] },
+      });
+
+      byId('clear-custom-colors-btn').click();
+      await confirmModal(true);
+
+      expect(lastMessage('clearCustomColors')).toEqual({ action: 'clearCustomColors' });
+      expect(colorRows()).toHaveLength(0);
+      expect(byId('clear-custom-colors-btn').hidden).toBe(true);
+    });
+
     // Committing the edit blurs the input, which hands focus back to the window
     // and runs the page's refresh-on-focus reload. So `getColors` has to agree
     // with the rename the way the real background would, or the reload renders

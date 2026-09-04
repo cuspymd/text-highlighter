@@ -76,6 +76,18 @@
         padding: 16px;
       }
 
+      .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .section-heading .section-title {
+        margin-bottom: 0;
+      }
+
       .section-title {
         margin: 0 0 12px;
         font-size: 13px;
@@ -423,7 +435,17 @@
 
       <!-- Custom Colors Section -->
       <section class="section-card">
-        <h2 class="section-title" data-i18n="customColorsSection">Custom Colors</h2>
+        <div class="section-heading">
+          <h2 class="section-title" data-i18n="customColorsSection">Custom Colors</h2>
+          <button
+            id="clear-custom-colors-btn"
+            class="btn-icon btn-danger"
+            data-i18n="removeAllColors"
+            hidden
+          >
+            Remove All
+          </button>
+        </div>
         <div id="custom-colors-list"></div>
         <button id="add-custom-color-btn" class="btn btn-primary" data-i18n="addCustomColor">+ Add Custom Color</button>
         <input type="color" id="color-picker-hidden" style="display:none" />

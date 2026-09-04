@@ -88,11 +88,11 @@ async function handleGetHighlights(message) {
 
 async function handleClearCustomColors(_message) {
   const { hadColors, colors } = await clearCustomColors();
-  if (!hadColors) return successResponse({ noCustomColors: true });
+  if (!hadColors) return successResponse({ noCustomColors: true, colors });
 
   await createOrUpdateContextMenus();
   await broadcastToAllTabs({ action: 'colorsUpdated', colors });
-  return successResponse();
+  return successResponse({ colors });
 }
 
 async function handleAddColor(message) {
