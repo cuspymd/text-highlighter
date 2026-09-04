@@ -455,8 +455,8 @@ test.describe('Popup Tests', () => {
     const settingsPage = await context.newPage();
     await settingsPage.goto(`chrome-extension://${extensionId}/settings.html`);
 
-    // Click the first remove button in custom colors section
-    const removeBtn = settingsPage.locator('.btn-danger').first();
+    // The first colour row's own Remove, not the section's Remove All
+    const removeBtn = settingsPage.locator('#custom-colors-list .color-row .btn-danger').first();
     await removeBtn.click();
 
     // Go back to content page and verify it's removed
