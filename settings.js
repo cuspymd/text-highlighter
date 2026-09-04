@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Custom Colors ---
   const customColorsList = document.getElementById('custom-colors-list');
   const addCustomColorBtn = document.getElementById('add-custom-color-btn');
+  const clearCustomColorsBtn = document.getElementById('clear-custom-colors-btn');
   const colorPicker = document.getElementById('color-picker-hidden');
 
   let activeColorIdForUpdate = null;
@@ -181,6 +182,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderCustomColorsList(customColors) {
     customColorsList.innerHTML = '';
 
+    // With one colour its own row's Remove is enough; the bulk button is for
+    // the case the rows make tedious.
+    clearCustomColorsBtn.hidden = customColors.length < 2;
+
     if (customColors.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty-text';
@@ -237,6 +242,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeColorIdForUpdate = null;
     colorPicker.value = '#ff0000';
     colorPicker.click();
+  });
+
+  clearCustomColorsBtn.addEventListener('click', async () => {
+    const confirmed = await showConfirmModal(
+      browserAPI.i18n.getMessage('confirmDeleteCustomColors') || 'Delete ALL custom colors?'
+    );
+    if (!confirmed) return;
+
+    const response = await browserAPI.runtime.sendMessage({ action: 'clearCustomColors' });
+    if (response && response.success) {
+      renderCustomColorsList((response.colors || []).filter(c => c.id.startsWith('custom_')));
+      await loadShortcuts(); // Refresh options and drop any that were assigned
+    }
   });
 
   async function handleRemoveColor(colorObj) {

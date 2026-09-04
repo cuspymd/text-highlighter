@@ -341,7 +341,8 @@ describe('message-router', () => {
 
       const result = await send({ action: 'clearCustomColors' });
 
-      expect(result).toEqual({ success: true, noCustomColors: true });
+      expect(result).toMatchObject({ success: true, noCustomColors: true });
+      expect(customColorIds(result.colors)).toEqual([]);
       expect(tabMessages('colorsUpdated')).toHaveLength(0);
     });
 
@@ -352,7 +353,8 @@ describe('message-router', () => {
 
       const result = await send({ action: 'clearCustomColors' });
 
-      expect(result).toEqual({ success: true });
+      expect(result.success).toBe(true);
+      expect(customColorIds(result.colors)).toEqual([]);
       expect(tabMessages('colorsUpdated')).toHaveLength(1);
       expect(customColorIds((await send({ action: 'getColors' })).colors)).toEqual([]);
     });

@@ -225,6 +225,9 @@
   "removeColor": {
     "message": "移除"
   },
+  "removeAllColors": {
+    "message": "全部移除"
+  },
   "noCustomColors": {
     "message": "暂无自定义颜色。"
   },

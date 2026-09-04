@@ -225,6 +225,9 @@
   "removeColor": {
     "message": "削除"
   },
+  "removeAllColors": {
+    "message": "すべて削除"
+  },
   "noCustomColors": {
     "message": "カスタムカラーはありません。"
   },
