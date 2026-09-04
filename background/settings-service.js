@@ -269,7 +269,24 @@ export async function ensureCustomColorsLoaded() {
   await loadCustomColors();
 }
 
+// Every change to the palette starts here. A worker that a message woke up is
+// still loading the colours when it handles that message; a change made before
+// the load lands is overwritten by it, and the palette the tabs were sent
+// differs from the one the worker keeps until it next restarts. Waiting for
+// the load first means a change always lands on top of the loaded list.
+//
+// A load that failed is not a reason to refuse the change: the colours it was
+// going to read are read again by the change itself.
+async function settleLoadBeforeChange() {
+  try {
+    await ensureCustomColorsLoaded();
+  } catch (e) {
+    debugLog('Custom colours could not be loaded before a change; changing anyway:', e);
+  }
+}
+
 export async function updateCustomColorName(id, newName) {
+  await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = stored.customColors || [];
 
@@ -298,6 +315,7 @@ export async function updateCustomColorName(id, newName) {
 }
 
 export async function updateCustomColor(id, newColorValue) {
+  await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = stored.customColors || [];
 
@@ -321,6 +339,7 @@ export async function updateCustomColor(id, newColorValue) {
 }
 
 export async function removeCustomColor(id) {
+  await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   let customColors = stored.customColors || [];
 
@@ -342,6 +361,7 @@ export async function removeCustomColor(id) {
 export async function addCustomColor(newColorValue) {
   if (!newColorValue) return { exists: true, colors: currentColors };
 
+  await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   let customColors = stored.customColors || [];
 
@@ -371,6 +391,7 @@ export async function addCustomColor(newColorValue) {
  * @returns {{ hadColors: boolean, colors: object[] }}
  */
 export async function clearCustomColors() {
+  await settleLoadBeforeChange();
   const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = result.customColors || [];
 
@@ -415,6 +436,7 @@ export async function applySettingsFromSync(newSettings) {
   let colorsChanged = false;
 
   if (newSettings.customColors) {
+    await settleLoadBeforeChange();
     const customColors = newSettings.customColors.map(color => ({ ...color }));
     sanitizeCustomColors(customColors);
     await browserAPI.storage.local.set({ customColors });

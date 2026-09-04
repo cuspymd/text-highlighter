@@ -282,7 +282,12 @@ describe('settings-service', () => {
       });
       chrome.storage.local.get.mockResolvedValueOnce({});
 
-      await loadCustomColors();
+      // Every palette change above already loaded this module's colours, so
+      // the load has to be watched on a fresh copy.
+      await jest.isolateModulesAsync(async () => {
+        const fresh = await import('../background/settings-service.js');
+        await fresh.loadCustomColors();
+      });
 
       expect(chrome.storage.local.set).toHaveBeenCalledWith({
         customColors: [
