@@ -1,6 +1,7 @@
 import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
+import { sendToBackground } from './shared/runtime-message.js';
 import { initializeThemeWatcher } from './shared/theme.js';
 
 function initializeI18n() {
@@ -250,7 +251,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
     if (!confirmed) return;
 
-    const response = await browserAPI.runtime.sendMessage({ action: 'clearCustomColors' });
+    // The confirm can sit open long enough for the worker to go back to sleep,
+    // and a rejection here would end the click in an unhandled rejection.
+    const response = await sendToBackground({ action: 'clearCustomColors' });
     if (response && response.success) {
       renderCustomColorsList((response.colors || []).filter(c => c.id.startsWith('custom_')));
       await loadShortcuts(); // Refresh options and drop any that were assigned
