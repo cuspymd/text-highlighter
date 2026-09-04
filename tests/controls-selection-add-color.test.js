@@ -131,6 +131,24 @@ describe('selection bar add-colour button', () => {
     expect(document.querySelector('.text-highlighter-selection-icon')).toBeNull();
   });
 
+  it('paints the selection before a waking background has answered', async () => {
+    api.highlightSelection.mockClear();
+    // A background that is still waking up: the palette write never settles.
+    respondToBackground(message => {
+      if (message.action === 'addColor') return new Promise(() => {});
+      return {};
+    });
+    await openSelectionBarOver('third paragraph');
+    selectionControls().querySelector('.add-color-button').click();
+
+    picker().querySelector('[data-color="#45B7D1"]').click();
+
+    expect(api.highlightSelection).toHaveBeenCalledWith('#45B7D1');
+    expect(selectionTextAtHighlight).toBe('third paragraph');
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: 'addColor', color: '#45B7D1' });
+    expect(selectionControls()).toBeNull();
+  });
+
   it('paints the selection even when the palette write fails', async () => {
     api.highlightSelection.mockClear();
     respondToBackground(message => {

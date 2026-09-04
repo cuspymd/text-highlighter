@@ -590,14 +590,17 @@ function addCustomColor(color) {
     .catch(error => debugLog('Failed to add custom color:', error));
 }
 
-// The selection bar's '+': add the colour, then paint the selection with it.
-// Whoever opened a picker from a selection meant to highlight in that colour,
-// so there is no second step of finding it in the strip. The selection is
-// painted even if the palette write failed - the colour is still a colour.
+// The selection bar's '+': paint the selection with the colour, and add it to
+// the palette. Whoever opened a picker from a selection meant to highlight in
+// that colour, so there is no second step of finding it in the strip.
+//
+// The paint comes first and does not wait for the palette write. The picker
+// has closed by now, so nothing keeps the stored range safe while a waking
+// background takes its time to answer - and a highlight is saved by its colour
+// value, not by the palette, so it needs nothing from that answer.
 function addCustomColorAndHighlight(color) {
-  return addCustomColor(color).then(() => {
-    createHighlightWithColor(color);
-  });
+  createHighlightWithColor(color);
+  return addCustomColor(color);
 }
 
 // HSV to RGB conversion function
@@ -1348,10 +1351,13 @@ function showSelectionControls(mouseX, mouseY) {
   // Apply the visible animation
   selectionControlsContainer.classList.remove('visible');
   void selectionControlsContainer.offsetWidth; // reflow
+  // The bar can be gone again before this fires - a pick that paints at once
+  // closes it - so it is this bar that becomes visible, not whatever the
+  // variable points to by then.
   setTimeout(() => {
-    selectionControlsContainer.classList.add('visible');
+    thisContainer.classList.add('visible');
   }, 10);
-  
+
   // Hide icon when controls are shown
   hideSelectionIcon();
 }
