@@ -340,11 +340,19 @@ function createColorButton(colorInfo) {
 }
 
 // create addColorBtn (reusable function)
-function createAddColorButton() {
+//
+// `onColorSelect` is what a picked colour does: the highlight bar adds it to the
+// palette, the selection bar adds it and paints the selection with it.
+function createAddColorButton(onColorSelect = addCustomColor) {
   const addColorBtn = document.createElement('div');
   addColorBtn.className = 'text-highlighter-control-button add-color-button';
   addColorBtn.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="8" y1="3" x2="8" y2="13" stroke="#999" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>`;
   addColorBtn.title = getMessage('addColor') || '+';
+
+  // A mousedown the page never sees leaves the text selection where it is.
+  addColorBtn.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+  });
 
   // Add custom color picker event
   addColorBtn.addEventListener('click', (e) => {
@@ -358,7 +366,7 @@ function createAddColorButton() {
     }
     
     colorPickerOpen = true;
-    showCustomColorPicker(addColorBtn);
+    showCustomColorPicker(addColorBtn, onColorSelect);
   });
   
   return addColorBtn;
@@ -380,7 +388,15 @@ function createColorPickerUI() {
   // Create custom color picker
   const customColorPicker = document.createElement('div');
   customColorPicker.className = 'custom-color-picker';
-  
+
+  // Dragging the sliders must not start a page selection, and clicking the
+  // header must not collapse the one the selection bar is about to paint.
+  // Cancelling mousedown keeps the browser out of the selection entirely; the
+  // sliders' own mousedown handlers still run, and the buttons still click.
+  customColorPicker.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+  });
+
   // Create header
   const header = document.createElement('div');
   header.className = 'color-picker-header';
@@ -495,7 +511,7 @@ function setupColorPickerEvents(customColorPicker, triggerButton, onColorSelect,
 }
 
 // Create and display custom color picker (reusable function)
-function showCustomColorPicker(triggerButton) {
+function showCustomColorPicker(triggerButton, onColorSelect = addCustomColor) {
   // Remove existing color picker if any
   const existingPicker = document.querySelector('.custom-color-picker');
   if (existingPicker) {
@@ -557,13 +573,14 @@ function showCustomColorPicker(triggerButton) {
   };
 
   // Set events
-  setupColorPickerEvents(customColorPicker, triggerButton, addCustomColor, closeColorPicker);
+  setupColorPickerEvents(customColorPicker, triggerButton, onColorSelect, closeColorPicker);
 }
 
-// Custom color addition function
+// Custom color addition function. Resolves once the palette has been updated,
+// or once the attempt has failed - either way the caller may go on.
 function addCustomColor(color) {
   lastAddedColor = color;
-  browserAPI.runtime.sendMessage({ action: 'addColor', color: color })
+  return browserAPI.runtime.sendMessage({ action: 'addColor', color: color })
     .then(response => {
       if (response && response.colors) {
         currentColors = response.colors;
@@ -571,6 +588,19 @@ function addCustomColor(color) {
       }
     })
     .catch(error => debugLog('Failed to add custom color:', error));
+}
+
+// The selection bar's '+': paint the selection with the colour, and add it to
+// the palette. Whoever opened a picker from a selection meant to highlight in
+// that colour, so there is no second step of finding it in the strip.
+//
+// The paint comes first and does not wait for the palette write. The picker
+// has closed by now, so nothing keeps the stored range safe while a waking
+// background takes its time to answer - and a highlight is saved by its colour
+// value, not by the palette, so it needs nothing from that answer.
+function addCustomColorAndHighlight(color) {
+  createHighlightWithColor(color);
+  return addCustomColor(color);
 }
 
 // HSV to RGB conversion function
@@ -1029,10 +1059,11 @@ function handleSelectionMouseUp(e) {
   if (e.target.classList.contains('text-highlighter-extension') || 
       e.target.closest('.text-highlighter-controls') ||
       e.target.closest('.text-highlighter-selection-controls') ||
-      e.target.closest('.text-highlighter-selection-icon')) {
+      e.target.closest('.text-highlighter-selection-icon') ||
+      e.target.closest('.custom-color-picker')) {
     return;
   }
-  
+
   setTimeout(() => {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
@@ -1096,6 +1127,10 @@ function handleSelectionTouchEnd(e) {
 // Handle selection change event
 function handleSelectionChange() {
   if (!selectionControlsEnabled) return;
+  // While a colour picker is open the stored range is the selection that
+  // matters. Whatever the live one does meanwhile - a touch on the picker can
+  // still collapse it - must not throw that range away.
+  if (colorPickerOpen) return;
 
   const selection = window.getSelection();
   const selectedText = selection.toString().trim();
@@ -1197,12 +1232,12 @@ function showSelectionControls(mouseX, mouseY) {
     deleteButton.remove();
   }
 
-  // Remove the add color button too (it would change the selection), and do it
-  // before the bar is measured so neither its position nor the colour strip's
-  // overflow hints count a button that is about to disappear.
-  const addColorButton = selectionControlsContainer.querySelector('.add-color-button');
-  if (addColorButton) {
-    addColorButton.remove();
+  // cloneNode dropped the '+' button's listeners with the rest. Replace it with
+  // one that paints the selection with the picked colour, before the bar is
+  // measured so the strip's overflow hints count the button that ends up there.
+  const clonedAddColorButton = selectionControlsContainer.querySelector('.add-color-button');
+  if (clonedAddColorButton) {
+    clonedAddColorButton.replaceWith(createAddColorButton(addCustomColorAndHighlight));
   }
   
   // Temporarily position off-screen to get dimensions
@@ -1316,10 +1351,13 @@ function showSelectionControls(mouseX, mouseY) {
   // Apply the visible animation
   selectionControlsContainer.classList.remove('visible');
   void selectionControlsContainer.offsetWidth; // reflow
+  // The bar can be gone again before this fires - a pick that paints at once
+  // closes it - so it is this bar that becomes visible, not whatever the
+  // variable points to by then.
   setTimeout(() => {
-    selectionControlsContainer.classList.add('visible');
+    thisContainer.classList.add('visible');
   }, 10);
-  
+
   // Hide icon when controls are shown
   hideSelectionIcon();
 }
@@ -1378,7 +1416,7 @@ function addGlobalClickListener() {
   document.addEventListener('click', function (e) {
     // Handle existing highlight controls
     if (highlightControlsContainer) {
-      // While native color picker is open, keep the control UI visible
+      // While a colour picker is open, keep whichever bar opened it visible.
       if (colorPickerOpen) {
         return; 
       }

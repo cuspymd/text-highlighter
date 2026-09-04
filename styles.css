@@ -657,6 +657,9 @@
 .custom-color-picker {
   position: fixed;
   z-index: 2147483647;
+  /* Nothing in the picker is text to select; the page selection stays put. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Selection controls positioning */
