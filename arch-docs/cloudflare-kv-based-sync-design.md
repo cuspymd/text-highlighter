@@ -116,6 +116,7 @@ async function deriveSyncKeys(syncCode) {
     "customColors": [],
     "minimapVisible": true,
     "selectionControlsVisible": true,
+    "oneClickHighlightEnabled": false,
     "shortcutColorMap": null
   },
   "pages": {
