@@ -193,6 +193,11 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+  else if (message.action === 'setOneClickHighlight') {
+    setOneClickHighlightEnabled(message.enabled);
+    sendResponse({ success: true });
+    return true;
+  }
   else if (message.action === 'setSelectionControlsVisibility') {
     setSelectionControlsVisibility(message.visible);
     sendResponse({ success: true });
@@ -362,8 +367,36 @@ function removeHighlight(highlightElement = null) {
   }
 }
 
+// One-click highlighting paints with whatever colour was applied last, so every
+// path that applies one records it. There are only two: the selection bar, the
+// '+' picker, the context menu and the shortcut slots all arrive at
+// highlightSelectedText(), and recolouring an existing highlight is the same
+// statement of intent. The value is a hex, not a colour id - see
+// resolveLastUsedColor() in color-core.js for why.
+//
+// Kept here as well as written to storage so a page that highlights repeatedly
+// does not write the same value over and over.
+let lastRecordedColor = null;
+
+function rememberLastUsedColor(color) {
+  if (!color || color === lastRecordedColor) return;
+  lastRecordedColor = color;
+
+  try {
+    const pending = browserAPI.storage.local.set({ lastUsedColor: color });
+    if (pending && typeof pending.catch === 'function') {
+      pending.catch(error => debugLog('Could not record the last used colour:', error));
+    }
+  } catch (error) {
+    // An invalidated extension context (a reload while the page is open) must
+    // not take the highlight down with it.
+    debugLog('Could not record the last used colour:', error);
+  }
+}
+
 function changeHighlightColor(highlightElement, newColor) {
   if (!highlightElement) return;
+  rememberLastUsedColor(newColor);
   const groupId = highlightElement.dataset.groupId;
   // Change color of all spans in the DOM
   const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
@@ -992,6 +1025,8 @@ function highlightSelectedText(color) {
   const selection = window.getSelection();
   const selectedText = selection.toString();
   if (selectedText.trim() === '') return;
+
+  rememberLastUsedColor(color);
 
   const range = selection.getRangeAt(0);
 

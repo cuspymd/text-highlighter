@@ -117,12 +117,14 @@ export async function saveSettingsToSync() {
     STORAGE_KEYS.CUSTOM_COLORS,
     STORAGE_KEYS.MINIMAP_VISIBLE,
     STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+    STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
     STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   ]);
   const settings = {
     customColors: result.customColors || [],
     minimapVisible: result.minimapVisible !== undefined ? result.minimapVisible : true,
     selectionControlsVisible: result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true,
+    oneClickHighlightEnabled: result.oneClickHighlightEnabled === true,
   };
 
   if (result.shortcutColorMap) {
@@ -412,6 +414,8 @@ export async function migrateLocalToSync() {
       STORAGE_KEYS.SYNC_MIGRATION_DONE,
       STORAGE_KEYS.MINIMAP_VISIBLE,
       STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+      STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+      STORAGE_KEYS.LAST_USED_COLOR,
       STORAGE_KEYS.SHORTCUT_COLOR_MAP,
       'settings',
     ];

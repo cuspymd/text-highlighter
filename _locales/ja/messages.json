@@ -101,6 +101,9 @@
   "showControlsOnSelection": {
     "message": "テキスト選択時にコントロールUIを表示"
   },
+  "oneClickHighlight": {
+    "message": "最後に使った色でワンクリックでハイライト"
+  },
   "confirmClearAll": {
     "message": "現在のページのすべてのハイライトを削除してよろしいですか？"
   },

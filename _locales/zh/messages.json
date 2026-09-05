@@ -101,6 +101,9 @@
   "showControlsOnSelection": {
     "message": "选择文本时显示控制UI"
   },
+  "oneClickHighlight": {
+    "message": "一键用上次使用的颜色高亮"
+  },
   "confirmClearAll": {
     "message": "确定要删除当前页面的所有高亮吗？"
   },

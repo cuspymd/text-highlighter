@@ -101,6 +101,9 @@
   "showControlsOnSelection": {
     "message": "Show Control UI on Text Selection"
   },
+  "oneClickHighlight": {
+    "message": "Highlight in One Click with the Last Used Color"
+  },
   "confirmClearAll": {
     "message": "Really delete all highlights on this page?"
   },

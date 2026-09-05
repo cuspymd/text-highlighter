@@ -17,6 +17,8 @@ const LOCAL_ONLY_KEYS = new Set([
   STORAGE_KEYS.SYNC_MIGRATION_DONE,
   STORAGE_KEYS.MINIMAP_VISIBLE,
   STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+  STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+  STORAGE_KEYS.LAST_USED_COLOR,
   STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   CLOUD_SYNC_KEYS.ENABLED,
   CLOUD_SYNC_KEYS.CODE,
@@ -40,6 +42,7 @@ function emptyBlob() {
       customColors: [],
       minimapVisible: true,
       selectionControlsVisible: true,
+      oneClickHighlightEnabled: false,
       shortcutColorMap: null,
       updatedAt: 0,
     },
@@ -83,6 +86,7 @@ async function buildLocalBlob() {
       selectionControlsVisible: all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE] !== undefined
         ? all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE]
         : true,
+      oneClickHighlightEnabled: all[STORAGE_KEYS.ONE_CLICK_HIGHLIGHT] === true,
       shortcutColorMap: all[STORAGE_KEYS.SHORTCUT_COLOR_MAP] || null,
       updatedAt: all[CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT] || 0,
     },

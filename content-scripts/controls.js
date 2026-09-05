@@ -18,6 +18,14 @@ let selectionViewportListenersAdded = false;
 let selectionScrollRestoreTimer = null;
 let selectionIconHiddenForScroll = false;
 
+// One-click highlighting: an opt-in setting (default off) that turns the
+// selection icon into "paint with the colour used last" instead of "open the
+// palette". The palette is not lost by it - clicking the highlight that press
+// created opens the same bar, which is also where a mispressed one is deleted.
+let oneClickHighlightEnabled = false;
+let lastUsedColorValue = null;
+let lastUsedColorWatcherAdded = false;
+
 const SELECTION_SCROLL_RESTORE_DELAY_MS = 220;
 
 // Mobile platform detection
@@ -302,19 +310,24 @@ function measureControlsWidth(container) {
   return width;
 }
 
+// The name a colour goes by in a tooltip: the one it was renamed to, the
+// numbered default for a custom colour, or the translated name of a built-in.
+function colorDisplayName(colorInfo) {
+  if (!colorInfo) return '';
+  if (colorInfo.customName) return colorInfo.customName;
+  if (colorInfo.id && colorInfo.id.startsWith('custom_')) {
+    const baseName = getMessage('customColor') || 'Custom Color';
+    return colorInfo.colorNumber ? `${baseName} ${colorInfo.colorNumber}` : baseName;
+  }
+  return getMessage(colorInfo.nameKey);
+}
+
 // create colorButton (reusable function)
 function createColorButton(colorInfo) {
   const colorButton = document.createElement('div');
   colorButton.className = 'text-highlighter-control-button color-button';
   colorButton.style.backgroundColor = colorInfo.color;
-  if (colorInfo.customName) {
-    colorButton.title = colorInfo.customName;
-  } else if (colorInfo.id && colorInfo.id.startsWith('custom_')) {
-    const baseName = getMessage('customColor') || 'Custom Color';
-    colorButton.title = colorInfo.colorNumber ? `${baseName} ${colorInfo.colorNumber}` : baseName;
-  } else {
-    colorButton.title = getMessage(colorInfo.nameKey);
-  }
+  colorButton.title = colorDisplayName(colorInfo);
   colorButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
       changeHighlightColorViaApi(activeHighlightElement, colorInfo.color);
@@ -872,14 +885,53 @@ async function loadSelectionControlsSetting() {
     debugLog('Mobile platform detected in controls.js');
   }
 
-  const result = await browserAPI.storage.local.get(['selectionControlsVisible']);
+  const result = await browserAPI.storage.local.get([
+    'selectionControlsVisible',
+    'oneClickHighlightEnabled',
+    'lastUsedColor',
+  ]);
   if (isMobilePlatform) {
     // On mobile, always enable - controls are essential for operation
     selectionControlsEnabled = true;
   } else {
     selectionControlsEnabled = result.selectionControlsVisible !== false;
   }
+
+  oneClickHighlightEnabled = result.oneClickHighlightEnabled === true;
+  lastUsedColorValue = result.lastUsedColor || null;
   debugLog('Selection controls enabled:', selectionControlsEnabled);
+}
+
+// The palette entry a one-click press paints with - or null when the setting is
+// off, or the palette has not arrived yet. Null leaves the icon opening the
+// palette the way it always has, so every uncertain case is the old behaviour.
+function getOneClickColor() {
+  if (!oneClickHighlightEnabled) return null;
+  const palette = Array.isArray(currentColors) ? currentColors : null;
+  if (!palette || palette.length === 0) return null;
+  return colorCore.resolveLastUsedColor(palette, lastUsedColorValue);
+}
+
+// Called by the settings broadcast, the way setSelectionControlsVisibility is.
+function setOneClickHighlightEnabled(enabled) {
+  oneClickHighlightEnabled = enabled === true;
+  debugLog('One-click highlight enabled:', oneClickHighlightEnabled);
+}
+
+// The last used colour is written by whichever tab painted last, so this tab
+// learns it from storage rather than from a message: the icon then offers the
+// same colour in every open tab, including the ones the paint did not happen in.
+function watchLastUsedColor() {
+  if (lastUsedColorWatcherAdded) return;
+  if (!browserAPI.storage || !browserAPI.storage.onChanged) return;
+  lastUsedColorWatcherAdded = true;
+
+  browserAPI.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName && areaName !== 'local') return;
+    if (changes && changes.lastUsedColor) {
+      lastUsedColorValue = changes.lastUsedColor.newValue || null;
+    }
+  });
 }
 
 // Initialize selection controls feature
@@ -887,6 +939,7 @@ function initializeSelectionControls() {
   // Not awaited: the listeners below have to be in place before the round trip
   // finishes, the way they were when this was a callback.
   loadSelectionControlsSetting();
+  watchLastUsedColor();
 
   // Add mouseup event listener to detect text selection
   document.addEventListener('mouseup', handleSelectionMouseUp);
@@ -1169,17 +1222,45 @@ function showSelectionIcon(mouseX, mouseY) {
   iconImg.style.height = '19px';
   selectionIcon.appendChild(iconImg);
 
-  selectionIcon.title = getMessage('highlightText');
-  
+  // In one-click mode the press paints instead of opening the palette, so the
+  // icon has to say which colour it will paint with before it is pressed. The
+  // colour goes on a strip under the logo rather than behind it: a custom
+  // colour can be any value, and the logo has to stay legible over all of them.
+  const oneClickColor = getOneClickColor();
+  if (oneClickColor) {
+    selectionIcon.classList.add('one-click');
+    const swatch = document.createElement('div');
+    swatch.className = 'text-highlighter-selection-icon-swatch';
+    swatch.style.backgroundColor = oneClickColor.color;
+    selectionIcon.appendChild(swatch);
+    selectionIcon.title = `${getMessage('highlightText')} (${colorDisplayName(oneClickColor)})`;
+  } else {
+    selectionIcon.title = getMessage('highlightText');
+  }
+
   positionSelectionIcon(mouseX, mouseY);
-  
+
+  // What a press on the icon does. In one-click mode it paints the stored
+  // selection with the last used colour; otherwise it opens the palette, as it
+  // always has. The colour is resolved again here rather than reused from the
+  // render above so a palette that changed while the icon was up cannot paint
+  // with a colour that is no longer in it.
+  const activateIcon = (clientX, clientY) => {
+    const color = getOneClickColor();
+    if (color) {
+      createHighlightWithColor(color.color);
+      return;
+    }
+    showSelectionControls(clientX, clientY);
+  };
+
   let pointerHandled = false;
-  // Use pointerdown so we open controls before selection can collapse on click.
+  // Use pointerdown so we act before selection can collapse on click.
   selectionIcon.addEventListener('pointerdown', function(e) {
     pointerHandled = true;
     e.preventDefault();
     e.stopPropagation();
-    showSelectionControls(e.clientX, e.clientY);
+    activateIcon(e.clientX, e.clientY);
   });
 
   // Keep click as a fallback for environments where pointer events are limited.
@@ -1189,7 +1270,7 @@ function showSelectionIcon(mouseX, mouseY) {
       return;
     }
     e.stopPropagation();
-    showSelectionControls(e.clientX, e.clientY);
+    activateIcon(e.clientX, e.clientY);
   });
   
   getUiMountRoot().appendChild(selectionIcon);

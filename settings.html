@@ -160,6 +160,18 @@
         transform: translateX(18px);
       }
 
+      /* One-click highlighting needs the selection icon to exist, so its row
+         goes dim while the icon is turned off rather than sitting there
+         looking live. */
+      .toggle-container.is-disabled > label:not(.toggle-switch) {
+        opacity: 0.5;
+      }
+
+      .toggle-switch input:disabled + .toggle-slider {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       .btn {
         min-height: 36px;
         padding: 8px 12px;
@@ -428,6 +440,13 @@
           <label for="selection-controls-toggle" data-i18n="showControlsOnSelection">Show Control UI on Text Selection</label>
           <label class="toggle-switch">
             <input type="checkbox" id="selection-controls-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-container" id="one-click-highlight-row">
+          <label for="one-click-highlight-toggle" data-i18n="oneClickHighlight">Highlight in One Click with the Last Used Color</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="one-click-highlight-toggle" />
             <span class="toggle-slider"></span>
           </label>
         </div>
