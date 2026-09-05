@@ -259,6 +259,11 @@ async function getColorsFromBackground() {
 
   currentColors = response.colors;
   debugLog('Received colors from background:', currentColors);
+  // The same refresh the colorsUpdated broadcast does. The palette arriving is
+  // a change like any other: a selection icon raised while this round trip was
+  // still out was drawn with no palette to offer, and would otherwise keep
+  // saying so while a press resolved a colour and painted with it.
+  refreshHighlightControlsColors();
 }
 
 async function loadHighlights() {
