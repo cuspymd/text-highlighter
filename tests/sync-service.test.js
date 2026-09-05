@@ -259,6 +259,18 @@ describe('sync-service', () => {
         }),
       );
     });
+
+    it('should send no one-click value when neither this device nor sync has one', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ minimapVisible: true });
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { minimapVisible: true, shortcutColorMap: null },
+      });
+
+      await saveSettingsToSync();
+
+      const [[written]] = chrome.storage.sync.set.mock.calls;
+      expect(written.settings).not.toHaveProperty('oneClickHighlightEnabled');
+    });
   });
 
   // A fresh install pulls what sync already knows before it writes anything
@@ -332,6 +344,35 @@ describe('sync-service', () => {
           settings: expect.objectContaining({ oneClickHighlightEnabled: true }),
         }),
       );
+    });
+
+    it('does not turn "nobody chose one" into a local value during migration', async () => {
+      // Browser sync carries settings from a version that predates the setting.
+      // Materializing the default here would give this device a `false` with a
+      // fresh settings timestamp, which then beats an older cloud snapshot that
+      // has the setting on.
+      const local = {};
+      chrome.storage.local.get.mockImplementation(async (keys) => {
+        if (keys === null) return { ...local };
+        const wanted = Array.isArray(keys) ? keys : [keys];
+        return Object.fromEntries(
+          wanted.filter(key => key in local).map(key => [key, local[key]])
+        );
+      });
+      chrome.storage.local.set.mockImplementation(async (items) => {
+        Object.assign(local, items);
+      });
+      chrome.storage.sync.get.mockImplementation(async (key) => (
+        key === 'settings'
+          ? { settings: { customColors: [], minimapVisible: true, selectionControlsVisible: true } }
+          : {}
+      ));
+
+      await migrateLocalToSync();
+
+      expect(local).not.toHaveProperty('oneClickHighlightEnabled');
+      const [[written]] = chrome.storage.sync.set.mock.calls;
+      expect(written.settings).not.toHaveProperty('oneClickHighlightEnabled');
     });
   });
 

@@ -155,9 +155,11 @@ export async function saveSettingsToSync() {
     }
   }
 
-  settings.oneClickHighlightEnabled = localOneClick !== undefined
-    ? localOneClick === true
-    : remoteSettings !== null && remoteSettings.oneClickHighlightEnabled === true;
+  if (localOneClick !== undefined) {
+    settings.oneClickHighlightEnabled = localOneClick === true;
+  } else if (remoteSettings && remoteSettings.oneClickHighlightEnabled !== undefined) {
+    settings.oneClickHighlightEnabled = remoteSettings.oneClickHighlightEnabled === true;
+  }
 
   if (result.shortcutColorMap) {
     settings.shortcutColorMap = result.shortcutColorMap;
@@ -430,10 +432,17 @@ export async function migrateLocalToSync() {
         selectionControlsVisible: syncSettings.selectionControlsVisible !== undefined
           ? syncSettings.selectionControlsVisible
           : (localResult.selectionControlsVisible !== undefined ? localResult.selectionControlsVisible : true),
-        oneClickHighlightEnabled: syncSettings.oneClickHighlightEnabled !== undefined
-          ? syncSettings.oneClickHighlightEnabled
-          : localResult.oneClickHighlightEnabled === true,
       };
+
+      // Only when one of the two sides actually chose one. Writing the default
+      // here turns "nobody has an opinion" into a local `false` with a fresh
+      // settings timestamp, which would then win the merge against a cloud
+      // snapshot that has the setting on - and disable it everywhere.
+      if (syncSettings.oneClickHighlightEnabled !== undefined) {
+        mergedSettings.oneClickHighlightEnabled = syncSettings.oneClickHighlightEnabled;
+      } else if (localResult.oneClickHighlightEnabled !== undefined) {
+        mergedSettings.oneClickHighlightEnabled = localResult.oneClickHighlightEnabled;
+      }
 
       if (syncSettings.shortcutColorMap !== undefined && syncSettings.shortcutColorMap !== null) {
         mergedSettings.shortcutColorMap = syncSettings.shortcutColorMap;
