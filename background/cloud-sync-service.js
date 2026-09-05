@@ -42,7 +42,6 @@ function emptyBlob() {
       customColors: [],
       minimapVisible: true,
       selectionControlsVisible: true,
-      oneClickHighlightEnabled: false,
       shortcutColorMap: null,
       updatedAt: 0,
     },
@@ -77,19 +76,30 @@ async function buildLocalBlob() {
   const deletedUrls = all[CLOUD_SYNC_KEYS.DELETED_URLS] || {};
   cleanupTombstones(deletedUrls);
 
+  // A key this device has no value for is left out rather than sent as its
+  // default. The merge takes the newer settings object whole, and every save -
+  // a minimap toggle, a custom colour - stamps this device's settings as the
+  // newest, so a `false` nobody chose would disable the setting on every paired
+  // device. Absent means "no opinion": applySettingsFromSync skips what is not
+  // there, and the value arrives the first time a device that has one syncs.
+  const settings = {
+    customColors: all[STORAGE_KEYS.CUSTOM_COLORS] || [],
+    minimapVisible: all[STORAGE_KEYS.MINIMAP_VISIBLE] !== undefined ? all[STORAGE_KEYS.MINIMAP_VISIBLE] : true,
+    selectionControlsVisible: all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE] !== undefined
+      ? all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE]
+      : true,
+    shortcutColorMap: all[STORAGE_KEYS.SHORTCUT_COLOR_MAP] || null,
+    updatedAt: all[CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT] || 0,
+  };
+
+  if (all[STORAGE_KEYS.ONE_CLICK_HIGHLIGHT] !== undefined) {
+    settings.oneClickHighlightEnabled = all[STORAGE_KEYS.ONE_CLICK_HIGHLIGHT] === true;
+  }
+
   return {
     version: 1,
     updatedAt: Date.now(),
-    settings: {
-      customColors: all[STORAGE_KEYS.CUSTOM_COLORS] || [],
-      minimapVisible: all[STORAGE_KEYS.MINIMAP_VISIBLE] !== undefined ? all[STORAGE_KEYS.MINIMAP_VISIBLE] : true,
-      selectionControlsVisible: all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE] !== undefined
-        ? all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE]
-        : true,
-      oneClickHighlightEnabled: all[STORAGE_KEYS.ONE_CLICK_HIGHLIGHT] === true,
-      shortcutColorMap: all[STORAGE_KEYS.SHORTCUT_COLOR_MAP] || null,
-      updatedAt: all[CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT] || 0,
-    },
+    settings,
     pages,
     deletedUrls,
   };

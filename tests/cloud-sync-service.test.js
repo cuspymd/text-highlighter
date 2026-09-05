@@ -15,7 +15,7 @@ function emptyBlob(overrides = {}) {
   return {
     version: 1,
     updatedAt: 0,
-    settings: { customColors: [], minimapVisible: true, selectionControlsVisible: true, oneClickHighlightEnabled: false, shortcutColorMap: null, updatedAt: 0 },
+    settings: { customColors: [], minimapVisible: true, selectionControlsVisible: true, shortcutColorMap: null, updatedAt: 0 },
     pages: {},
     deletedUrls: {},
     ...overrides,
@@ -227,6 +227,54 @@ describe('cloud-sync-service', () => {
       expect(result.success).toBe(true);
       // Only the GET should have happened; the PUT is skipped because merged === remote.
       expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    // A profile that upgraded into the one-click setting has no local value for
+    // it, and every unrelated save stamps this device's settings as the newest.
+    // Sending the absent key as `false` would hand the merge a "no" nobody
+    // chose, and disable the setting on every paired device.
+    it('leaves a setting this device has no value for out of the blob it pushes', async () => {
+      const code = generateSyncCode();
+      const { encryptionKey } = await deriveSyncKeys(code);
+
+      const remoteBlob = emptyBlob({
+        settings: {
+          customColors: [],
+          minimapVisible: true,
+          selectionControlsVisible: true,
+          oneClickHighlightEnabled: true,
+          shortcutColorMap: null,
+          updatedAt: 1000,
+        },
+      });
+      const envelope = await encryptBlob(remoteBlob, encryptionKey);
+
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) {
+          return Promise.resolve({
+            // No oneClickHighlightEnabled: this device has never had one. Its
+            // settings are the newer ones, so the merge takes them.
+            cloudSyncSettingsUpdatedAt: 2000,
+            'https://a.test': [{ groupId: 'g1', updatedAt: 1 }],
+            'https://a.test_meta': { title: 'A', lastUpdated: '2024-01-01T00:00:00.000Z', deletedGroupIds: {} },
+          });
+        }
+        return Promise.resolve({ cloudSyncEnabled: true, cloudSyncCode: code });
+      });
+
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => envelope })
+        .mockResolvedValueOnce({ ok: true, status: 204 });
+
+      const result = await runCloudSync();
+
+      expect(result.success).toBe(true);
+      const pushed = await decryptBlob(JSON.parse(global.fetch.mock.calls[1][1].body), encryptionKey);
+      expect(pushed.settings).not.toHaveProperty('oneClickHighlightEnabled');
+      // And nothing wrote the absent value into this device either.
+      expect(chrome.storage.local.set).not.toHaveBeenCalledWith(
+        expect.objectContaining({ oneClickHighlightEnabled: false }),
+      );
     });
 
     it('records the error and returns success:false when the fetch fails', async () => {
