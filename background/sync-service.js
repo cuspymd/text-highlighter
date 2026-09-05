@@ -15,6 +15,15 @@ const pendingSyncRemovalResolutions = new Map();
 
 // SYNC_KEYS local aliases
 const SYNC_SETTINGS_KEY = SYNC_KEYS.SETTINGS;
+
+// The settings a device can be behind on. Booleans only: the shortcut map and
+// the colours carry their own merge rules, and a device with none of either is
+// not behind, it is empty.
+const HYDRATABLE_SETTING_KEYS = [
+  STORAGE_KEYS.MINIMAP_VISIBLE,
+  STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+  STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+];
 const SYNC_HIGHLIGHT_PREFIX = SYNC_KEYS.HIGHLIGHT_PREFIX;
 const SYNC_META_KEY = SYNC_KEYS.META;
 
@@ -166,6 +175,39 @@ export async function saveSettingsToSync() {
   } catch (e) {
     debugLog('Failed to save settings to sync:', e.message);
   }
+}
+
+// Settings that sync knows about and this device has never been told.
+//
+// A key introduced after a profile migrated stays absent locally: the migration
+// runs once, and applySettingsFromSync only fires when a sync *change* arrives -
+// a value another device chose before this one upgraded is simply already
+// there, with no change to hear. The settings page and the content scripts read
+// local storage, so until something writes it this device shows and runs the
+// setting as off while sync says otherwise.
+//
+// Only keys with no local value are reported. A key this device has an opinion
+// about is its own business, and last-write-wins already governs those.
+export async function getSettingsMissingLocally() {
+  let syncSettings = null;
+  try {
+    const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
+    syncSettings = syncResult[SYNC_SETTINGS_KEY] || null;
+  } catch (e) {
+    debugLog('Could not read sync settings to catch up with:', e.message);
+    return null;
+  }
+  if (!syncSettings) return null;
+
+  const local = await browserAPI.storage.local.get(HYDRATABLE_SETTING_KEYS);
+  const missing = {};
+  HYDRATABLE_SETTING_KEYS.forEach((key) => {
+    if (local[key] === undefined && syncSettings[key] !== undefined) {
+      missing[key] = syncSettings[key];
+    }
+  });
+
+  return Object.keys(missing).length > 0 ? missing : null;
 }
 
 /**

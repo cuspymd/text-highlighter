@@ -8,6 +8,7 @@ import {
   cleanupEmptyHighlightData,
   clearAllSyncedHighlights,
   initSyncListener,
+  getSettingsMissingLocally,
   migrateLocalToSync,
   toSyncHighlightGroup,
 } from '../background/sync-service.js';
@@ -264,6 +265,38 @@ describe('sync-service', () => {
   // back. A setting the merge forgets is read back as its default and pushed
   // over the value the other devices are using, so this walks the whole round
   // trip against a local store that answers with what was written to it.
+  // A key introduced after a profile migrated is absent locally, and the value
+  // another device chose is already sitting in sync with no change event left
+  // to announce it. The settings page and the content scripts read local
+  // storage, so something has to hand it to them.
+  describe('getSettingsMissingLocally', () => {
+    it('reports a synced setting this device has no value for', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { minimapVisible: true, oneClickHighlightEnabled: true },
+      });
+      chrome.storage.local.get.mockResolvedValueOnce({ minimapVisible: true });
+
+      expect(await getSettingsMissingLocally()).toEqual({ oneClickHighlightEnabled: true });
+    });
+
+    it('leaves alone a setting this device already has an opinion about', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { oneClickHighlightEnabled: true },
+      });
+      chrome.storage.local.get.mockResolvedValueOnce({ oneClickHighlightEnabled: false });
+
+      expect(await getSettingsMissingLocally()).toBeNull();
+    });
+
+    it('reports nothing when sync has no settings, or cannot be read', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({});
+      expect(await getSettingsMissingLocally()).toBeNull();
+
+      chrome.storage.sync.get.mockRejectedValueOnce(new Error('sync unavailable'));
+      expect(await getSettingsMissingLocally()).toBeNull();
+    });
+  });
+
   describe('migrateLocalToSync', () => {
     it('keeps a synced one-click setting instead of pushing this device default over it', async () => {
       // A device that has never had the setting: nothing local, no migration flag.
