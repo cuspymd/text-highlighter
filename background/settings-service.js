@@ -425,6 +425,12 @@ export async function broadcastSettingsToTabs(changedSettings) {
         visible: changedSettings.selectionControlsVisible,
       });
     }
+    if (changedSettings.oneClickHighlightEnabled !== undefined) {
+      await sendMessageToTab(tab.id, {
+        action: 'setOneClickHighlight',
+        enabled: changedSettings.oneClickHighlightEnabled,
+      });
+    }
   }
 }
 
@@ -458,6 +464,11 @@ export async function applySettingsFromSync(newSettings) {
   if (newSettings.selectionControlsVisible !== undefined) {
     await browserAPI.storage.local.set({ selectionControlsVisible: newSettings.selectionControlsVisible });
     await broadcastToAllTabs({ action: 'setSelectionControlsVisibility', visible: newSettings.selectionControlsVisible });
+  }
+
+  if (newSettings.oneClickHighlightEnabled !== undefined) {
+    await browserAPI.storage.local.set({ oneClickHighlightEnabled: newSettings.oneClickHighlightEnabled });
+    await broadcastToAllTabs({ action: 'setOneClickHighlight', enabled: newSettings.oneClickHighlightEnabled });
   }
 
   // `null` is a value here ("no custom mapping"), not an absent field, so it has to be

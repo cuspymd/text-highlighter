@@ -101,6 +101,12 @@
   "showControlsOnSelection": {
     "message": "텍스트 선택 시 컨트롤 UI 표시"
   },
+  "oneClickHighlight": {
+    "message": "원클릭 하이라이트"
+  },
+  "oneClickHighlightHelp": {
+    "message": "선택 아이콘을 누르면 팔레트를 열지 않고 마지막에 사용한 색으로 바로 하이라이트합니다. 다른 색을 쓰려면 만들어진 하이라이트를 클릭해 팔레트에서 고르세요."
+  },
   "confirmClearAll": {
     "message": "정말 현재 페이지의 모든 하이라이트를 삭제하시겠습니까?"
   },

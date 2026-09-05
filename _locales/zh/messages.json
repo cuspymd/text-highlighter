@@ -101,6 +101,12 @@
   "showControlsOnSelection": {
     "message": "选择文本时显示控制UI"
   },
+  "oneClickHighlight": {
+    "message": "一键高亮"
+  },
+  "oneClickHighlightHelp": {
+    "message": "按下选择图标即会直接以上次使用的颜色高亮，不再打开调色板。若需其他颜色，点击生成的高亮并从调色板中选择。"
+  },
   "confirmClearAll": {
     "message": "确定要删除当前页面的所有高亮吗？"
   },

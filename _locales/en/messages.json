@@ -101,6 +101,12 @@
   "showControlsOnSelection": {
     "message": "Show Control UI on Text Selection"
   },
+  "oneClickHighlight": {
+    "message": "One-Click Highlight"
+  },
+  "oneClickHighlightHelp": {
+    "message": "Pressing the selection icon highlights straight away in the color you used last, without opening the palette. To use another color, click the highlight and pick from its palette."
+  },
   "confirmClearAll": {
     "message": "Really delete all highlights on this page?"
   },

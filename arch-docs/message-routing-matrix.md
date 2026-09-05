@@ -7,7 +7,7 @@ Source of truth: `background/message-router.js`
 | `getDebugMode` | none | `debugMode` | none | `handleGetDebugMode` |
 | `getPlatformInfo` | none | `platform`, `isMobile` | none | `handleGetPlatformInfo` |
 | `getColors` | none | `colors` | none | `handleGetColors` |
-| `saveSettings` | `minimapVisible?`, `selectionControlsVisible?` | `success`, `error?` | local storage write, settings broadcast, sync save | `handleSaveSettings` |
+| `saveSettings` | `minimapVisible?`, `selectionControlsVisible?`, `oneClickHighlightEnabled?` | `success`, `error?` | local storage write, settings broadcast, sync save | `handleSaveSettings` |
 | `getHighlights` | `url` | `highlights` | local storage read | `handleGetHighlights` |
 | `clearCustomColors` | none | `success`, `noCustomColors?`, `error?` | local storage write, context menu update, tab broadcast | `handleClearCustomColors` |
 | `addColor` | `color` | `success`, `colors?`, `error?` | local storage write, context menu update, tab broadcast | `handleAddColor` |

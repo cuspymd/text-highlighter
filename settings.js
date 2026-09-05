@@ -35,9 +35,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const minimapToggle = document.getElementById('minimap-toggle');
   const selectionControlsToggle = document.getElementById('selection-controls-toggle');
   const selectionControlsRow = document.getElementById('selection-controls-row');
+  const oneClickToggle = document.getElementById('one-click-highlight-toggle');
+  const oneClickRow = document.getElementById('one-click-highlight-row');
+
+  // One-click highlighting rides on the selection icon, so it can do nothing
+  // while the icon is switched off. Mobile has no such switch - the icon is
+  // always on there - so the row stays live.
+  function syncOneClickAvailability() {
+    const available = !browserAPI.windows || selectionControlsToggle.checked;
+    oneClickToggle.disabled = !available;
+    oneClickRow.classList.toggle('is-disabled', !available);
+  }
 
   async function loadGeneralSettings() {
-    const result = await browserAPI.storage.local.get(['minimapVisible', 'selectionControlsVisible']);
+    const result = await browserAPI.storage.local.get([
+      'minimapVisible',
+      'selectionControlsVisible',
+      'oneClickHighlightEnabled',
+    ]);
 
     const minimapVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
     minimapToggle.checked = minimapVisible;
@@ -48,19 +63,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       const selectionControlsVisible = result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true;
       selectionControlsToggle.checked = selectionControlsVisible;
     }
+
+    oneClickToggle.checked = result.oneClickHighlightEnabled === true;
+    syncOneClickAvailability();
   }
 
   minimapToggle.addEventListener('change', async () => {
-    await browserAPI.runtime.sendMessage({
+    await sendToBackground({
       action: 'saveSettings',
       minimapVisible: minimapToggle.checked
     });
   });
 
   selectionControlsToggle.addEventListener('change', async () => {
-    await browserAPI.runtime.sendMessage({
+    syncOneClickAvailability();
+    await sendToBackground({
       action: 'saveSettings',
       selectionControlsVisible: selectionControlsToggle.checked
+    });
+  });
+
+  oneClickToggle.addEventListener('change', async () => {
+    await sendToBackground({
+      action: 'saveSettings',
+      oneClickHighlightEnabled: oneClickToggle.checked
     });
   });
 

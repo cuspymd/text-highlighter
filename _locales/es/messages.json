@@ -101,6 +101,12 @@
   "showControlsOnSelection": {
     "message": "Mostrar interfaz de control al seleccionar texto"
   },
+  "oneClickHighlight": {
+    "message": "Resaltado con Un Clic"
+  },
+  "oneClickHighlightHelp": {
+    "message": "Al pulsar el icono de selección se resalta al instante con el último color usado, sin abrir la paleta. Para otro color, haz clic en el resaltado y elígelo en su paleta."
+  },
   "confirmClearAll": {
     "message": "¿Realmente eliminar todos los resaltados en esta página?"
   },

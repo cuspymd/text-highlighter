@@ -2,6 +2,8 @@ export const STORAGE_KEYS = {
   CUSTOM_COLORS: 'customColors',
   MINIMAP_VISIBLE: 'minimapVisible',
   SELECTION_CONTROLS_VISIBLE: 'selectionControlsVisible',
+  ONE_CLICK_HIGHLIGHT: 'oneClickHighlightEnabled',
+  LAST_USED_COLOR: 'lastUsedColor',
   SYNC_MIGRATION_DONE: 'syncMigrationDone',
   META_SUFFIX: '_meta',
   SHORTCUT_COLOR_MAP: 'shortcutColorMap',

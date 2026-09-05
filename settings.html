@@ -160,6 +160,89 @@
         transform: translateX(18px);
       }
 
+      /* One-click highlighting needs the selection icon to exist, so its row
+         goes dim while the icon is turned off rather than sitting there
+         looking live. */
+      .toggle-container.is-disabled > label:not(.toggle-switch),
+      .toggle-container.is-disabled .toggle-label {
+        opacity: 0.5;
+      }
+
+      /* A label with a help tip beside it. The tip is a sibling of the label,
+         never a child: the i18n pass writes textContent on every [data-i18n]
+         element, which would take any children of the label with it. */
+      .toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .toggle-label > label {
+        margin: 0;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .help-tip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 16px;
+        width: 16px;
+        height: 16px;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: var(--surface-strong);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
+        cursor: help;
+      }
+
+      .help-tip:hover,
+      .help-tip:focus-visible {
+        color: var(--text);
+        border-color: var(--accent);
+      }
+
+      .help-bubble {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: -8px;
+        z-index: 5;
+        width: max-content;
+        max-width: 260px;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        box-shadow: var(--shadow-2);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 1.5;
+        text-align: left;
+        white-space: normal;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease;
+      }
+
+      .help-tip:hover .help-bubble,
+      .help-tip:focus .help-bubble {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .toggle-switch input:disabled + .toggle-slider {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       .btn {
         min-height: 36px;
         padding: 8px 12px;
@@ -428,6 +511,23 @@
           <label for="selection-controls-toggle" data-i18n="showControlsOnSelection">Show Control UI on Text Selection</label>
           <label class="toggle-switch">
             <input type="checkbox" id="selection-controls-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-container" id="one-click-highlight-row">
+          <div class="toggle-label">
+            <label for="one-click-highlight-toggle" data-i18n="oneClickHighlight">One-Click Highlight</label>
+            <span class="help-tip" tabindex="0" aria-describedby="one-click-highlight-help">?
+              <span
+                class="help-bubble"
+                id="one-click-highlight-help"
+                role="tooltip"
+                data-i18n="oneClickHighlightHelp"
+              >Pressing the selection icon highlights straight away in the color you used last, without opening the palette.</span>
+            </span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="one-click-highlight-toggle" />
             <span class="toggle-slider"></span>
           </label>
         </div>

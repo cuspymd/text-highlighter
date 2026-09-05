@@ -106,10 +106,39 @@
     return `#${channels.map(toHexPair).join('')}`;
   }
 
+  /**
+   * Which palette entry a one-click highlight paints with.
+   *
+   * The last used colour is remembered as a hex value rather than a colour id
+   * because the palette refuses duplicate values, which makes the value itself
+   * the unique key - and makes "no longer in the palette" the fallback
+   * condition. A colour that was removed, or edited to a different value, stops
+   * matching and the first palette entry takes over rather than a colour the
+   * user can no longer see.
+   *
+   * @param {{color: string}[]} colors the palette, in display order
+   * @param {string|null|undefined} lastUsedColor hex value, `#rrggbb`
+   * @returns {object|null} the palette entry, or null for an empty palette
+   */
+  function resolveLastUsedColor(colors, lastUsedColor) {
+    if (!Array.isArray(colors) || colors.length === 0) return null;
+
+    if (typeof lastUsedColor === 'string' && lastUsedColor) {
+      const wanted = lastUsedColor.toLowerCase();
+      const match = colors.find(
+        entry => entry && typeof entry.color === 'string' && entry.color.toLowerCase() === wanted
+      );
+      if (match) return match;
+    }
+
+    return colors[0];
+  }
+
   window.TextHighlighterColorCore = {
     FALLBACK_HEX,
     hsvToRgb,
     hslToHex,
     rgbToHex,
+    resolveLastUsedColor,
   };
 })();

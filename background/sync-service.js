@@ -15,6 +15,15 @@ const pendingSyncRemovalResolutions = new Map();
 
 // SYNC_KEYS local aliases
 const SYNC_SETTINGS_KEY = SYNC_KEYS.SETTINGS;
+
+// The settings a device can be behind on. Booleans only: the shortcut map and
+// the colours carry their own merge rules, and a device with none of either is
+// not behind, it is empty.
+const HYDRATABLE_SETTING_KEYS = [
+  STORAGE_KEYS.MINIMAP_VISIBLE,
+  STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+  STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+];
 const SYNC_HIGHLIGHT_PREFIX = SYNC_KEYS.HIGHLIGHT_PREFIX;
 const SYNC_META_KEY = SYNC_KEYS.META;
 
@@ -117,6 +126,7 @@ export async function saveSettingsToSync() {
     STORAGE_KEYS.CUSTOM_COLORS,
     STORAGE_KEYS.MINIMAP_VISIBLE,
     STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+    STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
     STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   ]);
   const settings = {
@@ -125,19 +135,36 @@ export async function saveSettingsToSync() {
     selectionControlsVisible: result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true,
   };
 
+  // storage.sync.set replaces the whole settings object, so a key this device
+  // has no value for must not go out as its default: that would push "off" over
+  // a setting another device turned on. Until this device has an opinion of its
+  // own, whatever sync already holds stands. Every profile that upgrades into
+  // the one-click setting starts out without it, which is what makes this reach
+  // further than the shortcut map it was written for.
+  //
+  // The local value arrives the ordinary way - applySettingsFromSync writes it
+  // when the sync change lands - and from then on it is the one that goes out.
+  const localOneClick = result.oneClickHighlightEnabled;
+  let remoteSettings = null;
+  if (localOneClick === undefined || !result.shortcutColorMap) {
+    try {
+      const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
+      remoteSettings = syncResult[SYNC_SETTINGS_KEY] || null;
+    } catch (e) {
+      remoteSettings = null;
+    }
+  }
+
+  if (localOneClick !== undefined) {
+    settings.oneClickHighlightEnabled = localOneClick === true;
+  } else if (remoteSettings && remoteSettings.oneClickHighlightEnabled !== undefined) {
+    settings.oneClickHighlightEnabled = remoteSettings.oneClickHighlightEnabled === true;
+  }
+
   if (result.shortcutColorMap) {
     settings.shortcutColorMap = result.shortcutColorMap;
   } else {
-    try {
-      const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
-      if (syncResult[SYNC_SETTINGS_KEY] && syncResult[SYNC_SETTINGS_KEY].shortcutColorMap) {
-        settings.shortcutColorMap = syncResult[SYNC_SETTINGS_KEY].shortcutColorMap;
-      } else {
-        settings.shortcutColorMap = null;
-      }
-    } catch (e) {
-      settings.shortcutColorMap = null;
-    }
+    settings.shortcutColorMap = (remoteSettings && remoteSettings.shortcutColorMap) || null;
   }
 
   // Recorded regardless of storage.sync outcome so the cloud sync blob (which has no
@@ -150,6 +177,39 @@ export async function saveSettingsToSync() {
   } catch (e) {
     debugLog('Failed to save settings to sync:', e.message);
   }
+}
+
+// Settings that sync knows about and this device has never been told.
+//
+// A key introduced after a profile migrated stays absent locally: the migration
+// runs once, and applySettingsFromSync only fires when a sync *change* arrives -
+// a value another device chose before this one upgraded is simply already
+// there, with no change to hear. The settings page and the content scripts read
+// local storage, so until something writes it this device shows and runs the
+// setting as off while sync says otherwise.
+//
+// Only keys with no local value are reported. A key this device has an opinion
+// about is its own business, and last-write-wins already governs those.
+export async function getSettingsMissingLocally() {
+  let syncSettings = null;
+  try {
+    const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
+    syncSettings = syncResult[SYNC_SETTINGS_KEY] || null;
+  } catch (e) {
+    debugLog('Could not read sync settings to catch up with:', e.message);
+    return null;
+  }
+  if (!syncSettings) return null;
+
+  const local = await browserAPI.storage.local.get(HYDRATABLE_SETTING_KEYS);
+  const missing = {};
+  HYDRATABLE_SETTING_KEYS.forEach((key) => {
+    if (local[key] === undefined && syncSettings[key] !== undefined) {
+      missing[key] = syncSettings[key];
+    }
+  });
+
+  return Object.keys(missing).length > 0 ? missing : null;
 }
 
 /**
@@ -360,6 +420,7 @@ export async function migrateLocalToSync() {
         STORAGE_KEYS.CUSTOM_COLORS,
         STORAGE_KEYS.MINIMAP_VISIBLE,
         STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+        STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
         STORAGE_KEYS.SHORTCUT_COLOR_MAP,
       ]);
 
@@ -372,6 +433,16 @@ export async function migrateLocalToSync() {
           ? syncSettings.selectionControlsVisible
           : (localResult.selectionControlsVisible !== undefined ? localResult.selectionControlsVisible : true),
       };
+
+      // Only when one of the two sides actually chose one. Writing the default
+      // here turns "nobody has an opinion" into a local `false` with a fresh
+      // settings timestamp, which would then win the merge against a cloud
+      // snapshot that has the setting on - and disable it everywhere.
+      if (syncSettings.oneClickHighlightEnabled !== undefined) {
+        mergedSettings.oneClickHighlightEnabled = syncSettings.oneClickHighlightEnabled;
+      } else if (localResult.oneClickHighlightEnabled !== undefined) {
+        mergedSettings.oneClickHighlightEnabled = localResult.oneClickHighlightEnabled;
+      }
 
       if (syncSettings.shortcutColorMap !== undefined && syncSettings.shortcutColorMap !== null) {
         mergedSettings.shortcutColorMap = syncSettings.shortcutColorMap;
@@ -412,6 +483,8 @@ export async function migrateLocalToSync() {
       STORAGE_KEYS.SYNC_MIGRATION_DONE,
       STORAGE_KEYS.MINIMAP_VISIBLE,
       STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+      STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+      STORAGE_KEYS.LAST_USED_COLOR,
       STORAGE_KEYS.SHORTCUT_COLOR_MAP,
       'settings',
     ];

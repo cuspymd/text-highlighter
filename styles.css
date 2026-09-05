@@ -635,6 +635,30 @@
   -webkit-user-drag: none !important;
 }
 
+/* One-click mode: the icon carries the colour its press will paint with, on a
+   strip under the logo. Behind the logo the colour would have to work as a
+   background for any custom value; under it, it only has to be visible. */
+.text-highlighter-selection-icon.one-click {
+  flex-direction: column !important;
+  gap: 2px !important;
+  opacity: 0.92 !important;
+}
+
+.text-highlighter-selection-icon.one-click img {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+.text-highlighter-selection-icon-swatch {
+  width: 15px !important;
+  height: 4px !important;
+  border-radius: 2px !important;
+  border: 1px solid rgba(0, 0, 0, 0.18) !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  pointer-events: none !important;
+}
+
 .text-highlighter-selection-icon:hover {
   transform: scale(1.1) !important;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
@@ -720,6 +744,17 @@
   .text-highlighter-selection-icon img {
     width: 27px !important;
     height: 27px !important;
+  }
+
+  .text-highlighter-selection-icon.one-click img {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .text-highlighter-selection-icon-swatch {
+    width: 24px !important;
+    height: 6px !important;
+    border-radius: 3px !important;
   }
 
   /* Wider minimap and markers */

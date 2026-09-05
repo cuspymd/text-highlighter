@@ -17,6 +17,8 @@ const LOCAL_ONLY_KEYS = new Set([
   STORAGE_KEYS.SYNC_MIGRATION_DONE,
   STORAGE_KEYS.MINIMAP_VISIBLE,
   STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+  STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+  STORAGE_KEYS.LAST_USED_COLOR,
   STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   CLOUD_SYNC_KEYS.ENABLED,
   CLOUD_SYNC_KEYS.CODE,
@@ -74,18 +76,30 @@ async function buildLocalBlob() {
   const deletedUrls = all[CLOUD_SYNC_KEYS.DELETED_URLS] || {};
   cleanupTombstones(deletedUrls);
 
+  // A key this device has no value for is left out rather than sent as its
+  // default. The merge takes the newer settings object whole, and every save -
+  // a minimap toggle, a custom colour - stamps this device's settings as the
+  // newest, so a `false` nobody chose would disable the setting on every paired
+  // device. Absent means "no opinion": applySettingsFromSync skips what is not
+  // there, and the value arrives the first time a device that has one syncs.
+  const settings = {
+    customColors: all[STORAGE_KEYS.CUSTOM_COLORS] || [],
+    minimapVisible: all[STORAGE_KEYS.MINIMAP_VISIBLE] !== undefined ? all[STORAGE_KEYS.MINIMAP_VISIBLE] : true,
+    selectionControlsVisible: all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE] !== undefined
+      ? all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE]
+      : true,
+    shortcutColorMap: all[STORAGE_KEYS.SHORTCUT_COLOR_MAP] || null,
+    updatedAt: all[CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT] || 0,
+  };
+
+  if (all[STORAGE_KEYS.ONE_CLICK_HIGHLIGHT] !== undefined) {
+    settings.oneClickHighlightEnabled = all[STORAGE_KEYS.ONE_CLICK_HIGHLIGHT] === true;
+  }
+
   return {
     version: 1,
     updatedAt: Date.now(),
-    settings: {
-      customColors: all[STORAGE_KEYS.CUSTOM_COLORS] || [],
-      minimapVisible: all[STORAGE_KEYS.MINIMAP_VISIBLE] !== undefined ? all[STORAGE_KEYS.MINIMAP_VISIBLE] : true,
-      selectionControlsVisible: all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE] !== undefined
-        ? all[STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE]
-        : true,
-      shortcutColorMap: all[STORAGE_KEYS.SHORTCUT_COLOR_MAP] || null,
-      updatedAt: all[CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT] || 0,
-    },
+    settings,
     pages,
     deletedUrls,
   };
@@ -95,6 +109,24 @@ function pageTimestamp(page) {
   if (!page || !page.lastUpdated) return 0;
   const t = new Date(page.lastUpdated).getTime();
   return Number.isNaN(t) ? 0 : t;
+}
+
+// The newer settings object wins, but a field it does not carry is not a
+// decision to clear that field: a device with no value for a setting leaves it
+// out (see buildLocalBlob), and the value the other side does have has to
+// survive the merge - otherwise the cloud record of it is gone, and the next
+// device to pair reads no value at all.
+//
+// The newer object is returned as it is when it lacks nothing, because
+// runCloudSync compares identity to decide whether the settings have to be
+// applied and broadcast at all.
+function fillAbsentSettings(newer, older) {
+  const absent = Object.keys(older).filter(key => !(key in newer));
+  if (absent.length === 0) return newer;
+
+  const filled = { ...newer };
+  absent.forEach(key => { filled[key] = older[key]; });
+  return filled;
 }
 
 /**
@@ -136,7 +168,11 @@ export function mergeBlobs(localBlob, remoteBlob) {
 
   const localSettingsAt = localBlob.settings.updatedAt || 0;
   const remoteSettingsAt = remoteBlob.settings.updatedAt || 0;
-  const settings = remoteSettingsAt > localSettingsAt ? remoteBlob.settings : localBlob.settings;
+  const remoteIsNewer = remoteSettingsAt > localSettingsAt;
+  const settings = fillAbsentSettings(
+    remoteIsNewer ? remoteBlob.settings : localBlob.settings,
+    remoteIsNewer ? localBlob.settings : remoteBlob.settings,
+  );
 
   return {
     version: 1,

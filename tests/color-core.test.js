@@ -80,6 +80,37 @@ describe('color-core', () => {
     });
   });
 
+
+  // Which colour a one-click highlight paints with. Stored as a value rather
+  // than an id, so a colour that leaves the palette stops being offered.
+  describe('resolveLastUsedColor', () => {
+    const palette = [
+      { id: 'yellow', color: '#FFFF00' },
+      { id: 'green', color: '#AAFFAA' },
+      { id: 'custom_1', color: '#123456' },
+    ];
+
+    it('returns the palette entry the remembered value belongs to', () => {
+      expect(core.resolveLastUsedColor(palette, '#123456')).toBe(palette[2]);
+    });
+
+    it('matches regardless of the case the value was written in', () => {
+      expect(core.resolveLastUsedColor(palette, '#aaffaa')).toBe(palette[1]);
+    });
+
+    it('falls back to the first colour when nothing has been used yet', () => {
+      expect(core.resolveLastUsedColor(palette, null)).toBe(palette[0]);
+    });
+
+    it('falls back to the first colour when the remembered one has been removed', () => {
+      expect(core.resolveLastUsedColor(palette, '#DEAD00')).toBe(palette[0]);
+    });
+
+    it('has nothing to offer from an empty palette', () => {
+      expect(core.resolveLastUsedColor([], '#FFFF00')).toBeNull();
+      expect(core.resolveLastUsedColor(null, '#FFFF00')).toBeNull();
+    });
+  });
   // The picker reads a colour back out of the DOM after writing it, so a value
   // that does not survive the round trip shifts every time it is reopened.
   it('round-trips a picked colour through rgb and back', () => {

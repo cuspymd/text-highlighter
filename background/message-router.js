@@ -59,6 +59,7 @@ async function handleSaveSettings(message) {
   const settings = {};
   if (message.minimapVisible !== undefined) settings.minimapVisible = message.minimapVisible;
   if (message.selectionControlsVisible !== undefined) settings.selectionControlsVisible = message.selectionControlsVisible;
+  if (message.oneClickHighlightEnabled !== undefined) settings.oneClickHighlightEnabled = message.oneClickHighlightEnabled;
 
   const keys = Object.keys(settings);
   if (keys.length === 0) return successResponse();

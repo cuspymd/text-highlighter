@@ -101,6 +101,12 @@
   "showControlsOnSelection": {
     "message": "テキスト選択時にコントロールUIを表示"
   },
+  "oneClickHighlight": {
+    "message": "ワンクリックハイライト"
+  },
+  "oneClickHighlightHelp": {
+    "message": "選択アイコンを押すと、パレットを開かずに最後に使った色ですぐにハイライトします。別の色にするには、作成されたハイライトをクリックしてパレットから選びます。"
+  },
   "confirmClearAll": {
     "message": "現在のページのすべてのハイライトを削除してよろしいですか？"
   },

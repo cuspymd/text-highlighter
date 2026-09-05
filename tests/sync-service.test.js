@@ -8,6 +8,8 @@ import {
   cleanupEmptyHighlightData,
   clearAllSyncedHighlights,
   initSyncListener,
+  getSettingsMissingLocally,
+  migrateLocalToSync,
   toSyncHighlightGroup,
 } from '../background/sync-service.js';
 
@@ -222,6 +224,155 @@ describe('sync-service', () => {
           }),
         }),
       );
+    });
+
+    // A profile that upgraded into the setting has no local value for it. What
+    // goes out then is what sync already holds - a `false` written over another
+    // device's `true` would disable it everywhere, because the whole settings
+    // object is replaced by this write.
+    it('should keep the synced one-click value when this device has none of its own', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ minimapVisible: true });
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { oneClickHighlightEnabled: true, shortcutColorMap: null },
+      });
+
+      await saveSettingsToSync();
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({ oneClickHighlightEnabled: true }),
+        }),
+      );
+    });
+
+    it('should send this device own one-click value over the synced one', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ oneClickHighlightEnabled: false });
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { oneClickHighlightEnabled: true, shortcutColorMap: null },
+      });
+
+      await saveSettingsToSync();
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({ oneClickHighlightEnabled: false }),
+        }),
+      );
+    });
+
+    it('should send no one-click value when neither this device nor sync has one', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ minimapVisible: true });
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { minimapVisible: true, shortcutColorMap: null },
+      });
+
+      await saveSettingsToSync();
+
+      const [[written]] = chrome.storage.sync.set.mock.calls;
+      expect(written.settings).not.toHaveProperty('oneClickHighlightEnabled');
+    });
+  });
+
+  // A fresh install pulls what sync already knows before it writes anything
+  // back. A setting the merge forgets is read back as its default and pushed
+  // over the value the other devices are using, so this walks the whole round
+  // trip against a local store that answers with what was written to it.
+  // A key introduced after a profile migrated is absent locally, and the value
+  // another device chose is already sitting in sync with no change event left
+  // to announce it. The settings page and the content scripts read local
+  // storage, so something has to hand it to them.
+  describe('getSettingsMissingLocally', () => {
+    it('reports a synced setting this device has no value for', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { minimapVisible: true, oneClickHighlightEnabled: true },
+      });
+      chrome.storage.local.get.mockResolvedValueOnce({ minimapVisible: true });
+
+      expect(await getSettingsMissingLocally()).toEqual({ oneClickHighlightEnabled: true });
+    });
+
+    it('leaves alone a setting this device already has an opinion about', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { oneClickHighlightEnabled: true },
+      });
+      chrome.storage.local.get.mockResolvedValueOnce({ oneClickHighlightEnabled: false });
+
+      expect(await getSettingsMissingLocally()).toBeNull();
+    });
+
+    it('reports nothing when sync has no settings, or cannot be read', async () => {
+      chrome.storage.sync.get.mockResolvedValueOnce({});
+      expect(await getSettingsMissingLocally()).toBeNull();
+
+      chrome.storage.sync.get.mockRejectedValueOnce(new Error('sync unavailable'));
+      expect(await getSettingsMissingLocally()).toBeNull();
+    });
+  });
+
+  describe('migrateLocalToSync', () => {
+    it('keeps a synced one-click setting instead of pushing this device default over it', async () => {
+      // A device that has never had the setting: nothing local, no migration flag.
+      const local = {};
+      chrome.storage.local.get.mockImplementation(async (keys) => {
+        if (keys === null) return { ...local };
+        const wanted = Array.isArray(keys) ? keys : [keys];
+        return Object.fromEntries(
+          wanted.filter(key => key in local).map(key => [key, local[key]])
+        );
+      });
+      chrome.storage.local.set.mockImplementation(async (items) => {
+        Object.assign(local, items);
+      });
+      chrome.storage.sync.get.mockImplementation(async (key) => (
+        key === 'settings'
+          ? {
+            settings: {
+              customColors: [],
+              minimapVisible: true,
+              selectionControlsVisible: true,
+              oneClickHighlightEnabled: true,
+            },
+          }
+          : {}
+      ));
+
+      await migrateLocalToSync();
+
+      expect(local.oneClickHighlightEnabled).toBe(true);
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({ oneClickHighlightEnabled: true }),
+        }),
+      );
+    });
+
+    it('does not turn "nobody chose one" into a local value during migration', async () => {
+      // Browser sync carries settings from a version that predates the setting.
+      // Materializing the default here would give this device a `false` with a
+      // fresh settings timestamp, which then beats an older cloud snapshot that
+      // has the setting on.
+      const local = {};
+      chrome.storage.local.get.mockImplementation(async (keys) => {
+        if (keys === null) return { ...local };
+        const wanted = Array.isArray(keys) ? keys : [keys];
+        return Object.fromEntries(
+          wanted.filter(key => key in local).map(key => [key, local[key]])
+        );
+      });
+      chrome.storage.local.set.mockImplementation(async (items) => {
+        Object.assign(local, items);
+      });
+      chrome.storage.sync.get.mockImplementation(async (key) => (
+        key === 'settings'
+          ? { settings: { customColors: [], minimapVisible: true, selectionControlsVisible: true } }
+          : {}
+      ));
+
+      await migrateLocalToSync();
+
+      expect(local).not.toHaveProperty('oneClickHighlightEnabled');
+      const [[written]] = chrome.storage.sync.set.mock.calls;
+      expect(written.settings).not.toHaveProperty('oneClickHighlightEnabled');
     });
   });
 

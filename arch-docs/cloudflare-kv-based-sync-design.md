@@ -116,6 +116,7 @@ async function deriveSyncKeys(syncCode) {
     "customColors": [],
     "minimapVisible": true,
     "selectionControlsVisible": true,
+    "oneClickHighlightEnabled": false,
     "shortcutColorMap": null
   },
   "pages": {
@@ -129,6 +130,8 @@ async function deriveSyncKeys(syncCode) {
   "deletedUrls": { "<url>": 1735800000000 }
 }
 ```
+
+`settings`의 필드는 그 기기가 값을 가진 것만 실린다. `mergeBlobs`는 더 최신인 `settings`를 통째로 채택하므로, 값이 없는 기기가 기본값을 실어 보내면 다른 기기가 켜둔 설정을 끄게 된다. 없는 필드는 "의견 없음"이고, `applySettingsFromSync`가 건너뛴다 (`oneClickHighlightEnabled`가 이 경우에 해당한다 — 이 설정 이전 버전에서 올라온 프로필에는 로컬 키가 없다).
 
 - `pages`, `deletedUrls`는 기존 `sync_meta.pages`/`deletedUrls`와 동일한 역할이지만 URL별 예산 관리가 필요 없으므로 리스트가 아닌 단순 맵으로 단순화
 - 페이지 단위 병합은 기존 `mergeHighlights(localData, remoteData)`를 **URL별로 순회하며 그대로 재사용**
