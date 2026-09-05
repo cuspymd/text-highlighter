@@ -140,6 +140,13 @@ test.describe('Selection Controls Tests', () => {
     await settings.goto(`chrome-extension://${extensionId}/settings.html`);
     const oneClickToggle = settings.locator('#one-click-highlight-toggle');
     await expect(oneClickToggle).not.toBeChecked();
+
+    // The label is short enough to stay on one line, so what the switch does
+    // lives behind the help tip beside it.
+    const helpBubble = settings.locator('#one-click-highlight-help');
+    await expect(helpBubble).toBeHidden();
+    await settings.locator('#one-click-highlight-row .help-tip').hover();
+    await expect(helpBubble).toBeVisible();
     // The checkbox itself is the hidden half of the switch; the slider is what a
     // user presses.
     await settings.locator('#one-click-highlight-row .toggle-slider').click();

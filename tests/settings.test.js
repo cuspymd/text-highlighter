@@ -171,6 +171,22 @@ describe('settings', () => {
       });
     });
 
+    // The switch changes what pressing the selection icon does, which a short
+    // label cannot say on its own. The explanation sits behind a help tip -
+    // beside the label, never inside it: the i18n pass overwrites the
+    // textContent of every [data-i18n] element, children and all.
+    it('explains the one-click behaviour through a help tip beside the label', async () => {
+      await openSettings();
+
+      const label = byId('one-click-highlight-row').querySelector('label[for="one-click-highlight-toggle"]');
+      const bubble = byId('one-click-highlight-help');
+
+      expect(label.textContent).toBe('oneClickHighlight');
+      expect(bubble.textContent).toBe('oneClickHighlightHelp');
+      expect(label.contains(bubble)).toBe(false);
+      expect(bubble.closest('.help-tip').getAttribute('tabindex')).toBe('0');
+    });
+
     // Without the selection icon there is nothing for a one-click press to
     // happen on, so the row says so rather than accepting a dead setting.
     it('disables the one-click row while the selection icon is turned off', async () => {

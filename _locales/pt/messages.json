@@ -102,7 +102,10 @@
     "message": "Mostrar Interface de Controle ao Selecionar Texto"
   },
   "oneClickHighlight": {
-    "message": "Destacar com Um Clique Usando a Última Cor"
+    "message": "Marcação com Um Clique"
+  },
+  "oneClickHighlightHelp": {
+    "message": "Ao pressionar o ícone de seleção, o destaque é feito na hora com a última cor usada, sem abrir a paleta. Para outra cor, clique no destaque e escolha na paleta dele."
   },
   "confirmClearAll": {
     "message": "Excluir realmente todas as marcações desta página?"
