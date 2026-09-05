@@ -127,4 +127,73 @@ test.describe('Selection Controls Tests', () => {
     const spanAfterReload = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
     await expectHighlightSpan(spanAfterReload, { color: newColorRgb, text: textToSelect });
   });
+
+  // One-click highlighting, the setting a user turns on when the palette step is
+  // the part they want gone. Driven the way they would drive it: the switch in
+  // the settings page, then presses on the icon. The palette is still there
+  // afterwards - on the highlight the press just made - which is what keeps
+  // colour choice alive on a touch screen, where hover and long-press never were.
+  test('Should paint with the last used colour in one click, and still reach the palette afterwards', async ({ page, context, background, extensionId }) => {
+    await enableSelectionControls(background);
+
+    const settings = await context.newPage();
+    await settings.goto(`chrome-extension://${extensionId}/settings.html`);
+    const oneClickToggle = settings.locator('#one-click-highlight-toggle');
+    await expect(oneClickToggle).not.toBeChecked();
+    // The checkbox itself is the hidden half of the switch; the slider is what a
+    // user presses.
+    await settings.locator('#one-click-highlight-row .toggle-slider').click();
+    await expect(oneClickToggle).toBeChecked();
+    await settings.close();
+
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await page.waitForTimeout(200);
+
+    const yellowRgb = 'rgb(255, 255, 0)';
+    const greenRgb = 'rgb(170, 255, 170)';
+
+    async function raiseIconOver(paragraph, text) {
+      await selectTextInElement(paragraph, text);
+      const box = await paragraph.boundingBox();
+      await paragraph.dispatchEvent('mouseup', {
+        clientX: box.x + 50,
+        clientY: box.y + 10,
+        bubbles: true
+      });
+      const selectionIcon = page.locator('.text-highlighter-selection-icon');
+      await expect(selectionIcon).toBeVisible();
+      return selectionIcon;
+    }
+
+    // Nothing has been highlighted yet, so the press offers the first palette
+    // colour - and says so on the icon before it is pressed.
+    const firstParagraph = page.locator('p:has-text("This is a sample paragraph")');
+    let selectionIcon = await raiseIconOver(firstParagraph, 'sample paragraph');
+    await expect(selectionIcon.locator('.text-highlighter-selection-icon-swatch'))
+      .toHaveCSS('background-color', yellowRgb);
+    await selectionIcon.click();
+
+    // One press, one highlight - and no palette on the way.
+    const firstHighlight = page.locator('span.text-highlighter-extension:has-text("sample paragraph")');
+    await expectHighlightSpan(firstHighlight, { color: yellowRgb, text: 'sample paragraph' });
+    await expect(page.locator('.text-highlighter-selection-controls')).toBeHidden();
+    await expect(selectionIcon).toBeHidden();
+
+    // A colour other than the offered one is not lost: clicking the highlight
+    // opens the full palette, and picking there is what the next press remembers.
+    await firstHighlight.click();
+    const controls = page.locator('.text-highlighter-controls:not(.text-highlighter-selection-controls)');
+    await expect(controls).toBeVisible();
+    await controls.locator('.text-highlighter-control-button.color-button').nth(1).click();
+    await expectHighlightSpan(firstHighlight, { color: greenRgb, text: 'sample paragraph' });
+
+    const secondParagraph = page.locator('p:has-text("Another paragraph")');
+    selectionIcon = await raiseIconOver(secondParagraph, 'Another paragraph');
+    await expect(selectionIcon.locator('.text-highlighter-selection-icon-swatch'))
+      .toHaveCSS('background-color', greenRgb);
+    await selectionIcon.click();
+
+    const secondHighlight = page.locator('span.text-highlighter-extension:has-text("Another paragraph")');
+    await expectHighlightSpan(secondHighlight, { color: greenRgb, text: 'Another paragraph' });
+  });
 });

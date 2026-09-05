@@ -195,6 +195,14 @@ describe('message-router', () => {
       expect(tabMessages('setSelectionControlsVisibility')).toHaveLength(1);
     });
 
+    it('carries the one-click setting to the tabs', async () => {
+      openTabs(PAGE);
+
+      await send({ action: 'saveSettings', oneClickHighlightEnabled: true });
+
+      expect(tabMessages('setOneClickHighlight')).toHaveLength(1);
+    });
+
     // The mirror to sync is deliberately not awaited: the local write has already
     // happened, so a sync that fails must not turn into a failed save.
     it('still reports success when the settings could not be mirrored to sync', async () => {

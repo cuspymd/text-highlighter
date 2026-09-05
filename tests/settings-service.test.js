@@ -224,6 +224,13 @@ describe('settings-service', () => {
       expect(chrome.storage.local.set).toHaveBeenCalledWith({ selectionControlsVisible: false });
     });
 
+    it('should persist oneClickHighlightEnabled locally and return colorsChanged: false', async () => {
+      const result = await applySettingsFromSync({ oneClickHighlightEnabled: true });
+
+      expect(result.colorsChanged).toBe(false);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({ oneClickHighlightEnabled: true });
+    });
+
     it('should return colorsChanged: false when settings contain no color data', async () => {
       const result = await applySettingsFromSync({});
       expect(result.colorsChanged).toBe(false);
@@ -321,6 +328,16 @@ describe('settings-service', () => {
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
         3,
         { action: 'setSelectionControlsVisibility', visible: false },
+      );
+    });
+
+    it('should send setOneClickHighlight to every tab', async () => {
+      chrome.tabs.query.mockResolvedValueOnce([{ id: 4 }]);
+      await broadcastSettingsToTabs({ oneClickHighlightEnabled: true });
+
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+        4,
+        { action: 'setOneClickHighlight', enabled: true },
       );
     });
 

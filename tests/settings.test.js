@@ -141,6 +141,53 @@ describe('settings', () => {
       });
     });
 
+
+    // One-click highlighting is opt-in: an existing user's icon keeps opening
+    // the palette until they ask for something else.
+    it('leaves one-click highlighting off when nothing has been stored', async () => {
+      await openSettings();
+
+      expect(byId('one-click-highlight-toggle').checked).toBe(false);
+    });
+
+    it('restores the stored one-click preference', async () => {
+      chrome.storage.local.get.mockResolvedValue({ oneClickHighlightEnabled: true });
+      await openSettings();
+
+      expect(byId('one-click-highlight-toggle').checked).toBe(true);
+    });
+
+    it('saves the one-click preference when it is toggled', async () => {
+      await openSettings();
+
+      const toggle = byId('one-click-highlight-toggle');
+      toggle.checked = true;
+      toggle.dispatchEvent(new Event('change'));
+      await flush();
+
+      expect(lastMessage('saveSettings')).toEqual({
+        action: 'saveSettings',
+        oneClickHighlightEnabled: true,
+      });
+    });
+
+    // Without the selection icon there is nothing for a one-click press to
+    // happen on, so the row says so rather than accepting a dead setting.
+    it('disables the one-click row while the selection icon is turned off', async () => {
+      chrome.storage.local.get.mockResolvedValue({ selectionControlsVisible: false });
+      await openSettings();
+
+      expect(byId('one-click-highlight-toggle').disabled).toBe(true);
+      expect(byId('one-click-highlight-row').classList.contains('is-disabled')).toBe(true);
+
+      const selectionControls = byId('selection-controls-toggle');
+      selectionControls.checked = true;
+      selectionControls.dispatchEvent(new Event('change'));
+      await flush();
+
+      expect(byId('one-click-highlight-toggle').disabled).toBe(false);
+      expect(byId('one-click-highlight-row').classList.contains('is-disabled')).toBe(false);
+    });
     it('hides the selection-controls row where windows is unavailable', async () => {
       await withoutBrowserApi('windows', async () => {
         await openSettings();

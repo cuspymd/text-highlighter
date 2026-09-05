@@ -15,7 +15,7 @@ function emptyBlob(overrides = {}) {
   return {
     version: 1,
     updatedAt: 0,
-    settings: { customColors: [], minimapVisible: true, selectionControlsVisible: true, shortcutColorMap: null, updatedAt: 0 },
+    settings: { customColors: [], minimapVisible: true, selectionControlsVisible: true, oneClickHighlightEnabled: false, shortcutColorMap: null, updatedAt: 0 },
     pages: {},
     deletedUrls: {},
     ...overrides,

@@ -68,6 +68,7 @@ const NEIGHBOUR_GLOBALS = {
     'hideHighlightControls',
     'refreshHighlightControlsColors',
     'setSelectionControlsVisibility',
+    'setOneClickHighlightEnabled',
     'initializeSelectionControls',
   ],
   minimap: [
