@@ -124,22 +124,36 @@ export async function saveSettingsToSync() {
     customColors: result.customColors || [],
     minimapVisible: result.minimapVisible !== undefined ? result.minimapVisible : true,
     selectionControlsVisible: result.selectionControlsVisible !== undefined ? result.selectionControlsVisible : true,
-    oneClickHighlightEnabled: result.oneClickHighlightEnabled === true,
   };
+
+  // storage.sync.set replaces the whole settings object, so a key this device
+  // has no value for must not go out as its default: that would push "off" over
+  // a setting another device turned on. Until this device has an opinion of its
+  // own, whatever sync already holds stands. Every profile that upgrades into
+  // the one-click setting starts out without it, which is what makes this reach
+  // further than the shortcut map it was written for.
+  //
+  // The local value arrives the ordinary way - applySettingsFromSync writes it
+  // when the sync change lands - and from then on it is the one that goes out.
+  const localOneClick = result.oneClickHighlightEnabled;
+  let remoteSettings = null;
+  if (localOneClick === undefined || !result.shortcutColorMap) {
+    try {
+      const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
+      remoteSettings = syncResult[SYNC_SETTINGS_KEY] || null;
+    } catch (e) {
+      remoteSettings = null;
+    }
+  }
+
+  settings.oneClickHighlightEnabled = localOneClick !== undefined
+    ? localOneClick === true
+    : remoteSettings !== null && remoteSettings.oneClickHighlightEnabled === true;
 
   if (result.shortcutColorMap) {
     settings.shortcutColorMap = result.shortcutColorMap;
   } else {
-    try {
-      const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
-      if (syncResult[SYNC_SETTINGS_KEY] && syncResult[SYNC_SETTINGS_KEY].shortcutColorMap) {
-        settings.shortcutColorMap = syncResult[SYNC_SETTINGS_KEY].shortcutColorMap;
-      } else {
-        settings.shortcutColorMap = null;
-      }
-    } catch (e) {
-      settings.shortcutColorMap = null;
-    }
+    settings.shortcutColorMap = (remoteSettings && remoteSettings.shortcutColorMap) || null;
   }
 
   // Recorded regardless of storage.sync outcome so the cloud sync blob (which has no

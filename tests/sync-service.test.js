@@ -224,6 +224,40 @@ describe('sync-service', () => {
         }),
       );
     });
+
+    // A profile that upgraded into the setting has no local value for it. What
+    // goes out then is what sync already holds - a `false` written over another
+    // device's `true` would disable it everywhere, because the whole settings
+    // object is replaced by this write.
+    it('should keep the synced one-click value when this device has none of its own', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ minimapVisible: true });
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { oneClickHighlightEnabled: true, shortcutColorMap: null },
+      });
+
+      await saveSettingsToSync();
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({ oneClickHighlightEnabled: true }),
+        }),
+      );
+    });
+
+    it('should send this device own one-click value over the synced one', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ oneClickHighlightEnabled: false });
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { oneClickHighlightEnabled: true, shortcutColorMap: null },
+      });
+
+      await saveSettingsToSync();
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({ oneClickHighlightEnabled: false }),
+        }),
+      );
+    });
   });
 
   // A fresh install pulls what sync already knows before it writes anything
