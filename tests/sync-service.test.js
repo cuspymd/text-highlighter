@@ -8,6 +8,7 @@ import {
   cleanupEmptyHighlightData,
   clearAllSyncedHighlights,
   initSyncListener,
+  migrateLocalToSync,
   toSyncHighlightGroup,
 } from '../background/sync-service.js';
 
@@ -220,6 +221,48 @@ describe('sync-service', () => {
             minimapVisible: true,
             selectionControlsVisible: true,
           }),
+        }),
+      );
+    });
+  });
+
+  // A fresh install pulls what sync already knows before it writes anything
+  // back. A setting the merge forgets is read back as its default and pushed
+  // over the value the other devices are using, so this walks the whole round
+  // trip against a local store that answers with what was written to it.
+  describe('migrateLocalToSync', () => {
+    it('keeps a synced one-click setting instead of pushing this device default over it', async () => {
+      // A device that has never had the setting: nothing local, no migration flag.
+      const local = {};
+      chrome.storage.local.get.mockImplementation(async (keys) => {
+        if (keys === null) return { ...local };
+        const wanted = Array.isArray(keys) ? keys : [keys];
+        return Object.fromEntries(
+          wanted.filter(key => key in local).map(key => [key, local[key]])
+        );
+      });
+      chrome.storage.local.set.mockImplementation(async (items) => {
+        Object.assign(local, items);
+      });
+      chrome.storage.sync.get.mockImplementation(async (key) => (
+        key === 'settings'
+          ? {
+            settings: {
+              customColors: [],
+              minimapVisible: true,
+              selectionControlsVisible: true,
+              oneClickHighlightEnabled: true,
+            },
+          }
+          : {}
+      ));
+
+      await migrateLocalToSync();
+
+      expect(local.oneClickHighlightEnabled).toBe(true);
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({ oneClickHighlightEnabled: true }),
         }),
       );
     });

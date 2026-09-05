@@ -362,6 +362,7 @@ export async function migrateLocalToSync() {
         STORAGE_KEYS.CUSTOM_COLORS,
         STORAGE_KEYS.MINIMAP_VISIBLE,
         STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
+        STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
         STORAGE_KEYS.SHORTCUT_COLOR_MAP,
       ]);
 
@@ -373,6 +374,9 @@ export async function migrateLocalToSync() {
         selectionControlsVisible: syncSettings.selectionControlsVisible !== undefined
           ? syncSettings.selectionControlsVisible
           : (localResult.selectionControlsVisible !== undefined ? localResult.selectionControlsVisible : true),
+        oneClickHighlightEnabled: syncSettings.oneClickHighlightEnabled !== undefined
+          ? syncSettings.oneClickHighlightEnabled
+          : localResult.oneClickHighlightEnabled === true,
       };
 
       if (syncSettings.shortcutColorMap !== undefined && syncSettings.shortcutColorMap !== null) {

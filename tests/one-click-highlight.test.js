@@ -70,8 +70,8 @@ describe('one-click highlighting', () => {
     resetContentScriptEnvironment();
   });
 
-  /** Select a fresh paragraph and press the icon the selection raises. */
-  async function selectAndPressIcon(text) {
+  /** Select a fresh paragraph and let the selection raise its icon. */
+  async function raiseIconOver(text) {
     // A palette bar left open from an earlier press keeps the icon from being
     // shown at all; a click outside it is what dismisses it in the page too.
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -88,12 +88,23 @@ describe('one-click highlighting', () => {
 
     const icon = document.querySelector('.text-highlighter-selection-icon');
     expect(icon).not.toBeNull();
-    const swatch = icon.querySelector('.text-highlighter-selection-icon-swatch');
+    return icon;
+  }
+
+  function iconSwatchColor() {
+    const swatch = document.querySelector('.text-highlighter-selection-icon-swatch');
+    return swatch ? swatch.style.backgroundColor : null;
+  }
+
+  /** Raise the icon over a fresh paragraph and press it. */
+  async function selectAndPressIcon(text) {
+    const icon = await raiseIconOver(text);
+    const swatch = iconSwatchColor();
 
     icon.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 40, clientY: 40 }));
     await jest.advanceTimersByTimeAsync(20);
 
-    return { swatch: swatch ? swatch.style.backgroundColor : null };
+    return { swatch };
   }
 
   function selectionBar() {
@@ -138,13 +149,17 @@ describe('one-click highlighting', () => {
     expect(lastRecordedColor()).toBe('#123456');
   });
 
-  it('does not write the same colour again while it is still the last one', () => {
+  it('records the colour again even when this tab used it before', () => {
+    // Another tab recorded something else in between. A write skipped because
+    // this tab painted the same colour twice would leave that other value
+    // standing as "the last one used".
+    storageWatcher({ lastUsedColor: { newValue: '#FFFF00' } }, 'local');
     chrome.storage.local.set.mockClear();
 
     const span = document.querySelector('.text-highlighter-extension');
     window.changeHighlightColor(span, '#123456');
 
-    expect(lastRecordedColor()).toBeNull();
+    expect(lastRecordedColor()).toBe('#123456');
   });
 
   it('offers the colour another tab painted with', async () => {
@@ -166,6 +181,27 @@ describe('one-click highlighting', () => {
 
     expect(swatch).toBe('rgb(255, 255, 0)');
     expect(lastSavedGroup().color).toBe('#FFFF00');
+  });
+
+  // The icon promises a colour and an action. Both can change while it is up -
+  // the setting from the settings page, the colour from another tab - and an
+  // icon left as it was would promise the wrong one.
+  it('redraws an icon that is already up when the setting is switched', async () => {
+    await raiseIconOver('switched while up');
+    expect(iconSwatchColor()).not.toBeNull();
+
+    await page.sendToContentScript({ action: 'setOneClickHighlight', enabled: false });
+    expect(iconSwatchColor()).toBeNull();
+
+    await page.sendToContentScript({ action: 'setOneClickHighlight', enabled: true });
+    expect(iconSwatchColor()).not.toBeNull();
+  });
+
+  it('redraws an icon that is already up when another tab paints', async () => {
+    await raiseIconOver('recoloured while up');
+    storageWatcher({ lastUsedColor: { newValue: '#AAFFAA' } }, 'local');
+
+    expect(iconSwatchColor()).toBe('rgb(170, 255, 170)');
   });
 
   it('opens the palette again once the setting is turned off', async () => {
@@ -197,7 +233,7 @@ describe('one-click highlighting', () => {
 
     const { swatch } = await selectAndPressIcon('back on paragraph');
 
-    expect(swatch).toBe('rgb(255, 255, 0)');
+    expect(swatch).toBe('rgb(170, 255, 170)');
     expect(selectionBar()).toBeNull();
   });
 });

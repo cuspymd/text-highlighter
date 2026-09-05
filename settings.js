@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   minimapToggle.addEventListener('change', async () => {
-    await browserAPI.runtime.sendMessage({
+    await sendToBackground({
       action: 'saveSettings',
       minimapVisible: minimapToggle.checked
     });
@@ -77,14 +77,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   selectionControlsToggle.addEventListener('change', async () => {
     syncOneClickAvailability();
-    await browserAPI.runtime.sendMessage({
+    await sendToBackground({
       action: 'saveSettings',
       selectionControlsVisible: selectionControlsToggle.checked
     });
   });
 
   oneClickToggle.addEventListener('change', async () => {
-    await browserAPI.runtime.sendMessage({
+    await sendToBackground({
       action: 'saveSettings',
       oneClickHighlightEnabled: oneClickToggle.checked
     });

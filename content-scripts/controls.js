@@ -784,6 +784,9 @@ function appendColorSeparator(container) {
 
 // -------- Helper: regenerate color buttons inside a container --------
 function refreshHighlightControlsColors() {
+  // The selection icon reads the palette too, so a palette change has to reach
+  // it whether or not a highlight bar is open.
+  applySelectionIconAppearance();
   if (!highlightControlsContainer) return;
   const colorButtonsContainer = highlightControlsContainer.querySelector('.text-highlighter-color-buttons');
   if (!colorButtonsContainer) return;
@@ -916,6 +919,7 @@ function getOneClickColor() {
 function setOneClickHighlightEnabled(enabled) {
   oneClickHighlightEnabled = enabled === true;
   debugLog('One-click highlight enabled:', oneClickHighlightEnabled);
+  applySelectionIconAppearance();
 }
 
 // The last used colour is written by whichever tab painted last, so this tab
@@ -930,6 +934,7 @@ function watchLastUsedColor() {
     if (areaName && areaName !== 'local') return;
     if (changes && changes.lastUsedColor) {
       lastUsedColorValue = changes.lastUsedColor.newValue || null;
+      applySelectionIconAppearance();
     }
   });
 }
@@ -1199,6 +1204,35 @@ function handleSelectionChange() {
   }
 }
 
+// The icon advertises what its press will do, and both inputs behind that can
+// change while it is on screen: the setting, from the settings page in another
+// tab, and the colour, from a highlight painted in one. Redrawing it in place
+// keeps the promise honest without taking the icon away from under the cursor.
+//
+// In one-click mode the colour goes on a strip under the logo rather than
+// behind it: a custom colour can be any value, and the logo has to stay
+// legible over all of them.
+function applySelectionIconAppearance() {
+  if (!selectionIcon) return;
+
+  const existingSwatch = selectionIcon.querySelector('.text-highlighter-selection-icon-swatch');
+  if (existingSwatch) existingSwatch.remove();
+
+  const oneClickColor = getOneClickColor();
+  if (!oneClickColor) {
+    selectionIcon.classList.remove('one-click');
+    selectionIcon.title = getMessage('highlightText');
+    return;
+  }
+
+  selectionIcon.classList.add('one-click');
+  const swatch = document.createElement('div');
+  swatch.className = 'text-highlighter-selection-icon-swatch';
+  swatch.style.backgroundColor = oneClickColor.color;
+  selectionIcon.appendChild(swatch);
+  selectionIcon.title = `${getMessage('highlightText')} (${colorDisplayName(oneClickColor)})`;
+}
+
 // Show selection icon near mouse position
 function showSelectionIcon(mouseX, mouseY) {
   if (selectionControlsContainer) return;
@@ -1222,21 +1256,7 @@ function showSelectionIcon(mouseX, mouseY) {
   iconImg.style.height = '19px';
   selectionIcon.appendChild(iconImg);
 
-  // In one-click mode the press paints instead of opening the palette, so the
-  // icon has to say which colour it will paint with before it is pressed. The
-  // colour goes on a strip under the logo rather than behind it: a custom
-  // colour can be any value, and the logo has to stay legible over all of them.
-  const oneClickColor = getOneClickColor();
-  if (oneClickColor) {
-    selectionIcon.classList.add('one-click');
-    const swatch = document.createElement('div');
-    swatch.className = 'text-highlighter-selection-icon-swatch';
-    swatch.style.backgroundColor = oneClickColor.color;
-    selectionIcon.appendChild(swatch);
-    selectionIcon.title = `${getMessage('highlightText')} (${colorDisplayName(oneClickColor)})`;
-  } else {
-    selectionIcon.title = getMessage('highlightText');
-  }
+  applySelectionIconAppearance();
 
   positionSelectionIcon(mouseX, mouseY);
 

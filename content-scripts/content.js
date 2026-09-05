@@ -374,13 +374,11 @@ function removeHighlight(highlightElement = null) {
 // statement of intent. The value is a hex, not a colour id - see
 // resolveLastUsedColor() in color-core.js for why.
 //
-// Kept here as well as written to storage so a page that highlights repeatedly
-// does not write the same value over and over.
-let lastRecordedColor = null;
-
+// Every application writes, including one that repeats the colour this tab used
+// before: another tab may have recorded something else since, and skipping the
+// write would leave that stale value as "the last one used".
 function rememberLastUsedColor(color) {
-  if (!color || color === lastRecordedColor) return;
-  lastRecordedColor = color;
+  if (!color) return;
 
   try {
     const pending = browserAPI.storage.local.set({ lastUsedColor: color });
