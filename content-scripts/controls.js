@@ -27,6 +27,8 @@ let lastUsedColorValue = null;
 let lastUsedColorWatcherAdded = false;
 
 const SELECTION_SCROLL_RESTORE_DELAY_MS = 220;
+// How long a synthetic click can trail the press that caused it.
+const GHOST_CLICK_GUARD_MS = 300;
 
 // Mobile platform detection
 let isMobilePlatform = false;
@@ -1204,6 +1206,36 @@ function handleSelectionChange() {
   }
 }
 
+// Firefox Mobile fires a synthetic click at the pointerdown coordinates even
+// after preventDefault(). A press that opens the palette has that bar sitting
+// where the icon was, and it ignores clicks for 300 ms; a one-click press
+// leaves the page itself under the pointer, so the same synthetic click would
+// reach whatever is there - a link, a button - and the user who meant to
+// highlight a phrase ends up somewhere else.
+//
+// Only clicks landing inside the icon's own box are swallowed, and only for as
+// long as the ghost takes to arrive: a real click anywhere else, or a moment
+// later, still goes to the page.
+function swallowGhostClickOver(rect) {
+  if (!rect) return;
+
+  const isInside = (e) => (
+    e.clientX >= rect.left && e.clientX <= rect.right &&
+    e.clientY >= rect.top && e.clientY <= rect.bottom
+  );
+
+  const swallow = (e) => {
+    if (!isInside(e)) return;
+    e.stopPropagation();
+    e.preventDefault();
+  };
+
+  document.addEventListener('click', swallow, true);
+  setTimeout(() => {
+    document.removeEventListener('click', swallow, true);
+  }, GHOST_CLICK_GUARD_MS);
+}
+
 // The icon advertises what its press will do, and both inputs behind that can
 // change while it is on screen: the setting, from the settings page in another
 // tab, and the colour, from a highlight painted in one. Redrawing it in place
@@ -1268,7 +1300,10 @@ function showSelectionIcon(mouseX, mouseY) {
   const activateIcon = (clientX, clientY) => {
     const color = getOneClickColor();
     if (color) {
+      // Read before the paint: it takes the icon down with it.
+      const iconRect = selectionIcon ? selectionIcon.getBoundingClientRect() : null;
       createHighlightWithColor(color.color);
+      swallowGhostClickOver(iconRect);
       return;
     }
     showSelectionControls(clientX, clientY);

@@ -111,6 +111,24 @@ function pageTimestamp(page) {
   return Number.isNaN(t) ? 0 : t;
 }
 
+// The newer settings object wins, but a field it does not carry is not a
+// decision to clear that field: a device with no value for a setting leaves it
+// out (see buildLocalBlob), and the value the other side does have has to
+// survive the merge - otherwise the cloud record of it is gone, and the next
+// device to pair reads no value at all.
+//
+// The newer object is returned as it is when it lacks nothing, because
+// runCloudSync compares identity to decide whether the settings have to be
+// applied and broadcast at all.
+function fillAbsentSettings(newer, older) {
+  const absent = Object.keys(older).filter(key => !(key in newer));
+  if (absent.length === 0) return newer;
+
+  const filled = { ...newer };
+  absent.forEach(key => { filled[key] = older[key]; });
+  return filled;
+}
+
 /**
  * Merge local and remote blobs. Per-page highlight merging reuses mergeHighlights
  * (the same conflict resolution used by browser storage.sync). Page-level tombstones
@@ -150,7 +168,11 @@ export function mergeBlobs(localBlob, remoteBlob) {
 
   const localSettingsAt = localBlob.settings.updatedAt || 0;
   const remoteSettingsAt = remoteBlob.settings.updatedAt || 0;
-  const settings = remoteSettingsAt > localSettingsAt ? remoteBlob.settings : localBlob.settings;
+  const remoteIsNewer = remoteSettingsAt > localSettingsAt;
+  const settings = fillAbsentSettings(
+    remoteIsNewer ? remoteBlob.settings : localBlob.settings,
+    remoteIsNewer ? localBlob.settings : remoteBlob.settings,
+  );
 
   return {
     version: 1,

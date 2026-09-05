@@ -183,6 +183,48 @@ describe('one-click highlighting', () => {
     expect(lastSavedGroup().color).toBe('#FFFF00');
   });
 
+  // Firefox Mobile sends a synthetic click after the pointerdown that painted.
+  // With the palette the bar was there to absorb it; a one-click press leaves
+  // the page under the pointer, where that click would follow a link.
+  it('swallows the synthetic click the press leaves behind', async () => {
+    const followed = jest.fn();
+    await selectAndPressIcon('ghost click paragraph');
+    document.getElementById('para').addEventListener('click', followed);
+
+    // jsdom gives the icon a zero box at the origin, which is where the ghost
+    // click is aimed.
+    const ghost = new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 0, clientY: 0 });
+    document.getElementById('para').dispatchEvent(ghost);
+
+    expect(ghost.defaultPrevented).toBe(true);
+    expect(followed).not.toHaveBeenCalled();
+  });
+
+  it('lets a click somewhere else through', async () => {
+    const followed = jest.fn();
+    await selectAndPressIcon('real click paragraph');
+    document.getElementById('para').addEventListener('click', followed);
+
+    const real = new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 400, clientY: 400 });
+    document.getElementById('para').dispatchEvent(real);
+
+    expect(real.defaultPrevented).toBe(false);
+    expect(followed).toHaveBeenCalled();
+  });
+
+  it('stops swallowing once the ghost can no longer arrive', async () => {
+    const followed = jest.fn();
+    await selectAndPressIcon('later click paragraph');
+    document.getElementById('para').addEventListener('click', followed);
+    await jest.advanceTimersByTimeAsync(400);
+
+    const later = new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 0, clientY: 0 });
+    document.getElementById('para').dispatchEvent(later);
+
+    expect(later.defaultPrevented).toBe(false);
+    expect(followed).toHaveBeenCalled();
+  });
+
   // The icon promises a colour and an action. Both can change while it is up -
   // the setting from the settings page, the colour from another tab - and an
   // icon left as it was would promise the wrong one.
