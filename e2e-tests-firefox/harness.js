@@ -56,6 +56,20 @@ export async function startHarness() {
   }
 
   const { server, port } = await servePages();
+  let driver = null;
+  try {
+    return await buildHarness(server, port, handle => { driver = handle; });
+  } catch (error) {
+    // Nothing has been handed back yet, so nothing else can close these. A
+    // listening socket alone is enough to keep `node --test` alive long after
+    // it has printed the failure.
+    await driver?.quit().catch(() => {});
+    await new Promise(resolve => server.close(resolve));
+    throw error;
+  }
+}
+
+async function buildHarness(server, port, keepDriver) {
   const options = new firefox.Options();
   if (process.env.FIREFOX_BINARY) options.setBinary(process.env.FIREFOX_BINARY);
   if (!process.env.HEADFUL) options.addArguments('-headless');
@@ -68,6 +82,7 @@ export async function startHarness() {
     .setFirefoxService(service)
     .setFirefoxOptions(options)
     .build();
+  keepDriver(driver);
   await driver.manage().setTimeouts({ script: 20_000, pageLoad: 30_000, implicit: 0 });
 
   const pageTab = (await driver.getAllWindowHandles())[0];
@@ -118,16 +133,34 @@ export async function startHarness() {
       return driver.executeScript(script, ...args);
     },
 
-    /** Polls a page-context script until it returns something truthy. */
-    async waitInPage(script, timeoutMs = 10_000) {
+    /** Polls until the script returns something truthy, then hands that back. */
+    async waitUntil(produce, timeoutMs = 10_000) {
       const deadline = Date.now() + timeoutMs;
       let last = null;
       while (Date.now() < deadline) {
-        last = await harness.inPage(script);
+        last = await produce();
         if (last) return last;
         await new Promise(resolve => setTimeout(resolve, 200));
       }
       return last;
+    },
+
+    async waitInPage(script, ...args) {
+      return harness.waitUntil(() => harness.inPage(script, ...args));
+    },
+
+    async waitInExtension(script, ...args) {
+      return harness.waitUntil(() => harness.inExtension(script, ...args));
+    },
+
+    /**
+     * Reloads the page under test. Refreshing acts on whatever window the
+     * driver is standing on, which is rarely the page tab after a round trip
+     * through the extension.
+     */
+    async reloadPage() {
+      await driver.switchTo().window(harness.pageTab);
+      await driver.navigate().refresh();
     },
 
     /**
@@ -148,13 +181,13 @@ export async function startHarness() {
 
     async stop() {
       await driver.quit().catch(() => {});
+      server.closeAllConnections?.();
       await new Promise(resolve => server.close(resolve));
     },
   };
 
   harness.extensionTab = await harness.findTab(url => url.includes('/onboarding.html'), 20_000);
   if (!harness.extensionTab) {
-    await harness.stop();
     throw new Error('The extension never opened its guide tab, so there is no privileged context to drive it from.');
   }
 

@@ -77,7 +77,20 @@ describe('Firefox smoke', { concurrency: 1, timeout: 120_000 }, () => {
     const drawn = await harness.waitInPage(readHighlights);
     assert.deepEqual(drawn, [{ text: expected, background: 'rgb(255, 255, 0)' }]);
 
-    await harness.driver.navigate().refresh();
+    // The content script answers the message as soon as the span is drawn and
+    // fires the save without awaiting it, so a reload timed off the DOM alone
+    // can outrun storage and blame the restore for a save that never landed.
+    const saved = await harness.waitInExtension(function (done) {
+      browser.storage.local.get(null).then(stored => {
+        const key = Object.keys(stored)
+          .find(name => name.includes('/test-page.html') && !name.endsWith('_meta'));
+        const groups = key ? stored[key] : null;
+        done(groups && groups.length ? groups.length : null);
+      }, () => done(null));
+    });
+    assert.equal(saved, 1, 'the highlight never reached storage, so a reload would prove nothing');
+
+    await harness.reloadPage();
     const restored = await harness.waitInPage(readHighlights);
     assert.deepEqual(restored, [{ text: expected, background: 'rgb(255, 255, 0)' }],
       'the highlight was not restored after a reload');
