@@ -64,14 +64,33 @@ Add new skills to `.agents/skills/<name>/SKILL.md` only; the link exposes them a
 
 ### Testing
 
-Run E2E tests using Playwright:
+Three suites, run separately:
 
 ```bash
-# Install Playwright browsers (required before first run)
-npx playwright install
+# Unit and integration tests (Jest, jsdom)
+npm test
 
-# Run tests
+# End-to-end tests on Chromium (Playwright)
+npx playwright install   # browsers, required before the first run
 npx playwright test
+
+# Firefox smoke tests (Selenium + geckodriver)
+npm run test:e2e:firefox
+```
+
+`npm test` and the Playwright suite run in CI on every push. The Firefox suite
+does not: it is three checks that confirm the Firefox build comes up, applies a
+highlight, restores it after a reload, and opens its popup — run it by hand
+before publishing a Firefox release. It needs Firefox installed locally
+(geckodriver is downloaded automatically), builds `dist-firefox/` itself, and
+takes a few seconds.
+
+```bash
+# Watch it run instead of going headless
+HEADFUL=1 npm run test:e2e:firefox
+
+# Point at a Firefox that is not in the default location
+FIREFOX_BINARY="/path/to/firefox" npm run test:e2e:firefox
 ```
 
 ### Testing on Firefox for Android

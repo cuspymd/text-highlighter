@@ -12,6 +12,7 @@ extension.
 ### Testing
 - `npm test` - Run Jest unit/integration tests (`tests/`)
 - `npx playwright test` - Run Playwright E2E tests (`e2e-tests/`)
+- `npm run test:e2e:firefox` - Run the Firefox smoke suite (`e2e-tests-firefox/`) by hand before a Firefox release
 
 ### Development Builds
 - `npm run deploy` - Build both Chrome (`dist/`) and Firefox (`dist-firefox/`) extension files
@@ -54,8 +55,9 @@ Chrome MV3 returns a promise too, so the promise form costs nothing there.
 For the same reason, `browserAPI.runtime.lastError` is Chrome-only bookkeeping:
 with promises, a missing receiver arrives as a rejection. Catch it instead.
 
-This is easy to get wrong because the E2E suite runs on Chromium only, where the
-callback form still works - a Chrome-green test run says nothing about Firefox.
+This is easy to get wrong because the main E2E suite runs on Chromium only,
+where the callback form still works - a Chrome-green test run still says next to
+nothing about Firefox.
 
 So tab messages do not go through `browserAPI` directly. Send them with
 `sendMessageToTab(tabId, message)` from `shared/tab-broadcast.js`, which awaits
@@ -145,6 +147,17 @@ added there reaches all of them.
 Release builds force debug off through `scripts/version-deploy.cjs` by rewriting
 `shared/logger.js` and `content-scripts/content-common.js`. Keep the debug flag
 declarations in those two files in a shape that script can still match.
+
+## Firefox smoke suite
+
+`e2e-tests-firefox/` is three Selenium tests that answer one question before a
+Firefox release: does the Firefox build come up at all. It is deliberately not in
+CI and not where new coverage goes - anything that is the same code on both
+browsers belongs in `tests/` or `e2e-tests/`. Why it cannot be a Playwright
+project, and the three Firefox rules that shape it, are in `harness.js`.
+
+Firefox for Android is not covered by any of it, and several past Firefox bugs
+lived there.
 
 ## Data and Storage
 
