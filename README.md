@@ -115,12 +115,20 @@ adb logcat -s GeckoConsole
 
 #### Development Build
 
-##### For Chrome
-
-Run the deployment script to copy only the required files to the dist directory for loading into Chrome:
+Run the deployment script to build both Chrome and Firefox extension files at once:
 
 ```bash
 npm run deploy
+```
+
+To build a single browser instead, use `npm run deploy:chrome` or `npm run deploy:firefox`.
+
+##### For Chrome
+
+Run the Chrome-specific deployment script to copy only the required files to the dist directory for loading into Chrome:
+
+```bash
+npm run deploy:chrome
 ```
 
 To load the deployed extension in Chrome:

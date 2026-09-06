@@ -14,7 +14,8 @@ extension.
 - `npx playwright test` - Run Playwright E2E tests (`e2e-tests/`)
 
 ### Development Builds
-- `npm run deploy` - Build Chrome extension files into `dist/`
+- `npm run deploy` - Build both Chrome (`dist/`) and Firefox (`dist-firefox/`) extension files
+- `npm run deploy:chrome` - Build Chrome extension files into `dist/`
 - `npm run deploy:firefox` - Build Firefox extension files into `dist-firefox/`
 
 ### Version Release Builds
