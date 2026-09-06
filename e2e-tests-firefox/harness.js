@@ -92,6 +92,7 @@ async function buildHarness(server, port, keepDriver) {
     driver,
     baseUrl: `http://127.0.0.1:${port}`,
     pageTab,
+    pageUrl: null,
     extensionTab: null,
 
     /** Switches to the tab and returns its URL, tolerating tabs that closed themselves. */
@@ -124,8 +125,37 @@ async function buildHarness(server, port, keepDriver) {
     },
 
     async openPage(name) {
+      harness.pageUrl = `${harness.baseUrl}/${name}`;
       await driver.switchTo().window(harness.pageTab);
-      await driver.get(`${harness.baseUrl}/${name}`);
+      await driver.get(harness.pageUrl);
+    },
+
+    /** Sends a message to the page under test, the way the background would. */
+    async sendToPage(message) {
+      return harness.inExtension(function (pageUrl, payload, done) {
+        browser.tabs.query({})
+          .then(tabs => {
+            const target = tabs.find(tab => tab.url === pageUrl);
+            if (!target) return done({ error: 'the page under test is not visible to the extension' });
+            return browser.tabs.sendMessage(target.id, payload)
+              .then(response => done({ ok: true, response }));
+          })
+          .catch(error => done({ error: String(error && error.message) }));
+      }, harness.pageUrl, message);
+    },
+
+    /**
+     * Waits until the page under test has a receiver. Content scripts run at
+     * document_idle, which is allowed to land as late as just after the load
+     * event - so a page the driver already considers loaded can still have no
+     * listener, and the first message would reject with nothing to blame.
+     * getRestoredGroupIds only reads, so pinging with it changes nothing.
+     */
+    async waitForContentScript() {
+      return harness.waitUntil(async () => {
+        const result = await harness.sendToPage({ action: 'getRestoredGroupIds' });
+        return result.ok ? result : null;
+      });
     },
 
     async inPage(script, ...args) {

@@ -38,6 +38,8 @@ describe('Firefox smoke', { concurrency: 1, timeout: 120_000 }, () => {
 
   it('highlights a selection and restores it after a reload', async () => {
     await harness.openPage('test-page.html');
+    assert.ok(await harness.waitForContentScript(), 'the content script never came up in the page');
+
     const expected = 'This is a sample paragraph with some text that can be highlighted.';
 
     await harness.inPage(function () {
@@ -53,17 +55,8 @@ describe('Firefox smoke', { concurrency: 1, timeout: 120_000 }, () => {
     // The promise form of tabs.sendMessage is the call that goes silently dead
     // on Firefox when someone reaches for a callback, so drive the highlight
     // through it rather than through the selection controls.
-    const sent = await harness.inExtension(function (done) {
-      browser.tabs.query({})
-        .then(tabs => {
-          const target = tabs.find(tab => tab.url && tab.url.includes('/test-page.html'));
-          if (!target) return done({ error: 'the page under test is not visible to the extension' });
-          return browser.tabs.sendMessage(target.id, { action: 'highlight', color: 'yellow' })
-            .then(() => done({ ok: true }));
-        })
-        .catch(error => done({ error: String(error && error.message) }));
-    });
-    assert.deepEqual(sent, { ok: true });
+    const sent = await harness.sendToPage({ action: 'highlight', color: 'yellow' });
+    assert.ok(sent.ok, `the highlight message never reached the content script: ${sent.error}`);
 
     const readHighlights = function () {
       const spans = [...document.querySelectorAll('span.text-highlighter-extension')];
