@@ -111,6 +111,15 @@ describe('Firefox smoke', { concurrency: 1, timeout: 120_000 }, () => {
       done(browser.i18n.getMessage('popupTitle'));
     });
     await harness.driver.switchTo().window(popup);
+
+    // popup.html carries the English strings as static markup and popup.js
+    // swaps them for the locale's on DOMContentLoaded, in the same pass that
+    // registers the settings click. Reading either before that finishes tests
+    // the markup rather than the popup: on an English browser the heading
+    // matches without a line of script having run, and on any other one it
+    // matches only if the timing happens to work out.
+    assert.ok(await harness.waitForPageReady(), 'the popup never finished loading');
+
     const heading = await harness.driver.findElement(By.css('h1')).getText();
     assert.equal(heading, expectedTitle);
 

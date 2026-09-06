@@ -154,6 +154,18 @@ async function buildHarness(server, port, keepDriver) {
     },
 
     /**
+     * Waits for the tab the driver is standing on to finish loading. A tab the
+     * extension opened is switched to, not navigated to, so none of the
+     * driver's page-load waiting applies: its URL matches as soon as the
+     * document commits, while the page's DOMContentLoaded work - the i18n pass
+     * and every click listener - may not have run. A click then lands on
+     * nothing and the failure surfaces somewhere else entirely.
+     */
+    async waitForPageReady() {
+      return harness.waitUntil(() => driver.executeScript(() => document.readyState === 'complete'));
+    },
+
+    /**
      * Reloads the page under test. Refreshing acts on whatever window the
      * driver is standing on, which is rarely the page tab after a round trip
      * through the extension.
@@ -190,6 +202,7 @@ async function buildHarness(server, port, keepDriver) {
   if (!harness.extensionTab) {
     throw new Error('The extension never opened its guide tab, so there is no privileged context to drive it from.');
   }
+  await harness.waitForPageReady();
 
   return harness;
 }
