@@ -38,6 +38,12 @@
                 <li><a href="#custom-colors">Custom Colors</a></li>
                 <li><a href="#minimap">Minimap</a></li>
                 <li><a href="#popup-menu">Popup Menu</a></li>
+                <li><a href="#settings">Settings Screen</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#settings-general">General</a></li>
+                        <li><a href="#settings-shortcuts">Shortcut Colors</a></li>
+                    </ul>
+                </li>
                 <li><a href="#pages-list">Highlighted Pages List</a></li>
                 <li><a href="#sync">Synchronization</a>
                     <ul class="toc-sublist">
@@ -52,6 +58,10 @@
             <section id="intro">
                 <h1>Marks: Text Highlighter User Guide</h1>
                 <p>Thank you for using Marks: Text Highlighter. This extension allows you to easily highlight, save, and manage text on web pages.</p>
+                <div class="note">
+                    <span class="note-title">Note</span>
+                    A short getting-started guide is also built into the extension. Open it from the <strong>"View Usage Guide"</strong> button on the settings screen, or from the <strong>"See the full guide"</strong> link that appears in the popup when the page has no highlights yet.
+                </div>
             </section>
 
             <section id="add-highlights">
@@ -73,12 +83,18 @@
                 </div>
 
                 <h3 id="add-shortcuts">3. Using Shortcuts</h3>
-                <p>Select text and use keyboard shortcuts to quickly apply colors.</p>
+                <p>Select text and use keyboard shortcuts to quickly apply colors. There are <strong>5 shortcut slots</strong>, and you can choose which color each slot uses on the <a href="#settings-shortcuts">settings screen</a>.</p>
                 <ul>
-                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : 1st Color (Default: Yellow)</li>
-                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : 2nd Color (Default: Cyan)</li>
-                    <li>... Number keys 1-4 correspond to the default colors.</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : Slot 1 (Default: Yellow)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : Slot 2 (Default: Green)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>3</kbd> : Slot 3 (Default: Blue)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>4</kbd> : Slot 4 (Default: Pink)</li>
+                    <li>Slot 5 (Default: Orange) : <strong>has no key combination assigned by default.</strong> Assign one yourself in the browser's shortcut settings before it will work.</li>
                 </ul>
+                <div class="note">
+                    <span class="note-title">Note</span>
+                    On macOS the combination is <kbd>Command</kbd> + <kbd>Shift</kbd> + number. The key combinations themselves are changed in the browser's shortcut settings (Chrome: <code>chrome://extensions/shortcuts</code>, Firefox: <code>about:addons</code>).
+                </div>
                 <div class="warning">
                     <span class="warning-title">Limitation</span>
                     Shortcuts are not supported on Firefox for Android.
@@ -91,7 +107,7 @@
                 <ul>
                     <li><strong>Individual Delete (Control UI):</strong> Click on an existing highlight to open the Control UI. Click the <strong>Trash icon</strong> to delete it.</li>
                     <li><strong>Individual Delete (Popup):</strong> Click the extension icon in the toolbar to open the Popup menu. In the "Current Page Highlights" list, click the <strong>X button</strong> next to the item you want to remove.</li>
-                    <li><strong>Clear Page (Popup):</strong> Click the <strong>"Remove all highlights"</strong> button at the bottom of the Popup menu to remove all highlights on the current page.</li>
+                    <li><strong>Clear Page (Popup):</strong> Click the <strong>"Delete All Highlights"</strong> button at the bottom of the Popup menu to remove all highlights on the current page.</li>
                     <li><strong>Delete Page (Pages List):</strong> In the Highlighted Pages List dashboard, click the <strong>"Delete"</strong> button on a specific page card to remove all data for that page.</li>
                     <li><strong>Delete All Data (Pages List):</strong> Click the <strong>Trash icon (Delete All Pages)</strong> in the top toolbar of the dashboard to delete all saved highlight data.</li>
                 </ul>
@@ -101,7 +117,7 @@
                 <h2>Custom Colors</h2>
 
                 <h3>Adding and Changing Colors</h3>
-                <p>You can add your own colors in addition to the 5 default ones.</p>
+                <p>You can add your own colors in addition to the 5 default ones (Yellow, Green, Blue, Pink, Orange). Add them straight from the page, or manage them on the settings screen.</p>
                 <ol>
                     <li>Click on an existing highlight to open the Control UI.</li>
                     <li>Click the <strong>+ button</strong> at the end of the color list.</li>
@@ -112,10 +128,14 @@
                     The + button does not appear in the Control UI when highlighting new text. It only appears when you click on an <strong>already created highlight</strong>.
                 </div>
 
-                <h3>Deleting Colors</h3>
-                <p>Deleting individual custom colors is currently not supported. To reset all custom colors:</p>
+                <h3>Managing Colors in Settings</h3>
+                <p>Colors you add are managed in the <strong>"Custom Colors"</strong> section of the settings screen (popup's settings (⚙) icon → Custom Colors).</p>
                 <ul>
-                    <li>Open the Popup menu and click the <strong>"Remove custom colors"</strong> button. (This will delete all custom colors except the default 5.)</li>
+                    <li><strong>Add:</strong> Use the <strong>"+ Add Custom Color"</strong> button to open the color picker.</li>
+                    <li><strong>Rename:</strong> Click a color's name to edit it in place.</li>
+                    <li><strong>Change color:</strong> Use the <strong>"Edit"</strong> button. Highlights already painted with that color are not affected.</li>
+                    <li><strong>Delete one:</strong> Each color has its own <strong>"Remove"</strong> button.</li>
+                    <li><strong>Delete all:</strong> The <strong>"Remove All"</strong> button at the top right of the section deletes every added color, leaving the 5 defaults.</li>
                 </ul>
             </section>
 
@@ -125,7 +145,7 @@
                 <ul>
                     <li>The minimap visually indicates the location of highlights relative to the entire page length.</li>
                     <li>Clicking a marker on the minimap instantly <strong>scrolls</strong> to that highlight's position.</li>
-                    <li>You can hide it by turning off the "Show Minimap" switch in the Popup menu.</li>
+                    <li>You can hide it by turning off the "Show Minimap" switch on the <a href="#settings-general">settings screen</a>.</li>
                 </ul>
             </section>
 
@@ -133,14 +153,43 @@
                 <h2>Popup Menu</h2>
                 <p>The menu that appears when you click the Marks icon in the browser toolbar.</p>
                 <ul>
-                    <li><strong>Current Page Highlights:</strong> Shows a list of highlights saved on the current page. Click to jump to the location.</li>
+                    <li><strong>Settings (⚙) icon:</strong> The gear at the top right opens the <a href="#settings">settings screen</a>. Options such as the minimap, the control UI and one-click highlighting all live there.</li>
+                    <li><strong>Current Page Highlights:</strong> The highlights saved on the page you are viewing. Click an entry to jump to it, or use the <strong>X button</strong> at its top right to delete that one.</li>
                     <li><strong>Highlighted Pages List:</strong> Opens the dashboard screen to manage all saved pages.</li>
-                    <li><strong>Remove all highlights:</strong> Deletes all highlights on the current page.</li>
-                    <li><strong>Remove custom colors:</strong> Deletes all user-added colors, leaving only the defaults.</li>
-                    <li><strong>Show Minimap:</strong> Toggles the display of the minimap on the right side of the page.</li>
-                    <li><strong>Show Control UI on text selection:</strong> Toggles whether the highlight button automatically appears when selecting text.</li>
-                    <li><strong>One-Click Highlight:</strong> When on, pressing the selection icon highlights straight away in the color you used last, without opening the palette. Off by default; click the highlight it creates to pick a different color.</li>
+                    <li><strong>Delete All Highlights:</strong> Removes every highlight on the current page. The button is disabled when there is nothing to delete.</li>
                 </ul>
+                <div class="note">
+                    <span class="note-title">When an entry says "Not found on this page"</span>
+                    If the page rendered late or its content changed, a highlight's position may not be restored. That entry is then dimmed and a <strong>"Search again"</strong> button appears; pressing it asks the page to look for the highlight once more. If it still cannot be found, the page content really has changed. The stored highlight data itself is not deleted.
+                </div>
+            </section>
+
+            <section id="settings">
+                <h2>Settings Screen</h2>
+                <p>Open it with the <strong>settings (⚙) icon</strong> at the top right of the popup. The switches and buttons that used to sit in the popup have all moved here.</p>
+
+                <h3 id="settings-general">General</h3>
+                <ul>
+                    <li><strong>Show Minimap:</strong> Toggles the display of the minimap on the right side of the page.</li>
+                    <li><strong>Show Control UI on Text Selection:</strong> Toggles whether the highlighter icon automatically appears when you select text.</li>
+                    <li><strong>One-Click Highlight:</strong> When on, pressing the selection icon highlights straight away in the <strong>color you used last</strong>, without opening the palette. Off by default; to use a different color, click the highlight it creates and pick from the palette.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Note</span>
+                    One-click highlighting needs the selection icon to exist, so while "Show Control UI on Text Selection" is off this row is dimmed and cannot be used.
+                </div>
+
+                <h3>Custom Colors</h3>
+                <p>Rename a color, change its color, and delete colors one at a time or all at once. See <a href="#custom-colors">Custom Colors</a> for details.</p>
+
+                <h3>Cloud Sync (Beta)</h3>
+                <p>Issue a sync code, pair devices, and sync on demand. See <a href="#cloud-sync">Cloud Sync (Beta)</a> for details.</p>
+
+                <h3 id="settings-shortcuts">Shortcut Colors</h3>
+                <p>Choose which color each of the 5 shortcut slots applies. The defaults for slots 1-5 are Yellow, Green, Blue, Pink and Orange, and custom colors can be assigned too. The key combinations themselves are changed in the browser's shortcut settings.</p>
+
+                <h3>Help</h3>
+                <p>The <strong>"View Usage Guide"</strong> button opens the getting-started guide built into the extension.</p>
             </section>
 
             <section id="pages-list">

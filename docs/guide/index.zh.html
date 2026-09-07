@@ -38,6 +38,12 @@
                 <li><a href="#custom-colors">自定义颜色</a></li>
                 <li><a href="#minimap">缩略图 (Minimap)</a></li>
                 <li><a href="#popup-menu">弹出菜单说明</a></li>
+                <li><a href="#settings">设置界面</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#settings-general">常规</a></li>
+                        <li><a href="#settings-shortcuts">快捷键颜色设置</a></li>
+                    </ul>
+                </li>
                 <li><a href="#pages-list">高亮页面列表 (Pages List)</a></li>
                 <li><a href="#sync">同步功能 (Synchronization)</a>
                     <ul class="toc-sublist">
@@ -52,6 +58,10 @@
             <section id="intro">
                 <h1>Marks: Text Highlighter 用户指南</h1>
                 <p>感谢您使用 Marks: Text Highlighter。该扩展允许您轻松快速地高亮网页文本，并保存和管理这些内容。</p>
+                <div class="note">
+                    <span class="note-title">注意</span>
+                    扩展内部也附带了一份简短的入门指南。可通过设置界面的<strong>“查看使用方法”</strong>按钮打开，或在页面尚无任何高亮时通过弹出菜单中出现的<strong>“查看完整指南”</strong>链接打开。
+                </div>
             </section>
 
             <section id="add-highlights">
@@ -73,12 +83,18 @@
                 </div>
 
                 <h3 id="add-shortcuts">3. 使用快捷键</h3>
-                <p>选中文本后，按下键盘快捷键即可快速应用颜色。</p>
+                <p>选中文本后，按下键盘快捷键即可快速应用颜色。快捷键共有<strong>5个槽位</strong>，每个槽位使用哪种颜色可在<a href="#settings-shortcuts">设置界面</a>中更改。</p>
                 <ul>
-                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : 第1种颜色 (默认: 黄色)</li>
-                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : 第2种颜色 (默认: 青色)</li>
-                    <li>... 数字键 1-4 对应默认颜色。</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : 槽位 1 (默认: 黄色)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : 槽位 2 (默认: 绿色)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>3</kbd> : 槽位 3 (默认: 蓝色)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>4</kbd> : 槽位 4 (默认: 粉色)</li>
+                    <li>槽位 5 (默认: 橙色) : <strong>默认未分配按键组合。</strong>需要在浏览器的快捷键设置中自行指定后才能使用。</li>
                 </ul>
+                <div class="note">
+                    <span class="note-title">注意</span>
+                    在 macOS 上为 <kbd>Command</kbd> + <kbd>Shift</kbd> + 数字键。按键组合本身需在浏览器的快捷键设置中更改 (Chrome: <code>chrome://extensions/shortcuts</code>，Firefox: <code>about:addons</code>)。
+                </div>
                 <div class="warning">
                     <span class="warning-title">限制</span>
                     Firefox Android 版本不支持快捷键功能。
@@ -91,7 +107,7 @@
                 <ul>
                     <li><strong>单个删除 (控制界面):</strong> 点击已高亮的文本，会出现控制界面。点击其中的<strong>垃圾桶图标</strong>进行删除。</li>
                     <li><strong>单个删除 (Popup):</strong> 点击浏览器工具栏的扩展图标打开弹出菜单。在“当前页面高亮”列表中，点击要删除项目旁边的<strong>X按钮</strong>。</li>
-                    <li><strong>清空页面 (Popup):</strong> 点击弹出菜单底部的<strong>“删除所有高亮”</strong>按钮，即可删除当前页面上的所有高亮。</li>
+                    <li><strong>清空页面 (Popup):</strong> 点击弹出菜单底部的<strong>“删除此页面的所有高亮”</strong>按钮，即可删除当前页面上的所有高亮。</li>
                     <li><strong>删除页面 (Pages List):</strong> 在高亮列表页面中，点击特定页面卡片的<strong>“删除”</strong>按钮，即可删除该页面的所有数据。</li>
                     <li><strong>删除所有数据 (Pages List):</strong> 点击列表页面顶部的<strong>垃圾桶图标 (删除所有页面)</strong>，即可删除所有已保存的高亮数据。</li>
                 </ul>
@@ -101,7 +117,7 @@
                 <h2>自定义颜色</h2>
 
                 <h3>添加和更改颜色</h3>
-                <p>除了5种默认颜色外，您还可以添加自己的颜色。</p>
+                <p>除了5种默认颜色（黄色、绿色、蓝色、粉色、橙色）外，您还可以添加自己的颜色。既可以在页面上直接添加，也可以在设置界面中管理。</p>
                 <ol>
                     <li>点击已高亮的文本打开控制界面。</li>
                     <li>点击颜色列表末尾的<strong>+按钮</strong>。</li>
@@ -112,10 +128,14 @@
                     在为新文本添加高亮时，控制界面中不会显示 + 按钮。只有在点击<strong>已创建的高亮</strong>时，才会显示添加颜色按钮。
                 </div>
 
-                <h3>删除颜色</h3>
-                <p>目前不支持删除单个自定义颜色。要重置所有自定义颜色，请使用以下方法。</p>
+                <h3>在设置界面中管理</h3>
+                <p>添加的颜色在设置界面的<strong>“自定义颜色”</strong>部分进行管理。（弹出菜单的设置 (⚙) 图标 → 自定义颜色）</p>
                 <ul>
-                    <li>打开弹出菜单，点击<strong>“删除自定义颜色”</strong>按钮。（除默认的5种颜色外，所有添加的颜色都将被删除。）</li>
+                    <li><strong>添加:</strong> 通过<strong>“+ 添加颜色”</strong>按钮打开颜色选择器进行添加。</li>
+                    <li><strong>重命名:</strong> 点击颜色名称即可就地编辑名称。</li>
+                    <li><strong>更改颜色:</strong> 通过<strong>“修改”</strong>按钮更改颜色。已经上色的现有高亮不受影响。</li>
+                    <li><strong>单个删除:</strong> 每种颜色都有<strong>“删除”</strong>按钮，可逐个删除。</li>
+                    <li><strong>全部删除:</strong> 点击该部分右上角的<strong>“全部删除”</strong>按钮，除默认的5种颜色外，所有添加的颜色都将被删除。</li>
                 </ul>
             </section>
 
@@ -125,7 +145,7 @@
                 <ul>
                     <li>缩略图直观地显示了高亮在整个页面长度中的位置。</li>
                     <li>点击缩略图上的标记，页面会立即<strong>滚动</strong>到相应的高亮位置。</li>
-                    <li>您可以在弹出菜单中关闭“显示缩略图”开关来隐藏它。</li>
+                    <li>您可以在<a href="#settings-general">设置界面</a>中关闭“显示缩略图”开关来隐藏它。</li>
                 </ul>
             </section>
 
@@ -133,14 +153,43 @@
                 <h2>弹出菜单说明</h2>
                 <p>点击浏览器工具栏中的 Marks 图标时出现的菜单。</p>
                 <ul>
-                    <li><strong>当前页面高亮:</strong> 显示当前页面已保存的高亮列表。点击可跳转到相应位置。</li>
-                    <li><strong>高亮页面列表 (Highlighted Pages List):</strong> 打开管理所有已保存页面的仪表板屏幕。</li>
-                    <li><strong>删除所有高亮:</strong> 清除当前页面的所有高亮。</li>
-                    <li><strong>删除自定义颜色:</strong> 清除用户添加的所有颜色，只保留默认颜色。</li>
-                    <li><strong>显示缩略图:</strong> 设置是否在页面右侧显示缩略图。</li>
-                    <li><strong>选中文本时显示控制界面:</strong> 开启或关闭拖动文本时自动显示高亮按钮的功能。</li>
-                    <li><strong>一键高亮:</strong> 开启后，按下选择图标即会直接以上次使用的颜色高亮（不再打开调色板）。默认关闭；如需其他颜色，点击生成的高亮即可更改。</li>
+                    <li><strong>设置 (⚙) 图标:</strong> 点击右上角的齿轮可打开<a href="#settings">设置界面</a>。缩略图、控制界面、一键高亮等选项均在其中。</li>
+                    <li><strong>当前页面高亮:</strong> 当前页面已保存的高亮列表。点击条目可跳转到相应位置，点击右上角的<strong>X按钮</strong>可单个删除。</li>
+                    <li><strong>高亮页面列表:</strong> 打开管理所有已保存页面的仪表板屏幕。</li>
+                    <li><strong>删除此页面的所有高亮:</strong> 清除当前页面的所有高亮。没有可删除的高亮时该按钮为禁用状态。</li>
                 </ul>
+                <div class="note">
+                    <span class="note-title">出现“在此页面中找不到”时</span>
+                    如果页面渲染较慢或内容发生变化，导致高亮位置无法恢复，列表中的相应条目会变灰并出现<strong>“重新查找”</strong>按钮。点击该按钮会在页面中再查找一次。如果仍然找不到，说明页面内容确实已经改变。已保存的高亮数据本身不会被删除。
+                </div>
+            </section>
+
+            <section id="settings">
+                <h2>设置界面</h2>
+                <p>点击弹出菜单右上角的<strong>设置 (⚙) 图标</strong>即可打开。以前位于弹出菜单中的开关和按钮都已移至该界面。</p>
+
+                <h3 id="settings-general">常规</h3>
+                <ul>
+                    <li><strong>显示缩略图:</strong> 设置是否在页面右侧显示缩略图。</li>
+                    <li><strong>选中文本时显示控制界面:</strong> 开启或关闭拖动文本时自动显示高亮图标的功能。</li>
+                    <li><strong>一键高亮:</strong> 开启后，按下选择图标即会不打开调色板、直接以<strong>上次使用的颜色</strong>高亮。默认关闭；如需其他颜色，点击生成的高亮并从调色板中选择。</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">注意</span>
+                    一键高亮需要选择图标才能生效，因此当“选中文本时显示控制界面”关闭时，该项会变灰且无法使用。
+                </div>
+
+                <h3>自定义颜色</h3>
+                <p>可对添加的颜色进行重命名、更改颜色、单个删除和全部删除。详情请参阅<a href="#custom-colors">自定义颜色</a>。</p>
+
+                <h3>云同步 (测试版)</h3>
+                <p>用于生成同步代码、连接设备以及立即同步。详情请参阅<a href="#cloud-sync">云同步 (测试版)</a>。</p>
+
+                <h3 id="settings-shortcuts">快捷键颜色设置</h3>
+                <p>可为5个快捷键槽位分别选择使用的颜色。槽位 1-5 的默认颜色依次为黄色、绿色、蓝色、粉色和橙色，也可以指定自定义颜色。按键组合本身需在浏览器的快捷键设置中更改。</p>
+
+                <h3>帮助</h3>
+                <p>通过<strong>“查看使用方法”</strong>按钮可打开扩展内置的入门指南。</p>
             </section>
 
             <section id="pages-list">
