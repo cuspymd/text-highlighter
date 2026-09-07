@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de uso - Marks: Text Highlighter</title>
+    <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Marks: Text Highlighter</div>
+                <ul class="nav-links">
+                    <li><a href="../index.es.html">Inicio</a></li>
+                    <li><a href="index.html">한국어</a></li>
+                    <li><a href="index.en.html">English</a></li>
+                    <li><a href="index.ja.html">日本語</a></li>
+                    <li><a href="index.zh.html">中文</a></li>
+                    <li><a href="index.es.html" class="active">Español</a></li>
+                    <li><a href="index.pt.html">Português</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <h3>Índice</h3>
+            <ul class="toc-list">
+                <li><a href="#intro">Introducción</a></li>
+                <li><a href="#add-highlights">Cómo añadir resaltados</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#add-control-ui">1. Con la interfaz de control</a></li>
+                        <li><a href="#add-context-menu">2. Con el menú contextual</a></li>
+                        <li><a href="#add-shortcuts">3. Con atajos de teclado</a></li>
+                    </ul>
+                </li>
+                <li><a href="#delete-highlights">Cómo eliminar resaltados</a></li>
+                <li><a href="#custom-colors">Colores personalizados</a></li>
+                <li><a href="#minimap">Minimapa</a></li>
+                <li><a href="#popup-menu">Menú emergente</a></li>
+                <li><a href="#settings">Pantalla de ajustes</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#settings-general">General</a></li>
+                        <li><a href="#settings-shortcuts">Colores de los atajos</a></li>
+                    </ul>
+                </li>
+                <li><a href="#pages-list">Lista de páginas resaltadas</a></li>
+                <li><a href="#sync">Sincronización</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#cloud-sync">Sincronización en la nube (Beta)</a></li>
+                    </ul>
+                </li>
+                <li><a href="#import-export">Importar y exportar</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            <section id="intro">
+                <h1>Guía de uso de Marks: Text Highlighter</h1>
+                <p>Gracias por usar Marks: Text Highlighter. Esta extensión te permite resaltar, guardar y gestionar texto en páginas web de forma fácil y rápida.</p>
+                <div class="note">
+                    <span class="note-title">Nota</span>
+                    La extensión también incluye una breve guía de inicio. Puedes abrirla con el botón <strong>"Ver guía de uso"</strong> de la pantalla de ajustes, o con el enlace <strong>"Ver la guía completa"</strong> que aparece en el menú emergente cuando la página todavía no tiene resaltados.
+                </div>
+            </section>
+
+            <section id="add-highlights">
+                <h2>Cómo añadir resaltados</h2>
+                <p>Hay tres formas de resaltar el texto que selecciones en una página web.</p>
+
+                <h3 id="add-control-ui">1. Con la interfaz de control</h3>
+                <p>Al seleccionar texto aparece un icono de resaltador (con forma de bolígrafo) junto a la selección. Haz clic en el icono o pasa el ratón por encima para mostrar la <strong>interfaz de control</strong> con la paleta de colores. Haz clic en un color para aplicar el resaltado.</p>
+                <div class="note">
+                    <span class="note-title">Nota</span>
+                    Funciona si la opción "Mostrar interfaz de control al seleccionar texto" está activada en los ajustes. También es el método principal en dispositivos móviles.
+                </div>
+
+                <h3 id="add-context-menu">2. Con el menú contextual</h3>
+                <p>Selecciona texto y haz clic con el botón derecho para abrir el menú contextual. Dentro de <strong>"Marks: Text Highlighter"</strong>, elige un color para resaltar.</p>
+                <div class="warning">
+                    <span class="warning-title">Limitación</span>
+                    Resaltar desde el menú contextual no es compatible con Firefox para Android.
+                </div>
+
+                <h3 id="add-shortcuts">3. Con atajos de teclado</h3>
+                <p>Selecciona texto y pulsa un atajo de teclado para aplicar un color rápidamente. Hay <strong>5 espacios de atajo</strong>, y puedes elegir qué color usa cada uno en la <a href="#settings-shortcuts">pantalla de ajustes</a>.</p>
+                <ul>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : Espacio 1 (por defecto: amarillo)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : Espacio 2 (por defecto: verde)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>3</kbd> : Espacio 3 (por defecto: azul)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>4</kbd> : Espacio 4 (por defecto: rosa)</li>
+                    <li>Espacio 5 (por defecto: naranja) : <strong>no tiene ninguna combinación de teclas asignada de fábrica.</strong> Tienes que asignarla tú en los ajustes de atajos del navegador para que funcione.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Nota</span>
+                    En macOS la combinación es <kbd>Command</kbd> + <kbd>Shift</kbd> + número. Las combinaciones de teclas se cambian en los ajustes de atajos del navegador (Chrome: <code>chrome://extensions/shortcuts</code>, Firefox: <code>about:addons</code>).
+                </div>
+                <div class="warning">
+                    <span class="warning-title">Limitación</span>
+                    Los atajos de teclado no son compatibles con Firefox para Android.
+                </div>
+            </section>
+
+            <section id="delete-highlights">
+                <h2>Cómo eliminar resaltados</h2>
+                <p>Puedes quitar los resaltados que ya no necesites de las siguientes formas:</p>
+                <ul>
+                    <li><strong>Eliminar uno (interfaz de control):</strong> haz clic en un resaltado existente para abrir la interfaz de control y pulsa el <strong>icono de papelera</strong>.</li>
+                    <li><strong>Eliminar uno (menú emergente):</strong> haz clic en el icono de la extensión en la barra de herramientas para abrir el menú emergente. En la lista "Resaltados de la página actual", pulsa el <strong>botón X</strong> del elemento que quieras quitar.</li>
+                    <li><strong>Vaciar la página (menú emergente):</strong> pulsa el botón <strong>"Eliminar todos los resaltados"</strong> en la parte inferior del menú emergente para quitar todos los resaltados de la página actual.</li>
+                    <li><strong>Eliminar una página (lista de páginas):</strong> en el panel de páginas resaltadas, pulsa el botón <strong>"Eliminar"</strong> de una tarjeta de página para borrar todos sus datos.</li>
+                    <li><strong>Eliminar todos los datos (lista de páginas):</strong> pulsa el <strong>icono de papelera (Eliminar todas las páginas)</strong> en la barra superior del panel para borrar todos los datos de resaltado guardados.</li>
+                </ul>
+            </section>
+
+            <section id="custom-colors">
+                <h2>Colores personalizados</h2>
+
+                <h3>Añadir y cambiar colores</h3>
+                <p>Además de los 5 colores predeterminados (amarillo, verde, azul, rosa y naranja), puedes añadir los tuyos propios. Puedes añadirlos directamente desde la página o gestionarlos en la pantalla de ajustes.</p>
+                <ol>
+                    <li>Haz clic en un resaltado existente para abrir la interfaz de control.</li>
+                    <li>Pulsa el <strong>botón +</strong> al final de la lista de colores.</li>
+                    <li>Elige un color en el selector y pulsa "Aplicar".</li>
+                </ol>
+                <div class="note">
+                    <span class="note-title">Nota</span>
+                    El botón + no aparece en la interfaz de control cuando resaltas texto nuevo. Solo aparece al hacer clic en un <strong>resaltado ya creado</strong>.
+                </div>
+
+                <h3>Gestionarlos en los ajustes</h3>
+                <p>Los colores que añades se gestionan en la sección <strong>"Colores personalizados"</strong> de la pantalla de ajustes (icono de ajustes (⚙) del menú emergente → Colores personalizados).</p>
+                <ul>
+                    <li><strong>Añadir:</strong> usa el botón <strong>"+ Añadir color"</strong> para abrir el selector de color.</li>
+                    <li><strong>Renombrar:</strong> haz clic en el nombre de un color para editarlo allí mismo.</li>
+                    <li><strong>Cambiar el color:</strong> usa el botón <strong>"Modificar"</strong>. Los resaltados ya aplicados con ese color no se ven afectados.</li>
+                    <li><strong>Eliminar uno:</strong> cada color tiene su propio botón <strong>"Eliminar"</strong>.</li>
+                    <li><strong>Eliminar todos:</strong> el botón <strong>"Eliminar todo"</strong>, arriba a la derecha de la sección, borra todos los colores añadidos y deja solo los 5 predeterminados.</li>
+                </ul>
+            </section>
+
+            <section id="minimap">
+                <h2>Minimapa</h2>
+                <p>En el lado derecho de las páginas web que tienen resaltados se muestra un <strong>minimapa</strong>.</p>
+                <ul>
+                    <li>El minimapa indica visualmente dónde están los resaltados respecto a la longitud total de la página.</li>
+                    <li>Al hacer clic en un marcador del minimapa, la página <strong>se desplaza</strong> al instante hasta ese resaltado.</li>
+                    <li>Puedes ocultarlo desactivando el interruptor "Mostrar minimapa" en la <a href="#settings-general">pantalla de ajustes</a>.</li>
+                </ul>
+            </section>
+
+            <section id="popup-menu">
+                <h2>Menú emergente</h2>
+                <p>Es el menú que aparece al hacer clic en el icono de Marks en la barra de herramientas del navegador.</p>
+                <ul>
+                    <li><strong>Icono de ajustes (⚙):</strong> el engranaje de arriba a la derecha abre la <a href="#settings">pantalla de ajustes</a>. Opciones como el minimapa, la interfaz de control y el resaltado con un clic están todas ahí.</li>
+                    <li><strong>Resaltados de la página actual:</strong> los resaltados guardados en la página que estás viendo. Haz clic en una entrada para saltar hasta ella, o usa el <strong>botón X</strong> de su esquina superior derecha para eliminarla.</li>
+                    <li><strong>Lista de páginas resaltadas:</strong> abre el panel donde se gestionan todas las páginas guardadas.</li>
+                    <li><strong>Eliminar todos los resaltados:</strong> quita todos los resaltados de la página actual. El botón se desactiva cuando no hay nada que eliminar.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Cuando una entrada dice "No se encuentra en esta página"</span>
+                    Si la página se ha renderizado tarde o su contenido ha cambiado, puede que no se restaure la posición de un resaltado. Esa entrada se muestra atenuada y aparece un botón <strong>"Buscar de nuevo"</strong>; al pulsarlo, la página vuelve a buscar el resaltado una vez más. Si sigue sin encontrarse, es que el contenido de la página realmente ha cambiado. Los datos del resaltado guardado no se borran.
+                </div>
+            </section>
+
+            <section id="settings">
+                <h2>Pantalla de ajustes</h2>
+                <p>Se abre con el <strong>icono de ajustes (⚙)</strong> de la esquina superior derecha del menú emergente. Los interruptores y botones que antes estaban en el menú emergente se han trasladado aquí.</p>
+
+                <h3 id="settings-general">General</h3>
+                <ul>
+                    <li><strong>Mostrar minimapa:</strong> activa o desactiva el minimapa en el lado derecho de la página.</li>
+                    <li><strong>Mostrar interfaz de control al seleccionar texto:</strong> activa o desactiva que el icono de resaltador aparezca automáticamente al seleccionar texto.</li>
+                    <li><strong>Resaltado con un clic:</strong> al activarlo, pulsar el icono de selección resalta directamente con el <strong>último color que usaste</strong>, sin abrir la paleta. Está desactivado por defecto; para usar otro color, haz clic en el resaltado creado y elígelo en la paleta.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Nota</span>
+                    El resaltado con un clic necesita que exista el icono de selección, así que mientras "Mostrar interfaz de control al seleccionar texto" esté desactivado, esta fila aparece atenuada y no se puede usar.
+                </div>
+
+                <h3>Colores personalizados</h3>
+                <p>Permite renombrar un color, cambiar su tono y eliminar colores de uno en uno o todos a la vez. Consulta <a href="#custom-colors">Colores personalizados</a> para más detalles.</p>
+
+                <h3>Sincronización en la nube (Beta)</h3>
+                <p>Aquí se genera el código de sincronización, se vinculan dispositivos y se sincroniza al momento. Consulta <a href="#cloud-sync">Sincronización en la nube (Beta)</a> para más detalles.</p>
+
+                <h3 id="settings-shortcuts">Colores de los atajos</h3>
+                <p>Elige qué color aplica cada uno de los 5 espacios de atajo. Los valores por defecto de los espacios 1 a 5 son amarillo, verde, azul, rosa y naranja, y también puedes asignar colores personalizados. Las combinaciones de teclas se cambian en los ajustes de atajos del navegador.</p>
+
+                <h3>Ayuda</h3>
+                <p>El botón <strong>"Ver guía de uso"</strong> abre la guía de inicio incluida en la extensión.</p>
+            </section>
+
+            <section id="pages-list">
+                <h2>Lista de páginas resaltadas</h2>
+                <p>Un panel donde puedes ver y gestionar de un vistazo toda la información de resaltado guardada.</p>
+                <ul>
+                    <li><strong>Buscar:</strong> busca entre los registros guardados por título de página o URL. El texto coincidente se destaca en los resultados.</li>
+                    <li><strong>Ordenar:</strong> ordena la lista por más reciente, más antiguo, etc.</li>
+                    <li><strong>Expandir/contraer todo:</strong> pulsa el botón de la barra de herramientas para expandir o contraer a la vez el detalle de los resaltados de todas las páginas visibles. El botón alterna entre "Expandir todo" y "Contraer todo" según el estado actual.</li>
+                    <li><strong>Eliminar:</strong> elimina páginas concretas o usa el botón de la barra superior para borrar todos los datos.</li>
+                    <li><strong>Exportar/importar:</strong> haz copia de seguridad o restaura tus datos desde el menú <strong>Más acciones (…)</strong> de la barra de herramientas.</li>
+                </ul>
+            </section>
+
+            <section id="sync">
+                <h2>Sincronización</h2>
+                <p>Sincroniza los datos de resaltado entre dispositivos mediante tu cuenta de Google (Chrome) o de Firefox con la sesión iniciada.</p>
+
+                <h3>Cómo funciona</h3>
+                <p>Al añadir o eliminar resaltados en un dispositivo, el cambio se refleja automáticamente en los demás dispositivos con la misma cuenta. Si hay conflictos, se conserva el cambio más reciente.</p>
+
+                <h3>Limitaciones</h3>
+                <ul>
+                    <li><strong>Límite de almacenamiento:</strong> el almacenamiento de sincronización tiene un <strong>límite total de 100 KB</strong>, y un único resaltado no puede superar los <strong>8 KB</strong>.</li>
+                    <li><strong>Purga de datos antiguos:</strong> cuando el almacenamiento se llena, se eliminan automáticamente los datos sincronizados de las páginas actualizadas hace más tiempo para hacer sitio. (Los datos locales se conservan.)</li>
+                    <li><strong>Sin soporte en móvil:</strong> la sincronización no es compatible con Firefox para Android.</li>
+                </ul>
+
+                <h3 id="cloud-sync">Sincronización en la nube (Beta)</h3>
+                <p>Una función aparte para entornos que no admiten la sincronización nativa del navegador, como Firefox para Android. Los dispositivos se vinculan con un <strong>código de sincronización</strong> en lugar de iniciar sesión con una cuenta, y los datos de resaltado se cifran en tu dispositivo antes de subirlos, de modo que el servidor nunca accede al contenido real.</p>
+
+                <h4>Cómo usarla</h4>
+                <ol>
+                    <li>Haz clic en el icono de la extensión en la barra de herramientas para abrir el menú emergente y pulsa el <strong>icono de ajustes (⚙)</strong>.</li>
+                    <li>En la sección <strong>"Sincronización en la nube (Beta)"</strong> de la pantalla de ajustes, pulsa <strong>"Generar código nuevo"</strong> para crear un código de sincronización.</li>
+                    <li>En el otro dispositivo que quieras sincronizar, abre la pantalla de ajustes, introduce el mismo código en el campo "Introduce el código de sincronización de otro dispositivo" y pulsa <strong>"Conectar"</strong>.</li>
+                    <li>Activa el interruptor <strong>"Sincronización en la nube"</strong> en cada dispositivo para poner en marcha la sincronización. A partir de ahí se sincroniza automáticamente cada 15 minutos aproximadamente, o puedes pulsar <strong>"Sincronizar ahora"</strong> para hacerlo al instante.</li>
+                </ol>
+
+                <div class="warning">
+                    <span class="warning-title">Atención</span>
+                    Si pierdes el código de sincronización, no se podrán recuperar los datos guardados en la nube. El código se muestra parcialmente oculto en pantalla; usa "Mostrar" para verlo entero o "Copiar" para copiarlo al portapapeles. Guárdalo en un lugar seguro.
+                </div>
+
+                <p><strong>Desconectar:</strong> al pulsar "Olvidar código" en la pantalla de ajustes, este dispositivo se desvincula de la sincronización y olvida el código.</p>
+
+                <div class="note">
+                    <span class="note-title">Nota</span>
+                    No se garantiza el correcto funcionamiento si usas a la vez la sincronización nativa del navegador y la sincronización en la nube. Recomendamos usar solo una de las dos.
+                </div>
+            </section>
+
+            <section id="import-export">
+                <h2>Importar y exportar</h2>
+                <p>Útil para hacer una copia de seguridad de tus datos o migrarlos a otro navegador.</p>
+                <ul>
+                    <li><strong>Exportar:</strong> descarga todos los datos de resaltado guardados como un archivo JSON.</li>
+                    <li><strong>Importar:</strong> restaura los datos seleccionando un archivo JSON exportado anteriormente.</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Active TOC Highlight Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.sidebar a');
+
+            function onScroll() {
+                let current = '';
+                // Offset for header height + some buffer
+                const headerOffset = 150;
+
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    // Check if the section is currently active based on scroll position
+                    if (window.scrollY >= (sectionTop - headerOffset)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes('#' + current)) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', onScroll);
+            // Initial call to highlight correct section on load
+            onScroll();
+        });
+    </script>
+</body>
+</html>

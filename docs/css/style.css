@@ -191,12 +191,16 @@ nav {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Six languages no longer fit on one line on a phone. Let the row wrap
+       instead of squeezing the links until the CJK labels break mid-word. */
+    flex-wrap: wrap;
     gap: 0.5rem;
 }
 
 .lang-link {
     color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
+    white-space: nowrap;
     transition: color 0.3s ease;
 }
 
@@ -486,6 +490,16 @@ footer {
     .hero-buttons, .install-buttons {
         flex-direction: column;
         align-items: center;
+    }
+
+    /* The six language links wrap here, and a divider left stranded at the end
+       of a line reads as a mistake. The gap separates them well enough. */
+    .lang-divider {
+        display: none;
+    }
+
+    .language-selector {
+        gap: 0.5rem 1rem;
     }
 
     .demo-container {
