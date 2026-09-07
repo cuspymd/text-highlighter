@@ -173,6 +173,12 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
   }
   else if (message.action === 'refreshHighlights') {
+    // The tab's own save comes back through here - see refreshChangesNothing.
+    if (restoreCore.refreshChangesNothing(highlights, message.highlights, collectRestoredGroupIds())) {
+      debugLog('Refresh carries the highlights already on the page; leaving it alone');
+      sendResponse({ success: true });
+      return true;
+    }
     debugLog('Refreshing highlights:', message.highlights);
     highlights = message.highlights || [];
     clearAllHighlights();

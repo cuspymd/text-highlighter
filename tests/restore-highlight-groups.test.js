@@ -724,4 +724,74 @@ describe('restoring highlight groups', () => {
 
     expect(document.querySelectorAll('.text-highlighter-extension')).toHaveLength(0);
   });
+  describe('refresh carrying what is already on the page', () => {
+    // Three text nodes, the way a script-built paragraph arrives. Rebuilding
+    // the highlight rejoins them, which is what the echo of a save used to do.
+    function buildSplitParagraph() {
+      const paragraph = document.createElement('p');
+      ['first ', 'second ', 'third'].forEach(text => {
+        paragraph.appendChild(document.createTextNode(text));
+      });
+      document.body.appendChild(paragraph);
+    }
+
+    function spansFor(groupId) {
+      return Array.from(document.querySelectorAll(`.text-highlighter-extension[data-group-id="${groupId}"]`));
+    }
+
+    it('leaves the page alone when the refresh changes nothing', async () => {
+      buildSplitParagraph();
+      await loadContentScript({ highlightsResponse: {} });
+
+      const group = makeGroup('echoed', 'first second third');
+      sendToContentScript({ action: 'refreshHighlights', highlights: [group] });
+      const before = spansFor('echoed');
+      expect(before).toHaveLength(3);
+
+      sendToContentScript({ action: 'refreshHighlights', highlights: [{ ...group }] });
+
+      const after = spansFor('echoed');
+      expect(after).toHaveLength(3);
+      expect(after).toEqual(before);
+      expect(before.every(span => span.isConnected)).toBe(true);
+    });
+
+    it('keeps the selection made since the save', async () => {
+      buildSplitParagraph();
+      await loadContentScript({ highlightsResponse: {} });
+
+      const group = makeGroup('echoed', 'second');
+      sendToContentScript({ action: 'refreshHighlights', highlights: [group] });
+
+      const firstText = document.querySelector('p').firstChild;
+      const range = document.createRange();
+      range.setStart(firstText, 0);
+      range.setEnd(firstText, 5);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+
+      sendToContentScript({ action: 'refreshHighlights', highlights: [{ ...group }] });
+
+      expect(window.getSelection().toString()).toBe('first');
+    });
+
+    it('still rebuilds the page for a refresh that does change something', async () => {
+      buildSplitParagraph();
+      await loadContentScript({ highlightsResponse: {} });
+
+      const group = makeGroup('echoed', 'first second third');
+      sendToContentScript({ action: 'refreshHighlights', highlights: [group] });
+      const before = spansFor('echoed');
+
+      sendToContentScript({
+        action: 'refreshHighlights',
+        highlights: [{ ...group, color: '#00ff00', updatedAt: (group.updatedAt || 0) + 1 }],
+      });
+
+      const after = spansFor('echoed');
+      expect(after.length).toBeGreaterThan(0);
+      expect(before.some(span => span.isConnected)).toBe(false);
+      expect(after.every(span => span.style.backgroundColor === 'rgb(0, 255, 0)')).toBe(true);
+    });
+  });
 });
