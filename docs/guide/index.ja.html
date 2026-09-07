@@ -12,11 +12,13 @@
             <nav>
                 <div class="logo">Marks: Text Highlighter</div>
                 <ul class="nav-links">
-                    <li><a href="../index.html">ホーム</a></li>
+                    <li><a href="../index.ja.html">ホーム</a></li>
                     <li><a href="index.html">한국어</a></li>
                     <li><a href="index.en.html">English</a></li>
                     <li><a href="index.ja.html" class="active">日本語</a></li>
                     <li><a href="index.zh.html">中文</a></li>
+                    <li><a href="index.es.html">Español</a></li>
+                    <li><a href="index.pt.html">Português</a></li>
                 </ul>
             </nav>
         </div>
@@ -38,6 +40,12 @@
                 <li><a href="#custom-colors">カスタム色の設定</a></li>
                 <li><a href="#minimap">ミニマップ (Minimap)</a></li>
                 <li><a href="#popup-menu">Popupメニューの説明</a></li>
+                <li><a href="#settings">設定画面</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#settings-general">一般</a></li>
+                        <li><a href="#settings-shortcuts">ショートカットの色設定</a></li>
+                    </ul>
+                </li>
                 <li><a href="#pages-list">ハイライト一覧画面 (Pages List)</a></li>
                 <li><a href="#sync">同期機能 (Synchronization)</a>
                     <ul class="toc-sublist">
@@ -52,6 +60,10 @@
             <section id="intro">
                 <h1>Marks: Text Highlighter ユーザーガイド</h1>
                 <p>Marks: Text Highlighterをご利用いただきありがとうございます。この拡張機能を使えば、Webページのテキストを簡単かつ迅速にハイライトし、保存・管理することができます。</p>
+                <div class="note">
+                    <span class="note-title">参考</span>
+                    拡張機能の中にも短い入門ガイドが用意されています。設定画面の<strong>「使い方を見る」</strong>ボタン、またはページにハイライトが1つもないときにPopupに表示される<strong>「使い方を詳しく見る」</strong>リンクから開けます。
+                </div>
             </section>
 
             <section id="add-highlights">
@@ -73,12 +85,18 @@
                 </div>
 
                 <h3 id="add-shortcuts">3. ショートカットキーを使用</h3>
-                <p>テキストを選択した後、キーボードショートカットを押して素早く色を適用できます。</p>
+                <p>テキストを選択した後、キーボードショートカットを押して素早く色を適用できます。ショートカットスロットは<strong>5つ</strong>あり、どの色を使うかは<a href="#settings-shortcuts">設定画面</a>で変更できます。</p>
                 <ul>
-                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : 1番目の色 (デフォルト: 黄色)</li>
-                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : 2番目の色 (デフォルト: シアン)</li>
-                    <li>... 数字キー1〜4までがデフォルト色に対応しています。</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : スロット1 (デフォルト: 黄色)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : スロット2 (デフォルト: 緑)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>3</kbd> : スロット3 (デフォルト: 青)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>4</kbd> : スロット4 (デフォルト: ピンク)</li>
+                    <li>スロット5 (デフォルト: オレンジ) : <strong>キーの組み合わせが既定では割り当てられていません。</strong>ブラウザのショートカット設定で自分で割り当てる必要があります。</li>
                 </ul>
+                <div class="note">
+                    <span class="note-title">参考</span>
+                    macOSでは<kbd>Command</kbd> + <kbd>Shift</kbd> + 数字キーです。キーの組み合わせ自体はブラウザのショートカット設定で変更します (Chrome: <code>chrome://extensions/shortcuts</code>、Firefox: <code>about:addons</code>)。
+                </div>
                 <div class="warning">
                     <span class="warning-title">制限事項</span>
                     Firefox Android版では、ショートカット機能はサポートされていません。
@@ -91,7 +109,7 @@
                 <ul>
                     <li><strong>個別削除 (コントロールUI):</strong> 既にハイライトされたテキストをクリックするとコントロールUIが表示されます。ここで<strong>ゴミ箱アイコン</strong>をクリックして削除します。</li>
                     <li><strong>個別削除 (Popup):</strong> ブラウザのツールバーにある拡張機能アイコンをクリックしてPopupメニューを開きます。「現在のページのハイライト」リストで、削除したい項目の横にある<strong>Xボタン</strong>を押します。</li>
-                    <li><strong>ページ内全削除 (Popup):</strong> Popupメニュー下部の<strong>「すべてのハイライトを削除」</strong>ボタンを押すと、現在表示しているページのすべてのハイライトが削除されます。</li>
+                    <li><strong>ページ内全削除 (Popup):</strong> Popupメニュー下部の<strong>「このページのすべてのハイライトを削除」</strong>ボタンを押すと、現在表示しているページのすべてのハイライトが削除されます。</li>
                     <li><strong>ページ単位での削除 (Pages List):</strong> ハイライト一覧画面で特定のページカードの<strong>「削除」</strong>ボタンを押すと、そのページのすべてのデータが削除されます。</li>
                     <li><strong>全データ削除 (Pages List):</strong> ハイライト一覧画面上部の<strong>ゴミ箱アイコン（全ページ削除）</strong>を押すと、保存されているすべてのハイライトデータが削除されます。</li>
                 </ul>
@@ -101,7 +119,7 @@
                 <h2>カスタム色の設定</h2>
 
                 <h3>色の追加と変更</h3>
-                <p>デフォルトの5色以外に、自分の好みの色を追加できます。</p>
+                <p>デフォルトの5色 (黄色、緑、青、ピンク、オレンジ) 以外に、自分の好みの色を追加できます。ページから直接追加することも、設定画面で管理することもできます。</p>
                 <ol>
                     <li>既にハイライトされたテキストをクリックしてコントロールUIを開きます。</li>
                     <li>色リストの最後にある<strong>+ボタン</strong>をクリックします。</li>
@@ -112,10 +130,14 @@
                     新しいテキストをハイライトする際に表示されるコントロールUIには+ボタンが表示されません。<strong>既に作成されたハイライト</strong>をクリックした時のみ、色追加ボタンが表示されます。
                 </div>
 
-                <h3>色の削除</h3>
-                <p>現在、個別のカスタム色削除機能はサポートしていません。すべてのカスタム色を初期化するには、以下の方法を使用してください。</p>
+                <h3>設定画面での管理</h3>
+                <p>追加した色は、設定画面の<strong>「カスタム色」</strong>セクションで管理します。（Popupの設定 (⚙) アイコン → カスタム色）</p>
                 <ul>
-                    <li>Popupメニューを開き、<strong>「ユーザー色を削除」</strong>ボタンをクリックします。（デフォルトの5色を除く追加色がすべて削除されます。）</li>
+                    <li><strong>追加:</strong> <strong>「+ 色を追加」</strong>ボタンでカラーピッカーを開いて追加します。</li>
+                    <li><strong>名前の変更:</strong> 色の名前をクリックすると、その場で名前を編集できます。</li>
+                    <li><strong>色の変更:</strong> <strong>「変更」</strong>ボタンで色を変えます。既に塗られているハイライトには影響しません。</li>
+                    <li><strong>個別削除:</strong> 色ごとの<strong>「削除」</strong>ボタンで1つずつ削除できます。</li>
+                    <li><strong>全削除:</strong> セクション右上の<strong>「すべて削除」</strong>ボタンを押すと、デフォルトの5色を除く追加色がすべて削除されます。</li>
                 </ul>
             </section>
 
@@ -125,7 +147,7 @@
                 <ul>
                     <li>ミニマップは、ページ全体の長さに対するハイライトの位置を視覚的に表示します。</li>
                     <li>ミニマップのマーカーをクリックすると、そのハイライトの位置に即座に<strong>スクロール</strong>します。</li>
-                    <li>Popupメニューで「ミニマップを表示」スイッチをオフにして非表示にすることができます。</li>
+                    <li><a href="#settings-general">設定画面</a>の「ミニマップを表示」スイッチをオフにして非表示にすることができます。</li>
                 </ul>
             </section>
 
@@ -133,14 +155,43 @@
                 <h2>Popupメニューの説明</h2>
                 <p>ブラウザツールバーのMarksアイコンをクリックすると表示されるメニューです。</p>
                 <ul>
-                    <li><strong>現在のページのハイライト:</strong> 現在見ているページに保存されたハイライト一覧を表示します。クリックするとその位置に移動します。</li>
-                    <li><strong>ハイライト一覧 (Highlighted Pages List):</strong> 保存されたすべてのページを管理するダッシュボード画面を開きます。</li>
-                    <li><strong>すべてのハイライトを削除:</strong> 現在のページのハイライトをすべて消去します。</li>
-                    <li><strong>ユーザー色を削除:</strong> ユーザーが追加したカスタム色をすべて消去し、デフォルト色のみ残します。</li>
-                    <li><strong>ミニマップを表示:</strong> ページ右側のミニマップの表示/非表示を設定します。</li>
-                    <li><strong>テキスト選択時にコントロールUIを表示:</strong> テキストをドラッグしたときにハイライトボタンが自動的に現れる機能をオン/オフします。</li>
-                    <li><strong>ワンクリックハイライト:</strong> オンにすると、選択アイコンを押した瞬間に最後に使った色でハイライトされます（パレットは開きません）。既定はオフで、別の色にしたい場合は作成されたハイライトをクリックして変更します。</li>
+                    <li><strong>設定 (⚙) アイコン:</strong> 右上の歯車を押すと<a href="#settings">設定画面</a>が開きます。ミニマップ、コントロールUI、ワンクリックハイライトなどの設定はすべてこちらにあります。</li>
+                    <li><strong>現在のページのハイライト:</strong> 現在見ているページに保存されたハイライト一覧です。項目をクリックするとその位置に移動し、右上の<strong>Xボタン</strong>で個別に削除できます。</li>
+                    <li><strong>ハイライトされたページ一覧:</strong> 保存されたすべてのページを管理するダッシュボード画面を開きます。</li>
+                    <li><strong>このページのすべてのハイライトを削除:</strong> 現在のページのハイライトをすべて消去します。削除するハイライトがない場合、ボタンは無効になります。</li>
                 </ul>
+                <div class="note">
+                    <span class="note-title">「このページで見つかりません」と表示されたとき</span>
+                    ページの描画が遅れたり内容が変わったりしてハイライトの位置を復元できない場合、一覧の該当項目が薄く表示され、<strong>「再検索」</strong>ボタンが現れます。このボタンを押すと、ページ内をもう一度探します。それでも見つからない場合は、実際にページの内容が変わっています。保存されたハイライトのデータ自体は削除されません。
+                </div>
+            </section>
+
+            <section id="settings">
+                <h2>設定画面</h2>
+                <p>Popup右上の<strong>設定 (⚙) アイコン</strong>を押すと開きます。以前Popupにあったスイッチやボタンは、すべてこの画面に移動しました。</p>
+
+                <h3 id="settings-general">一般</h3>
+                <ul>
+                    <li><strong>ミニマップを表示:</strong> ページ右側のミニマップの表示/非表示を設定します。</li>
+                    <li><strong>テキスト選択時にコントロールUIを表示:</strong> テキストをドラッグしたときにハイライターアイコンが自動的に現れる機能をオン/オフします。</li>
+                    <li><strong>ワンクリックハイライト:</strong> オンにすると、選択アイコンを押した瞬間にパレットを開かず<strong>最後に使った色</strong>でそのままハイライトされます。既定はオフで、別の色を使いたい場合は作成されたハイライトをクリックしてパレットから選びます。</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">参考</span>
+                    ワンクリックハイライトは選択アイコンがあってこそ動作するため、「テキスト選択時にコントロールUIを表示」がオフのあいだ、この項目は薄く表示され使用できません。
+                </div>
+
+                <h3>カスタム色</h3>
+                <p>追加した色の名前変更、色の変更、個別削除と全削除ができます。詳しくは<a href="#custom-colors">カスタム色の設定</a>をご覧ください。</p>
+
+                <h3>クラウド同期 (ベータ)</h3>
+                <p>同期コードの発行や端末の接続、手動同期を扱います。詳しくは<a href="#cloud-sync">クラウド同期 (ベータ)</a>をご覧ください。</p>
+
+                <h3 id="settings-shortcuts">ショートカットの色設定</h3>
+                <p>5つのショートカットスロットそれぞれにどの色を使うかを選べます。既定はスロット1〜5の順に黄色、緑、青、ピンク、オレンジで、カスタム色も割り当てられます。キーの組み合わせ自体はブラウザのショートカット設定で変更します。</p>
+
+                <h3>ヘルプ</h3>
+                <p><strong>「使い方を見る」</strong>ボタンで、拡張機能に内蔵された入門ガイドを開きます。</p>
             </section>
 
             <section id="pages-list">

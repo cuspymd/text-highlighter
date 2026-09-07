@@ -388,6 +388,13 @@
   "onboardingSettingsLink": {
     "message": "Abrir Configurações"
   },
+  "onboardingGuideLink": {
+    "message": "Ver o guia online"
+  },
+  "onboardingGuideUrl": {
+    "message": "https://cuspymd.github.io/text-highlighter/guide/index.pt.html",
+    "description": "URL of the online user guide in this locale's language. Point at index.en.html if no page exists for this language yet."
+  },
   "helpSection": {
     "message": "Ajuda"
   },

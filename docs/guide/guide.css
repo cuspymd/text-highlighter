@@ -187,6 +187,17 @@ kbd {
     padding: 0.2em 0.4em;
 }
 
+/* Inline literals such as browser setting URLs */
+code {
+    background-color: #f7fafc;
+    border-radius: 4px;
+    color: #4a5568;
+    font-family: monospace;
+    font-size: 0.9em;
+    padding: 0.15em 0.35em;
+    word-break: break-all;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     .docs-container {

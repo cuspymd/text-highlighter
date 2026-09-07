@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de uso - Marks: Text Highlighter</title>
+    <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Marks: Text Highlighter</div>
+                <ul class="nav-links">
+                    <li><a href="../index.pt.html">Início</a></li>
+                    <li><a href="index.html">한국어</a></li>
+                    <li><a href="index.en.html">English</a></li>
+                    <li><a href="index.ja.html">日本語</a></li>
+                    <li><a href="index.zh.html">中文</a></li>
+                    <li><a href="index.es.html">Español</a></li>
+                    <li><a href="index.pt.html" class="active">Português</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <h3>Índice</h3>
+            <ul class="toc-list">
+                <li><a href="#intro">Introdução</a></li>
+                <li><a href="#add-highlights">Como adicionar destaques</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#add-control-ui">1. Com a interface de controle</a></li>
+                        <li><a href="#add-context-menu">2. Com o menu de contexto</a></li>
+                        <li><a href="#add-shortcuts">3. Com atalhos de teclado</a></li>
+                    </ul>
+                </li>
+                <li><a href="#delete-highlights">Como excluir destaques</a></li>
+                <li><a href="#custom-colors">Cores personalizadas</a></li>
+                <li><a href="#minimap">Minimapa</a></li>
+                <li><a href="#popup-menu">Menu pop-up</a></li>
+                <li><a href="#settings">Tela de configurações</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#settings-general">Geral</a></li>
+                        <li><a href="#settings-shortcuts">Cores dos atalhos</a></li>
+                    </ul>
+                </li>
+                <li><a href="#pages-list">Lista de páginas destacadas</a></li>
+                <li><a href="#sync">Sincronização</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#cloud-sync">Sincronização na nuvem (Beta)</a></li>
+                    </ul>
+                </li>
+                <li><a href="#import-export">Importar e exportar</a></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            <section id="intro">
+                <h1>Guia de uso do Marks: Text Highlighter</h1>
+                <p>Obrigado por usar o Marks: Text Highlighter. Esta extensão permite destacar, salvar e gerenciar textos em páginas da web de forma fácil e rápida.</p>
+                <div class="note">
+                    <span class="note-title">Observação</span>
+                    A extensão também traz um guia rápido de primeiros passos. Você pode abri-lo pelo botão <strong>"Ver guia de uso"</strong> na tela de configurações, ou pelo link <strong>"Ver o guia completo"</strong> que aparece no menu pop-up quando a página ainda não tem destaques.
+                </div>
+            </section>
+
+            <section id="add-highlights">
+                <h2>Como adicionar destaques</h2>
+                <p>Há três maneiras de destacar o texto que você seleciona em uma página da web.</p>
+
+                <h3 id="add-control-ui">1. Com a interface de controle</h3>
+                <p>Ao selecionar um texto, aparece um ícone de marca-texto (em formato de caneta) ao lado da seleção. Clique no ícone ou passe o mouse sobre ele para exibir a <strong>interface de controle</strong> com a paleta de cores. Clique em uma cor para aplicar o destaque.</p>
+                <div class="note">
+                    <span class="note-title">Observação</span>
+                    Funciona quando a opção "Mostrar interface de controle ao selecionar texto" está ativada nas configurações. Também é o método principal em dispositivos móveis.
+                </div>
+
+                <h3 id="add-context-menu">2. Com o menu de contexto</h3>
+                <p>Selecione o texto e clique com o botão direito para abrir o menu de contexto. Em <strong>"Marks: Text Highlighter"</strong>, escolha uma cor para destacar.</p>
+                <div class="warning">
+                    <span class="warning-title">Limitação</span>
+                    Destacar pelo menu de contexto não é compatível com o Firefox para Android.
+                </div>
+
+                <h3 id="add-shortcuts">3. Com atalhos de teclado</h3>
+                <p>Selecione o texto e use um atalho de teclado para aplicar uma cor rapidamente. São <strong>5 espaços de atalho</strong>, e você pode escolher qual cor cada um usa na <a href="#settings-shortcuts">tela de configurações</a>.</p>
+                <ul>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd> : Espaço 1 (padrão: amarelo)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>2</kbd> : Espaço 2 (padrão: verde)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>3</kbd> : Espaço 3 (padrão: azul)</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>4</kbd> : Espaço 4 (padrão: rosa)</li>
+                    <li>Espaço 5 (padrão: laranja) : <strong>não vem com nenhuma combinação de teclas atribuída.</strong> Você precisa defini-la nas configurações de atalhos do navegador para que funcione.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Observação</span>
+                    No macOS a combinação é <kbd>Command</kbd> + <kbd>Shift</kbd> + número. As combinações de teclas em si são alteradas nas configurações de atalhos do navegador (Chrome: <code>chrome://extensions/shortcuts</code>, Firefox: <code>about:addons</code>).
+                </div>
+                <div class="warning">
+                    <span class="warning-title">Limitação</span>
+                    Os atalhos de teclado não são compatíveis com o Firefox para Android.
+                </div>
+            </section>
+
+            <section id="delete-highlights">
+                <h2>Como excluir destaques</h2>
+                <p>Você pode remover os destaques desnecessários das seguintes formas:</p>
+                <ul>
+                    <li><strong>Excluir um (interface de controle):</strong> clique em um destaque existente para abrir a interface de controle e clique no <strong>ícone de lixeira</strong>.</li>
+                    <li><strong>Excluir um (menu pop-up):</strong> clique no ícone da extensão na barra de ferramentas para abrir o menu pop-up. Na lista "Destaques da página atual", clique no <strong>botão X</strong> ao lado do item que deseja remover.</li>
+                    <li><strong>Limpar a página (menu pop-up):</strong> clique no botão <strong>"Excluir todos os destaques"</strong> na parte inferior do menu pop-up para remover todos os destaques da página atual.</li>
+                    <li><strong>Excluir uma página (lista de páginas):</strong> no painel de páginas destacadas, clique no botão <strong>"Excluir"</strong> de um cartão de página para apagar todos os dados dela.</li>
+                    <li><strong>Excluir todos os dados (lista de páginas):</strong> clique no <strong>ícone de lixeira (Excluir todas as páginas)</strong> na barra superior do painel para apagar todos os dados de destaque salvos.</li>
+                </ul>
+            </section>
+
+            <section id="custom-colors">
+                <h2>Cores personalizadas</h2>
+
+                <h3>Adicionar e alterar cores</h3>
+                <p>Além das 5 cores padrão (amarelo, verde, azul, rosa e laranja), você pode adicionar as suas próprias. É possível adicioná-las direto da página ou gerenciá-las na tela de configurações.</p>
+                <ol>
+                    <li>Clique em um destaque existente para abrir a interface de controle.</li>
+                    <li>Clique no <strong>botão +</strong> no fim da lista de cores.</li>
+                    <li>Escolha uma cor no seletor e clique em "Aplicar".</li>
+                </ol>
+                <div class="note">
+                    <span class="note-title">Observação</span>
+                    O botão + não aparece na interface de controle quando você destaca um texto novo. Ele só aparece ao clicar em um <strong>destaque já criado</strong>.
+                </div>
+
+                <h3>Gerenciar nas configurações</h3>
+                <p>As cores que você adiciona são gerenciadas na seção <strong>"Cores personalizadas"</strong> da tela de configurações (ícone de configurações (⚙) do menu pop-up → Cores personalizadas).</p>
+                <ul>
+                    <li><strong>Adicionar:</strong> use o botão <strong>"+ Adicionar cor"</strong> para abrir o seletor de cores.</li>
+                    <li><strong>Renomear:</strong> clique no nome de uma cor para editá-lo ali mesmo.</li>
+                    <li><strong>Alterar a cor:</strong> use o botão <strong>"Alterar"</strong>. Os destaques já aplicados com aquela cor não são afetados.</li>
+                    <li><strong>Excluir uma:</strong> cada cor tem o seu próprio botão <strong>"Excluir"</strong>.</li>
+                    <li><strong>Excluir todas:</strong> o botão <strong>"Excluir tudo"</strong>, no canto superior direito da seção, apaga todas as cores adicionadas e mantém apenas as 5 padrão.</li>
+                </ul>
+            </section>
+
+            <section id="minimap">
+                <h2>Minimapa</h2>
+                <p>Do lado direito das páginas da web que têm destaques é exibido um <strong>minimapa</strong>.</p>
+                <ul>
+                    <li>O minimapa mostra visualmente onde estão os destaques em relação ao comprimento total da página.</li>
+                    <li>Ao clicar em um marcador do minimapa, a página <strong>rola</strong> imediatamente até aquele destaque.</li>
+                    <li>Você pode ocultá-lo desativando a chave "Mostrar minimapa" na <a href="#settings-general">tela de configurações</a>.</li>
+                </ul>
+            </section>
+
+            <section id="popup-menu">
+                <h2>Menu pop-up</h2>
+                <p>É o menu que aparece ao clicar no ícone do Marks na barra de ferramentas do navegador.</p>
+                <ul>
+                    <li><strong>Ícone de configurações (⚙):</strong> a engrenagem no canto superior direito abre a <a href="#settings">tela de configurações</a>. Opções como o minimapa, a interface de controle e o destaque com um clique ficam todas lá.</li>
+                    <li><strong>Destaques da página atual:</strong> os destaques salvos na página que você está vendo. Clique em um item para ir até ele, ou use o <strong>botão X</strong> no canto superior direito dele para excluí-lo.</li>
+                    <li><strong>Lista de páginas destacadas:</strong> abre o painel onde todas as páginas salvas são gerenciadas.</li>
+                    <li><strong>Excluir todos os destaques:</strong> remove todos os destaques da página atual. O botão fica desativado quando não há nada a excluir.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Quando um item diz "Não encontrado nesta página"</span>
+                    Se a página demorou a ser renderizada ou o conteúdo dela mudou, a posição de um destaque pode não ser restaurada. Esse item fica esmaecido e surge um botão <strong>"Procurar de novo"</strong>; ao pressioná-lo, a página procura o destaque mais uma vez. Se ainda assim não for encontrado, é porque o conteúdo da página realmente mudou. Os dados do destaque salvo não são apagados.
+                </div>
+            </section>
+
+            <section id="settings">
+                <h2>Tela de configurações</h2>
+                <p>Abre pelo <strong>ícone de configurações (⚙)</strong> no canto superior direito do menu pop-up. As chaves e os botões que antes ficavam no menu pop-up foram todos movidos para cá.</p>
+
+                <h3 id="settings-general">Geral</h3>
+                <ul>
+                    <li><strong>Mostrar minimapa:</strong> ativa ou desativa o minimapa no lado direito da página.</li>
+                    <li><strong>Mostrar interface de controle ao selecionar texto:</strong> ativa ou desativa a exibição automática do ícone de marca-texto ao selecionar um texto.</li>
+                    <li><strong>Destaque com um clique:</strong> quando ativado, pressionar o ícone de seleção destaca imediatamente com a <strong>última cor usada</strong>, sem abrir a paleta. Vem desativado por padrão; para usar outra cor, clique no destaque criado e escolha na paleta.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Observação</span>
+                    O destaque com um clique depende da existência do ícone de seleção, então enquanto "Mostrar interface de controle ao selecionar texto" estiver desativado, esta linha fica esmaecida e não pode ser usada.
+                </div>
+
+                <h3>Cores personalizadas</h3>
+                <p>Permite renomear uma cor, alterar o tom dela e excluir cores uma a uma ou todas de uma vez. Veja <a href="#custom-colors">Cores personalizadas</a> para mais detalhes.</p>
+
+                <h3>Sincronização na nuvem (Beta)</h3>
+                <p>Aqui você gera o código de sincronização, vincula dispositivos e sincroniza na hora. Veja <a href="#cloud-sync">Sincronização na nuvem (Beta)</a> para mais detalhes.</p>
+
+                <h3 id="settings-shortcuts">Cores dos atalhos</h3>
+                <p>Escolha qual cor cada um dos 5 espaços de atalho aplica. Os padrões dos espaços 1 a 5 são amarelo, verde, azul, rosa e laranja, e cores personalizadas também podem ser atribuídas. As combinações de teclas em si são alteradas nas configurações de atalhos do navegador.</p>
+
+                <h3>Ajuda</h3>
+                <p>O botão <strong>"Ver guia de uso"</strong> abre o guia de primeiros passos incluído na extensão.</p>
+            </section>
+
+            <section id="pages-list">
+                <h2>Lista de páginas destacadas</h2>
+                <p>Um painel onde você vê e gerencia num relance todas as informações de destaque salvas.</p>
+                <ul>
+                    <li><strong>Buscar:</strong> pesquise os registros salvos por título da página ou URL. O texto correspondente fica realçado nos resultados.</li>
+                    <li><strong>Ordenar:</strong> ordene a lista por mais recente, mais antigo etc.</li>
+                    <li><strong>Expandir/recolher tudo:</strong> clique no botão da barra de ferramentas para expandir ou recolher de uma vez os detalhes dos destaques de todas as páginas visíveis. O botão alterna entre "Expandir tudo" e "Recolher tudo" conforme o estado atual.</li>
+                    <li><strong>Excluir:</strong> exclua páginas individuais ou use o botão da barra superior para apagar todos os dados.</li>
+                    <li><strong>Exportar/importar:</strong> faça backup ou restaure seus dados pelo menu <strong>Mais ações (…)</strong> da barra de ferramentas.</li>
+                </ul>
+            </section>
+
+            <section id="sync">
+                <h2>Sincronização</h2>
+                <p>Sincroniza os dados de destaque entre dispositivos por meio da sua conta Google (Chrome) ou Firefox conectada.</p>
+
+                <h3>Como funciona</h3>
+                <p>Ao adicionar ou excluir destaques em um dispositivo, a alteração é refletida automaticamente nos outros dispositivos conectados com a mesma conta. Em caso de conflito, a alteração mais recente é mantida.</p>
+
+                <h3>Limitações</h3>
+                <ul>
+                    <li><strong>Limite de armazenamento:</strong> o armazenamento de sincronização tem um <strong>limite total de 100 KB</strong>, e um único destaque não pode passar de <strong>8 KB</strong>.</li>
+                    <li><strong>Limpeza de dados antigos:</strong> quando o armazenamento enche, os dados sincronizados das páginas atualizadas há mais tempo são removidos automaticamente para abrir espaço. (Os dados locais são preservados.)</li>
+                    <li><strong>Sem suporte no celular:</strong> a sincronização não é compatível com o Firefox para Android.</li>
+                </ul>
+
+                <h3 id="cloud-sync">Sincronização na nuvem (Beta)</h3>
+                <p>Um recurso à parte para ambientes que não têm a sincronização nativa do navegador, como o Firefox para Android. Os dispositivos são vinculados por um <strong>código de sincronização</strong> em vez de login com conta, e os dados de destaque são criptografados no seu dispositivo antes do envio, de modo que o servidor nunca tem acesso ao conteúdo real.</p>
+
+                <h4>Como usar</h4>
+                <ol>
+                    <li>Clique no ícone da extensão na barra de ferramentas para abrir o menu pop-up e clique no <strong>ícone de configurações (⚙)</strong>.</li>
+                    <li>Na seção <strong>"Sincronização na nuvem (Beta)"</strong> da tela de configurações, clique em <strong>"Gerar novo código"</strong> para criar um código de sincronização.</li>
+                    <li>No outro dispositivo que você quer sincronizar, abra a tela de configurações, digite o mesmo código no campo "Digite o código de sincronização de outro dispositivo" e clique em <strong>"Conectar"</strong>.</li>
+                    <li>Ative a chave <strong>"Sincronização na nuvem"</strong> em cada dispositivo para iniciar a sincronização. A partir daí ela ocorre automaticamente a cada 15 minutos, mais ou menos, ou você pode clicar em <strong>"Sincronizar agora"</strong> para sincronizar na hora.</li>
+                </ol>
+
+                <div class="warning">
+                    <span class="warning-title">Atenção</span>
+                    Se você perder o código de sincronização, os dados salvos na nuvem não poderão ser recuperados. O código aparece parcialmente oculto na tela; use "Mostrar" para vê-lo por inteiro ou "Copiar" para copiá-lo para a área de transferência. Guarde-o em um lugar seguro.
+                </div>
+
+                <p><strong>Desconectar:</strong> ao clicar em "Esquecer código" na tela de configurações, este dispositivo é desvinculado da sincronização e esquece o código.</p>
+
+                <div class="note">
+                    <span class="note-title">Observação</span>
+                    Não há garantia de funcionamento correto ao usar a sincronização nativa do navegador e a sincronização na nuvem ao mesmo tempo. Recomendamos usar apenas uma das duas.
+                </div>
+            </section>
+
+            <section id="import-export">
+                <h2>Importar e exportar</h2>
+                <p>Útil para fazer um backup seguro dos dados ou migrá-los para outro navegador.</p>
+                <ul>
+                    <li><strong>Exportar:</strong> baixa todos os dados de destaque salvos como um arquivo JSON.</li>
+                    <li><strong>Importar:</strong> restaura os dados selecionando um arquivo JSON exportado anteriormente.</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Active TOC Highlight Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.sidebar a');
+
+            function onScroll() {
+                let current = '';
+                // Offset for header height + some buffer
+                const headerOffset = 150;
+
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    // Check if the section is currently active based on scroll position
+                    if (window.scrollY >= (sectionTop - headerOffset)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes('#' + current)) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', onScroll);
+            // Initial call to highlight correct section on load
+            onScroll();
+        });
+    </script>
+</body>
+</html>

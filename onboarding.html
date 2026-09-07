@@ -126,7 +126,9 @@
 
       .guide-footer {
         display: flex;
+        flex-wrap: wrap;
         justify-content: center;
+        gap: 10px;
         padding-top: 4px;
       }
 
@@ -315,6 +317,18 @@
       <footer class="guide-footer">
         <a class="btn btn-primary" href="settings.html" data-i18n="onboardingSettingsLink">
           Open Settings
+        </a>
+        <!-- The online guide lives outside the extension, so the href is a
+             message too: each locale points at the page in its own language. -->
+        <a
+          class="btn"
+          href="https://cuspymd.github.io/text-highlighter/guide/index.en.html"
+          data-i18n-href="onboardingGuideUrl"
+          data-i18n="onboardingGuideLink"
+          target="_blank"
+          rel="noopener"
+        >
+          Open the online guide
         </a>
       </footer>
     </div>

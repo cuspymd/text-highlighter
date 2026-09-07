@@ -388,6 +388,13 @@
   "onboardingSettingsLink": {
     "message": "설정 열기"
   },
+  "onboardingGuideLink": {
+    "message": "온라인 가이드 보기"
+  },
+  "onboardingGuideUrl": {
+    "message": "https://cuspymd.github.io/text-highlighter/guide/index.html",
+    "description": "URL of the online user guide in this locale's language. Point at index.en.html if no page exists for this language yet."
+  },
   "helpSection": {
     "message": "도움말"
   },
