@@ -388,6 +388,13 @@
   "onboardingSettingsLink": {
     "message": "打开设置"
   },
+  "onboardingGuideLink": {
+    "message": "查看在线指南"
+  },
+  "onboardingGuideUrl": {
+    "message": "https://cuspymd.github.io/text-highlighter/guide/index.zh.html",
+    "description": "URL of the online user guide in this locale's language. Point at index.en.html if no page exists for this language yet."
+  },
   "helpSection": {
     "message": "帮助"
   },

@@ -13,6 +13,19 @@ function initializeI18n() {
       element.textContent = message;
     }
   });
+
+  // The online guide is a different page per language, so the link target is
+  // localized alongside its label. A locale with no message here keeps the
+  // English URL already in the markup.
+  const elementsWithHref = document.querySelectorAll('[data-i18n-href]');
+
+  elementsWithHref.forEach(element => {
+    const key = element.getAttribute('data-i18n-href');
+    const message = browserAPI.i18n.getMessage(key);
+    if (message) {
+      element.href = message;
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
