@@ -41,5 +41,5 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: .artifacts/playwright/playwright-report/
+          path: .artifacts/playwright/
           retention-days: 30

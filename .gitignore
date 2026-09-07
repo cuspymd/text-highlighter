@@ -6,3 +6,4 @@ outputs/
 /test-results/
 .claude/
 worker/.wrangler/
+/.artifacts/

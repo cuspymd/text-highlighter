@@ -104,6 +104,44 @@
   }
 
   /**
+   * Whether a refreshHighlights message would leave the page as it is.
+   *
+   * Every save is echoed back to the tab that made it: the background writes
+   * the page's groups to storage.sync, its own onChanged listener merges that
+   * write and broadcasts the result to every tab on the url - the saving tab
+   * included. Rebuilding the page for that echo unwraps every span and rejoins
+   * the text nodes around it, which changes how many spans a group is made of
+   * and detaches any selection the user has made since. So a refresh that
+   * carries exactly the groups already on the page is dropped.
+   *
+   * Groups are compared by identity, colour and updatedAt: a change from
+   * another device arrives with a newer updatedAt, and a group removed there
+   * arrives as a shorter list.
+   *
+   * @param {Array<Object>} currentGroups - the groups the page holds
+   * @param {Array<Object>} incomingGroups - the groups the refresh carries
+   * @param {Set<string>} restoredGroupIds - ids of the groups actually on the page
+   * @returns {boolean}
+   */
+  function refreshChangesNothing(currentGroups, incomingGroups, restoredGroupIds) {
+    const current = Array.isArray(currentGroups) ? currentGroups : [];
+    const incoming = Array.isArray(incomingGroups) ? incomingGroups : [];
+    if (current.length !== incoming.length) return false;
+
+    const currentById = new Map(current.map(group => [String(group.groupId), group]));
+    if (currentById.size !== current.length) return false;
+
+    return incoming.every(group => {
+      const id = String(group.groupId);
+      const held = currentById.get(id);
+      return Boolean(held)
+        && held.color === group.color
+        && (held.updatedAt || 0) === (group.updatedAt || 0)
+        && restoredGroupIds.has(id);
+    });
+  }
+
+  /**
    * Whether a restore is still coming, and how long the popup should wait
    * before asking again.
    *
@@ -159,5 +197,6 @@
     isRangeInDocument,
     resolveUnclaimedMatch,
     createRestorePendingState,
+    refreshChangesNothing,
   };
 })();

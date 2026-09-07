@@ -326,4 +326,41 @@ describe('restore-core', () => {
       expect(second.isPending).toBe(true);
     });
   });
+  describe('refreshChangesNothing', () => {
+    const onPage = (...ids) => new Set(ids.map(String));
+    const group = (groupId, color = '#ffff00', updatedAt = 100) => ({ groupId, color, updatedAt });
+
+    it('drops a refresh that carries the groups already on the page', () => {
+      const held = [group('a'), group('b')];
+      const incoming = [group('b'), group('a')];
+
+      expect(restore.refreshChangesNothing(held, incoming, onPage('a', 'b'))).toBe(true);
+    });
+
+    it('treats a missing list the way it treats an empty one', () => {
+      expect(restore.refreshChangesNothing([], undefined, onPage())).toBe(true);
+      expect(restore.refreshChangesNothing([], null, onPage())).toBe(true);
+    });
+
+    it('lets a recolour through', () => {
+      expect(restore.refreshChangesNothing([group('a')], [group('a', '#00ff00')], onPage('a'))).toBe(false);
+    });
+
+    it('lets a newer version of a group through', () => {
+      expect(restore.refreshChangesNothing([group('a')], [group('a', '#ffff00', 200)], onPage('a'))).toBe(false);
+    });
+
+    it('lets an added or removed group through', () => {
+      expect(restore.refreshChangesNothing([group('a')], [group('a'), group('b')], onPage('a'))).toBe(false);
+      expect(restore.refreshChangesNothing([group('a'), group('b')], [group('a')], onPage('a', 'b'))).toBe(false);
+    });
+
+    it('lets a refresh through when a held group never made it onto the page', () => {
+      expect(restore.refreshChangesNothing([group('a')], [group('a')], onPage())).toBe(false);
+    });
+
+    it('matches ids across number and string', () => {
+      expect(restore.refreshChangesNothing([group(1)], [group('1')], onPage(1))).toBe(true);
+    });
+  });
 });
