@@ -45,7 +45,7 @@
     "message": "插槽 5"
   },
   "popupTitle": {
-    "message": "文本高亮器"
+    "message": "Marks"
   },
   "popupDescription": {
     "message": "在网页上选择文本后，可使用控制UI进行高亮。"
