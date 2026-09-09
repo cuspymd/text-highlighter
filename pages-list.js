@@ -4,6 +4,7 @@ import { validateImportPayload } from './shared/import-export-schema.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 import { sendToBackground } from './shared/runtime-message.js';
 import { initializeThemeWatcher } from './shared/theme.js';
+import { openHighlight } from './shared/highlight-navigation.js';
 
 document.addEventListener('DOMContentLoaded', function () {
   // Initialize theme watcher
@@ -16,6 +17,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const pagesContainer = document.getElementById('pages-container');
   const noPages = document.getElementById('no-pages');
+  const searchSummary = document.getElementById('search-summary');
+  const navigationStatus = document.getElementById('navigation-status');
+  let navigationController = null;
+  window.addEventListener('pagehide', () => navigationController?.abort(), { once: true });
+
+  async function navigateToHighlight(item, page, group) {
+    if (item.getAttribute('aria-busy') === 'true') return;
+    navigationController?.abort();
+    const controller = new AbortController();
+    navigationController = controller;
+    item.setAttribute('aria-busy', 'true');
+    navigationStatus.textContent = getMessage('highlightNavigationLoading', 'Opening highlight…');
+    const result = await openHighlight(page.url, group.groupId, { signal: controller.signal });
+    item.removeAttribute('aria-busy');
+    if (navigationController !== controller || controller.signal.aborted) return;
+    const key = result.success ? 'highlightNavigationSuccess'
+      : result.reason === 'not-found' ? 'highlightNavigationMissing'
+      : result.reason === 'cancelled' ? 'highlightNavigationCancelled' : 'highlightNavigationUnavailable';
+    navigationStatus.textContent = getMessage(key);
+    navigationController = null;
+  }
 
   // Function to get messages for multi-language support
   function getMessage(key, defaultValue = '', substitutions) {
@@ -150,8 +172,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function renderPageHighlights(page, highlightsContainer, searchTerm) {
+  function renderPageHighlights(page, highlightsContainer, searchTerm, showAll = false) {
     highlightsContainer.replaceChildren();
+    highlightsContainer.dataset.complete = 'true';
 
     const sortedHighlights = [...(page.highlights || [])].sort((a, b) => {
       const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
@@ -170,7 +193,16 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    const term = normalizeSearchTerm(searchTerm);
+    const matches = [];
+    const others = [];
     sortedHighlights.forEach(group => {
+      ((group.text || '').toLowerCase().includes(term) ? matches : others).push(group);
+    });
+    const visible = term ? (showAll ? [...matches, ...others] : matches) : sortedHighlights;
+    highlightsContainer.dataset.complete = String(!term || showAll || others.length === 0);
+
+    visible.forEach(group => {
       const highlightItem = document.createElement('div');
       highlightItem.className = 'highlight-item';
       highlightItem.style.setProperty('--highlight-color', group.color);
@@ -178,11 +210,41 @@ document.addEventListener('DOMContentLoaded', function () {
       span.className = 'highlight-text';
       appendHighlightedText(span, group.text, searchTerm);
       highlightItem.appendChild(span);
+      if (isSafeOpenUrl(page.url) && group.groupId != null) {
+        highlightItem.setAttribute('role', 'button');
+        highlightItem.tabIndex = 0;
+        highlightItem.title = getMessage('openHighlight', 'Open highlight in original page');
+        highlightItem.addEventListener('click', () => {
+          const selection = window.getSelection();
+          if (selection && !selection.isCollapsed && selection.containsNode(highlightItem, true)) return;
+          navigateToHighlight(highlightItem, page, group);
+        });
+        highlightItem.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            navigateToHighlight(highlightItem, page, group);
+          }
+        });
+      }
       highlightsContainer.appendChild(highlightItem);
     });
+    if (term && others.length > 0) {
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'btn other-highlights-toggle';
+      toggle.setAttribute('aria-expanded', String(showAll));
+      toggle.textContent = showAll ? getMessage('hideOtherHighlights', 'Hide other highlights')
+        : getMessage('showOtherHighlights', 'Show $1 other highlights', [String(others.length)]);
+      toggle.addEventListener('click', () => {
+        renderPageHighlights(page, highlightsContainer, searchTerm, !showAll);
+        highlightsContainer.querySelector('.other-highlights-toggle')?.focus();
+        updateExpandCollapseAllButtonState();
+      });
+      highlightsContainer.appendChild(toggle);
+    }
   }
 
-  function setPageDetailsExpanded(pageItem, page, expand, searchTerm) {
+  function setPageDetailsExpanded(pageItem, page, expand, searchTerm, showAll = true) {
     const highlightsContainer = pageItem.querySelector('.page-highlights');
     const detailsButton = pageItem.querySelector('.btn-details');
 
@@ -192,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    renderPageHighlights(page, highlightsContainer, searchTerm);
+    renderPageHighlights(page, highlightsContainer, searchTerm, showAll);
     highlightsContainer.style.display = 'block';
     detailsButton.textContent = getMessage('hideDetails', 'Hide');
   }
@@ -242,8 +304,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function displayPages(pages) {
     expandAllActive = false;
     allPages = [...pages];
-    filteredPages = [...pages];
-    sortAndDisplayPages();
+    filterPages(currentSearchTerm);
   }
 
   function getVisiblePageItems() {
@@ -254,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const pageItems = getVisiblePageItems();
     return pageItems.length > 0 && pageItems.every(pageItem => {
       const highlightsContainer = pageItem.querySelector('.page-highlights');
-      return highlightsContainer?.style.display === 'block';
+      return highlightsContainer?.style.display === 'block' && highlightsContainer.dataset.complete === 'true';
     });
   }
 
@@ -304,6 +365,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Display filtered pages
   function displayFilteredPages(pages) {
+    const term = normalizeSearchTerm(currentSearchTerm);
+    searchSummary.hidden = !term;
+    const matchCount = pages.reduce((count, page) => count + (page.highlights || [])
+      .filter(group => (group.text || '').toLowerCase().includes(term)).length, 0);
+    searchSummary.textContent = term ? getMessage('highlightSearchSummary', '$1 pages · $2 matching highlights',
+      [String(pages.length), String(matchCount)]) : '';
     if (pages.length > 0) {
       noPages.style.display = 'none';
       pagesContainer.innerHTML = '';
@@ -372,6 +439,14 @@ document.addEventListener('DOMContentLoaded', function () {
         infoContainer.appendChild(titleRow);
         infoContainer.appendChild(urlDiv);
         infoContainer.appendChild(infoDiv);
+        const titleOnlyMatch = term && !(page.highlights || []).some(group =>
+          (group.text || '').toLowerCase().includes(term));
+        if (titleOnlyMatch) {
+          const label = document.createElement('div');
+          label.className = 'title-match-label';
+          label.textContent = getMessage('highlightTitleMatch', 'Title match');
+          infoContainer.appendChild(label);
+        }
 
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'page-actions';
@@ -401,9 +476,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         pagesContainer.appendChild(pageItem);
 
-        const shouldAutoExpand = expandAllActive || Boolean(normalizeSearchTerm(currentSearchTerm));
+        const shouldAutoExpand = expandAllActive || (Boolean(term) && !titleOnlyMatch);
         if (shouldAutoExpand) {
-          setPageDetailsExpanded(pageItem, page, true, currentSearchTerm);
+          setPageDetailsExpanded(pageItem, page, true, currentSearchTerm, expandAllActive);
         }
 
         // Page details button event

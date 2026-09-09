@@ -1,4 +1,34 @@
 {
+  "openHighlight": {
+    "message": "Abrir destaque na página original"
+  },
+  "highlightSearchSummary": {
+    "message": "$1 páginas · $2 destaques correspondentes"
+  },
+  "highlightTitleMatch": {
+    "message": "Correspondência no título"
+  },
+  "showOtherHighlights": {
+    "message": "Mostrar outros $1 destaques"
+  },
+  "hideOtherHighlights": {
+    "message": "Ocultar outros destaques"
+  },
+  "highlightNavigationLoading": {
+    "message": "Abrindo destaque…"
+  },
+  "highlightNavigationSuccess": {
+    "message": "Destaque localizado."
+  },
+  "highlightNavigationMissing": {
+    "message": "Este destaque não foi encontrado na página original."
+  },
+  "highlightNavigationCancelled": {
+    "message": "A navegação parou porque a aba foi fechada ou o endereço mudou."
+  },
+  "highlightNavigationUnavailable": {
+    "message": "Não foi possível confirmar que a página está pronta. Selecione o destaque para tentar novamente."
+  },
   "extensionName": {
     "message": "Marks: Text Highlighter"
   },

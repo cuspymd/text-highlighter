@@ -252,6 +252,68 @@ describe('pages-list', () => {
   // ===================================================================
 
   describe('search', () => {
+    it('shows only matching sentences first and expands the remaining sentences on request', async () => {
+      await openPagesList();
+      typeSearch('second');
+      let item = itemFor(OLDER.url);
+      expect(highlightTextsIn(item)).toEqual(['second sentence']);
+      expect(document.getElementById('expand-all-btn').getAttribute('aria-pressed')).toBe('false');
+      item.querySelector('.other-highlights-toggle').click();
+      expect(highlightTextsIn(item)).toEqual(['second sentence', 'first sentence']);
+      item.querySelector('.other-highlights-toggle').click();
+      expect(highlightTextsIn(item)).toEqual(['second sentence']);
+      document.getElementById('expand-all-btn').click();
+      item = itemFor(OLDER.url);
+      expect(highlightTextsIn(item)).toEqual(['second sentence', 'first sentence']);
+      expect(document.getElementById('expand-all-btn').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('keeps title-only matches collapsed and counts only matching sentences', async () => {
+      chrome.i18n.getMessage.mockImplementation((key, values) => values ? `${key}:${values.join(',')}` : key);
+      await openPagesList();
+      typeSearch('older');
+      expect(isExpanded(itemFor(OLDER.url))).toBe(false);
+      expect(itemFor(OLDER.url).querySelector('.title-match-label').textContent).toBe('highlightTitleMatch');
+      expect(document.getElementById('search-summary').textContent).toBe('highlightSearchSummary:1,0');
+      typeSearch('sentence');
+      expect(document.getElementById('search-summary').textContent).toBe('highlightSearchSummary:1,2');
+      typeSearch('no such text');
+      expect(document.getElementById('search-summary').textContent).toBe('highlightSearchSummary:0,0');
+      typeSearch('');
+      expect(document.getElementById('search-summary').hidden).toBe(true);
+    });
+
+    it('opens a sentence by keyboard and suppresses duplicate clicks while navigating', async () => {
+      const tab = { id: 9, url: OLDER.url, status: 'complete' };
+      chrome.tabs.query.mockResolvedValue([tab]);
+      chrome.tabs.update.mockResolvedValue(tab);
+      chrome.tabs.get.mockResolvedValue(tab);
+      chrome.tabs.sendMessage.mockImplementation(async (_, message) => message.action === 'getRestoredGroupIds'
+        ? { success: true, groupIds: ['a1'] } : { success: true });
+      await openPagesList();
+      typeSearch('second');
+      const item = itemFor(OLDER.url).querySelector('.highlight-item');
+      item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      item.click();
+      await flush();
+      expect(chrome.tabs.query).toHaveBeenCalledTimes(1);
+      expect(chrome.tabs.sendMessage).toHaveBeenLastCalledWith(9, { action: 'scrollToHighlight', groupId: 'a1' });
+      expect(document.getElementById('navigation-status').textContent).toBe('highlightNavigationSuccess');
+      expect(item.hasAttribute('aria-busy')).toBe(false);
+    });
+
+    it('does not navigate when the user selects text inside a sentence', async () => {
+      await openPagesList();
+      typeSearch('second');
+      const item = itemFor(OLDER.url).querySelector('.highlight-item');
+      const range = document.createRange();
+      range.selectNodeContents(item.querySelector('.highlight-text'));
+      window.getSelection().addRange(range);
+      item.click();
+      expect(chrome.tabs.query).not.toHaveBeenCalled();
+      window.getSelection().removeAllRanges();
+    });
+
     it('keeps only pages whose title matches', async () => {
       await openPagesList();
       typeSearch('older');

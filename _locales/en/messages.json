@@ -1,4 +1,34 @@
 {
+  "openHighlight": {
+    "message": "Open highlight in original page"
+  },
+  "highlightSearchSummary": {
+    "message": "$1 pages · $2 matching highlights"
+  },
+  "highlightTitleMatch": {
+    "message": "Title match"
+  },
+  "showOtherHighlights": {
+    "message": "Show $1 other highlights"
+  },
+  "hideOtherHighlights": {
+    "message": "Hide other highlights"
+  },
+  "highlightNavigationLoading": {
+    "message": "Opening highlight…"
+  },
+  "highlightNavigationSuccess": {
+    "message": "Moved to highlight."
+  },
+  "highlightNavigationMissing": {
+    "message": "This highlight could not be found on the original page."
+  },
+  "highlightNavigationCancelled": {
+    "message": "Navigation stopped because the tab closed or its address changed."
+  },
+  "highlightNavigationUnavailable": {
+    "message": "Could not confirm that the page is ready. Select the highlight to try again."
+  },
   "extensionName": {
     "message": "Marks: Text Highlighter"
   },
