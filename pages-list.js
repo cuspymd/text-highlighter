@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const copyStatus = document.getElementById('copy-status');
   const navigationStatus = document.getElementById('navigation-status');
   let navigationController = null;
-  let copyQueue = Promise.resolve();
+  let copyPending = false;
   const copyFeedbackTimers = new WeakMap();
   window.addEventListener('pagehide', () => navigationController?.abort(), { once: true });
 
@@ -115,12 +115,17 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
-  // Copies run one at a time so a slow clipboard write cannot finish after a
-  // later one and leave the clipboard holding the older text.
-  function copyMarkdown(text, button, successMessage) {
-    if (!text) return copyQueue;
-    copyQueue = copyQueue.then(() => runCopyMarkdown(text, button, successMessage)).catch(() => {});
-    return copyQueue;
+  // Overlapping copies are dropped rather than queued: a deferred write would
+  // run without its click's transient user activation, which Firefox rejects
+  // because no manifest asks for clipboardWrite.
+  async function copyMarkdown(text, button, successMessage) {
+    if (!text || copyPending) return;
+    copyPending = true;
+    try {
+      await runCopyMarkdown(text, button, successMessage);
+    } finally {
+      copyPending = false;
+    }
   }
 
   async function runCopyMarkdown(text, button, successMessage) {
