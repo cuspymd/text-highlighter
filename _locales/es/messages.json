@@ -1,4 +1,34 @@
 {
+  "openHighlight": {
+    "message": "Abrir resaltado en la página original"
+  },
+  "highlightSearchSummary": {
+    "message": "$1 páginas · $2 resaltados coincidentes"
+  },
+  "highlightTitleMatch": {
+    "message": "Coincidencia en el título"
+  },
+  "showOtherHighlights": {
+    "message": "Mostrar otros $1 resaltados"
+  },
+  "hideOtherHighlights": {
+    "message": "Ocultar otros resaltados"
+  },
+  "highlightNavigationLoading": {
+    "message": "Abriendo resaltado…"
+  },
+  "highlightNavigationSuccess": {
+    "message": "Se ha abierto el resaltado."
+  },
+  "highlightNavigationMissing": {
+    "message": "No se encontró este resaltado en la página original."
+  },
+  "highlightNavigationCancelled": {
+    "message": "La navegación se detuvo porque se cerró la pestaña o cambió su dirección."
+  },
+  "highlightNavigationUnavailable": {
+    "message": "No se pudo confirmar que la página esté lista. Selecciona el resaltado para reintentar."
+  },
   "extensionName": {
     "message": "Marks: Resaltador de Texto"
   },

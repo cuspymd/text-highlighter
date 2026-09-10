@@ -26,6 +26,41 @@ async function clickMoreMenuItem(page, selector) {
 }
 
 test.describe('Pages List UI and Delete All Pages', () => {
+  test('search jumps to the original highlight in an existing tab and a newly restored tab', async ({ context, background, extensionId }) => {
+    const original = await context.newPage();
+    await original.goto(`file:///${path.join(__dirname, 'navigation-page.html')}`);
+    await original.bringToFront();
+    await original.locator('#destination').click({ clickCount: 3 });
+    await sendHighlightMessage(background, 'yellow');
+    const highlighted = original.locator('#destination .text-highlighter-extension').first();
+    await expect(highlighted).toBeVisible();
+    await original.evaluate(() => window.scrollTo(0, 0));
+    const originalUrl = original.url();
+
+    const list = await context.newPage();
+    await openPagesList(list, extensionId);
+    await list.locator('#search-input').fill('distinctive');
+    const sentence = list.locator('.page-highlights .highlight-item[role="button"]');
+    await expect(sentence).toHaveCount(1);
+    const tabCount = context.pages().length;
+    await sentence.click();
+    await expect.poll(() => original.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+    expect(context.pages()).toHaveLength(tabCount);
+    await expect(highlighted).toBeInViewport();
+    await expect(sentence).not.toHaveAttribute('aria-busy', 'true');
+
+    await original.close();
+    await list.bringToFront();
+    const opened = context.waitForEvent('page');
+    await sentence.focus();
+    await sentence.press('Enter');
+    const restored = await opened;
+    await restored.waitForURL(originalUrl);
+    await expect.poll(() => restored.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+    await expect(restored.locator('#destination .text-highlighter-extension').first()).toBeInViewport();
+    await expect(sentence).not.toHaveAttribute('aria-busy', 'true');
+  });
+
   test('should show highlighted pages and delete all', async ({ context, background, extensionId }) => {
     // 1. test-page.html: highlight first p
     const page1 = await context.newPage();

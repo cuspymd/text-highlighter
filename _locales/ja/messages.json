@@ -1,4 +1,34 @@
 {
+  "openHighlight": {
+    "message": "元のページでハイライトを開く"
+  },
+  "highlightSearchSummary": {
+    "message": "$1ページ · $2件のハイライトが一致"
+  },
+  "highlightTitleMatch": {
+    "message": "タイトルが一致"
+  },
+  "showOtherHighlights": {
+    "message": "他のハイライト$1件を表示"
+  },
+  "hideOtherHighlights": {
+    "message": "他のハイライトを折りたたむ"
+  },
+  "highlightNavigationLoading": {
+    "message": "ハイライトに移動中…"
+  },
+  "highlightNavigationSuccess": {
+    "message": "ハイライトに移動しました。"
+  },
+  "highlightNavigationMissing": {
+    "message": "元のページでこのハイライトが見つかりませんでした。"
+  },
+  "highlightNavigationCancelled": {
+    "message": "タブが閉じられたかアドレスが変わったため、移動を中止しました。"
+  },
+  "highlightNavigationUnavailable": {
+    "message": "ページの準備を確認できませんでした。ハイライトを選択して再試行してください。"
+  },
   "extensionName": {
     "message": "Marks: テキストハイライター"
   },

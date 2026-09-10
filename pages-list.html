@@ -373,6 +373,20 @@
         margin-bottom: 0;
       }
 
+      .highlight-item[role="button"] { cursor: pointer; }
+      .highlight-item[role="button"]:hover { border-color: var(--accent); }
+      .highlight-item[role="button"]:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .highlight-item[aria-busy="true"] { opacity: 0.65; cursor: progress; }
+      .title-match-label, #search-summary, #navigation-status {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      #navigation-status:empty { display: none; }
+
       .highlight-text {
         color: var(--text);
         font-size: 12px;
@@ -491,6 +505,8 @@
         <input type="file" id="import-file" accept="application/json" style="display:none;" />
       </div>
 
+      <p id="search-summary" role="status" hidden></p>
+      <p id="navigation-status" role="status" aria-live="polite"></p>
       <div id="pages-container" class="page-grid">
         <div id="no-pages" class="no-pages" data-i18n="noPagesFound">No highlighted pages found.</div>
       </div>

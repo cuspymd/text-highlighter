@@ -1,4 +1,34 @@
 {
+  "openHighlight": {
+    "message": "원문에서 하이라이트 열기"
+  },
+  "highlightSearchSummary": {
+    "message": "$1개 페이지 · $2개 하이라이트 일치"
+  },
+  "highlightTitleMatch": {
+    "message": "제목 일치"
+  },
+  "showOtherHighlights": {
+    "message": "다른 하이라이트 $1개 보기"
+  },
+  "hideOtherHighlights": {
+    "message": "다른 하이라이트 접기"
+  },
+  "highlightNavigationLoading": {
+    "message": "하이라이트로 이동 중…"
+  },
+  "highlightNavigationSuccess": {
+    "message": "하이라이트로 이동했습니다."
+  },
+  "highlightNavigationMissing": {
+    "message": "원문에서 이 표시를 찾지 못했습니다."
+  },
+  "highlightNavigationCancelled": {
+    "message": "탭이 닫히거나 주소가 바뀌어 이동을 중단했습니다."
+  },
+  "highlightNavigationUnavailable": {
+    "message": "페이지 준비를 확인하지 못했습니다. 하이라이트를 선택해 다시 시도하세요."
+  },
   "extensionName": {
     "message": "Marks: 텍스트 하이라이터"
   },

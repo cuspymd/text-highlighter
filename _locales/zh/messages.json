@@ -1,4 +1,34 @@
 {
+  "openHighlight": {
+    "message": "在原网页中打开高亮"
+  },
+  "highlightSearchSummary": {
+    "message": "$1个页面 · $2处高亮匹配"
+  },
+  "highlightTitleMatch": {
+    "message": "标题匹配"
+  },
+  "showOtherHighlights": {
+    "message": "显示其他$1处高亮"
+  },
+  "hideOtherHighlights": {
+    "message": "收起其他高亮"
+  },
+  "highlightNavigationLoading": {
+    "message": "正在跳转到高亮…"
+  },
+  "highlightNavigationSuccess": {
+    "message": "已跳转到高亮。"
+  },
+  "highlightNavigationMissing": {
+    "message": "在原网页中找不到此高亮。"
+  },
+  "highlightNavigationCancelled": {
+    "message": "标签页已关闭或地址已更改，跳转已停止。"
+  },
+  "highlightNavigationUnavailable": {
+    "message": "无法确认页面是否就绪。请选择高亮重试。"
+  },
   "extensionName": {
     "message": "Marks: 文本高亮器"
   },
