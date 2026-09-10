@@ -6,7 +6,7 @@ function normalizeText(text) {
 }
 
 function escapeLinkLabel(text) {
-  return String(text).replace(/\\/g, '\\\\').replace(/([\[\]])/g, '\\$1').replace(/\s+/g, ' ').trim();
+  return String(text).replace(/\\/g, '\\\\').replace(/([`*_[\]<>|~])/g, '\\$1').replace(/\s+/g, ' ').trim();
 }
 
 function safeLinkUrl(url) {
@@ -55,7 +55,8 @@ function quoteMarkdown(text) {
       .replace(/\\/g, '\\\\')
       .replace(/([`*_[\]<>|~])/g, '\\$1')
       .replace(/^(\s*)(#{1,6}|>|[-+])(?=\s)/, '$1\\$2')
-      .replace(/^(\s*\d+)\.(?=\s)/, '$1\\.');
+      .replace(/^(\s*\d+)\.(?=\s)/, '$1\\.')
+      .replace(/^(\s*)([-=]+\s*)$/, '$1\\$2');
     return `> ${escaped}`;
   }).join('\n');
 }

@@ -52,6 +52,19 @@ describe('highlight Markdown formatting', () => {
     );
   });
 
+  it('keeps thematic breaks and setext underlines literal inside a quotation', () => {
+    expect(formatPageMarkdown(PAGE, [{ text: 'Title\n===\n---' }])).toContain(
+      '> Title\n> \\===\n> \\---',
+    );
+  });
+
+  it('keeps inline Markdown punctuation literal inside a link label', () => {
+    expect(formatPageMarkdown(
+      { title: 'An *important* `note` and ~~old~~ text', url: 'https://example.com/read' },
+      [{ text: 'quote' }],
+    )).toContain('## [An \\*important\\* \\`note\\` and \\~\\~old\\~\\~ text](https://example.com/read)');
+  });
+
   it('does not create a clickable link for an unsafe legacy URL', () => {
     expect(formatPageMarkdown(
       { title: 'Unsafe', url: 'javascript:alert(1)' },
