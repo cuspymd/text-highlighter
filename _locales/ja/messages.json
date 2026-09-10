@@ -442,5 +442,10 @@
   },
   "popupGuideLink": {
     "message": "使い方を詳しく見る"
-  }
+  },
+  "copyPageHighlightsLabel": { "message": "このページのすべてのハイライトをコピー" },
+  "copyPageHighlightsSuccess": { "message": "このページのハイライト$1件をコピーしました。" },
+  "copySearchResultsLabel": { "message": "検索結果に一致するハイライトのみをコピー" },
+  "copySearchResultsSuccess": { "message": "一致するハイライト$1件をコピーしました。" },
+  "copyHighlightsFailed": { "message": "ハイライトをコピーできませんでした。もう一度お試しください。" }
 }

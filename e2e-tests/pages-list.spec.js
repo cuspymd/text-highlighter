@@ -40,7 +40,7 @@ test.describe('Pages List UI and Delete All Pages', () => {
     const list = await context.newPage();
     await openPagesList(list, extensionId);
     await list.locator('#search-input').fill('distinctive');
-    const sentence = list.locator('.page-highlights .highlight-item[role="button"]');
+    const sentence = list.locator('.page-highlights .highlight-main[role="button"]');
     await expect(sentence).toHaveCount(1);
     const tabCount = context.pages().length;
     await sentence.click();
@@ -289,6 +289,43 @@ test.describe('Pages List UI and Delete All Pages', () => {
     await expect(pageItems).toHaveCount(2);
     await expect(listPage.locator('.page-highlights:visible')).toHaveCount(0);
 
+    await listPage.close();
+  });
+
+  test('copies a page and uses the same icon for search-result copying', async ({ context, extensionId }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const listPage = await context.newPage();
+    await openPagesList(listPage, extensionId);
+
+    const jsonPath = path.join(__dirname, 'all-highlights-test.json');
+    await clickMoreMenuItem(listPage, '#import-btn');
+    await listPage.setInputFiles('#import-file', jsonPath);
+    await acceptModalAndGetMessage(listPage);
+
+    const firstPage = listPage.locator('.page-item').first();
+    await firstPage.locator('.btn-details').click();
+    const highlight = firstPage.locator('.highlight-item').first();
+    const pageCopyButton = firstPage.locator('.page-title-row > .copy-page-btn');
+    await expect(pageCopyButton).toBeVisible();
+    await expect(pageCopyButton).toHaveText('');
+    await expect(firstPage.locator('.page-actions .copy-page-btn')).toHaveCount(0);
+    await expect(listPage.locator('.copy-highlight-btn')).toHaveCount(0);
+
+    const sentence = ((await highlight.locator('.highlight-text').textContent()) || '').trim();
+    const sourceUrl = ((await firstPage.locator('.page-url').textContent()) || '').trim();
+    await pageCopyButton.click();
+    const clipboard = await listPage.evaluate(() => navigator.clipboard.readText());
+
+    expect(clipboard).toContain('## [');
+    expect(clipboard).toContain(`> ${sentence}`);
+    expect(clipboard).toContain(sourceUrl);
+    await expect(listPage.locator('#copy-status')).not.toBeEmpty();
+
+    await listPage.locator('#search-input').fill(sentence);
+    const searchCopyButton = listPage.locator('#copy-search-results-btn');
+    await expect(searchCopyButton).toBeVisible();
+    await expect(searchCopyButton).toHaveText('');
+    expect(await searchCopyButton.innerHTML()).toBe(await pageCopyButton.innerHTML());
     await listPage.close();
   });
 

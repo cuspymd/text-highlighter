@@ -442,5 +442,10 @@
   },
   "popupGuideLink": {
     "message": "See the full guide"
-  }
+  },
+  "copyPageHighlightsLabel": { "message": "Copy all highlights from this page" },
+  "copyPageHighlightsSuccess": { "message": "Copied $1 highlights from this page." },
+  "copySearchResultsLabel": { "message": "Copy matching highlights from these search results" },
+  "copySearchResultsSuccess": { "message": "Copied $1 matching highlights." },
+  "copyHighlightsFailed": { "message": "Could not copy the highlights. Please try again." }
 }

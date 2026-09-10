@@ -442,5 +442,10 @@
   },
   "popupGuideLink": {
     "message": "Ver la guía completa"
-  }
+  },
+  "copyPageHighlightsLabel": { "message": "Copiar todos los resaltados de esta página" },
+  "copyPageHighlightsSuccess": { "message": "Se copiaron $1 resaltados de esta página." },
+  "copySearchResultsLabel": { "message": "Copiar solo los resaltados coincidentes de la búsqueda" },
+  "copySearchResultsSuccess": { "message": "Se copiaron $1 resaltados coincidentes." },
+  "copyHighlightsFailed": { "message": "No se pudieron copiar los resaltados. Inténtalo de nuevo." }
 }

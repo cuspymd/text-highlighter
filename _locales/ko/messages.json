@@ -442,5 +442,10 @@
   },
   "popupGuideLink": {
     "message": "사용법 자세히 보기"
-  }
+  },
+  "copyPageHighlightsLabel": { "message": "이 페이지의 모든 하이라이트 복사" },
+  "copyPageHighlightsSuccess": { "message": "이 페이지의 하이라이트 $1개를 복사했습니다." },
+  "copySearchResultsLabel": { "message": "검색 결과에서 일치하는 하이라이트만 복사" },
+  "copySearchResultsSuccess": { "message": "일치하는 하이라이트 $1개를 복사했습니다." },
+  "copyHighlightsFailed": { "message": "하이라이트를 복사하지 못했습니다. 다시 시도해 주세요." }
 }

@@ -255,6 +255,7 @@
         align-items: center;
         gap: 8px;
         min-width: 0;
+        margin-bottom: 5px;
       }
 
       .page-favicon {
@@ -265,12 +266,14 @@
       }
 
       .page-title {
+        flex: 1 1 auto;
+        min-width: 0;
         font-size: 14px;
         font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 5px;
+        margin-bottom: 0;
       }
 
       .page-url {
@@ -373,19 +376,79 @@
         margin-bottom: 0;
       }
 
-      .highlight-item[role="button"] { cursor: pointer; }
-      .highlight-item[role="button"]:hover { border-color: var(--accent); }
-      .highlight-item[role="button"]:focus-visible {
+      .highlight-main {
+        min-width: 0;
+      }
+
+      .highlight-main[role="button"] { cursor: pointer; }
+      .highlight-item:hover { border-color: var(--accent); }
+      .highlight-main[role="button"]:focus-visible {
         outline: 2px solid var(--accent);
         outline-offset: 2px;
+        border-radius: 4px;
       }
-      .highlight-item[aria-busy="true"] { opacity: 0.65; cursor: progress; }
-      .title-match-label, #search-summary, #navigation-status {
+      .highlight-main[aria-busy="true"] { opacity: 0.65; cursor: progress; }
+
+      .copy-icon-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        flex: 0 0 32px;
+        transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+      }
+
+      .copy-icon-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+
+      .copy-icon-btn:hover,
+      .copy-icon-btn:focus-visible,
+      .copy-icon-btn.is-copied {
+        color: var(--accent);
+        background: rgba(139, 92, 246, 0.13);
+      }
+
+      .copy-icon-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+
+      .search-summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .search-summary-row[hidden] {
+        display: none;
+      }
+
+      #search-summary {
+        margin: 0;
+      }
+
+      .copy-results-btn {
+        flex: 0 0 auto;
+      }
+
+      .title-match-label, #search-summary, #navigation-status, #copy-status {
         color: var(--muted);
         font-size: 13px;
         line-height: 1.5;
       }
-      #navigation-status:empty { display: none; }
+      #navigation-status:empty, #copy-status:empty { display: none; }
 
       .highlight-text {
         color: var(--text);
@@ -505,7 +568,11 @@
         <input type="file" id="import-file" accept="application/json" style="display:none;" />
       </div>
 
-      <p id="search-summary" role="status" hidden></p>
+      <div id="search-summary-row" class="search-summary-row" hidden>
+        <p id="search-summary" role="status"></p>
+        <button id="copy-search-results-btn" class="copy-icon-btn copy-results-btn" type="button" hidden></button>
+      </div>
+      <p id="copy-status" role="status" aria-live="polite"></p>
       <p id="navigation-status" role="status" aria-live="polite"></p>
       <div id="pages-container" class="page-grid">
         <div id="no-pages" class="no-pages" data-i18n="noPagesFound">No highlighted pages found.</div>
