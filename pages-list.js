@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const copyStatus = document.getElementById('copy-status');
   const navigationStatus = document.getElementById('navigation-status');
   let navigationController = null;
-  let latestCopyRequest = 0;
+  let copyQueue = Promise.resolve();
   const copyFeedbackTimers = new WeakMap();
   window.addEventListener('pagehide', () => navigationController?.abort(), { once: true });
 
@@ -115,12 +115,17 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
-  async function copyMarkdown(text, button, successMessage) {
-    if (!text) return;
-    const requestId = ++latestCopyRequest;
+  // Copies run one at a time so a slow clipboard write cannot finish after a
+  // later one and leave the clipboard holding the older text.
+  function copyMarkdown(text, button, successMessage) {
+    if (!text) return copyQueue;
+    copyQueue = copyQueue.then(() => runCopyMarkdown(text, button, successMessage)).catch(() => {});
+    return copyQueue;
+  }
+
+  async function runCopyMarkdown(text, button, successMessage) {
     copyStatus.textContent = '';
     const copied = await copyTextToClipboard(text);
-    if (requestId !== latestCopyRequest) return;
     if (!copied) {
       clearTimeout(copyFeedbackTimers.get(button));
       button.classList.remove('is-copied');
