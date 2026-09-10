@@ -58,6 +58,12 @@ describe('highlight Markdown formatting', () => {
     );
   });
 
+  it('keeps ordered-list markers literal inside a quotation', () => {
+    expect(formatPageMarkdown(PAGE, [{ text: '1. first step\n2) second step' }])).toContain(
+      '> 1\\. first step\n> 2\\) second step',
+    );
+  });
+
   it('keeps inline Markdown punctuation literal inside a link label', () => {
     expect(formatPageMarkdown(
       { title: 'An *important* `note` and ~~old~~ text', url: 'https://example.com/read' },
