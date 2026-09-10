@@ -52,6 +52,10 @@ describe('pages-list', () => {
 
     chrome.i18n.getMessage.mockImplementation(key => key);
     chrome.runtime.getURL.mockImplementation(path => `chrome-extension://test/${path}`);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: jest.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    });
     respondToBackground(() => ({ success: true, pages: [OLDER, NEWER] }));
   });
 
@@ -292,7 +296,7 @@ describe('pages-list', () => {
         ? { success: true, groupIds: ['a1'] } : { success: true });
       await openPagesList();
       typeSearch('second');
-      const item = itemFor(OLDER.url).querySelector('.highlight-item');
+      const item = itemFor(OLDER.url).querySelector('.highlight-main');
       item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       item.click();
       await flush();
@@ -305,7 +309,7 @@ describe('pages-list', () => {
     it('does not navigate when the user selects text inside a sentence', async () => {
       await openPagesList();
       typeSearch('second');
-      const item = itemFor(OLDER.url).querySelector('.highlight-item');
+      const item = itemFor(OLDER.url).querySelector('.highlight-main');
       const range = document.createRange();
       range.selectNodeContents(item.querySelector('.highlight-text'));
       window.getSelection().addRange(range);
@@ -441,6 +445,57 @@ describe('pages-list', () => {
       itemFor(NEWER.url).querySelector('.btn-view').click();
 
       expect(chrome.tabs.create).toHaveBeenCalledWith({ url: NEWER.url });
+    });
+
+    it('copies every sentence on a page in document order even during a search', async () => {
+      await openPagesList();
+      typeSearch('second');
+
+      const item = itemFor(OLDER.url);
+      const pageCopy = item.querySelector('.copy-page-btn');
+      expect(pageCopy.closest('.page-title-row')).not.toBeNull();
+      expect(pageCopy.textContent).toBe('');
+      expect(pageCopy.title).toBe('copyPageHighlightsLabel');
+      expect(item.querySelector('.copy-highlight-btn')).toBeNull();
+      pageCopy.click();
+      await flush();
+
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        '## [Older article](https://example.com/older)\n\n> first sentence\n\n> second sentence',
+      );
+      expect(document.getElementById('copy-status').textContent).toBe('copyPageHighlightsSuccess');
+    });
+
+    it('copies only matching sentences from search results', async () => {
+      await openPagesList();
+      typeSearch('first');
+
+      const copyResults = document.getElementById('copy-search-results-btn');
+      expect(copyResults.hidden).toBe(false);
+      expect(copyResults.textContent).toBe('');
+      expect(copyResults.title).toBe('copySearchResultsLabel');
+      expect(copyResults.innerHTML).toBe(itemFor(OLDER.url).querySelector('.copy-page-btn').innerHTML);
+      copyResults.click();
+      await flush();
+
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        '## [Older article](https://example.com/older)\n\n> first sentence',
+      );
+      typeSearch('');
+      expect(copyResults.hidden).toBe(true);
+    });
+
+    it('reports a clipboard failure without changing the stored list', async () => {
+      navigator.clipboard.writeText.mockRejectedValue(new Error('denied'));
+      document.execCommand = jest.fn(() => false);
+      await openPagesList();
+
+      itemFor(NEWER.url).querySelector('.copy-page-btn').click();
+      await flush();
+
+      expect(alertText()).toBe('copyHighlightsFailed');
+      expect(pageItems()).toHaveLength(2);
+      expect(chrome.storage.local.set).not.toHaveBeenCalled();
     });
 
     it('clears one page after the confirmation is accepted', async () => {

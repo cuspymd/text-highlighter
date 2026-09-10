@@ -442,5 +442,10 @@
   },
   "popupGuideLink": {
     "message": "Ver o guia completo"
-  }
+  },
+  "copyPageHighlightsLabel": { "message": "Copiar todos os destaques desta página" },
+  "copyPageHighlightsSuccess": { "message": "$1 destaques desta página foram copiados." },
+  "copySearchResultsLabel": { "message": "Copiar apenas os destaques correspondentes da pesquisa" },
+  "copySearchResultsSuccess": { "message": "$1 destaques correspondentes foram copiados." },
+  "copyHighlightsFailed": { "message": "Não foi possível copiar os destaques. Tente novamente." }
 }

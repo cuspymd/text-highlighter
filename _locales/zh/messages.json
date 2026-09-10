@@ -442,5 +442,10 @@
   },
   "popupGuideLink": {
     "message": "查看完整使用说明"
-  }
+  },
+  "copyPageHighlightsLabel": { "message": "复制此页面的所有高亮" },
+  "copyPageHighlightsSuccess": { "message": "已复制此页面的 $1 条高亮。" },
+  "copySearchResultsLabel": { "message": "仅复制搜索结果中匹配的高亮" },
+  "copySearchResultsSuccess": { "message": "已复制 $1 条匹配的高亮。" },
+  "copyHighlightsFailed": { "message": "无法复制高亮，请重试。" }
 }

@@ -3,6 +3,7 @@ import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 import { sendToBackground } from './shared/runtime-message.js';
 import { initializeThemeWatcher } from './shared/theme.js';
+import { copyTextToClipboard } from './shared/clipboard.js';
 
 function initializeI18n() {
   const elements = document.querySelectorAll('[data-i18n]');
@@ -559,33 +560,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     isSyncCodeVisible = !isSyncCodeVisible;
     renderSyncCodeDisplay();
   });
-
-  async function copyTextToClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (err) {
-        // Fall through to the legacy fallback below (e.g. unsupported on this
-        // Firefox for Android version - navigator.clipboard.writeText only
-        // landed there in Firefox 151, long after desktop).
-      }
-    }
-    try {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      const success = document.execCommand('copy');
-      document.body.removeChild(textarea);
-      return success;
-    } catch (err) {
-      return false;
-    }
-  }
 
   cloudSyncCopyBtn.addEventListener('click', async () => {
     if (!currentSyncCode) return;

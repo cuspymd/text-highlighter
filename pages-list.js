@@ -5,6 +5,13 @@ import { createLocalizedModalHelpers } from './shared/modal.js';
 import { sendToBackground } from './shared/runtime-message.js';
 import { initializeThemeWatcher } from './shared/theme.js';
 import { openHighlight } from './shared/highlight-navigation.js';
+import { copyTextToClipboard } from './shared/clipboard.js';
+import {
+  copyableHighlights,
+  formatPageMarkdown,
+  formatPagesMarkdown,
+  sortHighlightsByPosition,
+} from './shared/highlight-copy.js';
 
 document.addEventListener('DOMContentLoaded', function () {
   // Initialize theme watcher
@@ -18,8 +25,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const pagesContainer = document.getElementById('pages-container');
   const noPages = document.getElementById('no-pages');
   const searchSummary = document.getElementById('search-summary');
+  const searchSummaryRow = document.getElementById('search-summary-row');
+  const copySearchResultsBtn = document.getElementById('copy-search-results-btn');
+  const copyStatus = document.getElementById('copy-status');
   const navigationStatus = document.getElementById('navigation-status');
   let navigationController = null;
+  let latestCopyRequest = 0;
+  const copyFeedbackTimers = new WeakMap();
   window.addEventListener('pagehide', () => navigationController?.abort(), { once: true });
 
   async function navigateToHighlight(item, page, group) {
@@ -51,6 +63,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(getMessage);
+  const copyIconSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>';
+  copySearchResultsBtn.innerHTML = copyIconSvg;
   const expandAllIconSvg = '<svg viewBox="0 0 24 24"><path d="M7 5h10v2H7V5Zm-4 4h18v2H3V9Zm4 4h10v2H7v-2Zm-4 4h18v2H3v-2Z"/></svg>';
   const collapseAllIconSvg = '<svg viewBox="0 0 24 24"><path d="M3 5h18v2H3V5Zm4 4h10v2H7V9Zm-4 4h18v2H3v-2Zm4 4h10v2H7v-2Z"/></svg>';
   const webProtocols = new Set(['http:', 'https:']);
@@ -93,6 +107,31 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) {
       return false;
     }
+  }
+
+  function copyFormatOptions() {
+    return {
+      fallbackTitle: getMessage('noTitle', '(No title)'),
+    };
+  }
+
+  async function copyMarkdown(text, button, successMessage) {
+    if (!text) return;
+    const requestId = ++latestCopyRequest;
+    copyStatus.textContent = '';
+    const copied = await copyTextToClipboard(text);
+    if (requestId !== latestCopyRequest) return;
+    if (!copied) {
+      clearTimeout(copyFeedbackTimers.get(button));
+      button.classList.remove('is-copied');
+      await showAlertModal(getMessage('copyHighlightsFailed', 'Could not copy the highlights. Please try again.'));
+      return;
+    }
+
+    copyStatus.textContent = successMessage;
+    button.classList.add('is-copied');
+    clearTimeout(copyFeedbackTimers.get(button));
+    copyFeedbackTimers.set(button, setTimeout(() => button.classList.remove('is-copied'), 1500));
   }
 
   // Change text of HTML elements to multi-language
@@ -176,11 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
     highlightsContainer.replaceChildren();
     highlightsContainer.dataset.complete = 'true';
 
-    const sortedHighlights = [...(page.highlights || [])].sort((a, b) => {
-      const posA = a.spans && a.spans[0] ? a.spans[0].position : 0;
-      const posB = b.spans && b.spans[0] ? b.spans[0].position : 0;
-      return posA - posB;
-    });
+    const sortedHighlights = sortHighlightsByPosition(page.highlights);
 
     if (sortedHighlights.length === 0) {
       const emptyHighlight = document.createElement('div');
@@ -206,26 +241,29 @@ document.addEventListener('DOMContentLoaded', function () {
       const highlightItem = document.createElement('div');
       highlightItem.className = 'highlight-item';
       highlightItem.style.setProperty('--highlight-color', group.color);
+      const highlightMain = document.createElement('div');
+      highlightMain.className = 'highlight-main';
       const span = document.createElement('span');
       span.className = 'highlight-text';
       appendHighlightedText(span, group.text, searchTerm);
-      highlightItem.appendChild(span);
+      highlightMain.appendChild(span);
       if (isSafeOpenUrl(page.url) && group.groupId != null) {
-        highlightItem.setAttribute('role', 'button');
-        highlightItem.tabIndex = 0;
-        highlightItem.title = getMessage('openHighlight', 'Open highlight in original page');
-        highlightItem.addEventListener('click', () => {
+        highlightMain.setAttribute('role', 'button');
+        highlightMain.tabIndex = 0;
+        highlightMain.title = getMessage('openHighlight', 'Open highlight in original page');
+        highlightMain.addEventListener('click', () => {
           const selection = window.getSelection();
-          if (selection && !selection.isCollapsed && selection.containsNode(highlightItem, true)) return;
-          navigateToHighlight(highlightItem, page, group);
+          if (selection && !selection.isCollapsed && selection.containsNode(highlightMain, true)) return;
+          navigateToHighlight(highlightMain, page, group);
         });
-        highlightItem.addEventListener('keydown', event => {
+        highlightMain.addEventListener('keydown', event => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            navigateToHighlight(highlightItem, page, group);
+            navigateToHighlight(highlightMain, page, group);
           }
         });
       }
+      highlightItem.appendChild(highlightMain);
       highlightsContainer.appendChild(highlightItem);
     });
     if (term && others.length > 0) {
@@ -366,11 +404,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // Display filtered pages
   function displayFilteredPages(pages) {
     const term = normalizeSearchTerm(currentSearchTerm);
-    searchSummary.hidden = !term;
     const matchCount = pages.reduce((count, page) => count + (page.highlights || [])
       .filter(group => (group.text || '').toLowerCase().includes(term)).length, 0);
+    searchSummaryRow.hidden = !term;
+    searchSummary.hidden = !term;
     searchSummary.textContent = term ? getMessage('highlightSearchSummary', '$1 pages · $2 matching highlights',
       [String(pages.length), String(matchCount)]) : '';
+    copySearchResultsBtn.hidden = !term || matchCount === 0;
+    copySearchResultsBtn.title = getMessage('copySearchResultsLabel', 'Copy matching highlights');
+    copySearchResultsBtn.setAttribute('aria-label', copySearchResultsBtn.title);
     if (pages.length > 0) {
       noPages.style.display = 'none';
       pagesContainer.innerHTML = '';
@@ -436,6 +478,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
         titleRow.appendChild(favicon);
         titleRow.appendChild(titleDiv);
+        const pageCopyCount = copyableHighlights(page.highlights).length;
+        if (pageCopyCount > 0) {
+          const copyPageBtn = document.createElement('button');
+          copyPageBtn.type = 'button';
+          copyPageBtn.className = 'copy-icon-btn copy-page-btn';
+          copyPageBtn.innerHTML = copyIconSvg;
+          copyPageBtn.title = getMessage('copyPageHighlightsLabel', 'Copy all highlights from this page');
+          copyPageBtn.setAttribute('aria-label', copyPageBtn.title);
+          titleRow.appendChild(copyPageBtn);
+          copyPageBtn.addEventListener('click', async () => {
+            await copyMarkdown(
+              formatPageMarkdown(page, page.highlights, copyFormatOptions()),
+              copyPageBtn,
+              getMessage('copyPageHighlightsSuccess', 'Copied $1 highlights from this page.', [String(pageCopyCount)]),
+            );
+          });
+        }
         infoContainer.appendChild(titleRow);
         infoContainer.appendChild(urlDiv);
         infoContainer.appendChild(infoDiv);
@@ -706,6 +765,24 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInput.value = '';
         filterPages('');
       }
+    });
+  }
+
+  if (copySearchResultsBtn) {
+    copySearchResultsBtn.addEventListener('click', async function () {
+      const term = normalizeSearchTerm(currentSearchTerm);
+      if (!term) return;
+      const pages = filteredPages.map(page => ({
+        ...page,
+        highlights: (page.highlights || []).filter(group =>
+          (group.text || '').toLowerCase().includes(term)),
+      })).filter(page => page.highlights.length > 0);
+      const count = pages.reduce((total, page) => total + page.highlights.length, 0);
+      await copyMarkdown(
+        formatPagesMarkdown(pages, copyFormatOptions()),
+        copySearchResultsBtn,
+        getMessage('copySearchResultsSuccess', 'Copied $1 matching highlights.', [String(count)]),
+      );
     });
   }
 
