@@ -46,6 +46,12 @@ describe('highlight Markdown formatting', () => {
     );
   });
 
+  it('keeps table pipes and tildes literal inside a quotation', () => {
+    expect(formatPageMarkdown(PAGE, [{ text: '| Header |\n| --- |\n| ~~value~~ |' }])).toContain(
+      '> \\| Header \\|\n> \\| --- \\|\n> \\| \\~\\~value\\~\\~ \\|',
+    );
+  });
+
   it('does not create a clickable link for an unsafe legacy URL', () => {
     expect(formatPageMarkdown(
       { title: 'Unsafe', url: 'javascript:alert(1)' },
