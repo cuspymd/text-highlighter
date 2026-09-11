@@ -130,6 +130,13 @@
         border-radius: 10px;
         scrollbar-width: thin;
         scrollbar-color: #8d94a1 transparent;
+        /* Firefox draws an overlay scrollbar on top of the scrollport, so a
+           list whose items reach the edge gets a thumb over the delete
+           buttons. The padding gives the thumb a lane of its own and the
+           negative margin gives that lane back to the card, so the items
+           stay where they were. */
+        padding-right: 10px;
+        margin-right: -10px;
       }
 
       .highlights-list::-webkit-scrollbar,
