@@ -151,10 +151,13 @@ document.addEventListener('DOMContentLoaded', async function () {
         deleteBtn.title = removeLabel;
         deleteBtn.setAttribute('aria-label', removeLabel);
 
-        const deleteIcon = document.createElement('span');
-        deleteIcon.className = 'delete-icon';
-        deleteIcon.textContent = 'x';
-        deleteBtn.appendChild(deleteIcon);
+        // An SVG cross rather than the letter 'x': a glyph sits on its
+        // baseline, so it reads as low inside the circle whatever the font.
+        deleteBtn.innerHTML =
+          '<svg class="delete-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+          '<line x1="5" y1="5" x2="11" y2="11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+          '<line x1="11" y1="5" x2="5" y2="11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+          '</svg>';
         deleteBtn.addEventListener('click', async function (e) {
           e.stopPropagation();
           const confirmMessage =

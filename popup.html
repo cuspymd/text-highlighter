@@ -316,21 +316,23 @@
         border: 1px solid var(--border);
         display: grid;
         place-items: center;
-        font-size: 11px;
-        font-weight: 600;
-        line-height: 1;
         padding: 0;
         cursor: pointer;
         color: var(--muted);
         background: var(--surface);
-        opacity: 0.72;
+        opacity: 0.85;
         transition: opacity 0.18s ease, border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
       }
 
       .delete-icon {
-        display: inline-block;
-        line-height: 1;
-        transform: translateY(-1px);
+        display: block;
+        /* Fills the circle's content box rather than taking a fixed size: a
+           size that does not divide evenly leaves half a pixel on one side,
+           which reads as the cross sitting off-centre. */
+        width: 100%;
+        height: 100%;
+        fill: none;
+        pointer-events: none;
       }
 
       .delete-btn:hover {
