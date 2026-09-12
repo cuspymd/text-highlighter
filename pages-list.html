@@ -268,7 +268,7 @@
       .page-title {
         flex: 1 1 auto;
         min-width: 0;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
@@ -276,17 +276,27 @@
         margin-bottom: 0;
       }
 
+      .page-meta {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 2px 10px;
+        min-width: 0;
+      }
+
       .page-url {
-        font-size: 12px;
+        flex: 1 1 240px;
+        min-width: 0;
+        font-size: 11px;
         color: var(--muted);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 5px;
       }
 
       .page-info {
-        font-size: 12px;
+        flex: 0 0 auto;
+        font-size: 11px;
         color: var(--muted);
         overflow-wrap: anywhere;
         word-break: break-word;
@@ -300,15 +310,15 @@
       }
 
       .btn {
-        padding: 6px 16px;
+        padding: 0 14px;
         background: var(--surface-strong);
         color: var(--text);
         border: 1px solid var(--border);
         border-radius: 8px;
         cursor: pointer;
-        font-size: 14px;
-        height: 36px;
-        min-width: 120px;
+        font-size: 13px;
+        height: 32px;
+        min-width: 84px;
         box-sizing: border-box;
         transition: background 0.15s;
       }
@@ -327,22 +337,28 @@
         background: rgba(139, 92, 246, 0.14);
       }
 
+      /* Deleting a page is rare next to reading and opening it, so the button
+         keeps the danger colour in its label only and earns its fill on hover.
+         The border stays neutral rather than absent: a borderless button beside
+         two bordered ones reads as a rendering fault. */
       .btn-delete {
         color: var(--danger);
-        border-color: rgba(212, 58, 47, 0.35);
-        background: rgba(212, 58, 47, 0.08);
+        border-color: var(--border);
+        background: transparent;
       }
 
-      .btn-delete:hover {
-        background: rgba(212, 58, 47, 0.14);
+      .btn-delete:hover,
+      .btn-delete:focus-visible {
+        border-color: rgba(212, 58, 47, 0.35);
+        background: rgba(212, 58, 47, 0.1);
       }
 
       .page-highlights {
-        margin-top: 8px;
+        margin-top: 10px;
         border: none;
         border-radius: 0;
         background: transparent;
-        padding: 8px;
+        padding: 0;
         max-height: none;
         overflow: visible;
         width: 100%;
@@ -351,11 +367,12 @@
 
       .highlight-item {
         position: relative;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         border-radius: 8px;
         background: var(--surface-strong);
-        border: 1px solid var(--border);
-        padding: 7px 9px 7px 13px;
+        /* Transparent rather than absent: the hover border must not shift the row. */
+        border: 1px solid transparent;
+        padding: 10px 12px 10px 18px;
         overflow: hidden;
         width: 100%;
         max-width: 100%;
@@ -452,7 +469,8 @@
 
       .highlight-text {
         color: var(--text);
-        font-size: 12px;
+        font-size: 14px;
+        line-height: 1.6;
         overflow-wrap: anywhere;
         word-break: break-word;
       }
