@@ -120,16 +120,31 @@ ops[`${page.url}_meta`] = { ... };
 
 **권고.** `importHighlightPages` 액션을 `message-router.js`에 추가하고 저장 경로를 하나로 만듭니다. 스토리지 쓰기는 배경만 한다는 경계를 지키면 앞의 세 문제가 없어집니다.
 
-**다만 경로를 옮기는 것만으로는 부활을 막지 못합니다.** 이미 동기화된 URL을 import로 덮어쓰면 `syncSaveHighlights`가 `mergeHighlights`를 호출하고, 그 함수는 `deletedGroupIds`에 걸리지 않은 원격 그룹을 전부 살려 둡니다. import 파일에 없는 기존 그룹은 첫 동기화에서 되돌아옵니다. 배경 핸들러는 다음 두 가지를 명시적으로 해야 합니다.
+**경로를 옮기는 것만으로는 부족하고, tombstone을 어떻게 다룰지가 본론입니다.** 여기가 이 리뷰에서 가장 까다로운 지점이라 따로 적습니다.
 
-1. 기존 메타데이터의 `deletedGroupIds`를 보존합니다. 지금 import는 메타데이터를 통째로 갈아치우므로 과거 tombstone이 사라집니다.
-2. import 파일에 없는 그룹마다 tombstone을 새로 찍습니다. 그러고 나서 동기화합니다.
+import는 "쓰기"가 아니라 "치환"입니다. 동기화가 있는 시스템에서 치환은 두 가지를 동시에 뜻합니다. **파일에 없는 것은 지운다**, 그리고 **파일에 있는 것은 되살린다**. 둘 중 하나만 처리하면 반대쪽이 깨지고, 두 요구는 tombstone을 정반대 방향으로 밀어붙입니다.
 
-**2번의 대상은 로컬 목록이 아닙니다.** 덮어쓰기 직전 로컬에 있던 그룹만 훑으면 부족합니다. `storage.sync`나 클라우드 블롭에 있는데 이 기기가 아직 당겨오지 않은 그룹은 로컬 목록에 없으므로 tombstone이 찍히지 않고, `mergeHighlights`와 `mergeBlobs`가 그것을 그대로 살려서 되돌려 놓습니다. 사용자 눈에는 import가 지운 하이라이트가 잠시 뒤 되살아나는 것으로 보입니다.
+**지우는 쪽.** `mergeHighlights`는 tombstone에 걸리지 않은 원격 그룹을 전부 살려 둡니다. 그러니 파일에 없는 그룹에는 tombstone을 찍어야 합니다. 대상은 로컬 목록이 아닙니다. `storage.sync`나 클라우드 블롭에만 있고 이 기기가 아직 당겨오지 않은 그룹은 로컬에 없으므로 빠지고, 첫 동기화에서 되돌아옵니다. 원격을 먼저 당겨와 합친 뒤 그 합집합을 기준으로 찍어야 합니다.
 
-따라서 둘 중 하나여야 합니다. 원격 상태를 먼저 당겨와 로컬과 합친 뒤 그 합집합을 기준으로 tombstone을 찍거나, 로컬과 원격 양쪽에서 import 파일에 없는 그룹을 전부 찍는 것입니다. 전자가 기존 동기화 흐름과 모양이 같아 더 안전합니다.
+**되살리는 쪽.** 그런데 기존 tombstone을 그대로 보존하면 import의 본래 목적인 백업 복원이 깨집니다. `shared/import-export-schema.js`의 `toTimestampOrNow`와 `toIsoStringOrNow`가 파일의 `updatedAt`과 `lastUpdated`를 그대로 살리기 때문입니다.
 
-즉 import는 "쓰기"가 아니라 "치환"이고, 치환은 삭제를 포함합니다. 그 삭제를 기록하지 않으면 동기화가 되돌립니다. `handleSaveHighlights`가 `deletedGroupIds`를 같은 `storage.local.set`에 넣는 이유와 동일한 문제입니다.
+```
+어제  그룹 X 삭제           → deletedGroupIds[X] = 어제
+오늘  지난주 백업을 import  → X.updatedAt = 지난주
+동기화: !deletedAt || groupTime > deletedAt
+        지난주 > 어제 = false  → X가 조용히 사라짐
+```
+
+페이지 단위도 같습니다. `mergeBlobs`가 `deletedAt > max(localTime, remoteTime)`이면 페이지를 통째로 건너뛰므로, 지운 적 있는 URL을 오래된 백업으로 복원하면 페이지가 통째로 안 돌아옵니다. 여기에는 `sync_meta.deletedUrls`와 `cloudSyncDeletedUrls` 두 곳이 걸립니다.
+
+**규칙.** 따라서 보존과 삭제가 아니라 **파일에 있는가 없는가**로 갈라야 합니다.
+
+| 대상 | tombstone 처리 |
+| --- | --- |
+| import 파일에 **있는** 그룹과 URL | 기존 tombstone을 지웁니다. 또는 파일의 타임스탬프를 권위 있는 것으로 올려 tombstone을 이기게 합니다 |
+| import 파일에 **없는** 그룹과 URL | tombstone을 보존하거나 새로 찍습니다. 기준은 로컬과 원격의 합집합입니다 |
+
+두 번째 열의 "또는"은 취향 차이가 아닙니다. 타임스탬프를 올리면 다른 기기의 최신 편집을 덮을 수 있고, tombstone을 지우면 그 기기의 삭제 의도가 사라집니다. 어느 쪽이 맞는지는 "import는 이 기기의 선언인가, 모든 기기에 대한 선언인가"라는 제품 결정이므로, 구현 전에 `sync-requirements.md`에 한 줄로 정해 두는 편이 낫습니다.
 
 ### 3-4. `groupId`가 `Date.now()` 하나뿐이다
 
@@ -273,7 +288,13 @@ if (fs.existsSync(src)) {
 
 즉 미포함이 정상인 파일이 절반이므로, 어떤 형태든 "무엇이 자산인가"를 사람이 선언해야 하고 그 선언이 곧 잊히는 대상입니다. 이 순환을 끊는 방법은 선언을 없애고 이미 존재하는 참조를 따라가는 것뿐입니다. 매니페스트의 `background`, `action.default_popup`, `content_scripts`의 `js`와 `css`, `web_accessible_resources`, `icons`, `default_locale`에서 시작해 각 HTML의 `<link href>`와 `<script src>`, 각 모듈의 `import`를 따라가면 됩니다.
 
-**다만 그것만으로는 세 페이지가 빠집니다.** `pages-list.html`, `settings.html`, `onboarding.html`은 매니페스트가 가리키지 않습니다. `popup.js:348`, `popup.js:396`, `background/onboarding.js:23`이 `runtime.getURL()` 문자열로 엽니다. 같은 방식으로 `content-scripts/navigation-bridge.js`와 `images/icon48.png`도 문자열로만 참조됩니다. 따라서 도출식 빌드는 `getURL()` 인자의 리터럴까지 훑거나, 진입점 세 개만 명시적으로 선언하고 나머지를 도출해야 합니다. 후자가 현실적이고, 손으로 유지할 목록이 열 개에서 세 개로 줄면서 그 세 개는 성격상 자주 늘지 않습니다.
+**다만 도출만으로는 빠지는 것이 두 부류 있습니다.**
+
+첫째, 매니페스트가 가리키지 않는 페이지입니다. `pages-list.html`, `settings.html`, `onboarding.html`은 `popup.js:348`, `popup.js:396`, `background/onboarding.js:23`이 `runtime.getURL()` 문자열로 엽니다. `content-scripts/navigation-bridge.js`와 `images/icon48.png`도 문자열로만 참조됩니다.
+
+둘째, 번역입니다. 두 매니페스트 모두 `default_locale`이 `en`이라 참조를 따라가면 `_locales/en/messages.json` 하나만 찾습니다. 나머지 다섯 로케일은 브라우저가 관례로 읽을 뿐 어떤 HTML도 `import`도 `getURL()`도 가리키지 않습니다. 도출이 `directoriesToCopy`를 대체하면 **영어만 남고 번역 전체가 조용히 빠진 릴리스**가 나옵니다. 5-2의 로케일 불변식 테스트는 소스의 `_locales`를 읽으므로 이것을 잡지 못합니다.
+
+따라서 도출식 빌드는 `_locales/*/messages.json` 전부를 명시적 루트로 두고, 진입점 세 개도 함께 선언한 뒤 나머지를 도출해야 합니다. 그래도 손으로 유지할 목록이 열 개에서 네 줄로 줄고, 그 네 줄은 성격상 자주 늘지 않습니다.
 
 1번은 지금 하고, 2번은 별도 과제로 잡을 만합니다.
 
@@ -388,7 +409,7 @@ src: `https://www.google.com/s2/favicons?sz=64&domain_url=${...}`
 4. **`groupId`에 랜덤 접미사** — 3-4. 한 줄, 마이그레이션 없음.
 5. **매니페스트 합성** — 4-1. `AGENTS.md`의 경고 한 문단이 필요 없어집니다.
 6. **`sendToBackground` 일원화 + 가드 테스트** — 3-2. 테스트는 rejection으로 모킹해야 합니다.
-7. **import 경로를 배경으로 + tombstone 생성** — 3-3. 경로만 옮기면 동기화가 삭제를 되돌립니다.
+7. **import 경로를 배경으로 + tombstone 규칙** — 3-3. 가장 까다롭습니다. 경로만 옮기면 동기화가 삭제를 되돌리고, tombstone을 보존하기만 하면 백업 복원이 깨집니다. 구현 전에 제품 결정이 하나 필요합니다.
 8. **`controls.js`의 순수 로직을 코어 파일로** — 6-1. `showSelectionControls`의 `cloneNode` 복원을 팩토리로 바꾸는 것이 가장 값이 큽니다.
 9. **테마 토큰 공용 CSS** — 4-2. 먼저 `pages-list`의 다섯 값이 의도인지 판단합니다.
 
