@@ -1,0 +1,358 @@
+# 유지보수 관점 전체 코드 리뷰
+
+작성일: 2026-09-12
+대상 저장소: `text-highlighter` (`29d8fb7` 기준)
+대상 범위: `background.js`, `background/`, `shared/`, `constants/`, `content-scripts/`, 페이지 스크립트 3종, `scripts/`, `worker/`, 매니페스트, `_locales/`
+
+관련 문서: [클린 코드 리뷰](clean-code-review.md), [테스터빌리티 리뷰](testability-review.md)
+
+---
+
+## 1) 측정
+
+`npm test` — 37 suites, 552 tests, 17.0s, 전부 통과.
+
+기본 설정으로 커버리지를 붙이면 다음과 같습니다.
+
+```
+Statements   : 89.58% ( 2846/3177 )
+```
+
+이 숫자는 그대로 믿으면 안 됩니다. jest가 계측하는 것은 테스트가 `import`한 파일뿐이고, manifest가 순서대로 주입하는 content script와 `eval`로 로드되는 파일은 리포트에 **아예 나타나지 않습니다.** `collectCoverageFrom`으로 강제로 끌어넣으면 이렇게 바뀝니다.
+
+```
+Statements   : 57.28% ( 2738/4780 )
+Branches     : 51.35% ( 1458/2839 )
+Lines        : 57.73% ( 2559/4432 )
+```
+
+리포트에서 빠져 있는 파일들:
+
+| 파일 | 줄 수 | 빠지는 이유 |
+| --- | ---: | --- |
+| `content-scripts/controls.js` | 1,595 | manifest 주입, `window.eval` |
+| `content-scripts/content.js` | 1,224 | manifest 주입, `window.eval` |
+| `content-scripts/minimap.js` | 320 | manifest 주입, 테스트 없음 |
+| `content-scripts/content-common.js` | 101 | manifest 주입 |
+| `worker/src/index.js` | 91 | 별도 배포 단위, 테스트 없음 |
+| `background.js` | 68 | 최상위 부수효과, import 불가 |
+| `onboarding.js` | 33 | 페이지 스크립트, 하네스 미적용 |
+| `content-scripts/navigation-bridge.js` | 27 | 페이지 컨텍스트 주입 |
+
+합계 3,459줄. 레포에서 가장 큰 두 파일이 여기 들어 있습니다.
+
+계측되는 영역만 보면 상태는 좋습니다.
+
+| 영역 | Stmts | 가장 낮은 파일 |
+| --- | ---: | --- |
+| `constants/` | 100.0% | — |
+| `shared/` | 95.5% | `browser-api.js` 66.7% |
+| `content-scripts/` 코어 3종 | 92.5% | `content-core.js` 91.0% |
+| 페이지 스크립트 | 90.6% | `popup.js` 76.1% |
+| `background/` | 84.3% | `context-menu.js` 63.0% |
+
+`testability-review.md`가 권고한 "순수 로직을 코어 파일로 빼서 import 가능하게 만든다"는 방향은 `content-core.js`, `restore-core.js`, `color-core.js`에서 분명히 효과를 냈습니다. 남은 문제는 그 분리가 `controls.js`에는 아직 적용되지 않았다는 것입니다.
+
+---
+
+## 2) 총평
+
+구조적으로 잘 되어 있는 것부터 적습니다. 아래 개선 항목들은 이 토대 위에서 읽어야 합니다.
+
+- `background.js`의 서비스 분리가 끝났고, `message-router.js`의 액션 핸들러 맵은 라우팅을 데이터로 만들어 `message-routing-matrix.md`와 동일 이름의 테스트로 검증까지 이어집니다.
+- `AGENTS.md`가 코드가 말하지 않는 것만 적는다는 원칙을 지키고 있고, `tabs.sendMessage` 콜백 함정처럼 실제로 조용히 죽는 실수를 정확히 짚습니다.
+- `shared/crypto-utils.js`는 HKDF 분리 도출, AES-GCM, 서버가 평문을 볼 수 없는 구조까지 설계가 단정하고 커버리지도 100%입니다.
+- `restore-core.js`의 주석은 왜 그렇게 했는지를 남기는 좋은 예입니다. 특히 `maskClaimedRegions`가 `split('')`을 쓰는 이유를 적어 둔 부분.
+- TODO/FIXME 주석이 한 개도 없습니다.
+
+유지보수 부담은 거의 전부 **하나의 규칙이 여러 곳에 복제되어 있고, 그 복제를 지켜 줄 장치가 없다**는 한 가지 패턴에서 나옵니다. 아래 항목 대부분이 이 패턴의 변주입니다.
+
+---
+
+## 3) P0 — 먼저 고칠 것
+
+### 3-1. "어떤 스토리지 키가 페이지인가" 판정이 네 곳에 흩어져 있다
+
+하이라이트는 URL을 키로 `storage.local` 최상위에 저장되고, 설정도 같은 네임스페이스에 있습니다. 그래서 "이 키가 페이지인가"를 판정하는 코드가 네 벌 존재하며 내용이 서로 다릅니다.
+
+| 위치 | 이름 | 빠진 키 |
+| --- | --- | --- |
+| `background/message-router.js:246` | `skipKeys` | 클라우드 싱크 키 전부, `lastUsedColor`, `oneClickHighlightEnabled` |
+| `background/message-router.js:275` | `skipKeys` | 위와 동일 |
+| `background/sync-service.js:428` | `skipKeys` | 클라우드 싱크 키 전부 |
+| `background/cloud-sync-service.js:15` | `LOCAL_ONLY_KEYS` | 없음 |
+
+지금 사고가 나지 않는 이유는 네 곳 모두 최종 판정을 `Array.isArray(value)`에 의존하기 때문입니다. 설정 키들이 마침 배열이 아니라서 걸러집니다.
+
+배열 값을 갖는 설정 키를 하나라도 추가하는 순간, 그 키는 하이라이트 페이지로 잡혀 `getAllHighlightedPages` 목록에 뜨고 `deleteAllHighlightedPages`에 지워지고 클라우드 블롭에 페이지로 실려 나갑니다. 네 곳을 동시에 고쳐야 한다는 것을 기억해야만 안전한 구조입니다.
+
+**권고.** 판정을 한 곳으로 모읍니다.
+
+```js
+// constants/storage-keys.js
+export function isHighlightPageKey(key, value) {
+  return Array.isArray(value)
+    && !key.endsWith(STORAGE_KEYS.META_SUFFIX)
+    && !RESERVED_KEYS.has(key);
+}
+```
+
+더 근본적으로는 페이지 키에 접두사를 두어 네임스페이스를 나누는 쪽이 낫습니다. 다만 기존 데이터 마이그레이션이 필요하므로 별도 과제로 둡니다.
+
+### 3-2. 페이지 스크립트가 `AGENTS.md`가 경고한 함정을 그대로 밟고 있다
+
+`AGENTS.md`는 페이지 스크립트가 `shared/runtime-message.js`의 `sendToBackground`를 쓰라고 못박습니다. 잠든 service worker가 `runtime.sendMessage`를 reject하고, `await`에 `catch`가 없으면 unhandled rejection으로 끝나 클릭이 아무 일도 하지 않기 때문입니다.
+
+실제 사용 현황:
+
+| 파일 | `sendToBackground` | 직접 `runtime.sendMessage` |
+| --- | ---: | ---: |
+| `pages-list.js` | 5 | 0 |
+| `settings.js` | 4 | 18 |
+| `popup.js` | 0 | 2 |
+
+`settings.js`는 응답을 널 체크 없이 읽는 곳이 다섯 군데입니다.
+
+```js
+// settings.js:143, 240, 256, 294, 411
+if (response.success) { ... }          // response가 undefined면 TypeError
+const colorMap = colorMapResult.success ? ... : {};
+```
+
+색 이름 편집은 사용자가 입력 필드에 머무는 동안 워커가 잠들 시간이 충분합니다. blur 시점에 reject가 나면 이름이 저장되지 않고 오류 표시도 없습니다. 문서가 묘사한 증상 그대로입니다.
+
+**권고.** 페이지 스크립트의 `browserAPI.runtime.sendMessage` 호출을 전부 `sendToBackground`로 바꾸고, `tests/runtime-message-guard.test.js`처럼 직접 호출을 금지하는 가드 테스트를 추가합니다. 가드가 없으면 다음 기능에서 같은 일이 반복됩니다.
+
+### 3-3. import 경로가 배경을 우회해 스토리지에 직접 쓴다
+
+`pages-list.js:740-760`이 import 결과를 `storage.local`에 직접 씁니다. 세 가지 문제가 겹쳐 있습니다.
+
+```js
+ops[url] = null;                 // 먼저 삭제하려는 의도
+ops[`${url}_meta`] = null;
+// ...
+ops[page.url] = page.highlights || [];      // 같은 키를 덮어씀
+ops[`${page.url}_meta`] = { ... };
+```
+
+1. `${url}_meta`를 손으로 조립합니다. `constants/storage-keys.js`를 읽으라는 규칙의 레포 내 유일한 위반입니다.
+2. `ops[url] = null` 뒤에 같은 객체 리터럴에서 같은 키를 실제 값으로 덮으므로 "기존 것 삭제" 단계가 아무 일도 하지 않습니다. 설령 남아 있었더라도 `storage.local.set`에 `null`을 넣는 것은 삭제가 아닙니다.
+3. 배경을 거치지 않으므로 `syncSaveHighlights`도 `recordCloudSyncTombstones`도 타지 않습니다. import한 페이지의 기존 `deletedGroupIds`가 사라진 채로 덮이므로, 다른 기기에서 지운 그룹이 되살아날 수 있습니다.
+
+**권고.** `importHighlightPages` 액션을 `message-router.js`에 추가하고 저장 경로를 하나로 만듭니다. 스토리지 쓰기는 배경만 한다는 경계를 지키면 세 문제가 동시에 없어집니다.
+
+### 3-4. `groupId`가 `Date.now()` 하나뿐이다
+
+```js
+// content-scripts/content.js:1148
+const groupId = Date.now().toString();
+```
+
+같은 밀리초에 만들어진 두 그룹은 같은 id를 갖습니다. `mergeHighlights`는 `groupId`로 Map을 만들어 중복을 제거하므로 병합에서 한쪽이 사라지고, tombstone도 id로 걸리므로 삭제가 엉뚱한 그룹에 전이될 수 있습니다.
+
+한 탭 안에서는 드물지만, 동기화하는 제품에서는 서로 다른 기기가 같은 페이지에 같은 밀리초에 하이라이트할 가능성까지 감안해야 합니다. 병합 규칙이 `updatedAt` 비교인데 그 값도 `Date.now()`라 동률이 되면 나중에 처리된 쪽이 조용히 이깁니다.
+
+**권고.** `` `${Date.now()}_${crypto.randomUUID().slice(0, 8)}` `` 정도로 충분합니다. 기존 id는 그대로 두어도 되고, 문자열 비교만 하므로 형식 변경에 따르는 마이그레이션이 없습니다.
+
+---
+
+## 4) P1 — 구조적 중복
+
+### 4-1. 매니페스트 두 벌
+
+`manifest.json` 97줄 중 `manifest-firefox.json`과 다른 곳은 두 군데뿐입니다.
+
+| 항목 | Chrome | Firefox |
+| --- | --- | --- |
+| `background` | `service_worker` | `scripts` 배열 |
+| `browser_specific_settings` | 없음 | gecko 블록 |
+
+나머지 95줄, 즉 `permissions`, `host_permissions`, `commands` 5개, `content_scripts` 목록 전체, `web_accessible_resources`가 그대로 복제되어 있습니다.
+
+`AGENTS.md`가 "새 코어 파일은 **양쪽** 매니페스트의 `content_scripts`에, 그것을 읽는 스크립트보다 앞에 추가하라"고 굵게 경고하는 것 자체가 이 중복의 유지비입니다. 그리고 주 E2E 스위트는 Chromium만 돌기 때문에, Firefox 매니페스트에 빠뜨린 파일은 CI가 초록인 채로 통과합니다.
+
+**권고.** `manifest.base.json`을 두고 `scripts/deploy.cjs`가 브라우저별 패치를 합성해 `dist/manifest.json`을 만들게 합니다. 패치는 위 표의 두 항목뿐이라 20줄 안쪽입니다.
+
+### 4-2. 테마 토큰 네 벌
+
+확장 페이지 네 개가 각자 인라인 `<style>`에 동일한 디자인 토큰을 라이트/다크로 정의합니다. 값까지 전부 같습니다.
+
+| 파일 | 전체 줄 | `<style>` 줄 |
+| --- | ---: | ---: |
+| `settings.html` | 629 | 485 |
+| `pages-list.html` | 606 | 537 |
+| `popup.html` | 533 | 471 |
+| `onboarding.html` | 338 | 167 |
+
+공통 토큰은 `--bg`, `--surface`, `--surface-strong`, `--text`, `--muted`, `--border`, `--accent` 일곱 개이고 네 파일 모두 `#ffffff` / `#121212` / `#8b5cf6` / `#a78bfa`로 같습니다.
+
+**권고.** `shared/modal.css`가 이미 있으므로 그 옆에 `shared/tokens.css`를 만들어 네 페이지가 `<link>`로 참조합니다. `deploy.cjs`가 `shared/` 디렉터리를 통째로 복사하므로 빌드 변경은 필요 없습니다.
+
+### 4-3. 색 이름 생성이 세 벌
+
+| 위치 | 함수 |
+| --- | --- |
+| `content-scripts/controls.js` | `colorDisplayName` |
+| `background/settings-service.js` | `getColorDisplayName` |
+| `settings.js` | `buildColorLabel` |
+
+셋 다 "커스텀 이름 → 커스텀 색 번호 → nameKey 번역" 순서로 같은 일을 합니다. 그런데 `settings.js`만 기본색에도 `colorNumber`를 붙이는 분기를 갖고 있어 이미 미묘하게 다릅니다. 이름 규칙을 바꾸려면 세 곳을 고쳐야 하고, 한 곳을 빠뜨려도 테스트는 통과합니다.
+
+**권고.** `shared/color-label.js`로 한 벌만 남깁니다. `controls.js`는 ESM을 쓸 수 없으므로 `color-core.js`에 두고 shared 쪽에서 재사용하거나, 반대로 두 진입점을 만드는 방식이 필요합니다. 이 제약 자체가 4-6 항목과 연결됩니다.
+
+### 4-4. 확장 네임스페이스 선택이 두 벌
+
+`shared/browser-api.js`와 `content-scripts/content-common.js`가 각각 `browser` / `chrome` 분기를 구현합니다. 내용은 같고 모듈 시스템만 다릅니다. `AGENTS.md`가 이 객체의 성격을 길게 설명하는 만큼, 정의가 두 곳인 것은 위험합니다.
+
+### 4-5. `MAX_BODY_BYTES`가 두 배포 단위에 독립 정의
+
+| 위치 | 값 |
+| --- | --- |
+| `constants/cloud-sync-config.js` | `1_000_000` |
+| `worker/src/index.js` | `1_000_000` |
+
+확장과 워커는 서로 다른 시점에 배포됩니다. 한쪽만 올리면 클라이언트가 통과시킨 페이로드를 워커가 413으로 거절하고, 사용자는 `cloudSyncLastError`에 숫자만 적힌 메시지를 봅니다. 워커에는 테스트도 CI 단계도 없어서 이 드리프트를 잡을 지점이 없습니다.
+
+**권고.** 워커가 값을 응답 헤더나 `GET /limits`로 알리고 클라이언트가 그것을 쓰게 하거나, 최소한 양쪽 파일에 서로를 가리키는 주석을 답니다. 워커 테스트는 `wrangler` 없이도 `fetch` 핸들러를 직접 호출해 붙일 수 있습니다.
+
+### 4-6. 모듈 시스템이 세 갈래인 데서 오는 재사용 불가
+
+`shared/`와 `background/`는 ESM, content script는 `window` 전역, 페이지 스크립트는 ESM이지만 `DOMContentLoaded` 클로저 하나입니다. 4-3과 4-4의 중복은 취향 문제가 아니라 이 구조가 강제하는 것입니다. content script가 `shared/`를 import할 수 없기 때문입니다.
+
+`testability-review.md`가 이미 같은 진단을 내렸습니다. 번들러 없이 해결하려면 코어 파일이 UMD 형태로 양쪽을 지원하는 방법이 있습니다.
+
+```js
+// shared/color-label.js 하단
+if (typeof window !== 'undefined') window.TextHighlighterColorLabel = api;
+export default api;  // manifest 주입 시 이 줄이 문제
+```
+
+`export`가 섞이면 classic script로 로드되지 않으므로, 실제로는 코어 파일을 IIFE로 두고 `shared/` 쪽에서 얇게 감싸 re-export하는 편이 현실적입니다. 어느 쪽이든 결정을 한 번 내려서 문서화해 두는 것이 매번 중복을 늘리는 것보다 낫습니다.
+
+---
+
+## 5) P1 — 안전망의 빈틈
+
+### 5-1. `deploy.cjs`가 누락을 경고만 하고 성공한다
+
+```js
+// scripts/deploy.cjs
+if (fs.existsSync(src)) {
+  copyFile(src, dest);
+} else {
+  console.warn(`Warning: ${file} not found`);   // 그리고 계속 진행
+}
+```
+
+`filesToCopy`는 루트 파일 열 개를 나열한 화이트리스트입니다. 루트에 새 HTML이나 JS를 추가하고 이 목록에 넣는 것을 잊으면, 빌드가 경고 한 줄을 찍고 종료 코드 0으로 끝나며 그 파일이 빠진 패키지가 나옵니다. `version-deploy.cjs`가 그 결과를 그대로 zip으로 묶습니다.
+
+**권고.** 누락은 `process.exit(1)`로 끝냅니다. 더 나아가 루트의 `*.html`과 그 짝이 되는 `*.js`를 자동으로 수집하면 목록 자체가 없어집니다.
+
+### 5-2. i18n 키 드리프트가 실제로 발생해 있다
+
+여섯 로케일 모두 151개 키로 개수는 맞지만, 코드와 대조하면 양쪽으로 어긋나 있습니다.
+
+코드가 쓰는데 어느 로케일에도 없는 키:
+
+| 키 | 사용처 |
+| --- | --- |
+| `importError` | `pages-list.js:736` |
+| `exportError` | `pages-list.js:844` |
+| `noHighlightsToExport` | `pages-list.js:850` |
+
+셋 다 `getMessage(key, '영문 기본값')` 형태라 예외는 나지 않고, 대신 비영어 사용자가 import/export 오류 상황에서만 영어를 봅니다. 눈에 띄기 어려운 종류의 결함입니다.
+
+반대로 아무도 쓰지 않는 키가 다섯 개입니다: `searchTooltip`, `colorChangeWarning`, `deleteCustomColors`, `deletedCustomColors`, `noCustomColorsToDelete`. 여섯 로케일이므로 죽은 번역 30줄입니다.
+
+이 드리프트를 잡지 못하는 이유는 검사가 특정 기능에 묶여 있기 때문입니다.
+
+```js
+// tests/copy-locales.test.js
+const copyKeys = [
+  'copyPageHighlightsLabel',
+  'copyPageHighlightsSuccess',
+  // ... 복사 기능 키 5개만 하드코딩
+];
+```
+
+**권고.** 기능별 목록 대신 불변식으로 바꿉니다. 소스에서 `getMessage('...')`와 `data-i18n="..."`를 정규식으로 걷어 "코드가 쓰는 모든 키가 모든 로케일에 있다"와 "모든 로케일 키 집합이 동일하다"를 검사하면 됩니다. 이 리뷰의 위 결과가 그 스크립트의 출력입니다.
+
+### 5-3. 커버리지가 가장 큰 파일을 조용히 제외한다
+
+1절에서 본 대로, 기본 리포트의 89.6%는 3,459줄을 보지 않고 낸 숫자입니다. 리포트에 0%로라도 나오면 눈에 띄겠지만 행 자체가 없어서 눈에 띄지 않습니다.
+
+**권고.** `package.json`의 jest 설정에 `collectCoverageFrom`을 명시해 이 파일들이 0%로라도 리포트에 나오게 합니다. 숫자가 57%로 떨어지지만 그것이 실제 상태입니다. 그 위에 `controls.js`의 순수 로직을 `color-core.js`가 그랬듯 코어 파일로 옮겨 가면 숫자가 정직하게 올라갑니다.
+
+---
+
+## 6) P2 — 점진 개선
+
+### 6-1. 긴 함수
+
+| 파일 | 함수 | 줄 수 | 비고 |
+| --- | --- | ---: | --- |
+| `content-core.js` | `convertSelectionRange` | 235 | 중첩 함수 11개 |
+| `content-core.js` | `processSelectionRange` | 195 | 중첩 함수 6개 |
+| `controls.js` | `showSelectionControls` | 154 | 복제, 위치 계산, 리스너 재바인딩이 한 몸 |
+| `controls.js` | `initHSVSliders` | 145 | 마우스/터치 핸들러 4쌍 |
+| `controls.js` | `enableTouchDragForControls` | 110 | |
+| `content.js` | `highlightTextInDocument` | 107 | |
+
+`convertSelectionRange`의 중첩 함수 11개는 각각 이름이 있고 순수합니다. 밖으로 꺼내면 그대로 테스트 대상이 됩니다.
+
+`showSelectionControls`는 성격이 다릅니다. `highlightControlsContainer`를 `cloneNode`한 뒤 리스너가 사라진 것을 하나씩 되살리는 구조라서, 하이라이트 바에 버튼을 추가할 때마다 이 함수에서 대응하는 복원 코드를 잊지 않아야 합니다. 실제로 `+` 버튼과 스크롤 리스너에 대해 각각 그런 주석이 달려 있습니다. 복제 대신 팩토리 함수로 두 바를 같은 코드에서 만드는 편이 이 부류의 버그를 없앱니다.
+
+### 6-2. 페이지 스크립트가 통짜 클로저
+
+`settings.js` 617줄과 `pages-list.js` 880줄이 각각 `DOMContentLoaded` 콜백 하나입니다. 그래서 `tests/helpers/extension-page.js`라는 전용 하네스가 필요하고, 그 하네스 자체도 유지 대상이 됩니다. 커버리지는 높지만 그것은 하네스가 잘 만들어졌기 때문이지 구조가 좋아서가 아닙니다.
+
+순수 부분부터 `shared/`로 내보내면 하네스 없이 테스트할 수 있습니다. `highlight-copy.js`가 `pages-list.js`에서 이 방식으로 빠져나온 좋은 선례입니다.
+
+### 6-3. `urlToSyncKey`가 32비트 해시
+
+```js
+// background/sync-service.js
+hash = ((hash << 5) - hash) + ch;
+hash |= 0;
+return SYNC_HIGHLIGHT_PREFIX + Math.abs(hash).toString(36);
+```
+
+서로 다른 URL이 충돌하면 한쪽 페이지의 하이라이트가 sync에서 덮입니다. 로컬은 무사하므로 사용자는 다른 기기에서만 데이터가 사라진 것을 보게 되고, 원인을 추적할 단서가 없습니다. `storage.sync` 키 길이 제한이 있으므로 해시 자체는 유지하되, 저장 데이터에 `url`이 이미 들어 있으니 읽을 때 불일치를 감지해 로그를 남기는 정도면 진단 가능해집니다.
+
+### 6-4. 파비콘을 외부에서 가져온다
+
+```js
+// pages-list.js:86
+src: `https://www.google.com/s2/favicons?sz=64&domain_url=${...}`
+```
+
+목록을 열 때마다 사용자가 하이라이트한 호스트명이 구글로 나갑니다. `manifest-firefox.json`이 `data_collection_permissions: ["none"]`을 선언하고 있어 스토어 심사 관점에서도 검토할 만합니다. 대안은 이미 코드 안에 있습니다. `fallbackWebFavicon`이 SVG data URI로 들어 있으므로 그것을 기본값으로 쓰면 외부 요청이 사라집니다.
+
+### 6-5. 주석 언어 혼재
+
+`shared/tab-broadcast.js`와 `shared/runtime-message.js`만 한국어 주석이고 나머지 소스는 영어입니다. 둘 다 `AGENTS.md`가 영어로 길게 설명한 것과 같은 내용을 한국어로 다시 적고 있어, 한쪽을 고칠 때 다른 쪽이 남습니다.
+
+### 6-6. 버전과 도구 체인
+
+- `package.json`은 `1.0.0`, 매니페스트는 `2.11.0`입니다. 릴리스 버전의 단일 출처가 어디인지 코드에서 읽히지 않습니다.
+- `version-deploy.cjs`는 인자로 받은 브라우저의 매니페스트만 올립니다. 크롬만 릴리스하면 두 매니페스트 버전이 갈리고, 다음 파이어폭스 릴리스에서 그 사실을 알아차릴 지점이 없습니다.
+- `version-deploy.cjs`가 `shared/logger.js`와 `content-scripts/content-common.js`를 정규식으로 직접 수정하고 되돌리지 않습니다. 릴리스 후 워킹 트리에 소스 변경이 남습니다.
+- 린터와 포매터가 없습니다. `content.js`에 `let range = document.createRange()`처럼 `const`여도 되는 곳, 파일별로 다른 들여쓰기와 따옴표가 남아 있는 이유입니다.
+
+---
+
+## 7) 권장 순서
+
+비용 대비 효과 순입니다. 1~4는 각각 하루 안쪽이고 회귀 위험이 낮으면서 한 부류의 실수를 영구히 막습니다.
+
+1. **로케일 불변식 테스트** — 5-2. 지금 있는 결함 세 개가 바로 드러나고, 이후 모든 기능에 자동 적용됩니다.
+2. **`deploy.cjs` 누락 시 실패** — 5-1. 세 줄 변경.
+3. **페이지 키 판정 통일** — 3-1. 네 곳을 `constants/`의 함수 하나로.
+4. **`groupId`에 랜덤 접미사** — 3-4. 한 줄, 마이그레이션 없음.
+5. **매니페스트 합성** — 4-1. `AGENTS.md`의 경고 한 문단이 필요 없어집니다.
+6. **`sendToBackground` 일원화 + 가드 테스트** — 3-2.
+7. **import 경로를 배경으로** — 3-3.
+8. **`collectCoverageFrom` 명시 후 `controls.js` 코어 분리** — 5-3, 6-1.
+9. **테마 토큰 공용 CSS** — 4-2.
+
+3, 5, 6, 7을 마치면 `clean-code-review.md`가 2026-02에 P0로 올린 세 항목 중 중복과 스토리지 키 하드코딩이 닫힙니다. god 파일 항목은 8번이 그 시작입니다.
