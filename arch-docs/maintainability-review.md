@@ -111,15 +111,21 @@ export function isHighlightPageKey(key, value) {
 | `settings.js` | 4 | 18 |
 | `popup.js` | 0 | 2 |
 
-`settings.js`는 응답을 널 체크 없이 읽는 곳이 다섯 군데입니다.
+`settings.js`에서 `await`에 `catch`가 없는 직접 호출 열여덟 곳이 모두 여기 해당하고, 그중 다섯 곳은 응답을 널 체크 없이 읽기까지 합니다.
 
 ```js
-// settings.js:143, 240, 256, 294, 411
-if (response.success) { ... }          // response가 undefined면 TypeError
-const colorMap = colorMapResult.success ? ... : {};
+// settings.js:136-143, 235, 253, 291, 409-411
+const response = await browserAPI.runtime.sendMessage({ ... });
+if (response.success) { ... }
 ```
 
-색 이름 편집은 사용자가 입력 필드에 머무는 동안 워커가 잠들 시간이 충분합니다. blur 시점에 reject가 나면 이름이 저장되지 않고 오류 표시도 없습니다. 문서가 묘사한 증상 그대로입니다.
+**실패 경로를 정확히 적어 둡니다.** 잠든 워커가 reject하면 실행은 `await`에서 멈춥니다. `response`에 `undefined`가 들어간 뒤 `response.success`에서 `TypeError`가 나는 것이 아니라, 그 줄에 도달하지 못한 채 async 핸들러가 unhandled rejection으로 끝납니다. 사용자가 보는 것은 오류 없이 아무 일도 일어나지 않는 화면입니다.
+
+구분이 중요한 이유는 재현 테스트의 모양이 달라지기 때문입니다. 응답을 `undefined`로 모킹하면 통과해 버리고, reject로 모킹해야 실패합니다. 그리고 널 체크를 넣는 것으로는 고쳐지지 않습니다. 필요한 것은 rejection 처리이고, 응답을 역참조하는지 여부와 무관하게 열여덟 곳 전부가 대상입니다.
+
+`AGENTS.md`의 "Extension API calls" 절이 이 경로를 그대로 설명합니다. 콜백 형태였을 때는 같은 상황이 `undefined` 응답으로 도착해 `if (!response || !response.success)` 분기가 받아 줬고, promise 형태로 오면서 그 안전망이 사라졌습니다.
+
+색 이름 편집은 사용자가 입력 필드에 머무는 동안 워커가 잠들 시간이 충분합니다. blur 시점에 reject가 나면 이름이 저장되지 않고 오류 표시도 없습니다.
 
 **권고.** 페이지 스크립트의 `browserAPI.runtime.sendMessage` 호출을 전부 `sendToBackground`로 바꾸고, `tests/runtime-message-guard.test.js`처럼 직접 호출을 금지하는 가드 테스트를 추가합니다. 가드가 없으면 다음 기능에서 같은 일이 반복됩니다.
 
@@ -184,9 +190,19 @@ const groupId = Date.now().toString();
 | `popup.html` | 533 | 471 |
 | `onboarding.html` | 338 | 167 |
 
-공통 토큰은 `--bg`, `--surface`, `--surface-strong`, `--text`, `--muted`, `--border`, `--accent` 일곱 개이고 네 파일 모두 `#ffffff` / `#121212` / `#8b5cf6` / `#a78bfa`로 같습니다.
+공통 토큰은 `--bg`, `--surface`, `--surface-strong`, `--text`, `--muted`, `--border`, `--accent` 일곱 개입니다. 그런데 값이 전부 같지는 않습니다. `pages-list.html`만 세 토큰에서 다섯 개 값이 어긋나 있습니다.
 
-**권고.** `shared/modal.css`가 이미 있으므로 그 옆에 `shared/tokens.css`를 만들어 네 페이지가 `<link>`로 참조합니다. `deploy.cjs`가 `shared/` 디렉터리를 통째로 복사하므로 빌드 변경은 필요 없습니다.
+| 토큰 | 나머지 세 페이지 | `pages-list.html` |
+| --- | --- | --- |
+| `--muted` 라이트 | `#64646b` | `#666772` |
+| `--muted` 다크 | `#ababba` | `#a9a9b4` |
+| `--border` 라이트 | `#e1e1e6` | `#e1e1e8` |
+| `--border` 다크 | `#36363c` | `#383842` |
+| `--surface-strong` 다크 | `#222226` | `#242428` |
+
+이 차이는 중복이라는 진단을 약화시키지 않습니다. 오히려 예고된 드리프트가 이미 일어났다는 증거입니다. 다만 통합 방식에는 영향을 줍니다. 일곱 토큰을 그대로 `shared/tokens.css`로 옮기면 `pages-list`의 외관이 바뀝니다.
+
+**권고.** `shared/modal.css` 옆에 `shared/tokens.css`를 만들어 네 페이지가 `<link>`로 참조하되, 위 다섯 값은 먼저 의도적인 것인지 판단해야 합니다. 의도였다면 `pages-list.html`에 오버라이드로 남기고, 아니라면 한쪽으로 맞춘 뒤 옮깁니다. `deploy.cjs`가 `shared/` 디렉터리를 통째로 복사하므로 빌드 변경은 필요 없습니다.
 
 ### 4-3. 색 이름 생성이 세 벌
 
@@ -244,9 +260,21 @@ if (fs.existsSync(src)) {
 }
 ```
 
-`filesToCopy`는 루트 파일 열 개를 나열한 화이트리스트입니다. 루트에 새 HTML이나 JS를 추가하고 이 목록에 넣는 것을 잊으면, 빌드가 경고 한 줄을 찍고 종료 코드 0으로 끝나며 그 파일이 빠진 패키지가 나옵니다. `version-deploy.cjs`가 그 결과를 그대로 zip으로 묶습니다.
+`filesToCopy`는 루트 파일 열 개를 나열한 화이트리스트이고, 실패 양상이 두 가지로 갈립니다.
 
-**권고.** 누락은 `process.exit(1)`로 끝냅니다. 더 나아가 루트의 `*.html`과 그 짝이 되는 `*.js`를 자동으로 수집하면 목록 자체가 없어집니다.
+| 상황 | 지금 동작 |
+| --- | --- |
+| 목록에 있는 파일이 디스크에 없다 | 경고 한 줄, 종료 코드 0, 그 파일이 빠진 패키지 |
+| 루트에 새 파일이 있는데 목록에 없다 | **경고조차 없음.** 루프가 그 파일을 쳐다보지 않음 |
+
+둘째가 실제로 더 위험한데, 위 코드로는 잡히지 않습니다. 루프는 `filesToCopy`만 순회하므로 목록에 없는 파일은 존재 여부를 검사받지도 않습니다. 따라서 `console.warn`을 `process.exit(1)`로 바꾸는 것은 첫째 상황만 해결하고 둘째는 그대로 둡니다. `version-deploy.cjs`가 그 결과를 그대로 zip으로 묶는 것도 양쪽 모두 동일합니다.
+
+**권고.** 두 가지가 다 필요합니다.
+
+1. 루트의 `*.html`과 `*.js`를 실제로 읽어 `filesToCopy`에 없는 것이 있으면 실패시키는 완전성 검사. 또는 목록을 없애고 자동 수집으로 대체.
+2. 목록에 있는데 없는 파일은 `process.exit(1)`.
+
+둘 중 하나만 한다면 1번입니다. 목록을 갱신하는 것을 잊는 쪽이 파일을 지우고 목록에 남겨 두는 쪽보다 흔합니다.
 
 ### 5-2. i18n 키 드리프트가 실제로 발생해 있다
 
@@ -346,13 +374,13 @@ src: `https://www.google.com/s2/favicons?sz=64&domain_url=${...}`
 비용 대비 효과 순입니다. 1~4는 각각 하루 안쪽이고 회귀 위험이 낮으면서 한 부류의 실수를 영구히 막습니다.
 
 1. **로케일 불변식 테스트** — 5-2. 지금 있는 결함 세 개가 바로 드러나고, 이후 모든 기능에 자동 적용됩니다.
-2. **`deploy.cjs` 누락 시 실패** — 5-1. 세 줄 변경.
+2. **`deploy.cjs` 완전성 검사** — 5-1. 목록에 없는 루트 파일을 찾아 실패시킵니다. 경고 분기를 `exit(1)`로 바꾸는 것만으로는 부족합니다.
 3. **페이지 키 판정 통일** — 3-1. 네 곳을 `constants/`의 함수 하나로.
 4. **`groupId`에 랜덤 접미사** — 3-4. 한 줄, 마이그레이션 없음.
 5. **매니페스트 합성** — 4-1. `AGENTS.md`의 경고 한 문단이 필요 없어집니다.
-6. **`sendToBackground` 일원화 + 가드 테스트** — 3-2.
+6. **`sendToBackground` 일원화 + 가드 테스트** — 3-2. 테스트는 rejection으로 모킹해야 합니다.
 7. **import 경로를 배경으로** — 3-3.
 8. **`collectCoverageFrom` 명시 후 `controls.js` 코어 분리** — 5-3, 6-1.
-9. **테마 토큰 공용 CSS** — 4-2.
+9. **테마 토큰 공용 CSS** — 4-2. 먼저 `pages-list`의 다섯 값이 의도인지 판단합니다.
 
 3, 5, 6, 7을 마치면 `clean-code-review.md`가 2026-02에 P0로 올린 세 항목 중 중복과 스토리지 키 하드코딩이 닫힙니다. god 파일 항목은 8번이 그 시작입니다.
