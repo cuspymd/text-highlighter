@@ -295,7 +295,11 @@
       }
 
       .page-info {
-        flex: 0 0 auto;
+        /* Shrinkable: on its own wrapped line it must take the line width
+           rather than its max-content width, or a long localized timestamp
+           runs past the card edge. */
+        flex: 0 1 auto;
+        min-width: 0;
         font-size: 11px;
         color: var(--muted);
         overflow-wrap: anywhere;
