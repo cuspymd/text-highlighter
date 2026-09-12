@@ -63,10 +63,29 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const { showConfirmModal, showAlertModal } = createLocalizedModalHelpers(getMessage);
-  const copyIconSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>';
-  copySearchResultsBtn.innerHTML = copyIconSvg;
-  const expandAllIconSvg = '<svg viewBox="0 0 24 24"><path d="M7 5h10v2H7V5Zm-4 4h18v2H3V9Zm4 4h10v2H7v-2Zm-4 4h18v2H3v-2Z"/></svg>';
-  const collapseAllIconSvg = '<svg viewBox="0 0 24 24"><path d="M3 5h18v2H3V5Zm4 4h10v2H7V9Zm-4 4h18v2H3v-2Zm4 4h10v2H7v-2Z"/></svg>';
+  const svgNamespace = 'http://www.w3.org/2000/svg';
+
+  // Icons are built with DOM APIs instead of innerHTML so add-on store
+  // validators do not flag dynamic markup assignment.
+  function createIconSvg(pathData, { hidden = false } = {}) {
+    const svg = document.createElementNS(svgNamespace, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    if (hidden) svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(svgNamespace, 'path');
+    path.setAttribute('d', pathData);
+    svg.appendChild(path);
+    return svg;
+  }
+
+  const copyIconPath = 'M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z';
+  const expandAllIconPath = 'M7 5h10v2H7V5Zm-4 4h18v2H3V9Zm4 4h10v2H7v-2Zm-4 4h18v2H3v-2Z';
+  const collapseAllIconPath = 'M3 5h18v2H3V5Zm4 4h10v2H7V9Zm-4 4h18v2H3v-2Zm4 4h10v2H7v-2Z';
+
+  function createCopyIcon() {
+    return createIconSvg(copyIconPath, { hidden: true });
+  }
+
+  copySearchResultsBtn.replaceChildren(createCopyIcon());
   const webProtocols = new Set(['http:', 'https:']);
   const fallbackWebFavicon = `data:image/svg+xml;utf8,${encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#e5e7eb" stroke="#9ca3af"/><path d="M2 8h12M8 1a11 11 0 0 0 0 14M8 1a11 11 0 0 1 0 14" stroke="#6b7280" stroke-width="1" fill="none"/></svg>'
@@ -379,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function () {
     expandAllBtn.setAttribute('aria-pressed', String(allExpanded));
     expandAllBtn.title = getMessage(titleKey, fallbackTitle);
     expandAllBtn.setAttribute('aria-label', expandAllBtn.title);
-    expandAllBtn.innerHTML = allExpanded ? collapseAllIconSvg : expandAllIconSvg;
+    expandAllBtn.replaceChildren(createIconSvg(allExpanded ? collapseAllIconPath : expandAllIconPath));
   }
 
   function expandAllVisiblePages() {
@@ -496,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function () {
           const copyPageBtn = document.createElement('button');
           copyPageBtn.type = 'button';
           copyPageBtn.className = 'copy-icon-btn copy-page-btn';
-          copyPageBtn.innerHTML = copyIconSvg;
+          copyPageBtn.replaceChildren(createCopyIcon());
           copyPageBtn.title = getMessage('copyPageHighlightsLabel', 'Copy all highlights from this page');
           copyPageBtn.setAttribute('aria-label', copyPageBtn.title);
           titleRow.appendChild(copyPageBtn);
