@@ -4,54 +4,26 @@
 대상 저장소: `text-highlighter` (`29d8fb7` 기준)
 대상 범위: `background.js`, `background/`, `shared/`, `constants/`, `content-scripts/`, 페이지 스크립트 3종, `scripts/`, `worker/`, 매니페스트, `_locales/`
 
-관련 문서: [클린 코드 리뷰](clean-code-review.md), [테스터빌리티 리뷰](testability-review.md)
+관련 문서: [클린 코드 리뷰](clean-code-review.md)
+
+이 리뷰는 유지보수성만 다룹니다. 테스트 커버리지는 범위 밖이고, 수치나 목표를 제시하지 않습니다. 테스트를 언급하는 곳이 있다면 그것은 "변경이 잘못됐을 때 알려 주는 장치가 있는가"라는 뜻이지 커버리지를 올리라는 뜻이 아닙니다.
 
 ---
 
-## 1) 측정
+## 1) 규모
 
-`npm test` — 37 suites, 552 tests, 17.0s, 전부 통과.
+| 영역 | 파일 | 줄 수 |
+| --- | ---: | ---: |
+| `content-scripts/` | 8 | 4,587 |
+| `background/` + `background.js` | 7 | 2,189 |
+| 페이지 스크립트 3종 | 3 | 1,939 |
+| `shared/` | 11 | 821 |
+| `scripts/` | 3 | 306 |
+| `worker/src/` | 1 | 91 |
 
-기본 설정으로 커버리지를 붙이면 다음과 같습니다.
+가장 큰 파일 다섯 개가 `controls.js` 1,595줄, `content.js` 1,224줄, `content-core.js` 974줄, `pages-list.js` 897줄, `styles.css` 895줄입니다. 확장 페이지 네 개의 인라인 CSS를 합치면 1,660줄이 더 있습니다.
 
-```
-Statements   : 89.58% ( 2846/3177 )
-```
-
-이 숫자는 그대로 믿으면 안 됩니다. jest가 계측하는 것은 테스트가 `import`한 파일뿐이고, manifest가 순서대로 주입하는 content script와 `eval`로 로드되는 파일은 리포트에 **아예 나타나지 않습니다.** `collectCoverageFrom`으로 강제로 끌어넣으면 이렇게 바뀝니다.
-
-```
-Statements   : 57.28% ( 2738/4780 )
-Branches     : 51.35% ( 1458/2839 )
-Lines        : 57.73% ( 2559/4432 )
-```
-
-리포트에서 빠져 있는 파일들:
-
-| 파일 | 줄 수 | 빠지는 이유 |
-| --- | ---: | --- |
-| `content-scripts/controls.js` | 1,595 | manifest 주입, `window.eval` |
-| `content-scripts/content.js` | 1,224 | manifest 주입, `window.eval` |
-| `content-scripts/minimap.js` | 320 | manifest 주입, 테스트 없음 |
-| `content-scripts/content-common.js` | 101 | manifest 주입 |
-| `worker/src/index.js` | 91 | 별도 배포 단위, 테스트 없음 |
-| `background.js` | 68 | 최상위 부수효과, import 불가 |
-| `onboarding.js` | 33 | 페이지 스크립트, 하네스 미적용 |
-| `content-scripts/navigation-bridge.js` | 27 | 페이지 컨텍스트 주입 |
-
-합계 3,459줄. 레포에서 가장 큰 두 파일이 여기 들어 있습니다.
-
-계측되는 영역만 보면 상태는 좋습니다.
-
-| 영역 | Stmts | 가장 낮은 파일 |
-| --- | ---: | --- |
-| `constants/` | 100.0% | — |
-| `shared/` | 95.5% | `browser-api.js` 66.7% |
-| `content-scripts/` 코어 3종 | 92.5% | `content-core.js` 91.0% |
-| 페이지 스크립트 | 90.6% | `popup.js` 76.1% |
-| `background/` | 84.3% | `context-menu.js` 63.0% |
-
-`testability-review.md`가 권고한 "순수 로직을 코어 파일로 빼서 import 가능하게 만든다"는 방향은 `content-core.js`, `restore-core.js`, `color-core.js`에서 분명히 효과를 냈습니다. 남은 문제는 그 분리가 `controls.js`에는 아직 적용되지 않았다는 것입니다.
+`npm test`는 37 suites, 552 tests가 전부 통과합니다.
 
 ---
 
@@ -61,7 +33,7 @@ Lines        : 57.73% ( 2559/4432 )
 
 - `background.js`의 서비스 분리가 끝났고, `message-router.js`의 액션 핸들러 맵은 라우팅을 데이터로 만들어 `message-routing-matrix.md`와 동일 이름의 테스트로 검증까지 이어집니다.
 - `AGENTS.md`가 코드가 말하지 않는 것만 적는다는 원칙을 지키고 있고, `tabs.sendMessage` 콜백 함정처럼 실제로 조용히 죽는 실수를 정확히 짚습니다.
-- `shared/crypto-utils.js`는 HKDF 분리 도출, AES-GCM, 서버가 평문을 볼 수 없는 구조까지 설계가 단정하고 커버리지도 100%입니다.
+- `shared/crypto-utils.js`는 HKDF 분리 도출, AES-GCM, 서버가 평문을 볼 수 없는 구조까지 설계가 단정합니다.
 - `restore-core.js`의 주석은 왜 그렇게 했는지를 남기는 좋은 예입니다. 특히 `maskClaimedRegions`가 `split('')`을 쓰는 이유를 적어 둔 부분.
 - TODO/FIXME 주석이 한 개도 없습니다.
 
@@ -151,9 +123,13 @@ ops[`${page.url}_meta`] = { ... };
 **다만 경로를 옮기는 것만으로는 부활을 막지 못합니다.** 이미 동기화된 URL을 import로 덮어쓰면 `syncSaveHighlights`가 `mergeHighlights`를 호출하고, 그 함수는 `deletedGroupIds`에 걸리지 않은 원격 그룹을 전부 살려 둡니다. import 파일에 없는 기존 그룹은 첫 동기화에서 되돌아옵니다. 배경 핸들러는 다음 두 가지를 명시적으로 해야 합니다.
 
 1. 기존 메타데이터의 `deletedGroupIds`를 보존합니다. 지금 import는 메타데이터를 통째로 갈아치우므로 과거 tombstone이 사라집니다.
-2. 덮어쓰기 전 로컬에 있던 그룹 중 import 파일에 없는 것마다 tombstone을 새로 찍습니다. 그러고 나서 동기화합니다.
+2. import 파일에 없는 그룹마다 tombstone을 새로 찍습니다. 그러고 나서 동기화합니다.
 
-즉 import는 "쓰기"가 아니라 "치환"이고, 치환은 삭제를 포함합니다. 그 삭제를 기록하지 않으면 동기화가 되돌립니다. `handleSaveHighlights`가 `deletedGroupIds`를 같은 `storage.local.set`에 넣는 이유와 동일한 문제이므로, 그 함수의 방식을 그대로 따르면 됩니다.
+**2번의 대상은 로컬 목록이 아닙니다.** 덮어쓰기 직전 로컬에 있던 그룹만 훑으면 부족합니다. `storage.sync`나 클라우드 블롭에 있는데 이 기기가 아직 당겨오지 않은 그룹은 로컬 목록에 없으므로 tombstone이 찍히지 않고, `mergeHighlights`와 `mergeBlobs`가 그것을 그대로 살려서 되돌려 놓습니다. 사용자 눈에는 import가 지운 하이라이트가 잠시 뒤 되살아나는 것으로 보입니다.
+
+따라서 둘 중 하나여야 합니다. 원격 상태를 먼저 당겨와 로컬과 합친 뒤 그 합집합을 기준으로 tombstone을 찍거나, 로컬과 원격 양쪽에서 import 파일에 없는 그룹을 전부 찍는 것입니다. 전자가 기존 동기화 흐름과 모양이 같아 더 안전합니다.
+
+즉 import는 "쓰기"가 아니라 "치환"이고, 치환은 삭제를 포함합니다. 그 삭제를 기록하지 않으면 동기화가 되돌립니다. `handleSaveHighlights`가 `deletedGroupIds`를 같은 `storage.local.set`에 넣는 이유와 동일한 문제입니다.
 
 ### 3-4. `groupId`가 `Date.now()` 하나뿐이다
 
@@ -243,7 +219,7 @@ const groupId = Date.now().toString();
 
 `shared/`와 `background/`는 ESM, content script는 `window` 전역, 페이지 스크립트는 ESM이지만 `DOMContentLoaded` 클로저 하나입니다. 4-3과 4-4의 중복은 취향 문제가 아니라 이 구조가 강제하는 것입니다. content script가 `shared/`를 import할 수 없기 때문입니다.
 
-`testability-review.md`가 이미 같은 진단을 내렸습니다. 번들러 없이 해결하려면 코어 파일이 UMD 형태로 양쪽을 지원하는 방법이 있습니다.
+세 갈래로 갈라져 있다는 진단 자체는 `testability-review.md`에도 있습니다. 다만 거기서는 테스트 관점의 근거였고, 여기서는 코드를 한 벌로 유지할 수 없다는 것이 문제입니다. 번들러 없이 해결하려면 코어 파일이 UMD 형태로 양쪽을 지원하는 방법이 있습니다.
 
 ```js
 // shared/color-label.js 하단
@@ -332,15 +308,17 @@ const copyKeys = [
 
 **첫째, `data-i18n` 계열 속성이 네 종류입니다.** `data-i18n` 59개, `data-i18n-title` 8개, `data-i18n-placeholder` 1개, 그리고 `onboarding.html`에 `data-i18n-href` 1개입니다. `data-i18n[a-z-]*=`로 접미사를 열어 두지 않으면 `onboardingGuideUrl`처럼 마지막 종류에만 쓰이는 키를 놓칩니다. 이 리뷰를 작성할 때 쓴 초안 스크립트가 정확히 그 실수를 해서 `onboardingGuideUrl`을 미사용으로 분류했습니다.
 
-**둘째, 키가 변수로 들어오는 호출이 있습니다.** `settings.js:330`의 `getMessage(colorObj.nameKey)`가 기본색 이름 다섯 개를 가리키고, `pages-list.js:380`의 `getMessage(titleKey, ...)`는 두 키 중 하나를 고릅니다. 정규식은 이것들을 볼 수 없으므로, 명시적인 허용 목록으로 따로 선언해 두어야 합니다. 그러지 않으면 `yellowColor` 같은 키가 미사용으로 보고되고, 누군가 지웁니다.
+**둘째, 키가 변수로 들어오는 호출이 있습니다.** 지금 확인된 것만 세 곳입니다.
+
+| 위치 | 가리키는 키 |
+| --- | --- |
+| `settings.js:330` | `getMessage(colorObj.nameKey)` — 기본색 이름 다섯 개 |
+| `pages-list.js:380` | `getMessage(titleKey, ...)` — `expandAllHighlights`, `collapseAllHighlights` |
+| `pages-list.js:47-50` | `getMessage(key)` — `highlightNavigation`으로 시작하는 네 개 |
+
+정규식은 이것들을 볼 수 없습니다. 명시적인 허용 목록으로 따로 선언해 두지 않으면 `yellowColor`나 `highlightNavigationCancelled` 같은 키가 미사용으로 보고되고, 누군가 지우고, 테스트는 초록으로 남습니다. 그리고 이 표가 완전하다는 보장이 없다는 점이 더 중요합니다. 목록을 새로 만드는 대신 동적 호출 자체를 없애는 편이 낫습니다. 위 세 곳 모두 키 후보가 유한하므로, 상수 객체에 리터럴로 적어 두면 정규식이 볼 수 있는 형태가 됩니다.
 
 따라서 위에 적은 미사용 키 다섯 개는 정규식 출력이 아니라 레포 전체 문자열 검색으로 따로 확인한 결과입니다. 테스트를 쓸 때도 같은 구분이 필요합니다. "없는 키"는 실패로, "안 쓰는 키"는 경고로 두는 편이 안전합니다.
-
-### 5-3. 커버리지가 가장 큰 파일을 조용히 제외한다
-
-1절에서 본 대로, 기본 리포트의 89.6%는 3,459줄을 보지 않고 낸 숫자입니다. 리포트에 0%로라도 나오면 눈에 띄겠지만 행 자체가 없어서 눈에 띄지 않습니다.
-
-**권고.** `package.json`의 jest 설정에 `collectCoverageFrom`을 명시해 이 파일들이 0%로라도 리포트에 나오게 합니다. 숫자가 57%로 떨어지지만 그것이 실제 상태입니다. 그 위에 `controls.js`의 순수 로직을 `color-core.js`가 그랬듯 코어 파일로 옮겨 가면 숫자가 정직하게 올라갑니다.
 
 ---
 
@@ -357,15 +335,15 @@ const copyKeys = [
 | `controls.js` | `enableTouchDragForControls` | 110 | |
 | `content.js` | `highlightTextInDocument` | 107 | |
 
-`convertSelectionRange`의 중첩 함수 11개는 각각 이름이 있고 순수합니다. 밖으로 꺼내면 그대로 테스트 대상이 됩니다.
+`convertSelectionRange`의 중첩 함수 11개는 각각 이름이 있고 순수합니다. 밖으로 꺼내면 함수 하나가 235줄에서 스무 줄 남짓으로 줄고, 꺼낸 것들은 이름만으로 무엇을 하는지 읽힙니다.
 
 `showSelectionControls`는 성격이 다릅니다. `highlightControlsContainer`를 `cloneNode`한 뒤 리스너가 사라진 것을 하나씩 되살리는 구조라서, 하이라이트 바에 버튼을 추가할 때마다 이 함수에서 대응하는 복원 코드를 잊지 않아야 합니다. 실제로 `+` 버튼과 스크롤 리스너에 대해 각각 그런 주석이 달려 있습니다. 복제 대신 팩토리 함수로 두 바를 같은 코드에서 만드는 편이 이 부류의 버그를 없앱니다.
 
 ### 6-2. 페이지 스크립트가 통짜 클로저
 
-`settings.js` 617줄과 `pages-list.js` 880줄이 각각 `DOMContentLoaded` 콜백 하나입니다. 그래서 `tests/helpers/extension-page.js`라는 전용 하네스가 필요하고, 그 하네스 자체도 유지 대상이 됩니다. 커버리지는 높지만 그것은 하네스가 잘 만들어졌기 때문이지 구조가 좋아서가 아닙니다.
+`settings.js` 617줄과 `pages-list.js` 880줄이 각각 `DOMContentLoaded` 콜백 하나입니다. 내보내는 것이 없으므로 안의 함수는 밖에서 부를 수도, 다른 페이지에서 재사용할 수도 없습니다. 4-3의 색 이름 로직이 세 벌로 갈라진 이유 중 하나가 이것입니다. `settings.js` 안의 `buildColorLabel`은 그 클로저를 벗어날 방법이 없습니다.
 
-순수 부분부터 `shared/`로 내보내면 하네스 없이 테스트할 수 있습니다. `highlight-copy.js`가 `pages-list.js`에서 이 방식으로 빠져나온 좋은 선례입니다.
+순수 부분부터 `shared/`로 내보내면 됩니다. `highlight-copy.js`가 `pages-list.js`에서 이 방식으로 빠져나온 좋은 선례입니다.
 
 ### 6-3. `urlToSyncKey`가 32비트 해시
 
@@ -411,7 +389,7 @@ src: `https://www.google.com/s2/favicons?sz=64&domain_url=${...}`
 5. **매니페스트 합성** — 4-1. `AGENTS.md`의 경고 한 문단이 필요 없어집니다.
 6. **`sendToBackground` 일원화 + 가드 테스트** — 3-2. 테스트는 rejection으로 모킹해야 합니다.
 7. **import 경로를 배경으로 + tombstone 생성** — 3-3. 경로만 옮기면 동기화가 삭제를 되돌립니다.
-8. **`collectCoverageFrom` 명시 후 `controls.js` 코어 분리** — 5-3, 6-1.
+8. **`controls.js`의 순수 로직을 코어 파일로** — 6-1. `showSelectionControls`의 `cloneNode` 복원을 팩토리로 바꾸는 것이 가장 값이 큽니다.
 9. **테마 토큰 공용 CSS** — 4-2. 먼저 `pages-list`의 다섯 값이 의도인지 판단합니다.
 
 3, 5, 6, 7을 마치면 `clean-code-review.md`가 2026-02에 P0로 올린 세 항목 중 중복과 스토리지 키 하드코딩이 닫힙니다. god 파일 항목은 8번이 그 시작입니다.
