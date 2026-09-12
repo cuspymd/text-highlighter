@@ -478,13 +478,16 @@ document.addEventListener('DOMContentLoaded', function () {
         titleDiv.className = 'page-title';
         appendHighlightedText(titleDiv, pageTitle, currentSearchTerm);
 
+        // The search matches titles and highlight text only, so marking the URL
+        // would claim a match the filter never made.
         const urlDiv = document.createElement('div');
         urlDiv.className = 'page-url';
-        appendHighlightedText(urlDiv, page.url, currentSearchTerm);
+        urlDiv.textContent = page.url;
+        urlDiv.title = page.url;
 
         const infoDiv = document.createElement('div');
         infoDiv.className = 'page-info';
-        infoDiv.textContent = `${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount ?? 0} | ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}`;
+        infoDiv.textContent = `${getMessage('highlightCount', 'Highlights')}: ${page.highlightCount ?? 0} · ${getMessage('lastUpdated', 'Last Updated')}: ${lastUpdated}`;
 
         titleRow.appendChild(favicon);
         titleRow.appendChild(titleDiv);
@@ -505,9 +508,13 @@ document.addEventListener('DOMContentLoaded', function () {
             );
           });
         }
+        const metaRow = document.createElement('div');
+        metaRow.className = 'page-meta';
+        metaRow.appendChild(urlDiv);
+        metaRow.appendChild(infoDiv);
+
         infoContainer.appendChild(titleRow);
-        infoContainer.appendChild(urlDiv);
-        infoContainer.appendChild(infoDiv);
+        infoContainer.appendChild(metaRow);
         const titleOnlyMatch = term && !(page.highlights || []).some(group =>
           (group.text || '').toLowerCase().includes(term));
         if (titleOnlyMatch) {
