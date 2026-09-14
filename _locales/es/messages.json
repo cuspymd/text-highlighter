@@ -194,7 +194,9 @@
   "addColor": {
     "message": "Agregar Color"
   },
-  "refresh": {
+  "moreOptions": {
+    "message": "Más"
+  },  "refresh": {
     "message": "Actualizar",
     "description": "Texto del botón para actualizar la lista de páginas resaltadas"
   },

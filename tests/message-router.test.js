@@ -677,6 +677,51 @@ describe('message-router', () => {
   // Cloud sync
   // ===================================================================
 
+  // ===================================================================
+  // Extension pages opened from the in-page controls
+  // ===================================================================
+
+  describe('openExtensionPage', () => {
+    it('refuses a page it does not know, the popup included', async () => {
+      expect(await send({ action: 'openExtensionPage', page: 'nowhere' }))
+        .toEqual({ success: false, error: 'Unknown page: nowhere' });
+      expect(await send({ action: 'openExtensionPage', page: 'popup' }))
+        .toEqual({ success: false, error: 'Unknown page: popup' });
+      expect(chrome.tabs.create).not.toHaveBeenCalled();
+    });
+
+    it('opens settings in a new tab when none shows it', async () => {
+      const result = await send({ action: 'openExtensionPage', page: 'settings' }, { tab: { id: 7 } });
+
+      expect(result).toEqual({ success: true, opened: 'tab' });
+      expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'chrome-extension://test/settings.html' });
+    });
+
+    it('focuses and refreshes a pages list that is already open instead of opening another', async () => {
+      openTabs(PAGE, 'chrome-extension://test/pages-list.html');
+
+      const result = await send({ action: 'openExtensionPage', page: 'pagesList' }, { tab: { id: 1 } });
+
+      expect(result).toEqual({ success: true, opened: 'existing-tab' });
+      expect(chrome.tabs.update).toHaveBeenCalledWith(2, { active: true });
+      // The pages list is an extension page listening on runtime.onMessage; a
+      // tab message would only reach content scripts.
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: 'refreshPagesList' });
+      expect(tabMessages('refreshPagesList')).toHaveLength(0);
+      expect(chrome.tabs.create).not.toHaveBeenCalled();
+    });
+
+    it('still focuses the pages list when nothing answers the refresh', async () => {
+      openTabs('chrome-extension://test/pages-list.html');
+      chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Receiving end does not exist'));
+
+      const result = await send({ action: 'openExtensionPage', page: 'pagesList' });
+
+      expect(result).toEqual({ success: true, opened: 'existing-tab' });
+      expect(chrome.tabs.update).toHaveBeenCalledWith(1, { active: true });
+    });
+  });
+
   describe('cloud sync', () => {
     it('reports the stored status', async () => {
       local[CLOUD_SYNC_KEYS.ENABLED] = true;

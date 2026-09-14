@@ -98,20 +98,44 @@ function sanitizeCustomColors(customColors) {
   return { ...normalized, needsUpdate: needsUpdate || normalized.needsUpdate };
 }
 
-export async function initializePlatform() {
+// The worker registers its message listener before startup has detected the
+// platform, so the message that wakes it can be handled first. getPlatformInfo
+// waits for the detection in flight rather than answering from the 'unknown'
+// starting state.
+let platformDetectionInFlight = null;
+
+async function detectPlatform() {
   try {
     platformInfo = await browserAPI.runtime.getPlatformInfo();
     debugLog('Platform detected:', platformInfo);
+    return true;
   } catch (e) {
     debugLog('Platform detection failed:', e);
+    return false;
   }
+}
+
+export function initializePlatform() {
+  const detection = detectPlatform();
+  platformDetectionInFlight = detection;
+  detection.then((detected) => {
+    // A failed detection is not kept: the next question asks again instead of
+    // being told "not mobile" for the life of the worker.
+    if (!detected && platformDetectionInFlight === detection) {
+      platformDetectionInFlight = null;
+    }
+  });
+  return detection;
 }
 
 export function isMobile() {
   return platformInfo.os === 'android';
 }
 
-export function getPlatformInfo() {
+// Content scripts ask this once, and decide their mobile UI from the answer for
+// the life of the tab, so it waits for the detection.
+export async function getPlatformInfo() {
+  await (platformDetectionInFlight || initializePlatform());
   return { platform: platformInfo, isMobile: isMobile() };
 }
 

@@ -194,7 +194,9 @@
   "addColor": {
     "message": "添加颜色"
   },
-  "refresh": {
+  "moreOptions": {
+    "message": "更多"
+  },  "refresh": {
     "message": "刷新",
     "description": "高亮页面列表刷新按钮文本"
   },

@@ -6,6 +6,7 @@ Source of truth: `background/message-router.js`
 |---|---|---|---|---|
 | `getDebugMode` | none | `debugMode` | none | `handleGetDebugMode` |
 | `getPlatformInfo` | none | `platform`, `isMobile` | none | `handleGetPlatformInfo` |
+| `openExtensionPage` | `page` (`pagesList` \| `settings`) | `success`, `opened?`, `error?` | focuses the tab already showing the page, or creates one (refreshes an existing pages list) | `handleOpenExtensionPage` |
 | `getColors` | none | `colors` | none | `handleGetColors` |
 | `saveSettings` | `minimapVisible?`, `selectionControlsVisible?`, `oneClickHighlightEnabled?` | `success`, `error?` | local storage write, settings broadcast, sync save | `handleSaveSettings` |
 | `getHighlights` | `url` | `highlights` | local storage read | `handleGetHighlights` |

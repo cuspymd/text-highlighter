@@ -194,7 +194,9 @@
   "addColor": {
     "message": "Add Color"
   },
-  "refresh": {
+  "moreOptions": {
+    "message": "More"
+  },  "refresh": {
     "message": "Refresh",
     "description": "Button text for refreshing the highlighted pages list"
   },
