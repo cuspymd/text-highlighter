@@ -53,7 +53,7 @@ describe('settings-service', () => {
       chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'mac' });
       await initializePlatform();
 
-      const info = getPlatformInfo();
+      const info = await getPlatformInfo();
       expect(info).toHaveProperty('platform');
       expect(info).toHaveProperty('isMobile', false);
       expect(info.platform.os).toBe('mac');

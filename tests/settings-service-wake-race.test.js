@@ -1,5 +1,19 @@
 import chrome from '../mocks/chrome.js';
 
+function deferred() {
+  let resolve;
+  const promise = new Promise(r => { resolve = r; });
+  return { promise, resolve };
+}
+
+async function freshService() {
+  let service;
+  await jest.isolateModulesAsync(async () => {
+    service = await import('../background/settings-service.js');
+  });
+  return service;
+}
+
 // A service worker that a message woke up is still loading the custom colours
 // when it handles that message. Whatever the message does to the palette must
 // land on top of the loaded list, not be wiped by it a moment later.
@@ -8,20 +22,6 @@ import chrome from '../mocks/chrome.js';
 // module's real starting state rather than a flag reset by hand.
 describe('settings-service palette changes on a waking worker', () => {
   const existing = { id: 'custom_1', colorNumber: 1, color: '#111111' };
-
-  function deferred() {
-    let resolve;
-    const promise = new Promise(r => { resolve = r; });
-    return { promise, resolve };
-  }
-
-  async function freshService() {
-    let service;
-    await jest.isolateModulesAsync(async () => {
-      service = await import('../background/settings-service.js');
-    });
-    return service;
-  }
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -98,5 +98,49 @@ describe('settings-service palette changes on a waking worker', () => {
 
     expect(result.exists).toBe(false);
     expect(service.getCurrentColors().map(c => c.color)).toContain('#222222');
+  });
+});
+
+// The content script asks for the platform once and builds its mobile UI - the
+// more button, always-on selection controls - from that one answer. A worker the
+// question woke up has not finished detecting the platform yet, and must not
+// answer "not mobile" from its starting state.
+describe('settings-service platform on a waking worker', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('answers with the detected platform when asked while startup is still detecting it', async () => {
+    const service = await freshService();
+    const detection = deferred();
+    chrome.runtime.getPlatformInfo.mockImplementationOnce(() => detection.promise);
+
+    const startup = service.initializePlatform();
+    const answer = service.getPlatformInfo();
+    detection.resolve({ os: 'android' });
+    await startup;
+
+    expect((await answer).isMobile).toBe(true);
+    expect(chrome.runtime.getPlatformInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it('detects the platform itself when the question arrives before startup asked', async () => {
+    const service = await freshService();
+    chrome.runtime.getPlatformInfo.mockImplementationOnce(() => Promise.resolve({ os: 'android' }));
+
+    const info = await service.getPlatformInfo();
+
+    expect(info).toEqual({ platform: { os: 'android' }, isMobile: true });
+  });
+
+  it('asks again after a failed detection instead of staying on "not mobile"', async () => {
+    const service = await freshService();
+    chrome.runtime.getPlatformInfo
+      .mockImplementationOnce(() => Promise.reject(new Error('not ready')))
+      .mockImplementationOnce(() => Promise.resolve({ os: 'android' }));
+
+    expect((await service.getPlatformInfo()).isMobile).toBe(false);
+    expect((await service.getPlatformInfo()).isMobile).toBe(true);
+    expect(chrome.runtime.getPlatformInfo).toHaveBeenCalledTimes(2);
   });
 });
