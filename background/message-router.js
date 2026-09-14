@@ -33,6 +33,7 @@ import {
   saveShortcutColorMap,
   ensureCustomColorsLoaded,
 } from './settings-service.js';
+import { openExtensionPage } from './extension-pages.js';
 
 function successResponse(data = {}) { return { success: true, ...data }; }
 function errorResponse(message) { return { success: false, error: message }; }
@@ -47,6 +48,10 @@ async function handleGetDebugMode(_message) {
 
 async function handleGetPlatformInfo(_message) {
   return getPlatformInfo();
+}
+
+async function handleOpenExtensionPage(message) {
+  return openExtensionPage(message.page);
 }
 
 async function handleGetColors(_message) {
@@ -349,6 +354,7 @@ async function handleTriggerCloudSync(_message) {
 const ACTION_HANDLERS = {
   getDebugMode:              handleGetDebugMode,
   getPlatformInfo:           handleGetPlatformInfo,
+  openExtensionPage:         handleOpenExtensionPage,
   getColors:                 handleGetColors,
   saveSettings:              handleSaveSettings,
   getHighlights:             handleGetHighlights,

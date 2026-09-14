@@ -7,6 +7,10 @@ let activeHighlightElement = null;
 let colorPickerOpen = false;
 // Track the last added color to apply animation only to new colors
 let lastAddedColor = null;
+// The menu the mobile bar's more button opens, and the bar it belongs to.
+let moreMenu = null;
+let moreMenuOwner = null;
+let moreMenuCloseHandler = null;
 
 // Selection controls feature
 let selectionControlsEnabled = false;
@@ -225,8 +229,9 @@ function createHighlightControls() {
     e.stopPropagation();
   });
   // The colours sit in a horizontally scrollable strip so the bar never grows
-  // past the viewport on narrow screens. The delete and '+' buttons stay
-  // outside the strip and are always reachable.
+  // past the viewport on narrow screens. The delete button and the trailing
+  // button ('+', or more on mobile) stay outside the strip and are always
+  // reachable.
   const colorScrollWrapper = document.createElement('div');
   colorScrollWrapper.className = 'text-highlighter-color-scroll';
   const colorButtonsContainer = document.createElement('div');
@@ -239,9 +244,8 @@ function createHighlightControls() {
     e.stopPropagation();
   });
 
-  // -------------- '+' button (add new color) --------------
-  const addColorBtn = createAddColorButton();
-  highlightControlsContainer.appendChild(addColorBtn);
+  // -------------- trailing button: '+' on desktop, more on mobile --------------
+  highlightControlsContainer.appendChild(createTrailingButton());
   getUiMountRoot().appendChild(highlightControlsContainer);
   enableTouchDragForControls(highlightControlsContainer);
   bindColorScrollHints(highlightControlsContainer);
@@ -385,6 +389,232 @@ function createAddColorButton(onColorSelect = addCustomColor) {
   });
   
   return addColorBtn;
+}
+
+// The button at the end of a bar. Firefox for Android has no toolbar button to
+// pin, so the pages list and settings sit behind the popup, which is itself
+// three taps away there. On mobile the bar has no room for another button, so
+// '+' - pressed far less often than those pages are wanted - moves into a more
+// menu that holds all three.
+function createTrailingButton(onColorSelect = addCustomColor) {
+  return isMobilePlatform
+    ? createMoreButton(onColorSelect)
+    : createAddColorButton(onColorSelect);
+}
+
+// The bar can be built before the platform answer arrives, so the trailing
+// button is checked again whenever the bar is shown.
+function syncTrailingButton(container, onColorSelect = addCustomColor) {
+  const trailingButton = container.querySelector('.add-color-button, .more-button');
+  if (!trailingButton) return;
+  if (trailingButton.classList.contains('more-button') === isMobilePlatform) return;
+  trailingButton.replaceWith(createTrailingButton(onColorSelect));
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// Icons are [tag, attributes] lists, built with createElementNS rather than
+// markup strings.
+const MORE_ICON_SHAPES = [
+  ['circle', { cx: 8, cy: 3.25, r: 1.5, fill: 'currentColor', stroke: 'none' }],
+  ['circle', { cx: 8, cy: 8, r: 1.5, fill: 'currentColor', stroke: 'none' }],
+  ['circle', { cx: 8, cy: 12.75, r: 1.5, fill: 'currentColor', stroke: 'none' }],
+];
+const ADD_COLOR_ICON_SHAPES = [
+  ['line', { x1: 8, y1: 3, x2: 8, y2: 13 }],
+  ['line', { x1: 3, y1: 8, x2: 13, y2: 8 }],
+];
+const PAGES_LIST_ICON_SHAPES = [
+  ['circle', { cx: 2.75, cy: 4, r: 1, fill: 'currentColor', stroke: 'none' }],
+  ['circle', { cx: 2.75, cy: 8, r: 1, fill: 'currentColor', stroke: 'none' }],
+  ['circle', { cx: 2.75, cy: 12, r: 1, fill: 'currentColor', stroke: 'none' }],
+  ['line', { x1: 6, y1: 4, x2: 13.5, y2: 4 }],
+  ['line', { x1: 6, y1: 8, x2: 13.5, y2: 8 }],
+  ['line', { x1: 6, y1: 12, x2: 13.5, y2: 12 }],
+];
+const SETTINGS_ICON_SHAPES = [
+  ['line', { x1: 2, y1: 4.5, x2: 8.5, y2: 4.5 }],
+  ['line', { x1: 12.5, y1: 4.5, x2: 14, y2: 4.5 }],
+  ['circle', { cx: 10.5, cy: 4.5, r: 2 }],
+  ['line', { x1: 2, y1: 11.5, x2: 3.5, y2: 11.5 }],
+  ['line', { x1: 7.5, y1: 11.5, x2: 14, y2: 11.5 }],
+  ['circle', { cx: 5.5, cy: 11.5, r: 2 }],
+];
+
+function createSvgIcon(shapes) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 16 16');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  shapes.forEach(([tag, attributes]) => {
+    const shape = document.createElementNS(SVG_NS, tag);
+    Object.entries(attributes).forEach(([name, value]) => shape.setAttribute(name, String(value)));
+    svg.appendChild(shape);
+  });
+  return svg;
+}
+
+function createMoreButton(onColorSelect = addCustomColor) {
+  const moreButton = document.createElement('div');
+  moreButton.className = 'text-highlighter-control-button more-button';
+  moreButton.appendChild(createSvgIcon(MORE_ICON_SHAPES));
+  moreButton.title = getMessage('moreOptions') || 'More';
+  moreButton.setAttribute('role', 'button');
+  moreButton.setAttribute('aria-haspopup', 'menu');
+  moreButton.setAttribute('aria-expanded', 'false');
+
+  // A mousedown the page never sees leaves the text selection where it is.
+  moreButton.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+  });
+
+  moreButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // The selection bar opens where the selection icon was pressed, and the
+    // ghost click of that press can land here as well as on a colour.
+    const container = moreButton.closest('.text-highlighter-controls');
+    if (container && container.dataset.justShown) return;
+
+    if (moreMenu && moreMenuOwner === container) {
+      hideMoreMenu();
+      return;
+    }
+    showMoreMenu(moreButton, onColorSelect);
+  });
+
+  return moreButton;
+}
+
+function openExtensionPageViaBackground(page) {
+  return browserAPI.runtime.sendMessage({ action: 'openExtensionPage', page })
+    .catch(error => debugLog('Failed to open extension page:', page, error));
+}
+
+function showMoreMenu(moreButton, onColorSelect) {
+  hideMoreMenu();
+
+  const owner = moreButton.closest('.text-highlighter-controls');
+  const menu = document.createElement('div');
+  menu.className = 'text-highlighter-more-menu';
+  menu.setAttribute('role', 'menu');
+
+  // Same as the colour picker: a press here must not collapse the selection the
+  // selection bar is about to paint.
+  menu.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+  });
+
+  const appendItem = (labelKey, icon, run) => {
+    const item = document.createElement('div');
+    item.className = 'text-highlighter-more-menu-item';
+    item.setAttribute('role', 'menuitem');
+
+    const iconWrapper = document.createElement('span');
+    iconWrapper.className = 'text-highlighter-more-menu-icon';
+    iconWrapper.appendChild(icon);
+
+    const label = document.createElement('span');
+    label.className = 'text-highlighter-more-menu-label';
+    label.textContent = getMessage(labelKey);
+
+    item.appendChild(iconWrapper);
+    item.appendChild(label);
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      hideMoreMenu();
+      run();
+    });
+    menu.appendChild(item);
+  };
+
+  appendItem('addColor', createSvgIcon(ADD_COLOR_ICON_SHAPES), () => {
+    colorPickerOpen = true;
+    showCustomColorPicker(moreButton, onColorSelect);
+  });
+
+  const separator = document.createElement('div');
+  separator.className = 'text-highlighter-more-menu-separator';
+  separator.setAttribute('role', 'separator');
+  menu.appendChild(separator);
+
+  appendItem('viewAllPages', createSvgIcon(PAGES_LIST_ICON_SHAPES), () => {
+    openExtensionPageViaBackground('pagesList');
+  });
+  appendItem('settingsTitle', createSvgIcon(SETTINGS_ICON_SHAPES), () => {
+    openExtensionPageViaBackground('settings');
+  });
+
+  getUiMountRoot().appendChild(menu);
+  const opensUp = positionPopoverNearControls(menu, moreButton);
+  menu.classList.toggle('opens-up', opensUp);
+
+  moreMenu = menu;
+  moreMenuOwner = owner;
+  moreButton.setAttribute('aria-expanded', 'true');
+
+  // Registered after the press that opened the menu has finished. Capture, so
+  // a bar that stops its clicks from bubbling still closes the menu.
+  setTimeout(() => {
+    if (moreMenu !== menu) return;
+    moreMenuCloseHandler = (e) => {
+      if (!menu.contains(e.target) && !moreButton.contains(e.target)) {
+        hideMoreMenu();
+      }
+    };
+    document.addEventListener('click', moreMenuCloseHandler, true);
+  }, 10);
+}
+
+function hideMoreMenu() {
+  if (moreMenuCloseHandler) {
+    document.removeEventListener('click', moreMenuCloseHandler, true);
+    moreMenuCloseHandler = null;
+  }
+  if (moreMenuOwner) {
+    const moreButton = moreMenuOwner.querySelector('.more-button');
+    if (moreButton) moreButton.setAttribute('aria-expanded', 'false');
+  }
+  if (moreMenu) {
+    moreMenu.remove();
+  }
+  moreMenu = null;
+  moreMenuOwner = null;
+}
+
+// Place a popover opened from a bar: right-aligned with the bar, below it when
+// it fits and above it otherwise, then clamped inside the viewport so it stays
+// fully reachable on small screens. Returns whether it ended up above.
+function positionPopoverNearControls(popover, triggerButton) {
+  const controlsContainer = triggerButton.closest('.text-highlighter-controls');
+  const anchorRect = controlsContainer
+    ? controlsContainer.getBoundingClientRect()
+    : triggerButton.getBoundingClientRect();
+  const popoverWidth = popover.offsetWidth;
+  const popoverHeight = popover.offsetHeight;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const viewportPadding = 8;
+  const gap = 5;
+
+  const belowTop = anchorRect.bottom + gap;
+  const aboveTop = anchorRect.top - popoverHeight - gap;
+  const canPlaceBelow = belowTop + popoverHeight <= viewportHeight - viewportPadding;
+  const preferredTop = canPlaceBelow ? belowTop : aboveTop;
+  const topPosition = Math.min(
+    Math.max(preferredTop, viewportPadding),
+    viewportHeight - popoverHeight - viewportPadding
+  );
+  const rightAlignedLeft = anchorRect.right - popoverWidth;
+  const clampedLeft = Math.min(
+    Math.max(rightAlignedLeft, viewportPadding),
+    viewportWidth - popoverWidth - viewportPadding
+  );
+
+  popover.style.top = `${topPosition}px`;
+  popover.style.left = `${clampedLeft}px`;
+  return !canPlaceBelow;
 }
 
 // Variable to track the currently active closeHandler
@@ -544,35 +774,7 @@ function showCustomColorPicker(triggerButton, onColorSelect = addCustomColor) {
 
   getUiMountRoot().appendChild(customColorPicker);
 
-  // Position setting: align picker to the right edge of controls by default,
-  // then clamp inside viewport to keep it fully reachable on small screens.
-  const controlsContainer = triggerButton.closest('.text-highlighter-controls');
-  const anchorRect = controlsContainer
-    ? controlsContainer.getBoundingClientRect()
-    : triggerButton.getBoundingClientRect();
-  const pickerWidth = customColorPicker.offsetWidth;
-  const pickerHeight = customColorPicker.offsetHeight;
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const viewportPadding = 8;
-  const gap = 5;
-
-  const belowTop = anchorRect.bottom + gap;
-  const aboveTop = anchorRect.top - pickerHeight - gap;
-  const canPlaceBelow = belowTop + pickerHeight <= viewportHeight - viewportPadding;
-  const preferredTop = canPlaceBelow ? belowTop : aboveTop;
-  const topPosition = Math.min(
-    Math.max(preferredTop, viewportPadding),
-    viewportHeight - pickerHeight - viewportPadding
-  );
-  const rightAlignedLeft = anchorRect.right - pickerWidth;
-  const clampedLeft = Math.min(
-    Math.max(rightAlignedLeft, viewportPadding),
-    viewportWidth - pickerWidth - viewportPadding
-  );
-
-  customColorPicker.style.top = `${topPosition}px`;
-  customColorPicker.style.left = `${clampedLeft}px`;
+  positionPopoverNearControls(customColorPicker, triggerButton);
   
   // Initialize HSV sliders
   initHSVSliders(customColorPicker);
@@ -804,6 +1006,7 @@ function refreshHighlightControlsColors() {
 // Display highlight controller UI
 function showControlUi(highlightElement, e) {
   if (!highlightControlsContainer) createHighlightControls();
+  syncTrailingButton(highlightControlsContainer);
 
   activeHighlightElement = highlightElement;
   const controlsHeight = 44;
@@ -865,6 +1068,9 @@ function showControlUi(highlightElement, e) {
 
 // Hide highlight controller UI
 function hideHighlightControls() {
+  if (moreMenu && moreMenuOwner === highlightControlsContainer) {
+    hideMoreMenu();
+  }
   if (highlightControlsContainer) {
     highlightControlsContainer.classList.remove('visible');
   }
@@ -1120,7 +1326,8 @@ function handleSelectionMouseUp(e) {
       e.target.closest('.text-highlighter-controls') ||
       e.target.closest('.text-highlighter-selection-controls') ||
       e.target.closest('.text-highlighter-selection-icon') ||
-      e.target.closest('.custom-color-picker')) {
+      e.target.closest('.custom-color-picker') ||
+      e.target.closest('.text-highlighter-more-menu')) {
     return;
   }
 
@@ -1155,7 +1362,8 @@ function handleSelectionTouchEnd(e) {
   if (target.classList.contains('text-highlighter-extension') ||
       target.closest('.text-highlighter-controls') ||
       target.closest('.text-highlighter-selection-controls') ||
-      target.closest('.text-highlighter-selection-icon')) {
+      target.closest('.text-highlighter-selection-icon') ||
+      target.closest('.text-highlighter-more-menu')) {
     return;
   }
 
@@ -1187,10 +1395,10 @@ function handleSelectionTouchEnd(e) {
 // Handle selection change event
 function handleSelectionChange() {
   if (!selectionControlsEnabled) return;
-  // While a colour picker is open the stored range is the selection that
-  // matters. Whatever the live one does meanwhile - a touch on the picker can
-  // still collapse it - must not throw that range away.
-  if (colorPickerOpen) return;
+  // While a colour picker or the more menu is open the stored range is the
+  // selection that matters. Whatever the live one does meanwhile - a touch on
+  // either can still collapse it - must not throw that range away.
+  if (colorPickerOpen || moreMenu) return;
 
   const selection = window.getSelection();
   const selectedText = selection.toString().trim();
@@ -1368,12 +1576,12 @@ function showSelectionControls(mouseX, mouseY) {
     deleteButton.remove();
   }
 
-  // cloneNode dropped the '+' button's listeners with the rest. Replace it with
-  // one that paints the selection with the picked colour, before the bar is
+  // cloneNode dropped the trailing button's listeners with the rest. Replace it
+  // with one whose picked colour paints the selection, before the bar is
   // measured so the strip's overflow hints count the button that ends up there.
-  const clonedAddColorButton = selectionControlsContainer.querySelector('.add-color-button');
-  if (clonedAddColorButton) {
-    clonedAddColorButton.replaceWith(createAddColorButton(addCustomColorAndHighlight));
+  const clonedTrailingButton = selectionControlsContainer.querySelector('.add-color-button, .more-button');
+  if (clonedTrailingButton) {
+    clonedTrailingButton.replaceWith(createTrailingButton(addCustomColorAndHighlight));
   }
   
   // Temporarily position off-screen to get dimensions
@@ -1501,6 +1709,9 @@ function showSelectionControls(mouseX, mouseY) {
 // Hide selection controls
 function hideSelectionControls() {
   if (selectionControlsContainer) {
+    if (moreMenu && moreMenuOwner === selectionControlsContainer) {
+      hideMoreMenu();
+    }
     selectionControlsContainer.remove();
     selectionControlsContainer = null;
   }
@@ -1550,6 +1761,14 @@ function addGlobalClickListener() {
   if (globalClickListenerAdded) return;
   
   document.addEventListener('click', function (e) {
+    // The more menu belongs to the bar that opened it, but lives outside it.
+    // Its items close the menu themselves; the bars stay for whatever the item
+    // does next, such as the colour picker.
+    if (e.target && typeof e.target.closest === 'function' &&
+        e.target.closest('.text-highlighter-more-menu')) {
+      return;
+    }
+
     // Handle existing highlight controls
     if (highlightControlsContainer) {
       // While a colour picker is open, keep whichever bar opened it visible.

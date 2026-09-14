@@ -194,7 +194,9 @@
   "addColor": {
     "message": "Adicionar Cor"
   },
-  "refresh": {
+  "moreOptions": {
+    "message": "Mais"
+  },  "refresh": {
     "message": "Atualizar",
     "description": "Button text for refreshing the highlighted pages list"
   },
