@@ -38,12 +38,12 @@
                 </li>
                 <li><a href="#delete-highlights">删除高亮</a></li>
                 <li><a href="#custom-colors">自定义颜色</a></li>
-                <li><a href="#minimap">缩略图 (Minimap)</a></li>
+                <li><a href="#minimap">小地图 (Minimap)</a></li>
                 <li><a href="#popup-menu">弹出菜单说明</a></li>
                 <li><a href="#settings">设置界面</a>
                     <ul class="toc-sublist">
                         <li><a href="#settings-general">常规</a></li>
-                        <li><a href="#settings-shortcuts">快捷键颜色设置</a></li>
+                        <li><a href="#settings-shortcuts">快捷键</a></li>
                     </ul>
                 </li>
                 <li><a href="#pages-list">高亮页面列表 (Pages List)</a></li>
@@ -62,7 +62,7 @@
                 <p>感谢您使用 Marks: Text Highlighter。该扩展允许您轻松快速地高亮网页文本，并保存和管理这些内容。</p>
                 <div class="note">
                     <span class="note-title">注意</span>
-                    扩展内部也附带了一份简短的入门指南。可通过设置界面的<strong>“查看使用方法”</strong>按钮打开，或在页面尚无任何高亮时通过弹出菜单中出现的<strong>“查看完整指南”</strong>链接打开。
+                    扩展内部也附带了一份简短的入门指南。可通过设置界面的<strong>“查看使用说明”</strong>按钮打开，或在页面尚无任何高亮时通过弹出菜单中出现的<strong>“查看完整使用说明”</strong>链接打开。
                 </div>
             </section>
 
@@ -71,10 +71,10 @@
                 <p>您可以通过三种方式为网页上的文本添加高亮。</p>
 
                 <h3 id="add-control-ui">1. 使用控制界面</h3>
-                <p>当您选中文本时，选择区域附近会出现一个高亮图标（笔形）。点击此图标或将鼠标悬停在上面，即可显示包含调色板的<strong>控制界面 (Control UI)</strong>。点击您想要的颜色即可应用高亮。</p>
+                <p>当您选中文本时，选择区域附近会出现一个高亮图标（笔形）。点击此图标即可显示包含调色板的<strong>控制界面 (Control UI)</strong>。点击您想要的颜色即可应用高亮。</p>
                 <div class="note">
                     <span class="note-title">注意</span>
-                    此功能在移动设备上或在设置中开启“选中文本时显示控制界面”时有效。
+                    此功能在移动设备上或在设置中开启“选择文本时显示控制UI”时有效。在移动设备上，点击调色板末尾的<strong>⋮（更多）</strong>按钮会打开包含<strong>添加颜色</strong>、<strong>已高亮页面列表</strong>和<strong>设置</strong>的菜单。
                 </div>
 
                 <h3 id="add-context-menu">2. 使用右键菜单</h3>
@@ -109,7 +109,7 @@
                 <ul>
                     <li><strong>单个删除 (控制界面):</strong> 点击已高亮的文本，会出现控制界面。点击其中的<strong>垃圾桶图标</strong>进行删除。</li>
                     <li><strong>单个删除 (Popup):</strong> 点击浏览器工具栏的扩展图标打开弹出菜单。在“当前页面高亮”列表中，点击要删除项目旁边的<strong>X按钮</strong>。</li>
-                    <li><strong>清空页面 (Popup):</strong> 点击弹出菜单底部的<strong>“删除此页面的所有高亮”</strong>按钮，即可删除当前页面上的所有高亮。</li>
+                    <li><strong>清空页面 (Popup):</strong> 点击弹出菜单底部的<strong>“删除此页面上的所有高亮”</strong>按钮，即可删除当前页面上的所有高亮。</li>
                     <li><strong>删除页面 (Pages List):</strong> 在高亮列表页面中，点击特定页面卡片的<strong>“删除”</strong>按钮，即可删除该页面的所有数据。</li>
                     <li><strong>删除所有数据 (Pages List):</strong> 点击列表页面顶部的<strong>垃圾桶图标 (删除所有页面)</strong>，即可删除所有已保存的高亮数据。</li>
                 </ul>
@@ -121,33 +121,33 @@
                 <h3>添加和更改颜色</h3>
                 <p>除了5种默认颜色（黄色、绿色、蓝色、粉色、橙色）外，您还可以添加自己的颜色。既可以在页面上直接添加，也可以在设置界面中管理。</p>
                 <ol>
-                    <li>点击已高亮的文本打开控制界面。</li>
-                    <li>点击颜色列表末尾的<strong>+按钮</strong>。</li>
+                    <li>选中文本后打开控制界面，或点击已高亮的文本。</li>
+                    <li>点击颜色列表末尾的<strong>+按钮</strong>。（在移动设备上，请从<strong>⋮</strong>菜单中选择<strong>添加颜色</strong>。）</li>
                     <li>从颜色选择器中选择您喜欢的颜色，然后点击“应用”。</li>
                 </ol>
                 <div class="note">
                     <span class="note-title">注意</span>
-                    在为新文本添加高亮时，控制界面中不会显示 + 按钮。只有在点击<strong>已创建的高亮</strong>时，才会显示添加颜色按钮。
+                    如果在选中文本时打开的控制界面中添加颜色，所选文本会立即以新颜色高亮。
                 </div>
 
                 <h3>在设置界面中管理</h3>
                 <p>添加的颜色在设置界面的<strong>“自定义颜色”</strong>部分进行管理。（弹出菜单的设置 (⚙) 图标 → 自定义颜色）</p>
                 <ul>
-                    <li><strong>添加:</strong> 通过<strong>“+ 添加颜色”</strong>按钮打开颜色选择器进行添加。</li>
+                    <li><strong>添加:</strong> 通过<strong>“+ 添加自定义颜色”</strong>按钮打开颜色选择器进行添加。</li>
                     <li><strong>重命名:</strong> 点击颜色名称即可就地编辑名称。</li>
-                    <li><strong>更改颜色:</strong> 通过<strong>“修改”</strong>按钮更改颜色。已经上色的现有高亮不受影响。</li>
-                    <li><strong>单个删除:</strong> 每种颜色都有<strong>“删除”</strong>按钮，可逐个删除。</li>
-                    <li><strong>全部删除:</strong> 点击该部分右上角的<strong>“全部删除”</strong>按钮，除默认的5种颜色外，所有添加的颜色都将被删除。</li>
+                    <li><strong>更改颜色:</strong> 通过<strong>“更改”</strong>按钮更改颜色。已经上色的现有高亮不受影响。</li>
+                    <li><strong>单个删除:</strong> 每种颜色都有<strong>“移除”</strong>按钮，可逐个移除。</li>
+                    <li><strong>全部删除:</strong> 点击该部分右上角的<strong>“全部移除”</strong>按钮，除默认的5种颜色外，所有添加的颜色都将被删除。</li>
                 </ul>
             </section>
 
             <section id="minimap">
-                <h2>缩略图 (Minimap)</h2>
-                <p>在有高亮的网页右侧会显示<strong>缩略图</strong>。</p>
+                <h2>小地图 (Minimap)</h2>
+                <p>在有高亮的网页右侧会显示<strong>小地图</strong>。</p>
                 <ul>
-                    <li>缩略图直观地显示了高亮在整个页面长度中的位置。</li>
-                    <li>点击缩略图上的标记，页面会立即<strong>滚动</strong>到相应的高亮位置。</li>
-                    <li>您可以在<a href="#settings-general">设置界面</a>中关闭“显示缩略图”开关来隐藏它。</li>
+                    <li>小地图直观地显示了高亮在整个页面长度中的位置。</li>
+                    <li>点击小地图上的标记，页面会立即<strong>滚动</strong>到相应的高亮位置。</li>
+                    <li>您可以在<a href="#settings-general">设置界面</a>中关闭“显示小地图”开关来隐藏它。</li>
                 </ul>
             </section>
 
@@ -155,13 +155,13 @@
                 <h2>弹出菜单说明</h2>
                 <p>点击浏览器工具栏中的 Marks 图标时出现的菜单。</p>
                 <ul>
-                    <li><strong>设置 (⚙) 图标:</strong> 点击右上角的齿轮可打开<a href="#settings">设置界面</a>。缩略图、控制界面、一键高亮等选项均在其中。</li>
+                    <li><strong>设置 (⚙) 图标:</strong> 点击右上角的齿轮可打开<a href="#settings">设置界面</a>。小地图、控制界面、一键高亮等选项均在其中。</li>
                     <li><strong>当前页面高亮:</strong> 当前页面已保存的高亮列表。点击条目可跳转到相应位置，点击右上角的<strong>X按钮</strong>可单个删除。</li>
-                    <li><strong>高亮页面列表:</strong> 打开管理所有已保存页面的仪表板屏幕。</li>
-                    <li><strong>删除此页面的所有高亮:</strong> 清除当前页面的所有高亮。没有可删除的高亮时该按钮为禁用状态。</li>
+                    <li><strong>已高亮页面列表:</strong> 打开管理所有已保存页面的仪表板屏幕。</li>
+                    <li><strong>删除此页面上的所有高亮:</strong> 清除当前页面的所有高亮。没有可删除的高亮时该按钮为禁用状态。</li>
                 </ul>
                 <div class="note">
-                    <span class="note-title">出现“在此页面中找不到”时</span>
+                    <span class="note-title">出现“在此页面上找不到”时</span>
                     如果页面渲染较慢或内容发生变化，导致高亮位置无法恢复，列表中的相应条目会变灰并出现<strong>“重新查找”</strong>按钮。点击该按钮会在页面中再查找一次。如果仍然找不到，说明页面内容确实已经改变。已保存的高亮数据本身不会被删除。
                 </div>
             </section>
@@ -172,13 +172,13 @@
 
                 <h3 id="settings-general">常规</h3>
                 <ul>
-                    <li><strong>显示缩略图:</strong> 设置是否在页面右侧显示缩略图。</li>
-                    <li><strong>选中文本时显示控制界面:</strong> 开启或关闭拖动文本时自动显示高亮图标的功能。</li>
+                    <li><strong>显示小地图:</strong> 设置是否在页面右侧显示小地图。</li>
+                    <li><strong>选择文本时显示控制UI:</strong> 开启或关闭拖动文本时自动显示高亮图标的功能。</li>
                     <li><strong>一键高亮:</strong> 开启后，按下选择图标即会不打开调色板、直接以<strong>上次使用的颜色</strong>高亮。默认关闭；如需其他颜色，点击生成的高亮并从调色板中选择。</li>
                 </ul>
                 <div class="note">
                     <span class="note-title">注意</span>
-                    一键高亮需要选择图标才能生效，因此当“选中文本时显示控制界面”关闭时，该项会变灰且无法使用。
+                    一键高亮需要选择图标才能生效，因此当“选择文本时显示控制UI”关闭时，该项会变灰且无法使用。
                 </div>
 
                 <h3>自定义颜色</h3>
@@ -187,20 +187,22 @@
                 <h3>云同步 (测试版)</h3>
                 <p>用于生成同步代码、连接设备以及立即同步。详情请参阅<a href="#cloud-sync">云同步 (测试版)</a>。</p>
 
-                <h3 id="settings-shortcuts">快捷键颜色设置</h3>
+                <h3 id="settings-shortcuts">快捷键</h3>
                 <p>可为5个快捷键槽位分别选择使用的颜色。槽位 1-5 的默认颜色依次为黄色、绿色、蓝色、粉色和橙色，也可以指定自定义颜色。按键组合本身需在浏览器的快捷键设置中更改。</p>
 
                 <h3>帮助</h3>
-                <p>通过<strong>“查看使用方法”</strong>按钮可打开扩展内置的入门指南。</p>
+                <p>通过<strong>“查看使用说明”</strong>按钮可打开扩展内置的入门指南。</p>
             </section>
 
             <section id="pages-list">
                 <h2>高亮页面列表 (Pages List)</h2>
                 <p>可以一目了然地查看和管理所有已保存高亮信息的仪表板。</p>
                 <ul>
-                    <li><strong>搜索:</strong> 按页面标题或 URL 搜索已保存的记录。搜索结果中与关键词匹配的文本会高亮显示。</li>
+                    <li><strong>搜索:</strong> 按页面标题或高亮文本搜索已保存的记录。搜索结果中与关键词匹配的文本会高亮显示。</li>
                     <li><strong>排序:</strong> 按最新、最旧等顺序对列表进行排序。</li>
-                    <li><strong>全部展开/折叠:</strong> 点击工具栏按钮，可一键展开或折叠当前显示的所有页面的高亮详情。按钮会根据当前状态在"全部展开"和"全部折叠"之间切换。</li>
+                    <li><strong>全部展开/折叠:</strong> 点击工具栏按钮，可一键展开或折叠当前显示的所有页面的高亮详情。按钮的提示文字会根据当前状态在"展开所有高亮"和"折叠所有高亮"之间切换。</li>
+                    <li><strong>打开高亮:</strong> 点击高亮文本会打开原网页并滚动到该高亮位置。如果该页面已在某个标签页中打开，则会切换到该标签页。</li>
+                    <li><strong>复制:</strong> 页面卡片上的复制按钮会复制该页面的所有高亮。搜索时，结果数量旁的复制按钮只复制匹配的高亮。高亮以 Markdown 引用格式复制。</li>
                     <li><strong>删除:</strong> 删除单个页面，或使用顶部工具栏的删除按钮清空所有数据。</li>
                     <li><strong>导出/导入:</strong> 通过工具栏的<strong>更多操作(…)菜单</strong>备份或恢复数据。</li>
                 </ul>
@@ -226,9 +228,9 @@
                 <h4>使用方法</h4>
                 <ol>
                     <li>点击工具栏中的扩展图标打开 Popup，然后点击<strong>设置(⚙)图标</strong>。</li>
-                    <li>在设置界面的<strong>"云同步 (测试版)"</strong>部分点击<strong>"生成新代码"</strong>按钮以获取同步代码。</li>
-                    <li>在要同步的另一台设备的设置界面中，将相同的代码输入"输入其他设备的同步代码"栏，然后点击<strong>"连接"</strong>按钮。</li>
-                    <li>在每台设备上打开<strong>"云同步"</strong>开关即可启用同步。之后大约每 15 分钟会自动同步一次，也可以点击<strong>"立即同步"</strong>按钮立即进行同步。</li>
+                    <li>在设置界面的<strong>"云同步（测试版）"</strong>部分点击<strong>"生成新代码"</strong>按钮以获取同步代码。</li>
+                    <li>在要同步的另一台设备的设置界面中，将相同的代码输入"输入其他设备的同步码"栏，然后点击<strong>"连接"</strong>按钮。</li>
+                    <li>生成或连接代码后会立即开始同步，<strong>"云同步"</strong>开关也会自动打开。之后大约每 15 分钟会自动同步一次，也可以点击<strong>"立即同步"</strong>按钮立即进行同步。关闭开关即可暂停该设备的同步。</li>
                 </ol>
 
                 <div class="warning">
@@ -236,7 +238,7 @@
                     如果丢失同步代码，已备份到云端的数据将无法恢复。代码默认仅部分显示（遮盖），可点击"显示"查看完整内容，或点击"复制"将其复制到剪贴板。请将代码另行妥善保管。
                 </div>
 
-                <p><strong>断开连接:</strong> 点击设置界面中的"重置代码"按钮，将解除该设备的同步连接并忘记同步代码。</p>
+                <p><strong>断开连接:</strong> 点击设置界面中的"忘记代码"按钮，将解除该设备的同步连接并忘记同步代码。</p>
 
                 <div class="note">
                     <span class="note-title">提示</span>
