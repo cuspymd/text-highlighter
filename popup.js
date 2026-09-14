@@ -342,6 +342,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   });
 
+  // The pages list is an extension page, not a content script, so
+  // tabs.sendMessage never reaches it. A runtime message does. With no listener
+  // left to answer, the promise rejects, which is no reason to fail the open.
+  async function refreshOpenPagesList() {
+    try {
+      await browserAPI.runtime.sendMessage({ action: 'refreshPagesList' });
+    } catch (error) {
+      debugLog('No pages list answered the refresh:', error);
+    }
+  }
+
   // View list of highlighted pages
   async function openPagesList() {
     debugLog('Opening all pages list');
@@ -357,7 +368,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         browserAPI.windows.update(win.id, { focused: true });
         browserAPI.tabs.update(openTab.id, { active: true });
-        await sendMessageToTab(openTab.id, { action: 'refreshPagesList' });
+        await refreshOpenPagesList();
         return;
       }
 
@@ -381,7 +392,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (existingTab) {
       browserAPI.tabs.update(existingTab.id, { active: true });
-      await sendMessageToTab(existingTab.id, { action: 'refreshPagesList' });
+      await refreshOpenPagesList();
     } else {
       await browserAPI.tabs.create({ url: targetUrl });
     }

@@ -97,6 +97,16 @@ describe('message-router', () => {
       expect(result).toEqual({ success: false, error: expect.stringContaining('doesNotExist') });
     });
 
+    it('leaves a page-to-page refreshPagesList unanswered so the pages list can take it', () => {
+      const listener = chrome.runtime.onMessage.addListener.mock.calls.at(-1)[0];
+      const sendResponse = jest.fn();
+
+      const keepsChannelOpen = listener({ action: 'refreshPagesList' }, {}, sendResponse);
+
+      expect(keepsChannelOpen).toBe(false);
+      expect(sendResponse).not.toHaveBeenCalled();
+    });
+
     it('turns a handler that throws into a failure response rather than a dropped message', async () => {
       chrome.storage.local.get.mockRejectedValueOnce(new Error('storage is gone'));
 

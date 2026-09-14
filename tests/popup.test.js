@@ -236,7 +236,41 @@ describe('popup', () => {
 
       expect(chrome.windows.update).toHaveBeenCalledWith(4, { focused: true });
       expect(chrome.tabs.update).toHaveBeenCalledWith(22, { active: true });
-      expect(tabMessages('refreshPagesList')[0][0]).toBe(22);
+      expect(chrome.windows.create).not.toHaveBeenCalled();
+    });
+
+    // The pages list is an extension page listening on runtime.onMessage; a tab
+    // message only reaches content scripts and would leave the list stale.
+    it('refreshes the open list with a runtime message, not a tab message', async () => {
+      chrome.windows.getAll.mockResolvedValue([
+        { id: 4, tabs: [{ id: 22, url: LIST_URL }] },
+      ]);
+
+      await openPopup();
+      document.getElementById('view-all-pages').click();
+      await advance();
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: 'refreshPagesList' });
+      expect(tabMessages('refreshPagesList')).toHaveLength(0);
+    });
+
+    it('still focuses the list when nothing answers the refresh', async () => {
+      chrome.windows.getAll.mockResolvedValue([
+        { id: 4, tabs: [{ id: 22, url: LIST_URL }] },
+      ]);
+      chrome.runtime.sendMessage.mockImplementation(async message => {
+        if (message.action === 'refreshPagesList') {
+          throw new Error('Could not establish connection. Receiving end does not exist.');
+        }
+        return { success: true };
+      });
+
+      await openPopup();
+      document.getElementById('view-all-pages').click();
+      await advance();
+
+      expect(chrome.windows.update).toHaveBeenCalledWith(4, { focused: true });
+      expect(chrome.tabs.update).toHaveBeenCalledWith(22, { active: true });
       expect(chrome.windows.create).not.toHaveBeenCalled();
     });
 
@@ -263,6 +297,26 @@ describe('popup', () => {
         await advance();
 
         expect(chrome.tabs.create).toHaveBeenCalledWith({ url: LIST_URL });
+        expect(closePopup).toHaveBeenCalled();
+      } finally {
+        chrome.windows = windows;
+      }
+    });
+
+    it('refreshes a list already open in a tab where there is no windows API', async () => {
+      const { windows } = chrome;
+      delete chrome.windows;
+      chrome.tabs.query.mockResolvedValue([TAB, { id: 30, url: LIST_URL }]);
+
+      try {
+        await openPopup();
+        document.getElementById('view-all-pages').click();
+        await advance();
+
+        expect(chrome.tabs.update).toHaveBeenCalledWith(30, { active: true });
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: 'refreshPagesList' });
+        expect(tabMessages('refreshPagesList')).toHaveLength(0);
+        expect(chrome.tabs.create).not.toHaveBeenCalled();
         expect(closePopup).toHaveBeenCalled();
       } finally {
         chrome.windows = windows;
