@@ -405,9 +405,9 @@ function createTrailingButton(onColorSelect = addCustomColor) {
 // The bar can be built before the platform answer arrives, so the trailing
 // button is checked again whenever the bar is shown.
 function syncTrailingButton(container, onColorSelect = addCustomColor) {
-  const trailingButton = container.querySelector('.add-color-button, .more-button');
+  const trailingButton = container.querySelector('.add-color-button, .text-highlighter-more-button');
   if (!trailingButton) return;
-  if (trailingButton.classList.contains('more-button') === isMobilePlatform) return;
+  if (trailingButton.classList.contains('text-highlighter-more-button') === isMobilePlatform) return;
   trailingButton.replaceWith(createTrailingButton(onColorSelect));
 }
 
@@ -456,7 +456,7 @@ function createSvgIcon(shapes) {
 
 function createMoreButton(onColorSelect = addCustomColor) {
   const moreButton = document.createElement('div');
-  moreButton.className = 'text-highlighter-control-button more-button';
+  moreButton.className = 'text-highlighter-control-button text-highlighter-more-button';
   moreButton.appendChild(createSvgIcon(MORE_ICON_SHAPES));
   moreButton.title = getMessage('moreOptions') || 'More';
   moreButton.setAttribute('role', 'button');
@@ -573,7 +573,7 @@ function hideMoreMenu() {
     moreMenuCloseHandler = null;
   }
   if (moreMenuOwner) {
-    const moreButton = moreMenuOwner.querySelector('.more-button');
+    const moreButton = moreMenuOwner.querySelector('.text-highlighter-more-button');
     if (moreButton) moreButton.setAttribute('aria-expanded', 'false');
   }
   if (moreMenu) {
@@ -1579,7 +1579,7 @@ function showSelectionControls(mouseX, mouseY) {
   // cloneNode dropped the trailing button's listeners with the rest. Replace it
   // with one whose picked colour paints the selection, before the bar is
   // measured so the strip's overflow hints count the button that ends up there.
-  const clonedTrailingButton = selectionControlsContainer.querySelector('.add-color-button, .more-button');
+  const clonedTrailingButton = selectionControlsContainer.querySelector('.add-color-button, .text-highlighter-more-button');
   if (clonedTrailingButton) {
     clonedTrailingButton.replaceWith(createTrailingButton(addCustomColorAndHighlight));
   }

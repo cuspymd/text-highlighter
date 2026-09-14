@@ -70,7 +70,7 @@ describe('controls more menu (mobile)', () => {
   }
 
   async function openMenu(container = bar()) {
-    container.querySelector('.more-button').click();
+    container.querySelector('.text-highlighter-more-button').click();
     // The outside-click handler is registered on a 10 ms timer.
     await wait(20);
   }
@@ -81,11 +81,11 @@ describe('controls more menu (mobile)', () => {
     expect(children).toEqual([
       'text-highlighter-control-button delete-highlight',
       'text-highlighter-color-scroll',
-      'text-highlighter-control-button more-button',
+      'text-highlighter-control-button text-highlighter-more-button',
     ]);
     expect(bar().querySelector('.add-color-button')).toBeNull();
 
-    const dots = Array.from(bar().querySelectorAll('.more-button svg circle'));
+    const dots = Array.from(bar().querySelectorAll('.text-highlighter-more-button svg circle'));
     expect(dots).toHaveLength(3);
     expect(new Set(dots.map(dot => dot.getAttribute('cx'))).size).toBe(1);
     expect(new Set(dots.map(dot => dot.getAttribute('cy'))).size).toBe(3);
@@ -97,7 +97,7 @@ describe('controls more menu (mobile)', () => {
     const labels = Array.from(menu().querySelectorAll('.text-highlighter-more-menu-item'))
       .map(item => item.textContent);
     expect(labels).toEqual(['addColor', 'viewAllPages', 'settingsTitle']);
-    expect(bar().querySelector('.more-button').getAttribute('aria-expanded')).toBe('true');
+    expect(bar().querySelector('.text-highlighter-more-button').getAttribute('aria-expanded')).toBe('true');
   });
 
   it.each([
@@ -111,7 +111,7 @@ describe('controls more menu (mobile)', () => {
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: 'openExtensionPage', page });
     expect(menu()).toBeNull();
     expect(bar().classList.contains('visible')).toBe(true);
-    expect(bar().querySelector('.more-button').getAttribute('aria-expanded')).toBe('false');
+    expect(bar().querySelector('.text-highlighter-more-button').getAttribute('aria-expanded')).toBe('false');
   });
 
   it('opens the colour picker from the add colour item', async () => {
@@ -130,7 +130,7 @@ describe('controls more menu (mobile)', () => {
 
   it('closes on a tap outside it, and toggles from the more button', async () => {
     await openMenu();
-    bar().querySelector('.more-button').click();
+    bar().querySelector('.text-highlighter-more-button').click();
     expect(menu()).toBeNull();
 
     await openMenu();
@@ -166,11 +166,11 @@ describe('controls more menu (mobile)', () => {
       .dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 40, clientY: 40 }));
 
     const selectionBar = document.querySelector('.text-highlighter-selection-controls');
-    expect(selectionBar.lastElementChild.classList.contains('more-button')).toBe(true);
+    expect(selectionBar.lastElementChild.classList.contains('text-highlighter-more-button')).toBe(true);
     expect(selectionBar.querySelector('.add-color-button')).toBeNull();
 
     // A press within the ghost-click window is taken for the icon's own press.
-    selectionBar.querySelector('.more-button').click();
+    selectionBar.querySelector('.text-highlighter-more-button').click();
     expect(menu()).toBeNull();
     await wait(310);
 

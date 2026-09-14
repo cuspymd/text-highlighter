@@ -1,5 +1,5 @@
 import { browserAPI } from '../shared/browser-api.js';
-import { sendMessageToTab } from '../shared/tab-broadcast.js';
+import { debugLog } from '../shared/logger.js';
 
 // The extension pages the in-page controls can open. Firefox for Android has no
 // toolbar button to pin, so the pages behind the popup take four taps or more
@@ -27,11 +27,23 @@ export async function openExtensionPage(page) {
   if (existingTab) {
     await browserAPI.tabs.update(existingTab.id, { active: true });
     if (page === 'pagesList') {
-      await sendMessageToTab(existingTab.id, { action: 'refreshPagesList' });
+      await refreshOpenPagesList();
     }
     return { success: true, opened: 'existing-tab' };
   }
 
   await browserAPI.tabs.create({ url });
   return { success: true, opened: 'tab' };
+}
+
+// The pages list is an extension page, not a content script, so it listens on
+// runtime.onMessage: tabs.sendMessage would never reach it. A runtime message
+// from the background reaches every other extension page instead, and one with
+// no listener left open rejects, which is not worth failing the open over.
+async function refreshOpenPagesList() {
+  try {
+    await browserAPI.runtime.sendMessage({ action: 'refreshPagesList' });
+  } catch (error) {
+    debugLog('No pages list answered the refresh:', error);
+  }
 }

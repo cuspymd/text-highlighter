@@ -186,21 +186,21 @@
 /* Mobile: a vertical more button takes the '+' button's place at the end of
    the bar. It reaches the pages list and settings, which Firefox for Android
    otherwise buries behind the popup - and '+' itself, now a menu item. */
-.more-button {
+.text-highlighter-more-button {
   background-color: rgba(255, 255, 255, 0.85);
   border: 1px solid var(--th-stroke);
   color: #666;
   position: relative;
 }
 
-.more-button svg {
+.text-highlighter-more-button svg {
   display: block;
   width: 16px;
   height: 16px;
   pointer-events: none;
 }
 
-.more-button[aria-expanded="true"] {
+.text-highlighter-more-button[aria-expanded="true"] {
   background-color: rgba(28, 28, 33, 0.1);
   color: #333;
 }
@@ -842,7 +842,7 @@
   }
 
   .delete-highlight svg,
-  .more-button svg {
+  .text-highlighter-more-button svg {
     width: 22px;
     height: 22px;
   }

@@ -704,8 +704,21 @@ describe('message-router', () => {
 
       expect(result).toEqual({ success: true, opened: 'existing-tab' });
       expect(chrome.tabs.update).toHaveBeenCalledWith(2, { active: true });
-      expect(tabMessages('refreshPagesList').map(entry => entry.tabId)).toEqual([2]);
+      // The pages list is an extension page listening on runtime.onMessage; a
+      // tab message would only reach content scripts.
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: 'refreshPagesList' });
+      expect(tabMessages('refreshPagesList')).toHaveLength(0);
       expect(chrome.tabs.create).not.toHaveBeenCalled();
+    });
+
+    it('still focuses the pages list when nothing answers the refresh', async () => {
+      openTabs('chrome-extension://test/pages-list.html');
+      chrome.runtime.sendMessage.mockRejectedValueOnce(new Error('Receiving end does not exist'));
+
+      const result = await send({ action: 'openExtensionPage', page: 'pagesList' });
+
+      expect(result).toEqual({ success: true, opened: 'existing-tab' });
+      expect(chrome.tabs.update).toHaveBeenCalledWith(1, { active: true });
     });
   });
 
