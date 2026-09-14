@@ -372,12 +372,21 @@ const ACTION_HANDLERS = {
   triggerCloudSync:          handleTriggerCloudSync,
 };
 
+// Messages one extension page sends to another. runtime.sendMessage reaches the
+// background too, and an error reply from here could answer the sender before
+// the page it was meant for does, so the router leaves them unanswered.
+const PAGE_TO_PAGE_ACTIONS = new Set([
+  'refreshPagesList',
+]);
+
 /**
  * Register the runtime.onMessage listener.
  * Call once at service worker startup (top-level, before any async code).
  */
 export function registerMessageRouter() {
   browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (PAGE_TO_PAGE_ACTIONS.has(message.action)) return false;
+
     const handler = ACTION_HANDLERS[message.action];
     if (!handler) {
       sendResponse(errorResponse(`Unknown action: ${message.action}`));

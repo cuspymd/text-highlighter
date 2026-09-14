@@ -30,4 +30,5 @@ Source of truth: `background/message-router.js`
 
 ## Notes
 - Unknown actions return `{ success: false, error }`.
+- Page-to-page actions (`refreshPagesList`) are not handled here: the router returns without responding so the extension page they target can answer. The pages list listens for it on `runtime.onMessage`.
 - All handlers respond asynchronously through `runtime.onMessage`.
