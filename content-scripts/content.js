@@ -410,7 +410,7 @@ function changeHighlightColor(highlightElement, newColor) {
   // Change color of all spans in the DOM
   const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
   groupSpans.forEach(span => {
-    span.style.backgroundColor = newColor;
+    window.TextHighlighterColorCore.paintHighlight(span, newColor);
   });
   // Change color in highlights array
   const group = highlights.find(g => g.groupId === groupId);
@@ -846,7 +846,7 @@ function highlightTextInDocument(element, spanInfos, color, groupId, batch = nul
         // Apply highlight
         const span = document.createElement('span');
         span.className = 'text-highlighter-extension';
-        span.style.backgroundColor = color;
+        window.TextHighlighterColorCore.paintHighlight(span, color);
         if (groupId) span.dataset.groupId = groupId;
         if (spanInfo.spanId) span.dataset.spanId = spanInfo.spanId;
         try {

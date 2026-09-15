@@ -344,7 +344,14 @@
     function createNewSpan() {
       const span = document.createElement('span');
       span.className = 'text-highlighter-extension';
-      span.style.backgroundColor = color;
+      // color-core.js is injected first; a test that imports this file alone
+      // gets the background without the derived text colour.
+      const colorCore = window.TextHighlighterColorCore;
+      if (colorCore) {
+        colorCore.paintHighlight(span, color);
+      } else {
+        span.style.backgroundColor = color;
+      }
       span.dataset.groupId = groupId;
       span.dataset.spanId = `${groupId}_${spanCounter++}`;
       return span;

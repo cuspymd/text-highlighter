@@ -21,7 +21,9 @@
   -webkit-box-decoration-break: clone !important;
   cursor: pointer;
   position: relative;
-  color: #000 !important;
+  /* Black unless the background is too dark for it; paintHighlight() in
+     color-core.js sets the variable for those. */
+  color: var(--th-highlight-text, #000) !important;
 }
 
 .text-highlighter-extension:hover,
