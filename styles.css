@@ -24,6 +24,13 @@
   color: #000 !important;
 }
 
+/* Set by paintHighlight() in color-core.js when the background is too dark
+   for black. An attribute rather than a custom property: a variable would be
+   inherited, so a page defining one of the same name could set the text. */
+.text-highlighter-extension[data-th-text-tone="light"] {
+  color: #fff !important;
+}
+
 .text-highlighter-extension:hover,
 .text-highlighter-extension.group-hover {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
@@ -568,8 +575,12 @@
   }
 }
 
+/* The ring is an inset shadow rather than a border. Under a border the
+   background still paints out to the circle's outer edge, so on a dark colour
+   the anti-aliased rim mixes fill and grey and looks jagged - most visibly in
+   Firefox. The shadow sits on top of the fill and shares its single edge. */
 .color-button {
-  border: 1px solid #ccc;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .color-button:hover,
@@ -814,19 +825,6 @@
   display: flex;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .text-highlighter-controls.visible {
-    opacity: 0.82;
-    transform: translateY(0) scale(0.96);
-  }
-
-  .text-highlighter-controls.visible:hover,
-  .text-highlighter-controls.visible:focus-within {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /* ========== Mobile / touch device styles ========== */
 @media (pointer: coarse) {
   /* Larger control buttons for touch targets */
@@ -952,7 +950,6 @@
   /* Replace :hover with :active for touch devices */
   .text-highlighter-control-button:hover {
     transform: none;
-    box-shadow: none;
   }
 
   .text-highlighter-control-button:active {

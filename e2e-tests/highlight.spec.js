@@ -29,6 +29,35 @@ test.describe('Chrome Extension Tests', () => {
     await verifyHighlight(); // After refresh
   });
 
+  test('Dark highlight colour gets white text, light one keeps black', async ({ page, background }) => {
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+
+    const paragraph = page.locator('p:has-text("This is a sample paragraph")');
+    const textToSelect = "This is a sample paragraph";
+
+    await selectTextInElement(paragraph, textToSelect);
+    await sendHighlightMessage(background, '#1E3A8A');
+
+    const highlightedSpan = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
+    const verifyWhiteText = async () => {
+      await expectHighlightSpan(highlightedSpan, { color: 'rgb(30, 58, 138)', text: textToSelect });
+      await expect(highlightedSpan).toHaveCSS('color', 'rgb(255, 255, 255)');
+    };
+    await verifyWhiteText();
+    await page.reload();
+    await verifyWhiteText(); // The text colour is derived again on restore
+
+    // Recolouring to a light colour through the content API brings black back,
+    // even on a page that defines a variable the stylesheet once read.
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--th-highlight-text', 'rgb(255, 0, 0)');
+    });
+    await highlightedSpan.evaluate(span => span.click());
+    await page.locator('.text-highlighter-controls .color-button').first().click();
+    await expect(highlightedSpan).toHaveCSS('background-color', 'rgb(255, 255, 0)');
+    await expect(highlightedSpan).toHaveCSS('color', 'rgb(0, 0, 0)');
+  });
+
   test('Triple-click the entire first paragraph to highlight in green', async ({ page, background }) => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 

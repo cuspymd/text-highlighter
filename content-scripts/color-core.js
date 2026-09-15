@@ -134,11 +134,118 @@
     return colors[0];
   }
 
+  // Marks a highlight whose text styles.css turns white. Absent, the
+  // stylesheet's black applies - and nothing on the host page can change that.
+  const TEXT_TONE_ATTRIBUTE = 'data-th-text-tone';
+  const TEXT_ON_DARK = '#fff';
+
+  // Below this contrast black text stops being readable at all. Anything above
+  // it stays black on purpose: an earlier rule that picked white whenever white
+  // won (YIQ brightness under 128) turned mid-tones like #E74C3C and #9B59B6
+  // white, which read worse than black, and was taken out for it. 3:1 is the
+  // WCAG floor for large text - past it the choice is taste, and black it is.
+  const MIN_BLACK_TEXT_CONTRAST = 3;
+
+  /**
+   * `#rgb`, `#rrggbb` or a complete `rgb[a](r, g, b[, a])` as 8-bit channels
+   * plus alpha (1 when absent). Anything with trailing text is unparseable, so
+   * a value CSS would reject is never read as a colour.
+   *
+   * @param {string} color
+   * @returns {{r: number, g: number, b: number, a: number}|null} null when unparseable
+   */
+  function parseRgb(color) {
+    if (typeof color !== 'string') return null;
+    const value = color.trim();
+
+    const hexMatch = value.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hexMatch) {
+      let hex = hexMatch[1];
+      if (hex.length === 3) hex = hex.split('').map(digit => digit + digit).join('');
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+        a: 1,
+      };
+    }
+
+    const rgbMatch = value.match(
+      /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*(\d*\.?\d+)(%?)\s*)?\)$/i
+    );
+    if (rgbMatch) {
+      const [r, g, b] = rgbMatch.slice(1, 4).map(channel => Math.min(255, parseInt(channel, 10)));
+      let a = 1;
+      if (rgbMatch[4] !== undefined) {
+        a = parseFloat(rgbMatch[4]) / (rgbMatch[5] ? 100 : 1);
+        a = Math.max(0, Math.min(1, a));
+      }
+      return { r, g, b, a };
+    }
+
+    return null;
+  }
+
+  // WCAG 2 relative luminance, 0 (black) to 1 (white).
+  function relativeLuminance({ r, g, b }) {
+    const linear = channel => {
+      const c = channel / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+  }
+
+  /**
+   * The text colour a highlight with this background gets: white only when
+   * black would be unreadable, black otherwise - including for a value that
+   * cannot be parsed, which is what every highlight had before.
+   *
+   * Only an opaque background can earn white. A translucent one shows the page
+   * through it, and on a light page - the usual case - white text on a mostly
+   * transparent fill would vanish, where black was merely dim.
+   *
+   * @param {string} background
+   * @returns {'#000'|'#fff'}
+   */
+  function highlightTextColor(background) {
+    const rgb = parseRgb(background);
+    if (!rgb || rgb.a < 1) return '#000';
+    const blackContrast = (relativeLuminance(rgb) + 0.05) / 0.05;
+    return blackContrast < MIN_BLACK_TEXT_CONTRAST ? TEXT_ON_DARK : '#000';
+  }
+
+  /**
+   * Paint a highlight span: its background, and the text colour that goes with
+   * it. Every place that sets or changes a highlight's colour goes through here
+   * so the two cannot drift apart. The text colour is derived, never stored.
+   *
+   * @param {HTMLElement} element
+   * @param {string} color
+   */
+  function paintHighlight(element, color) {
+    // Cleared first: CSS ignores an invalid assignment and would otherwise keep
+    // the previous colour, which is not what is stored. A value CSS rejects
+    // (the stored colour can be any string an import carried) then leaves no
+    // background at all, and white text would sit on the page itself.
+    element.style.backgroundColor = '';
+    element.style.backgroundColor = color;
+    const accepted = element.style.backgroundColor !== '';
+    if (accepted && highlightTextColor(color) === TEXT_ON_DARK) {
+      element.setAttribute(TEXT_TONE_ATTRIBUTE, 'light');
+    } else {
+      element.removeAttribute(TEXT_TONE_ATTRIBUTE);
+    }
+  }
+
   window.TextHighlighterColorCore = {
     FALLBACK_HEX,
+    TEXT_TONE_ATTRIBUTE,
     hsvToRgb,
     hslToHex,
     rgbToHex,
     resolveLastUsedColor,
+    parseRgb,
+    highlightTextColor,
+    paintHighlight,
   };
 })();

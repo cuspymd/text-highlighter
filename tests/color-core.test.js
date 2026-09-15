@@ -3,6 +3,111 @@ import '../content-scripts/color-core.js';
 describe('color-core', () => {
   const core = window.TextHighlighterColorCore;
 
+  describe('parseRgb', () => {
+    it('reads long and short hex, in either case, as opaque', () => {
+      expect(core.parseRgb('#1E3A8A')).toEqual({ r: 30, g: 58, b: 138, a: 1 });
+      expect(core.parseRgb('#fa0')).toEqual({ r: 255, g: 170, b: 0, a: 1 });
+    });
+
+    it('reads rgb() and rgba() with their alpha', () => {
+      expect(core.parseRgb('rgb(0, 100, 0)')).toEqual({ r: 0, g: 100, b: 0, a: 1 });
+      expect(core.parseRgb('rgba(10,20,30,0.5)')).toEqual({ r: 10, g: 20, b: 30, a: 0.5 });
+      expect(core.parseRgb('rgba(10, 20, 30, 40%)')).toEqual({ r: 10, g: 20, b: 30, a: 0.4 });
+      expect(core.parseRgb('rgba(10, 20, 30, .25)')).toEqual({ r: 10, g: 20, b: 30, a: 0.25 });
+    });
+
+    it('returns null for anything else', () => {
+      expect(core.parseRgb('yellow')).toBeNull();
+      expect(core.parseRgb('#12345')).toBeNull();
+      expect(core.parseRgb('')).toBeNull();
+      expect(core.parseRgb(undefined)).toBeNull();
+    });
+
+    it('returns null for an rgb() value with anything after it', () => {
+      expect(core.parseRgb('rgb(0,0,0)garbage')).toBeNull();
+      expect(core.parseRgb('rgb(0, 0, 0')).toBeNull();
+      expect(core.parseRgb('rgba(0, 0, 0, 1) x')).toBeNull();
+    });
+  });
+
+  describe('highlightTextColor', () => {
+    it('keeps black on every default and picker preset colour', () => {
+      const palette = [
+        '#FFFF00', '#AAFFAA', '#AAAAFF', '#FFAAFF', '#FFAA55',
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+        '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+        '#F39C12', '#E74C3C', '#9B59B6', '#3498DB', '#1ABC9C',
+        '#2ECC71', '#F1C40F', '#E67E22', '#FF90A0', '#A8E6CF',
+      ];
+      palette.forEach(color => expect(core.highlightTextColor(color)).toBe('#000'));
+    });
+
+    it('keeps black on mid-tones where white would merely win', () => {
+      // White has the higher contrast on both, but black is still readable.
+      expect(core.highlightTextColor('#666666')).toBe('#000');
+      expect(core.highlightTextColor('#808080')).toBe('#000');
+    });
+
+    it('switches to white only once black falls under 3:1', () => {
+      expect(core.highlightTextColor('#555555')).toBe('#fff');
+      expect(core.highlightTextColor('#8B0000')).toBe('#fff');
+      expect(core.highlightTextColor('#1E3A8A')).toBe('#fff');
+      expect(core.highlightTextColor('rgb(0, 100, 0)')).toBe('#fff');
+      expect(core.highlightTextColor('#000')).toBe('#fff');
+    });
+
+    it('stays black for a value it cannot read', () => {
+      expect(core.highlightTextColor('yellow')).toBe('#000');
+      expect(core.highlightTextColor('not a colour')).toBe('#000');
+      expect(core.highlightTextColor('rgb(0,0,0)garbage')).toBe('#000');
+    });
+
+    it('stays black on a translucent background, however dark', () => {
+      expect(core.highlightTextColor('rgba(0, 0, 0, 0)')).toBe('#000');
+      expect(core.highlightTextColor('rgba(0, 0, 0, 0.5)')).toBe('#000');
+      expect(core.highlightTextColor('rgba(0, 0, 0, 1)')).toBe('#fff');
+    });
+  });
+
+  describe('paintHighlight', () => {
+    it('sets the background and leaves the text to the stylesheet on a light colour', () => {
+      const span = document.createElement('span');
+      core.paintHighlight(span, '#FFFF00');
+
+      expect(span.style.backgroundColor).toBe('rgb(255, 255, 0)');
+      expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
+    });
+
+    it('sets white text on a dark colour, and takes it back off when recoloured light', () => {
+      const span = document.createElement('span');
+
+      core.paintHighlight(span, '#1E3A8A');
+      expect(span.getAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe('light');
+
+      core.paintHighlight(span, '#AAFFAA');
+      expect(span.style.backgroundColor).toBe('rgb(170, 255, 170)');
+      expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
+    });
+
+    it('leaves the text black when CSS rejects the colour', () => {
+      const span = document.createElement('span');
+      core.paintHighlight(span, 'rgb(0,0,0)garbage');
+
+      expect(span.style.backgroundColor).toBe('');
+      expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
+    });
+
+    it('does not keep a previous dark background when recoloured to a rejected value', () => {
+      const span = document.createElement('span');
+      core.paintHighlight(span, '#1E3A8A');
+      expect(span.getAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe('light');
+
+      core.paintHighlight(span, 'rgb(0,0,0)garbage');
+      expect(span.style.backgroundColor).toBe('');
+      expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
+    });
+  });
+
   describe('hsvToRgb', () => {
     it('maps each sixth of the hue circle to its primary or secondary', () => {
       const fullyBright = { s: 100, v: 100 };
