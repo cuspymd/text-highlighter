@@ -4,14 +4,16 @@ describe('color-core', () => {
   const core = window.TextHighlighterColorCore;
 
   describe('parseRgb', () => {
-    it('reads long and short hex, in either case', () => {
-      expect(core.parseRgb('#1E3A8A')).toEqual({ r: 30, g: 58, b: 138 });
-      expect(core.parseRgb('#fa0')).toEqual({ r: 255, g: 170, b: 0 });
+    it('reads long and short hex, in either case, as opaque', () => {
+      expect(core.parseRgb('#1E3A8A')).toEqual({ r: 30, g: 58, b: 138, a: 1 });
+      expect(core.parseRgb('#fa0')).toEqual({ r: 255, g: 170, b: 0, a: 1 });
     });
 
-    it('reads rgb() and rgba(), ignoring alpha', () => {
-      expect(core.parseRgb('rgb(0, 100, 0)')).toEqual({ r: 0, g: 100, b: 0 });
-      expect(core.parseRgb('rgba(10,20,30,0.5)')).toEqual({ r: 10, g: 20, b: 30 });
+    it('reads rgb() and rgba() with their alpha', () => {
+      expect(core.parseRgb('rgb(0, 100, 0)')).toEqual({ r: 0, g: 100, b: 0, a: 1 });
+      expect(core.parseRgb('rgba(10,20,30,0.5)')).toEqual({ r: 10, g: 20, b: 30, a: 0.5 });
+      expect(core.parseRgb('rgba(10, 20, 30, 40%)')).toEqual({ r: 10, g: 20, b: 30, a: 0.4 });
+      expect(core.parseRgb('rgba(10, 20, 30, .25)')).toEqual({ r: 10, g: 20, b: 30, a: 0.25 });
     });
 
     it('returns null for anything else', () => {
@@ -19,6 +21,12 @@ describe('color-core', () => {
       expect(core.parseRgb('#12345')).toBeNull();
       expect(core.parseRgb('')).toBeNull();
       expect(core.parseRgb(undefined)).toBeNull();
+    });
+
+    it('returns null for an rgb() value with anything after it', () => {
+      expect(core.parseRgb('rgb(0,0,0)garbage')).toBeNull();
+      expect(core.parseRgb('rgb(0, 0, 0')).toBeNull();
+      expect(core.parseRgb('rgba(0, 0, 0, 1) x')).toBeNull();
     });
   });
 
@@ -51,6 +59,13 @@ describe('color-core', () => {
     it('stays black for a value it cannot read', () => {
       expect(core.highlightTextColor('yellow')).toBe('#000');
       expect(core.highlightTextColor('not a colour')).toBe('#000');
+      expect(core.highlightTextColor('rgb(0,0,0)garbage')).toBe('#000');
+    });
+
+    it('stays black on a translucent background, however dark', () => {
+      expect(core.highlightTextColor('rgba(0, 0, 0, 0)')).toBe('#000');
+      expect(core.highlightTextColor('rgba(0, 0, 0, 0.5)')).toBe('#000');
+      expect(core.highlightTextColor('rgba(0, 0, 0, 1)')).toBe('#fff');
     });
   });
 
@@ -71,6 +86,24 @@ describe('color-core', () => {
 
       core.paintHighlight(span, '#AAFFAA');
       expect(span.style.backgroundColor).toBe('rgb(170, 255, 170)');
+      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('');
+    });
+
+    it('leaves the text black when CSS rejects the colour', () => {
+      const span = document.createElement('span');
+      core.paintHighlight(span, 'rgb(0,0,0)garbage');
+
+      expect(span.style.backgroundColor).toBe('');
+      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('');
+    });
+
+    it('does not keep a previous dark background when recoloured to a rejected value', () => {
+      const span = document.createElement('span');
+      core.paintHighlight(span, '#1E3A8A');
+      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('#fff');
+
+      core.paintHighlight(span, 'rgb(0,0,0)garbage');
+      expect(span.style.backgroundColor).toBe('');
       expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('');
     });
   });
