@@ -21,9 +21,14 @@
   -webkit-box-decoration-break: clone !important;
   cursor: pointer;
   position: relative;
-  /* Black unless the background is too dark for it; paintHighlight() in
-     color-core.js sets the variable for those. */
-  color: var(--th-highlight-text, #000) !important;
+  color: #000 !important;
+}
+
+/* Set by paintHighlight() in color-core.js when the background is too dark
+   for black. An attribute rather than a custom property: a variable would be
+   inherited, so a page defining one of the same name could set the text. */
+.text-highlighter-extension[data-th-text-tone="light"] {
+  color: #fff !important;
 }
 
 .text-highlighter-extension:hover,

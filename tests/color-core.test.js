@@ -75,18 +75,18 @@ describe('color-core', () => {
       core.paintHighlight(span, '#FFFF00');
 
       expect(span.style.backgroundColor).toBe('rgb(255, 255, 0)');
-      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('');
+      expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
     });
 
     it('sets white text on a dark colour, and takes it back off when recoloured light', () => {
       const span = document.createElement('span');
 
       core.paintHighlight(span, '#1E3A8A');
-      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('#fff');
+      expect(span.getAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe('light');
 
       core.paintHighlight(span, '#AAFFAA');
       expect(span.style.backgroundColor).toBe('rgb(170, 255, 170)');
-      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('');
+      expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
     });
 
     it('leaves the text black when CSS rejects the colour', () => {
@@ -94,17 +94,17 @@ describe('color-core', () => {
       core.paintHighlight(span, 'rgb(0,0,0)garbage');
 
       expect(span.style.backgroundColor).toBe('');
-      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('');
+      expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
     });
 
     it('does not keep a previous dark background when recoloured to a rejected value', () => {
       const span = document.createElement('span');
       core.paintHighlight(span, '#1E3A8A');
-      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('#fff');
+      expect(span.getAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe('light');
 
       core.paintHighlight(span, 'rgb(0,0,0)garbage');
       expect(span.style.backgroundColor).toBe('');
-      expect(span.style.getPropertyValue(core.TEXT_COLOR_PROPERTY)).toBe('');
+      expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
     });
   });
 

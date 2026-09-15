@@ -134,9 +134,9 @@
     return colors[0];
   }
 
-  // The inline custom property styles.css reads for a highlight's text colour.
-  // Unset, the stylesheet's black applies.
-  const TEXT_COLOR_PROPERTY = '--th-highlight-text';
+  // Marks a highlight whose text styles.css turns white. Absent, the
+  // stylesheet's black applies - and nothing on the host page can change that.
+  const TEXT_TONE_ATTRIBUTE = 'data-th-text-tone';
   const TEXT_ON_DARK = '#fff';
 
   // Below this contrast black text stops being readable at all. Anything above
@@ -231,15 +231,15 @@
     element.style.backgroundColor = color;
     const accepted = element.style.backgroundColor !== '';
     if (accepted && highlightTextColor(color) === TEXT_ON_DARK) {
-      element.style.setProperty(TEXT_COLOR_PROPERTY, TEXT_ON_DARK);
+      element.setAttribute(TEXT_TONE_ATTRIBUTE, 'light');
     } else {
-      element.style.removeProperty(TEXT_COLOR_PROPERTY);
+      element.removeAttribute(TEXT_TONE_ATTRIBUTE);
     }
   }
 
   window.TextHighlighterColorCore = {
     FALLBACK_HEX,
-    TEXT_COLOR_PROPERTY,
+    TEXT_TONE_ATTRIBUTE,
     hsvToRgb,
     hslToHex,
     rgbToHex,

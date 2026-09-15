@@ -69,10 +69,14 @@
 
 - `content-scripts/color-core.js`
   - `highlightTextColor(background)`: `'#000'` 또는 `'#fff'` 반환
-  - `paintHighlight(element, color)`: 배경을 칠하고, 흰색이 필요할 때만 인라인 커스텀 속성
-    `--th-highlight-text`를 설정한다. 필요 없으면 제거한다.
-- `styles.css`: `color: var(--th-highlight-text, #000) !important`
-  - 스타일시트의 `!important` 때문에 인라인 `style.color`는 적용되지 않는다. 그래서 변수로 넘긴다.
+  - `paintHighlight(element, color)`: 배경을 칠하고, 흰색이 필요할 때만 `data-th-text-tone="light"`
+    속성을 붙인다. 필요 없으면 제거한다.
+- `styles.css`: 기본 `color: #000 !important`는 그대로 두고,
+  `.text-highlighter-extension[data-th-text-tone="light"] { color: #fff !important }`를 추가했다.
+  - 스타일시트의 `!important` 때문에 인라인 `style.color`는 적용되지 않는다.
+  - 처음에는 CSS 커스텀 속성(`var(--th-highlight-text, #000)`)으로 넘겼다. 그런데 커스텀 속성은 상속되므로,
+    페이지가 같은 이름의 변수를 `:root` 등에 정의하면 밝은 하이라이트의 글자색을 페이지가 정하게 된다
+    (PR #142 리뷰 지적). 속성 선택자는 페이지 변수의 영향을 받지 않는다.
 - 색을 칠하는 세 곳이 모두 `paintHighlight`를 거친다.
   - 새 하이라이트: `content-core.js`의 `createNewSpan`
   - 복원: `content.js`
