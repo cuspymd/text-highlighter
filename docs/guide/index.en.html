@@ -43,7 +43,7 @@
                 <li><a href="#settings">Settings Screen</a>
                     <ul class="toc-sublist">
                         <li><a href="#settings-general">General</a></li>
-                        <li><a href="#settings-shortcuts">Shortcut Colors</a></li>
+                        <li><a href="#settings-shortcuts">Keyboard Shortcuts</a></li>
                     </ul>
                 </li>
                 <li><a href="#pages-list">Highlighted Pages List</a></li>
@@ -71,10 +71,10 @@
                 <p>There are three ways to add highlights to selected text on a web page.</p>
 
                 <h3 id="add-control-ui">1. Using Control UI</h3>
-                <p>When you select text, a highlight icon (pen shape) appears near the selection. Click this icon or hover over it to reveal the <strong>Control UI</strong> with a color palette. Click a color to apply the highlight.</p>
+                <p>When you select text, a highlight icon (pen shape) appears near the selection. Click this icon to reveal the <strong>Control UI</strong> with a color palette. Click a color to apply the highlight.</p>
                 <div class="note">
                     <span class="note-title">Note</span>
-                    This works when 'Show Control UI on text selection' is enabled in settings. It is also the primary method for mobile devices.
+                    This works when 'Show Control UI on text selection' is enabled in settings. It is also the primary method for mobile devices. On mobile, the <strong>⋮ (More)</strong> button at the end of the palette opens a menu with <strong>Add Color</strong>, <strong>Highlighted Pages List</strong> and <strong>Settings</strong>.
                 </div>
 
                 <h3 id="add-context-menu">2. Using Context Menu</h3>
@@ -109,7 +109,7 @@
                 <ul>
                     <li><strong>Individual Delete (Control UI):</strong> Click on an existing highlight to open the Control UI. Click the <strong>Trash icon</strong> to delete it.</li>
                     <li><strong>Individual Delete (Popup):</strong> Click the extension icon in the toolbar to open the Popup menu. In the "Current Page Highlights" list, click the <strong>X button</strong> next to the item you want to remove.</li>
-                    <li><strong>Clear Page (Popup):</strong> Click the <strong>"Delete All Highlights"</strong> button at the bottom of the Popup menu to remove all highlights on the current page.</li>
+                    <li><strong>Clear Page (Popup):</strong> Click the <strong>"Delete All Highlights On Page"</strong> button at the bottom of the Popup menu to remove all highlights on the current page.</li>
                     <li><strong>Delete Page (Pages List):</strong> In the Highlighted Pages List dashboard, click the <strong>"Delete"</strong> button on a specific page card to remove all data for that page.</li>
                     <li><strong>Delete All Data (Pages List):</strong> Click the <strong>Trash icon (Delete All Pages)</strong> in the top toolbar of the dashboard to delete all saved highlight data.</li>
                 </ul>
@@ -121,13 +121,13 @@
                 <h3>Adding and Changing Colors</h3>
                 <p>You can add your own colors in addition to the 5 default ones (Yellow, Green, Blue, Pink, Orange). Add them straight from the page, or manage them on the settings screen.</p>
                 <ol>
-                    <li>Click on an existing highlight to open the Control UI.</li>
-                    <li>Click the <strong>+ button</strong> at the end of the color list.</li>
+                    <li>Select text and open the Control UI, or click an existing highlight.</li>
+                    <li>Click the <strong>+ button</strong> at the end of the color list. (On mobile, choose <strong>Add Color</strong> from the <strong>⋮</strong> menu instead.)</li>
                     <li>Pick a color from the selector and click "Apply".</li>
                 </ol>
                 <div class="note">
                     <span class="note-title">Note</span>
-                    The + button does not appear in the Control UI when highlighting new text. It only appears when you click on an <strong>already created highlight</strong>.
+                    If you add a color from the Control UI opened for selected text, that text is highlighted in the new color right away.
                 </div>
 
                 <h3>Managing Colors in Settings</h3>
@@ -135,7 +135,7 @@
                 <ul>
                     <li><strong>Add:</strong> Use the <strong>"+ Add Custom Color"</strong> button to open the color picker.</li>
                     <li><strong>Rename:</strong> Click a color's name to edit it in place.</li>
-                    <li><strong>Change color:</strong> Use the <strong>"Edit"</strong> button. Highlights already painted with that color are not affected.</li>
+                    <li><strong>Change color:</strong> Use the <strong>"Change"</strong> button. Highlights already painted with that color are not affected.</li>
                     <li><strong>Delete one:</strong> Each color has its own <strong>"Remove"</strong> button.</li>
                     <li><strong>Delete all:</strong> The <strong>"Remove All"</strong> button at the top right of the section deletes every added color, leaving the 5 defaults.</li>
                 </ul>
@@ -158,11 +158,11 @@
                     <li><strong>Settings (⚙) icon:</strong> The gear at the top right opens the <a href="#settings">settings screen</a>. Options such as the minimap, the control UI and one-click highlighting all live there.</li>
                     <li><strong>Current Page Highlights:</strong> The highlights saved on the page you are viewing. Click an entry to jump to it, or use the <strong>X button</strong> at its top right to delete that one.</li>
                     <li><strong>Highlighted Pages List:</strong> Opens the dashboard screen to manage all saved pages.</li>
-                    <li><strong>Delete All Highlights:</strong> Removes every highlight on the current page. The button is disabled when there is nothing to delete.</li>
+                    <li><strong>Delete All Highlights On Page:</strong> Removes every highlight on the current page. The button is disabled when there is nothing to delete.</li>
                 </ul>
                 <div class="note">
                     <span class="note-title">When an entry says "Not found on this page"</span>
-                    If the page rendered late or its content changed, a highlight's position may not be restored. That entry is then dimmed and a <strong>"Search again"</strong> button appears; pressing it asks the page to look for the highlight once more. If it still cannot be found, the page content really has changed. The stored highlight data itself is not deleted.
+                    If the page rendered late or its content changed, a highlight's position may not be restored. That entry is then dimmed and a <strong>"Find again"</strong> button appears; pressing it asks the page to look for the highlight once more. If it still cannot be found, the page content really has changed. The stored highlight data itself is not deleted.
                 </div>
             </section>
 
@@ -187,7 +187,7 @@
                 <h3>Cloud Sync (Beta)</h3>
                 <p>Issue a sync code, pair devices, and sync on demand. See <a href="#cloud-sync">Cloud Sync (Beta)</a> for details.</p>
 
-                <h3 id="settings-shortcuts">Shortcut Colors</h3>
+                <h3 id="settings-shortcuts">Keyboard Shortcuts</h3>
                 <p>Choose which color each of the 5 shortcut slots applies. The defaults for slots 1-5 are Yellow, Green, Blue, Pink and Orange, and custom colors can be assigned too. The key combinations themselves are changed in the browser's shortcut settings.</p>
 
                 <h3>Help</h3>
@@ -198,9 +198,11 @@
                 <h2>Highlighted Pages List</h2>
                 <p>A dashboard where you can view and manage all saved highlight information at a glance.</p>
                 <ul>
-                    <li><strong>Search:</strong> Search saved records by page title or URL. Matching text is highlighted in the results.</li>
+                    <li><strong>Search:</strong> Search saved records by page title or highlight text. Matching text is highlighted in the results.</li>
                     <li><strong>Sort:</strong> Sort the list by newest, oldest, etc.</li>
-                    <li><strong>Expand/Collapse All:</strong> Click the toolbar button to expand or collapse the highlight details of all visible pages at once. The button switches between "Expand all" and "Collapse all" depending on the current state.</li>
+                    <li><strong>Expand/Collapse All:</strong> Click the toolbar button to expand or collapse the highlight details of all visible pages at once. Its tooltip switches between "Expand all highlights" and "Collapse all highlights" depending on the current state.</li>
+                    <li><strong>Open a highlight:</strong> Click a highlight's text to open its original page and scroll to that highlight. If the page is already open in a tab, that tab is used.</li>
+                    <li><strong>Copy:</strong> The copy button on a page card copies every highlight from that page. While searching, the copy button next to the result count copies only the matching highlights. Highlights are copied as Markdown quotes.</li>
                     <li><strong>Delete:</strong> Delete individual pages or use the top toolbar button to clear all data.</li>
                     <li><strong>Export/Import:</strong> Backup or restore your data via the <strong>More actions (…)</strong> menu in the toolbar.</li>
                 </ul>
@@ -228,7 +230,7 @@
                     <li>Click the extension icon in the toolbar to open the Popup, then click the <strong>Settings (⚙) icon</strong>.</li>
                     <li>In the <strong>"Cloud Sync (Beta)"</strong> section of the Settings screen, click <strong>"Generate New Code"</strong> to create a sync code.</li>
                     <li>On the other device you want to sync, open the Settings screen and enter the same code in the "Enter sync code from another device" field, then click <strong>"Connect"</strong>.</li>
-                    <li>Turn on the <strong>"Cloud Sync"</strong> switch on each device to activate syncing. The extension syncs automatically about every 15 minutes, or you can click <strong>"Sync Now"</strong> to sync immediately.</li>
+                    <li>Syncing starts as soon as a code is generated or connected, and the <strong>"Cloud Sync"</strong> switch turns on by itself. From then on the extension syncs automatically about every 15 minutes, or you can click <strong>"Sync Now"</strong> to sync immediately. Turn the switch off to pause syncing on that device.</li>
                 </ol>
 
                 <div class="warning">
