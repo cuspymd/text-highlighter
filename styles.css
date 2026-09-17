@@ -580,6 +580,9 @@
    the anti-aliased rim mixes fill and grey and looks jagged - most visibly in
    Firefox. The shadow sits on top of the fill and shares its single edge. */
 .color-button {
+  /* Buttons are divs, so a page rule like `div { border: ... }` would
+     otherwise draw inside the fixed 24px box alongside the ring. */
+  border: none !important;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 

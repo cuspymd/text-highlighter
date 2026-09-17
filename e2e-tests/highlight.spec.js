@@ -49,11 +49,15 @@ test.describe('Chrome Extension Tests', () => {
 
     // Recolouring to a light colour through the content API brings black back,
     // even on a page that defines a variable the stylesheet once read.
+    // A page border rule on divs must not reach the colour buttons either.
     await page.evaluate(() => {
       document.documentElement.style.setProperty('--th-highlight-text', 'rgb(255, 0, 0)');
     });
+    await page.addStyleTag({ content: 'div { border: 3px solid red; }' });
     await highlightedSpan.evaluate(span => span.click());
-    await page.locator('.text-highlighter-controls .color-button').first().click();
+    const firstColorButton = page.locator('.text-highlighter-controls .color-button').first();
+    await expect(firstColorButton).toHaveCSS('border-top-width', '0px');
+    await firstColorButton.click();
     await expect(highlightedSpan).toHaveCSS('background-color', 'rgb(255, 255, 0)');
     await expect(highlightedSpan).toHaveCSS('color', 'rgb(0, 0, 0)');
   });

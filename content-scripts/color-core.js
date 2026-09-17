@@ -147,8 +147,8 @@
   const MIN_BLACK_TEXT_CONTRAST = 3;
 
   /**
-   * `#rgb`, `#rrggbb` or a complete `rgb[a](r, g, b[, a])` as 8-bit channels
-   * plus alpha (1 when absent). Anything with trailing text is unparseable, so
+   * `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` or a complete `rgb[a](r, g, b[, a])`
+   * as 8-bit channels plus alpha (1 when absent). Anything with trailing text is unparseable, so
    * a value CSS would reject is never read as a colour.
    *
    * @param {string} color
@@ -158,15 +158,15 @@
     if (typeof color !== 'string') return null;
     const value = color.trim();
 
-    const hexMatch = value.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    const hexMatch = value.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
     if (hexMatch) {
       let hex = hexMatch[1];
-      if (hex.length === 3) hex = hex.split('').map(digit => digit + digit).join('');
+      if (hex.length <= 4) hex = hex.split('').map(digit => digit + digit).join('');
       return {
         r: parseInt(hex.slice(0, 2), 16),
         g: parseInt(hex.slice(2, 4), 16),
         b: parseInt(hex.slice(4, 6), 16),
-        a: 1,
+        a: hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1,
       };
     }
 

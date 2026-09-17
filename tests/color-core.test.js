@@ -9,6 +9,13 @@ describe('color-core', () => {
       expect(core.parseRgb('#fa0')).toEqual({ r: 255, g: 170, b: 0, a: 1 });
     });
 
+    it('reads four- and eight-digit hex with their alpha', () => {
+      expect(core.parseRgb('#000f')).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+      expect(core.parseRgb('#1E3A8AFF')).toEqual({ r: 30, g: 58, b: 138, a: 1 });
+      expect(core.parseRgb('#00000000')).toEqual({ r: 0, g: 0, b: 0, a: 0 });
+      expect(core.parseRgb('#0008').a).toBeCloseTo(0x88 / 255);
+    });
+
     it('reads rgb() and rgba() with their alpha', () => {
       expect(core.parseRgb('rgb(0, 100, 0)')).toEqual({ r: 0, g: 100, b: 0, a: 1 });
       expect(core.parseRgb('rgba(10,20,30,0.5)')).toEqual({ r: 10, g: 20, b: 30, a: 0.5 });
@@ -66,6 +73,14 @@ describe('color-core', () => {
       expect(core.highlightTextColor('rgba(0, 0, 0, 0)')).toBe('#000');
       expect(core.highlightTextColor('rgba(0, 0, 0, 0.5)')).toBe('#000');
       expect(core.highlightTextColor('rgba(0, 0, 0, 1)')).toBe('#fff');
+      expect(core.highlightTextColor('#0008')).toBe('#000');
+      expect(core.highlightTextColor('#1E3A8A80')).toBe('#000');
+    });
+
+    it('treats opaque four- and eight-digit hex like their short forms', () => {
+      expect(core.highlightTextColor('#000f')).toBe('#fff');
+      expect(core.highlightTextColor('#1E3A8AFF')).toBe('#fff');
+      expect(core.highlightTextColor('#ff0f')).toBe('#000');
     });
   });
 
