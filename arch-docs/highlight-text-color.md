@@ -77,6 +77,11 @@
   - 처음에는 CSS 커스텀 속성(`var(--th-highlight-text, #000)`)으로 넘겼다. 그런데 커스텀 속성은 상속되므로,
     페이지가 같은 이름의 변수를 `:root` 등에 정의하면 밝은 하이라이트의 글자색을 페이지가 정하게 된다
     (PR #142 리뷰 지적). 속성 선택자는 페이지 변수의 영향을 받지 않는다.
+- 배경색은 인라인 `!important`로 칠한다. 페이지에 `span { background-color: #fff !important }` 같은
+  규칙이 있으면 일반 인라인 배경은 덮이는데, 판정은 요청한 어두운 색으로 해서 흰 배경에 흰 글자가 된다
+  (PR #142 리뷰 지적). 인라인 `!important`는 어떤 스타일시트의 `!important`보다도 우선한다.
+  렌더링된 배경을 `getComputedStyle`로 읽는 방법은 스팬이 문서에 붙은 뒤에만 가능하고, 복원 경로에
+  스타일 계산 비용을 더하므로 택하지 않았다.
 - 색을 칠하는 세 곳이 모두 `paintHighlight`를 거친다.
   - 새 하이라이트: `content-core.js`의 `createNewSpan`
   - 복원: `content.js`

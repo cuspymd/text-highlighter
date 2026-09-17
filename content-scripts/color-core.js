@@ -223,13 +223,18 @@
    * @param {string} color
    */
   function paintHighlight(element, color) {
+    // Important, so a page rule like `span { background-color: #fff !important }`
+    // cannot repaint the highlight - an inline important declaration outranks
+    // any stylesheet one. Otherwise the tone below would be chosen for a
+    // background that is not the one on screen: white text on the page's white.
+    //
     // Cleared first: CSS ignores an invalid assignment and would otherwise keep
     // the previous colour, which is not what is stored. A value CSS rejects
     // (the stored colour can be any string an import carried) then leaves no
     // background at all, and white text would sit on the page itself.
-    element.style.backgroundColor = '';
-    element.style.backgroundColor = color;
-    const accepted = element.style.backgroundColor !== '';
+    element.style.removeProperty('background-color');
+    element.style.setProperty('background-color', color, 'important');
+    const accepted = element.style.getPropertyValue('background-color') !== '';
     if (accepted && highlightTextColor(color) === TEXT_ON_DARK) {
       element.setAttribute(TEXT_TONE_ATTRIBUTE, 'light');
     } else {

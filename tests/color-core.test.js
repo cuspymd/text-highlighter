@@ -104,6 +104,16 @@ describe('color-core', () => {
       expect(span.hasAttribute(core.TEXT_TONE_ATTRIBUTE)).toBe(false);
     });
 
+    it('paints the background as important, so a page rule cannot repaint it', () => {
+      const span = document.createElement('span');
+      core.paintHighlight(span, '#1E3A8A');
+      expect(span.style.getPropertyPriority('background-color')).toBe('important');
+
+      core.paintHighlight(span, '#FFFF00');
+      expect(span.style.backgroundColor).toBe('rgb(255, 255, 0)');
+      expect(span.style.getPropertyPriority('background-color')).toBe('important');
+    });
+
     it('leaves the text black when CSS rejects the colour', () => {
       const span = document.createElement('span');
       core.paintHighlight(span, 'rgb(0,0,0)garbage');

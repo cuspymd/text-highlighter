@@ -35,6 +35,8 @@ test.describe('Chrome Extension Tests', () => {
     const paragraph = page.locator('p:has-text("This is a sample paragraph")');
     const textToSelect = "This is a sample paragraph";
 
+    // A page forcing every span's background must not leave white text on it.
+    await page.addStyleTag({ content: 'span { background-color: #fff !important; }' });
     await selectTextInElement(paragraph, textToSelect);
     await sendHighlightMessage(background, '#1E3A8A');
 
