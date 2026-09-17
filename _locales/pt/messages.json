@@ -74,6 +74,12 @@
   "commandSlot5": {
     "message": "Slot 5"
   },
+  "commandNextHighlight": {
+    "message": "Ir para o próximo destaque"
+  },
+  "commandPreviousHighlight": {
+    "message": "Ir para o destaque anterior"
+  },
   "popupTitle": {
     "message": "Marks"
   },
@@ -403,7 +409,7 @@
     "message": "Atalhos de Teclado"
   },
   "onboardingShortcutsBody": {
-    "message": "Cinco espaços de atalho marcam o texto selecionado na hora. Os espaços de 1 a 4 vêm com Ctrl+Shift+1 a 4 (Command+Shift no macOS); o espaço 5 não tem tecla até você definir uma. A cor de cada espaço é definida nas Configurações."
+    "message": "Ctrl+Shift+1 a 4 (Command+Shift no macOS) marcam o texto selecionado na hora, e outros atalhos vão para o destaque seguinte ou anterior. As teclas e as cores estão nas Configurações."
   },
   "onboardingMinimapTitle": {
     "message": "Minimapa"

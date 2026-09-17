@@ -9,6 +9,7 @@ import chrome from '../../mocks/chrome.js';
 import '../../content-scripts/content-core.js';
 import '../../content-scripts/restore-core.js';
 import '../../content-scripts/color-core.js';
+import '../../content-scripts/jump-core.js';
 
 /**
  * Harness for the content scripts.

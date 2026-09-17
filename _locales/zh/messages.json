@@ -74,6 +74,12 @@
   "commandSlot5": {
     "message": "插槽 5"
   },
+  "commandNextHighlight": {
+    "message": "跳转到下一个高亮"
+  },
+  "commandPreviousHighlight": {
+    "message": "跳转到上一个高亮"
+  },
   "popupTitle": {
     "message": "Marks"
   },
@@ -403,7 +409,7 @@
     "message": "快捷键"
   },
   "onboardingShortcutsBody": {
-    "message": "五个快捷键槽位可立即高亮选中的文本。槽位 1 到 4 默认使用 Ctrl+Shift+1 至 4（macOS 上为 Command+Shift）；槽位 5 需要自行指定后才能使用。每个槽位对应的颜色在设置中调整。"
+    "message": "Ctrl+Shift+1 至 4（macOS 上为 Command+Shift）可立即高亮选中的文本，也可跳转到下一个或上一个高亮。按键和颜色可在设置中查看。"
   },
   "onboardingMinimapTitle": {
     "message": "小地图"

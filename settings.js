@@ -344,20 +344,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       'command_slot_4', 'command_slot_5',
     ];
 
-    SLOT_COMMANDS.forEach((cmdName, idx) => {
+    const NAVIGATION_COMMANDS = [
+      ['navigate_next_highlight', 'commandNextHighlight', 'Jump to next highlight'],
+      ['navigate_previous_highlight', 'commandPreviousHighlight', 'Jump to previous highlight'],
+    ];
+
+    // Label on top, key combination under it. Chrome gives these commands no
+    // default key, so an unassigned badge is the normal first sight there.
+    function buildShortcutInfo(cmdName, label) {
       const cmd = commands.find(c => c.name === cmdName);
       const shortcutLabel = cmd?.shortcut || browserAPI.i18n.getMessage('notAssigned') || '(Not assigned)';
-      const assignedColorId = colorMap[cmdName] ?? null;
-
-      const row = document.createElement('div');
-      row.className = 'shortcut-row';
 
       const info = document.createElement('div');
       info.className = 'shortcut-info';
 
       const slotLabel = document.createElement('span');
       slotLabel.className = 'shortcut-slot';
-      slotLabel.textContent = `${browserAPI.i18n.getMessage('shortcutSlot') || 'Slot'} ${idx + 1}`;
+      slotLabel.textContent = label;
 
       const keyBadge = document.createElement('span');
       keyBadge.className = 'key-badge';
@@ -365,6 +368,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       info.appendChild(slotLabel);
       info.appendChild(keyBadge);
+      return info;
+    }
+
+    SLOT_COMMANDS.forEach((cmdName, idx) => {
+      const assignedColorId = colorMap[cmdName] ?? null;
+
+      const row = document.createElement('div');
+      row.className = 'shortcut-row';
+
+      const info = buildShortcutInfo(
+        cmdName,
+        `${browserAPI.i18n.getMessage('shortcutSlot') || 'Slot'} ${idx + 1}`
+      );
 
       const select = document.createElement('select');
       select.className = 'shortcut-select';
@@ -394,6 +410,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       row.appendChild(info);
       row.appendChild(select);
+      shortcutsList.appendChild(row);
+    });
+
+    NAVIGATION_COMMANDS.forEach(([cmdName, messageKey, fallback]) => {
+      const row = document.createElement('div');
+      row.className = 'shortcut-row shortcut-row-navigation';
+      row.appendChild(buildShortcutInfo(cmdName, browserAPI.i18n.getMessage(messageKey) || fallback));
       shortcutsList.appendChild(row);
     });
   }

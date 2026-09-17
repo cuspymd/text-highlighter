@@ -74,6 +74,12 @@
   "commandSlot5": {
     "message": "スロット 5"
   },
+  "commandNextHighlight": {
+    "message": "次のハイライトへ移動"
+  },
+  "commandPreviousHighlight": {
+    "message": "前のハイライトへ移動"
+  },
   "popupTitle": {
     "message": "Marks"
   },
@@ -403,7 +409,7 @@
     "message": "ショートカットキー"
   },
   "onboardingShortcutsBody": {
-    "message": "5 つのショートカットスロットで、選択したテキストをすぐに塗れます。スロット 1〜4 には Ctrl+Shift+1〜4（macOS では Command+Shift）が既定で割り当てられており、スロット 5 は自分で割り当てるまで動きません。どのスロットがどの色かは設定で決めます。"
+    "message": "Ctrl+Shift+1〜4（macOS では Command+Shift）で選択したテキストをすぐに塗れ、次/前のハイライトへの移動もできます。キーと色は設定で確認できます。"
   },
   "onboardingMinimapTitle": {
     "message": "ミニマップ"

@@ -57,6 +57,12 @@
     },
     "command_slot_5": {
       "description": "__MSG_commandSlot5__"
+    },
+    "navigate_next_highlight": {
+      "description": "__MSG_commandNextHighlight__"
+    },
+    "navigate_previous_highlight": {
+      "description": "__MSG_commandPreviousHighlight__"
     }
   },
   "content_scripts": [
@@ -70,6 +76,7 @@
         "content-scripts/color-core.js",
         "content-scripts/content-core.js",
         "content-scripts/restore-core.js",
+        "content-scripts/jump-core.js",
         "content-scripts/controls.js",
         "content-scripts/content.js"
       ],

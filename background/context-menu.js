@@ -10,6 +10,12 @@ import {
   getShortcutColorMap,
 } from './settings-service.js';
 
+// Shortcut commands that move between highlights, and the direction each sends.
+const NAVIGATION_COMMANDS = {
+  navigate_next_highlight: 'next',
+  navigate_previous_highlight: 'previous',
+};
+
 /**
  * Register context menu, shortcut, and tab activation listeners.
  * Call once at service worker startup.
@@ -47,6 +53,13 @@ export function initContextMenus() {
 
       if (activeTab) {
         let targetColor = null;
+        if (NAVIGATION_COMMANDS[command]) {
+          await sendMessageToTab(activeTab.id, {
+            action: 'jumpToAdjacentHighlight',
+            direction: NAVIGATION_COMMANDS[command],
+          });
+          return;
+        }
         if (command.startsWith('command_slot_')) {
           const colorMap = getShortcutColorMap();
           const colorId = colorMap[command] ?? null;
