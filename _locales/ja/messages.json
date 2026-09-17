@@ -74,6 +74,12 @@
   "commandSlot5": {
     "message": "スロット 5"
   },
+  "commandNextHighlight": {
+    "message": "次のハイライトへ移動"
+  },
+  "commandPreviousHighlight": {
+    "message": "前のハイライトへ移動"
+  },
   "popupTitle": {
     "message": "Marks"
   },

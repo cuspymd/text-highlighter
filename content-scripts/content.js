@@ -29,6 +29,13 @@ let hasScheduledRestoreRetry = false;
 // The deadline it keeps only says when it is worth asking again.
 const PENDING_RESTORE_RECHECK_MS = 300;
 const restoreCore = window.TextHighlighterRestoreCore;
+const jumpCore = window.TextHighlighterJumpCore;
+
+// The group the last next/previous shortcut landed on. Pressing again moves on
+// from it while it is still in view - or while the smooth scroll towards it is
+// still running - and from the reader's scroll position once they have left it.
+const JUMP_SCROLL_SETTLE_MS = 1000;
+let lastJump = null;
 const restorePendingState = restoreCore.createRestorePendingState({
   recheckMs: PENDING_RESTORE_RECHECK_MS,
 });
@@ -238,6 +245,11 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true, restored: failed.length === 0 });
     return true;
   }
+  else if (message.action === 'jumpToAdjacentHighlight') {
+    const target = jumpToAdjacentHighlight(message.direction);
+    sendResponse(target ? { success: true, groupId: target } : { success: false, reason: 'no-highlights' });
+    return true;
+  }
   else if (message.action === 'scrollToHighlight') {
     const groupId = message.groupId != null ? String(message.groupId) : '';
     const target = groupId ? findHighlightElementsByGroupId(groupId)[0] : null;
@@ -253,6 +265,58 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+// Reading-order list of the highlight groups on the page, each placed at its
+// first visible span. Spans that render no box (hidden, collapsed) cannot be
+// scrolled to, so a group made only of those is left out.
+function collectJumpGroups() {
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  const groups = new Map();
+
+  document.querySelectorAll('.text-highlighter-extension').forEach((element) => {
+    const groupId = element.dataset.groupId;
+    if (!groupId || groups.has(groupId)) return;
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return;
+    groups.set(groupId, { id: groupId, top: rect.top + scrollTop, element });
+  });
+
+  return jumpCore.orderJumpGroups([...groups.values()]);
+}
+
+function isInViewport(element) {
+  const rect = element.getBoundingClientRect();
+  return rect.bottom > 0 && rect.top < window.innerHeight;
+}
+
+// Scroll to the highlight after or before the current one. Returns the group id
+// it landed on, or null when the page has nothing to jump to.
+function jumpToAdjacentHighlight(direction) {
+  const groups = collectJumpGroups();
+
+  let currentId = null;
+  if (lastJump) {
+    const current = groups.find(group => group.id === lastJump.groupId);
+    const stillScrolling = Date.now() - lastJump.at < JUMP_SCROLL_SETTLE_MS;
+    if (current && (stillScrolling || isInViewport(current.element))) {
+      currentId = current.id;
+    }
+  }
+
+  const target = jumpCore.pickJumpTarget(groups, direction, {
+    currentId,
+    viewportTop: window.scrollY || document.documentElement.scrollTop,
+  });
+  if (!target) {
+    lastJump = null;
+    return null;
+  }
+
+  scrollToHighlightElement(target.element);
+  flashHighlightGroup(target.element);
+  lastJump = { groupId: target.id, at: Date.now() };
+  return target.id;
+}
 
 // Function to asynchronously get color information from Background Service Worker
 // A background that is not listening rejects, which the caller already handles.

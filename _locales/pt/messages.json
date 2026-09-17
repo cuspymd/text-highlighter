@@ -74,6 +74,12 @@
   "commandSlot5": {
     "message": "Slot 5"
   },
+  "commandNextHighlight": {
+    "message": "Ir para o próximo destaque"
+  },
+  "commandPreviousHighlight": {
+    "message": "Ir para o destaque anterior"
+  },
   "popupTitle": {
     "message": "Marks"
   },

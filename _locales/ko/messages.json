@@ -74,6 +74,12 @@
   "commandSlot5": {
     "message": "슬롯 5"
   },
+  "commandNextHighlight": {
+    "message": "다음 하이라이트로 이동"
+  },
+  "commandPreviousHighlight": {
+    "message": "이전 하이라이트로 이동"
+  },
   "popupTitle": {
     "message": "Marks"
   },

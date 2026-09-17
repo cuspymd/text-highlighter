@@ -74,6 +74,12 @@
   "commandSlot5": {
     "message": "插槽 5"
   },
+  "commandNextHighlight": {
+    "message": "跳转到下一个高亮"
+  },
+  "commandPreviousHighlight": {
+    "message": "跳转到上一个高亮"
+  },
   "popupTitle": {
     "message": "Marks"
   },

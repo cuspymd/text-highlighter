@@ -416,10 +416,26 @@ describe('settings', () => {
   // ===================================================================
 
   describe('keyboard shortcuts', () => {
-    it('renders a row per shortcut slot', async () => {
+    it('renders a row per shortcut slot, then the two navigation shortcuts', async () => {
       await openSettings();
 
-      expect(shortcutRows()).toHaveLength(5);
+      expect(shortcutRows()).toHaveLength(7);
+      expect(shortcutRows().filter(row => row.querySelector('select'))).toHaveLength(5);
+    });
+
+    it('lists the navigation shortcuts with their keys and no color to choose', async () => {
+      chrome.commands.getAll.mockResolvedValue([
+        { name: 'navigate_next_highlight', shortcut: 'Ctrl+Shift+Down' },
+        { name: 'navigate_previous_highlight', shortcut: '' },
+      ]);
+      await openSettings();
+
+      const rows = [...document.querySelectorAll('#shortcuts-list .shortcut-row-navigation')];
+      expect(rows.map(row => row.querySelector('.shortcut-slot').textContent))
+        .toEqual(['commandNextHighlight', 'commandPreviousHighlight']);
+      expect(rows.map(row => row.querySelector('.key-badge').textContent))
+        .toEqual(['Ctrl+Shift+Down', 'notAssigned']);
+      expect(rows.some(row => row.querySelector('select'))).toBe(false);
     });
 
     it('shows the assigned key, and says so when there is none', async () => {

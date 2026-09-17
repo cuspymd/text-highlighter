@@ -106,6 +106,20 @@ describe('context-menu', () => {
       expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
     });
 
+    it.each([
+      ['navigate_next_highlight', 'next'],
+      ['navigate_previous_highlight', 'previous'],
+    ])('should ask the tab to jump for command "%s"', async (command, direction) => {
+      chrome.tabs.query.mockResolvedValueOnce([{ id: 42 }]);
+      await getCommandListener()(command);
+
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledTimes(1);
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+        action: 'jumpToAdjacentHighlight',
+        direction,
+      });
+    });
+
     it('should do nothing for an unknown command name', async () => {
       chrome.tabs.query.mockResolvedValueOnce([{ id: 1 }]);
       const commandListener = getCommandListener();

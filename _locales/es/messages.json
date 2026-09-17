@@ -74,6 +74,12 @@
   "commandSlot5": {
     "message": "Ranura 5"
   },
+  "commandNextHighlight": {
+    "message": "Ir al siguiente resaltado"
+  },
+  "commandPreviousHighlight": {
+    "message": "Ir al resaltado anterior"
+  },
   "popupTitle": {
     "message": "Marks"
   },
