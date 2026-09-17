@@ -97,6 +97,17 @@
                     <span class="note-title">注意</span>
                     在 macOS 上为 <kbd>Command</kbd> + <kbd>Shift</kbd> + 数字键。按键组合本身需在浏览器的快捷键设置中更改 (Chrome: <code>chrome://extensions/shortcuts</code>，Firefox: <code>about:addons</code>)。
                 </div>
+                <h4>在高亮之间跳转</h4>
+                <p>还提供在高亮之间跳转的快捷键，在长页面中可以像目录一样顺着高亮阅读。</p>
+                <ul>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>↓</kbd> : 跳转到下一个高亮</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>↑</kbd> : 跳转到上一个高亮</li>
+                </ul>
+                <p>以当前浏览的位置为基准查找下一个或上一个高亮并滚动过去，同时短暂强调该高亮。 在最后一个高亮处继续向后会回到第一个，在第一个高亮处向前会回到最后一个。</p>
+                <div class="note">
+                    <span class="note-title">提示</span>
+                    以上是 Firefox 的默认按键，macOS 上为 <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>↓</kbd> / <kbd>↑</kbd>。Chrome 只允许扩展为 4 个快捷键设置默认按键，因此这两个快捷键在 Chrome 中没有默认按键，请在 <code>chrome://extensions/shortcuts</code> 中自行设置。
+                </div>
                 <div class="warning">
                     <span class="warning-title">限制</span>
                     Firefox Android 版本不支持快捷键功能。
@@ -188,7 +199,7 @@
                 <p>用于生成同步代码、连接设备以及立即同步。详情请参阅<a href="#cloud-sync">云同步 (测试版)</a>。</p>
 
                 <h3 id="settings-shortcuts">快捷键</h3>
-                <p>可为5个快捷键槽位分别选择使用的颜色。槽位 1-5 的默认颜色依次为黄色、绿色、蓝色、粉色和橙色，也可以指定自定义颜色。按键组合本身需在浏览器的快捷键设置中更改。</p>
+                <p>可为5个快捷键槽位分别选择使用的颜色。槽位 1-5 的默认颜色依次为黄色、绿色、蓝色、粉色和橙色，也可以指定自定义颜色。按键组合本身需在浏览器的快捷键设置中更改。 插槽下方会列出两个高亮跳转快捷键及其当前按键。</p>
 
                 <h3>帮助</h3>
                 <p>通过<strong>“查看使用说明”</strong>按钮可打开扩展内置的入门指南。</p>
