@@ -409,7 +409,7 @@
     "message": "단축키"
   },
   "onboardingShortcutsBody": {
-    "message": "단축키 슬롯 5개로 선택한 텍스트를 즉시 칠할 수 있습니다. 슬롯 1~4에는 Ctrl+Shift+1~4(macOS는 Command+Shift)가 기본으로 지정돼 있고, 슬롯 5는 직접 지정해야 동작합니다. 슬롯마다 어떤 색을 쓸지는 설정에서 정합니다. 다음·이전 하이라이트로 이동하는 단축키도 있습니다. Firefox는 Ctrl+Shift+↓/↑가 기본이고, Chrome에서는 키를 직접 지정해야 합니다."
+    "message": "Ctrl+Shift+1~4(macOS는 Command+Shift)로 선택한 텍스트를 바로 칠하고, 다음·이전 하이라이트로 이동할 수도 있습니다. 키와 색상은 설정에서 확인하세요."
   },
   "onboardingMinimapTitle": {
     "message": "미니맵"

@@ -409,7 +409,7 @@
     "message": "ショートカットキー"
   },
   "onboardingShortcutsBody": {
-    "message": "5 つのショートカットスロットで、選択したテキストをすぐに塗れます。スロット 1〜4 には Ctrl+Shift+1〜4（macOS では Command+Shift）が既定で割り当てられており、スロット 5 は自分で割り当てるまで動きません。どのスロットがどの色かは設定で決めます。 次/前のハイライトへ移動するショートカットもあります。Firefox では Ctrl+Shift+↓/↑ が既定で、Chrome ではキーを自分で割り当てます。"
+    "message": "Ctrl+Shift+1〜4（macOS では Command+Shift）で選択したテキストをすぐに塗れ、次/前のハイライトへの移動もできます。キーと色は設定で確認できます。"
   },
   "onboardingMinimapTitle": {
     "message": "ミニマップ"
