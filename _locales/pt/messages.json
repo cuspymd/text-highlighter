@@ -409,7 +409,7 @@
     "message": "Atalhos de Teclado"
   },
   "onboardingShortcutsBody": {
-    "message": "Cinco espaços de atalho marcam o texto selecionado na hora. Os espaços de 1 a 4 vêm com Ctrl+Shift+1 a 4 (Command+Shift no macOS); o espaço 5 não tem tecla até você definir uma. A cor de cada espaço é definida nas Configurações."
+    "message": "Cinco espaços de atalho marcam o texto selecionado na hora. Os espaços de 1 a 4 vêm com Ctrl+Shift+1 a 4 (Command+Shift no macOS); o espaço 5 não tem tecla até você definir uma. A cor de cada espaço é definida nas Configurações. Outros dois atalhos vão para o destaque seguinte ou anterior da página: Ctrl+Shift+Baixo e Cima no Firefox; no Chrome você define as teclas."
   },
   "onboardingMinimapTitle": {
     "message": "Minimapa"

@@ -409,7 +409,7 @@
     "message": "Atajos de teclado"
   },
   "onboardingShortcutsBody": {
-    "message": "Cinco ranuras de atajo resaltan al instante el texto seleccionado. Las ranuras 1 a 4 vienen con Ctrl+Shift+1 a 4 (Command+Shift en macOS); la ranura 5 no tiene tecla hasta que le asignes una. El color de cada ranura se define en Configuración."
+    "message": "Cinco ranuras de atajo resaltan al instante el texto seleccionado. Las ranuras 1 a 4 vienen con Ctrl+Shift+1 a 4 (Command+Shift en macOS); la ranura 5 no tiene tecla hasta que le asignes una. El color de cada ranura se define en Configuración. Otros dos atajos saltan al resaltado siguiente o anterior de la página: Ctrl+Shift+Abajo y Arriba en Firefox; en Chrome asignas tú las teclas."
   },
   "onboardingMinimapTitle": {
     "message": "Minimapa"
