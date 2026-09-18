@@ -1,0 +1,459 @@
+{
+  "openHighlight": {
+    "message": "Открыть выделение на исходной странице"
+  },
+  "highlightSearchSummary": {
+    "message": "Страниц: $1 · Подходящих выделений: $2"
+  },
+  "highlightTitleMatch": {
+    "message": "Совпадение в заголовке"
+  },
+  "showOtherHighlights": {
+    "message": "Показать другие выделения ($1)"
+  },
+  "hideOtherHighlights": {
+    "message": "Скрыть другие выделения"
+  },
+  "highlightNavigationLoading": {
+    "message": "Открываем выделение…"
+  },
+  "highlightNavigationSuccess": {
+    "message": "Переход к выделению выполнен."
+  },
+  "highlightNavigationMissing": {
+    "message": "Это выделение не найдено на исходной странице."
+  },
+  "highlightNavigationCancelled": {
+    "message": "Переход прерван: вкладка закрыта или её адрес изменился."
+  },
+  "highlightNavigationUnavailable": {
+    "message": "Не удалось убедиться, что страница готова. Выберите выделение ещё раз."
+  },
+  "extensionName": {
+    "message": "Marks: Text Highlighter"
+  },
+  "extensionDescription": {
+    "message": "Расширение для выделения текста на веб-страницах цветом"
+  },
+  "highlightText": {
+    "message": "Выделить текст"
+  },
+  "removeHighlight": {
+    "message": "Убрать выделение"
+  },
+  "yellowColor": {
+    "message": "Жёлтый"
+  },
+  "greenColor": {
+    "message": "Зелёный"
+  },
+  "blueColor": {
+    "message": "Синий"
+  },
+  "pinkColor": {
+    "message": "Розовый"
+  },
+  "orangeColor": {
+    "message": "Оранжевый"
+  },
+  "deleteHighlight": {
+    "message": "Удалить выделение"
+  },
+  "commandSlot1": {
+    "message": "Слот 1"
+  },
+  "commandSlot2": {
+    "message": "Слот 2"
+  },
+  "commandSlot3": {
+    "message": "Слот 3"
+  },
+  "commandSlot4": {
+    "message": "Слот 4"
+  },
+  "commandSlot5": {
+    "message": "Слот 5"
+  },
+  "commandNextHighlight": {
+    "message": "Перейти к следующему выделению"
+  },
+  "commandPreviousHighlight": {
+    "message": "Перейти к предыдущему выделению"
+  },
+  "popupTitle": {
+    "message": "Marks"
+  },
+  "popupDescription": {
+    "message": "Выделяйте текст на веб-страницах с помощью панели управления."
+  },
+  "exportAll": {
+    "message": "Экспорт"
+  },
+  "importHighlights": {
+    "message": "Импорт"
+  },
+  "importHighlightsTooltip": {
+    "message": "Импортировать выделения из файла JSON"
+  },
+  "exportAllTooltip": {
+    "message": "Экспортировать все выделения в файл JSON"
+  },
+  "importOverwriteConfirm": {
+    "message": "На некоторых страницах уже есть выделения. Существующие выделения этих страниц будут удалены и заменены импортированными данными. Продолжить?"
+  },
+  "importInvalidFormat": {
+    "message": "Неверный формат файла импорта."
+  },
+  "importUnsafeUrlSkipped": {
+    "message": "Пропущено страниц с неверными или небезопасными URL: $1."
+  },
+  "importAllUnsafeUrl": {
+    "message": "Не удалось импортировать ни одной страницы: все URL неверные или небезопасные."
+  },
+  "importAllInvalidSchema": {
+    "message": "Не удалось импортировать ни одной страницы: все данные не прошли проверку схемы."
+  },
+  "importSchemaInvalidItemsSkipped": {
+    "message": "При импорте пропущено некорректных элементов: $1."
+  },
+  "importSuccess": {
+    "message": "Импорт завершён."
+  },
+  "currentPageHighlights": {
+    "message": "Выделения на текущей странице"
+  },
+  "noHighlights": {
+    "message": "На этой странице нет выделенного текста."
+  },
+  "deleteAllHighlights": {
+    "message": "Удалить все выделения на странице"
+  },
+  "viewAllPages": {
+    "message": "Список страниц с выделениями"
+  },
+  "showMinimap": {
+    "message": "Показывать мини-карту"
+  },
+  "showControlsOnSelection": {
+    "message": "Показывать панель при выделении текста"
+  },
+  "oneClickHighlight": {
+    "message": "Выделение в один клик"
+  },
+  "oneClickHighlightHelp": {
+    "message": "Нажатие на значок у выделенного текста сразу применяет последний использованный цвет, не открывая палитру. Чтобы выбрать другой цвет, щёлкните по выделению и откройте его палитру."
+  },
+  "confirmClearAll": {
+    "message": "Удалить все выделения на этой странице?"
+  },
+  "confirmDeleteHighlight": {
+    "message": "Удалить это выделение?"
+  },
+  "pagesListTitle": {
+    "message": "Список страниц с выделениями"
+  },
+  "noPagesFound": {
+    "message": "Страницы с выделениями не найдены."
+  },
+  "highlightCount": {
+    "message": "Выделения"
+  },
+  "lastUpdated": {
+    "message": "Последнее изменение"
+  },
+  "showDetails": {
+    "message": "Подробнее"
+  },
+  "hideDetails": {
+    "message": "Свернуть"
+  },
+  "openPage": {
+    "message": "Открыть страницу"
+  },
+  "deletePage": {
+    "message": "Удалить"
+  },
+  "confirmDeletePage": {
+    "message": "Удалить все выделения на этой странице?"
+  },
+  "noTitle": {
+    "message": "(Без заголовка)"
+  },
+  "unknown": {
+    "message": "Неизвестно"
+  },
+  "deleteAllPages": {
+    "message": "Удалить все страницы"
+  },
+  "confirmDeleteAllPages": {
+    "message": "Удалить ВСЕ страницы с выделениями?"
+  },
+  "deleteCustomColors": {
+    "message": "Удалить свои цвета"
+  },
+  "confirmDeleteCustomColors": {
+    "message": "Удалить ВСЕ свои цвета?"
+  },
+  "deletedCustomColors": {
+    "message": "Свои цвета удалены."
+  },
+  "addColor": {
+    "message": "Добавить цвет"
+  },
+  "moreOptions": {
+    "message": "Ещё"
+  },  "refresh": {
+    "message": "Обновить",
+    "description": "Button text for refreshing the highlighted pages list"
+  },
+  "customColor": {
+    "message": "Свой цвет"
+  },
+  "noCustomColorsToDelete": {
+    "message": "Своих цветов нет."
+  },
+  "selectColor": {
+    "message": "Выбор цвета"
+  },
+  "apply": {
+    "message": "Применить"
+  },
+  "cancel": {
+    "message": "Отмена"
+  },
+  "ok": {
+    "message": "ОК"
+  },
+  "searchTooltip": {
+    "message": "Поиск по выделениям"
+  },
+  "searchPlaceholder": {
+    "message": "Поиск..."
+  },
+  "sortNewestFirst": {
+    "message": "Сортировать по времени (сначала новые)"
+  },
+  "sortOldestFirst": {
+    "message": "Сортировать по времени (сначала старые)"
+  },
+  "expandAllHighlights": {
+    "message": "Развернуть все выделения"
+  },
+  "collapseAllHighlights": {
+    "message": "Свернуть все выделения"
+  },
+  "moreActions": {
+    "message": "Другие действия"
+  },
+  "settingsTitle": {
+    "message": "Настройки"
+  },
+  "settingsIconLabel": {
+    "message": "Открыть настройки"
+  },
+  "generalSection": {
+    "message": "Общие"
+  },
+  "customColorsSection": {
+    "message": "Свои цвета"
+  },
+  "shortcutsSection": {
+    "message": "Сочетания клавиш"
+  },
+  "addCustomColor": {
+    "message": "+ Добавить свой цвет"
+  },
+  "editColor": {
+    "message": "Изменить"
+  },
+  "removeColor": {
+    "message": "Удалить"
+  },
+  "removeAllColors": {
+    "message": "Удалить все"
+  },
+  "noCustomColors": {
+    "message": "Своих цветов пока нет."
+  },
+  "editNameTooltip": {
+    "message": "Нажмите, чтобы изменить название"
+  },
+  "nameAlreadyExists": {
+    "message": "Такое название уже есть."
+  },
+  "colorAlreadyExists": {
+    "message": "Такой цвет уже есть."
+  },
+  "shortcutSlot": {
+    "message": "Слот"
+  },
+  "notAssigned": {
+    "message": "(Не назначено)"
+  },
+  "shortcutHint": {
+    "message": "Сочетания клавиш можно изменить в настройках браузера (Chrome: chrome://extensions/shortcuts, Firefox: about:addons)."
+  },
+  "colorChangeWarning": {
+    "message": "Изменения не затрагивают существующие выделения."
+  },
+  "cloudSyncSection": {
+    "message": "Облачная синхронизация (бета)"
+  },
+  "cloudSyncIntro": {
+    "message": "Синхронизация выделений между устройствами через зашифрованную резервную копию в облаке — для платформ, где синхронизация браузера недоступна, например Firefox для Android. Данные шифруются на этом устройстве перед отправкой; расшифровать их можно только кодом синхронизации."
+  },
+  "cloudSyncGenerateCode": {
+    "message": "Создать новый код"
+  },
+  "cloudSyncPairCodePlaceholder": {
+    "message": "Введите код синхронизации с другого устройства"
+  },
+  "cloudSyncPairCodeButton": {
+    "message": "Подключить"
+  },
+  "cloudSyncInvalidCode": {
+    "message": "Похоже, код синхронизации неверный. Проверьте его и попробуйте снова."
+  },
+  "cloudSyncYourCode": {
+    "message": "Ваш код синхронизации"
+  },
+  "cloudSyncSaveCodeWarning": {
+    "message": "Сохраните этот код в надёжном месте. Если он потеряется, восстановить данные будет невозможно."
+  },
+  "cloudSyncCopyCode": {
+    "message": "Копировать"
+  },
+  "cloudSyncShowCode": {
+    "message": "Показать"
+  },
+  "cloudSyncHideCode": {
+    "message": "Скрыть"
+  },
+  "cloudSyncCodeCopied": {
+    "message": "Скопировано!"
+  },
+  "cloudSyncCopyFailed": {
+    "message": "Не удалось скопировать автоматически. Код показан выше — скопируйте его вручную."
+  },
+  "cloudSyncEnabledLabel": {
+    "message": "Облачная синхронизация"
+  },
+  "cloudSyncNowButton": {
+    "message": "Синхронизировать"
+  },
+  "cloudSyncSyncing": {
+    "message": "Синхронизация..."
+  },
+  "cloudSyncNeverSynced": {
+    "message": "Ещё не синхронизировано"
+  },
+  "cloudSyncLastSyncedPrefix": {
+    "message": "Последняя синхронизация: "
+  },
+  "cloudSyncErrorPrefix": {
+    "message": "Ошибка синхронизации: "
+  },
+  "cloudSyncResetButton": {
+    "message": "Забыть код"
+  },
+  "cloudSyncResetConfirm": {
+    "message": "Устройство будет отключено, а код синхронизации безвозвратно забыт. Продолжить?"
+  },
+  "cloudSyncPagesExcludedNotice": {
+    "message": "(старых страниц исключено из-за ограничения размера: $1)",
+    "description": "Appended to the last-synced status when the oldest pages were dropped from the cloud sync upload to fit the size limit. $1 is the number of excluded pages."
+  },
+  "jumpToHighlight": {
+    "message": "Перейти к этому выделению на странице"
+  },
+  "highlightNotFoundOnPage": {
+    "message": "Не удалось найти это выделение на странице."
+  },
+  "highlightMissingOnPage": {
+    "message": "Не найдено на этой странице",
+    "description": "Shown on a popup highlight entry whose text could not be located in the current page."
+  },
+  "retryFindHighlight": {
+    "message": "Искать снова",
+    "description": "Button on a popup highlight entry that asks the page to search for that highlight again."
+  },
+  "retryFindHighlightFailed": {
+    "message": "По-прежнему не найдено. Возможно, содержимое страницы изменилось.",
+    "description": "Shown when the retry search still could not locate the highlight."
+  },
+  "onboardingPageTitle": {
+    "message": "Начало работы с Marks"
+  },
+  "onboardingIntro": {
+    "message": "Marks помогает выделять текст на любой веб-странице и находит его снова при следующем визите. Вот всё, что умеет расширение."
+  },
+  "onboardingCreateTitle": {
+    "message": "Выделяйте текст"
+  },
+  "onboardingCreateBody": {
+    "message": "Выделите текст на странице — рядом появится значок маркера. Нажмите на него, чтобы открыть палитру, и выберите цвет."
+  },
+  "onboardingEditTitle": {
+    "message": "Меняйте цвет или убирайте выделение"
+  },
+  "onboardingEditBody": {
+    "message": "Щёлкните по существующему выделению, чтобы открыть его панель. Оттуда можно сменить цвет или удалить выделение."
+  },
+  "onboardingContextMenuTitle": {
+    "message": "Используйте контекстное меню"
+  },
+  "onboardingContextMenuBody": {
+    "message": "Выделите текст и щёлкните правой кнопкой мыши, чтобы выделить его прямо из контекстного меню, без значка."
+  },
+  "onboardingShortcutsTitle": {
+    "message": "Сочетания клавиш"
+  },
+  "onboardingShortcutsBody": {
+    "message": "Ctrl+Shift+1…4 (Command+Shift в macOS) сразу выделяют выбранный текст, а другие сочетания переходят к следующему или предыдущему выделению. Клавиши и цвета перечислены в настройках."
+  },
+  "onboardingMinimapTitle": {
+    "message": "Мини-карта"
+  },
+  "onboardingMinimapBody": {
+    "message": "Метки у правого края страницы показывают, где находятся ваши выделения. Нажмите на метку, чтобы перейти к ней. Мини-карту можно отключить в настройках."
+  },
+  "onboardingManageTitle": {
+    "message": "Снова находите свои выделения"
+  },
+  "onboardingManageBody": {
+    "message": "Значок на панели инструментов показывает выделения текущей страницы — нажмите на одно из них, чтобы прокрутить к нему. Список страниц с выделениями собирает все страницы, которые вы отмечали, и позволяет экспортировать или импортировать их как резервную копию."
+  },
+  "onboardingSettingsLink": {
+    "message": "Открыть настройки"
+  },
+  "onboardingGuideLink": {
+    "message": "Открыть онлайн-руководство"
+  },
+  "onboardingGuideUrl": {
+    "message": "https://cuspymd.github.io/text-highlighter/guide/index.en.html",
+    "description": "URL of the online user guide in this locale's language. Point at index.en.html if no page exists for this language yet."
+  },
+  "helpSection": {
+    "message": "Справка"
+  },
+  "openGuide": {
+    "message": "Открыть руководство"
+  },
+  "popupTipSelect": {
+    "message": "Выделите текст на странице — появится значок маркера."
+  },
+  "popupTipPick": {
+    "message": "Нажмите на значок и выберите цвет."
+  },
+  "popupTipManage": {
+    "message": "Щёлкните по выделению, чтобы сменить цвет или убрать его."
+  },
+  "popupGuideLink": {
+    "message": "Открыть полное руководство"
+  },
+  "copyPageHighlightsLabel": { "message": "Копировать все выделения этой страницы" },
+  "copyPageHighlightsSuccess": { "message": "Скопировано выделений с этой страницы: $1." },
+  "copySearchResultsLabel": { "message": "Копировать подходящие выделения из результатов поиска" },
+  "copySearchResultsSuccess": { "message": "Скопировано подходящих выделений: $1." },
+  "copyHighlightsFailed": { "message": "Не удалось скопировать выделения. Попробуйте ещё раз." }
+}
