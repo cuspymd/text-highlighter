@@ -957,6 +957,15 @@ function addHighlightEventListeners(highlightElement) {
       activeHighlightElement = highlightElement;
       showControlUi(highlightElement, e);
 
+      // A highlight inside a link would otherwise follow it on the same click
+      // that opens its controls, leaving no way to remove it. The first click
+      // opens the controls; a second one, with them up, follows the link. A
+      // modified click (new tab, new window) is let through as it was.
+      if (highlightElement.closest('a[href]') &&
+        !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+      }
+
       e.stopPropagation();
     }
   });
