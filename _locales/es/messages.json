@@ -84,7 +84,7 @@
     "message": "Marks"
   },
   "popupDescription": {
-    "message": "Selecciona texto en páginas web y usa la interfaz de control para resaltar."
+    "message": "Selecciona texto en una página web y elige un color en la paleta de colores para resaltarlo."
   },
   "exportAll": {
     "message": "Exportar"
@@ -135,7 +135,7 @@
     "message": "Mostrar Minimapa"
   },
   "showControlsOnSelection": {
-    "message": "Mostrar interfaz de control al seleccionar texto"
+    "message": "Mostrar icono de selección al seleccionar texto"
   },
   "oneClickHighlight": {
     "message": "Resaltado con Un Clic"
@@ -279,7 +279,7 @@
     "message": "Ocultar colores predeterminados"
   },
   "hideDefaultColorsHelp": {
-    "message": "La paleta de resaltado y el menú contextual muestran solo tus colores personalizados. Los atajos y los resaltados ya hechos con un color predeterminado siguen funcionando. Si no tienes colores personalizados, se muestran los predeterminados igualmente."
+    "message": "La paleta de colores y el menú contextual muestran solo tus colores personalizados. Los atajos y los resaltados ya hechos con un color predeterminado siguen funcionando. Si no tienes colores personalizados, se muestran los predeterminados igualmente."
   },
   "hideDefaultColorsFallback": {
     "message": "Aún no tienes colores personalizados, así que se siguen mostrando los predeterminados. Añade uno para ocultarlos."
@@ -400,19 +400,19 @@
     "message": "Crear un resaltado"
   },
   "onboardingCreateBody": {
-    "message": "Selecciona texto en una página y aparecerá un icono de resaltador junto a él. Haz clic en el icono para abrir la paleta de colores y elige un color."
+    "message": "Selecciona texto en una página y aparecerá el icono de selección junto a él. Haz clic en el icono para abrir la paleta de colores y elige un color."
   },
   "onboardingEditTitle": {
     "message": "Cambiar el color o eliminarlo"
   },
   "onboardingEditBody": {
-    "message": "Haz clic en un resaltado existente para mostrar sus controles. Desde ahí puedes cambiar su color o eliminarlo."
+    "message": "Haz clic en un resaltado existente para abrir su paleta de colores. Desde ahí puedes cambiar su color o eliminarlo."
   },
   "onboardingContextMenuTitle": {
     "message": "Usar el menú contextual"
   },
   "onboardingContextMenuBody": {
-    "message": "Selecciona texto y haz clic derecho para resaltar directamente desde el menú contextual, sin usar el icono."
+    "message": "Selecciona texto y haz clic derecho para resaltar directamente desde el menú contextual, sin usar el icono de selección."
   },
   "onboardingShortcutsTitle": {
     "message": "Atajos de teclado"
@@ -449,10 +449,10 @@
     "message": "Ver la guía de uso"
   },
   "popupTipSelect": {
-    "message": "Selecciona texto en la página y aparecerá un icono de resaltador."
+    "message": "Selecciona texto en la página y aparecerá el icono de selección."
   },
   "popupTipPick": {
-    "message": "Haz clic en el icono y elige un color."
+    "message": "Haz clic en el icono y elige un color de la paleta."
   },
   "popupTipManage": {
     "message": "Haz clic en un resaltado para cambiar su color o eliminarlo."

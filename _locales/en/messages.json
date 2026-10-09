@@ -84,7 +84,7 @@
     "message": "Marks"
   },
   "popupDescription": {
-    "message": "Select text on web pages and use the control UI to highlight."
+    "message": "Select text on a web page and pick a color from the color palette to highlight it."
   },
   "exportAll": {
     "message": "Export"
@@ -135,7 +135,7 @@
     "message": "Show Minimap"
   },
   "showControlsOnSelection": {
-    "message": "Show Control UI on Text Selection"
+    "message": "Show Selection Icon on Text Selection"
   },
   "oneClickHighlight": {
     "message": "One-Click Highlight"
@@ -279,7 +279,7 @@
     "message": "Hide Default Colors"
   },
   "hideDefaultColorsHelp": {
-    "message": "The highlight palette and the right-click menu show only your custom colors. Shortcuts and highlights already made in a default color keep working. If you have no custom colors, the default colors are shown anyway."
+    "message": "The color palette and the right-click menu show only your custom colors. Shortcuts and highlights already made in a default color keep working. If you have no custom colors, the default colors are shown anyway."
   },
   "hideDefaultColorsFallback": {
     "message": "You have no custom colors yet, so the default colors are still shown. Add one to hide them."
@@ -400,19 +400,19 @@
     "message": "Highlight text"
   },
   "onboardingCreateBody": {
-    "message": "Select text on a page and a highlighter icon appears next to it. Click the icon to open the color palette, then pick a color."
+    "message": "Select text on a page and the selection icon appears next to it. Click the icon to open the color palette, then pick a color."
   },
   "onboardingEditTitle": {
     "message": "Change the color or remove it"
   },
   "onboardingEditBody": {
-    "message": "Click an existing highlight to bring up its controls. From there you can switch its color or delete it."
+    "message": "Click an existing highlight to open its color palette. From there you can switch its color or delete it."
   },
   "onboardingContextMenuTitle": {
     "message": "Use the right-click menu"
   },
   "onboardingContextMenuBody": {
-    "message": "Select text and right-click to highlight straight from the context menu, without using the icon."
+    "message": "Select text and right-click to highlight straight from the right-click menu, without using the selection icon."
   },
   "onboardingShortcutsTitle": {
     "message": "Keyboard shortcuts"
@@ -449,10 +449,10 @@
     "message": "View Usage Guide"
   },
   "popupTipSelect": {
-    "message": "Select text on the page - a highlighter icon appears."
+    "message": "Select text on the page - the selection icon appears."
   },
   "popupTipPick": {
-    "message": "Click the icon and choose a color."
+    "message": "Click the icon and pick a color from the palette."
   },
   "popupTipManage": {
     "message": "Click a highlight to change its color or remove it."

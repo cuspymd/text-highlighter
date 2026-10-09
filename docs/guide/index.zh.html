@@ -31,7 +31,7 @@
                 <li><a href="#intro">简介</a></li>
                 <li><a href="#add-highlights">添加高亮</a>
                     <ul class="toc-sublist">
-                        <li><a href="#add-control-ui">1. 使用控制界面</a></li>
+                        <li><a href="#add-control-ui">1. 使用选择图标</a></li>
                         <li><a href="#add-context-menu">2. 使用右键菜单</a></li>
                         <li><a href="#add-shortcuts">3. 使用快捷键</a></li>
                     </ul>
@@ -74,15 +74,15 @@
                 <h2>添加高亮</h2>
                 <p>您可以通过三种方式为网页上的文本添加高亮。</p>
 
-                <h3 id="add-control-ui">1. 使用控制界面</h3>
-                <p>当您选中文本时，选择区域附近会出现一个高亮图标（笔形）。点击此图标即可显示包含调色板的<strong>控制界面 (Control UI)</strong>。点击您想要的颜色即可应用高亮。</p>
+                <h3 id="add-control-ui">1. 使用选择图标</h3>
+                <p>当您选中文本时，选择区域附近会出现笔形的<strong>选择图标</strong>。点击此图标即可打开<strong>调色板</strong>，点击您想要的颜色即可应用高亮。</p>
                 <div class="note">
                     <span class="note-title">注意</span>
-                    此功能在移动设备上或在设置中开启“选择文本时显示控制UI”时有效。在移动设备上，点击调色板末尾的<strong>⋮（更多）</strong>按钮会打开包含<strong>添加颜色</strong>、<strong>已高亮页面列表</strong>和<strong>设置</strong>的菜单。
+                    在桌面端，需在设置中开启“选择文本时显示选择图标”才会出现选择图标；在移动设备上它始终会出现。在移动设备上，点击调色板末尾的<strong>⋮（更多）</strong>按钮会打开包含<strong>添加颜色</strong>、<strong>已高亮页面列表</strong>和<strong>设置</strong>的菜单。
                 </div>
 
                 <h3 id="add-context-menu">2. 使用右键菜单</h3>
-                <p>选中文本后点击鼠标右键打开上下文菜单。在<strong>“Marks: Text Highlighter”</strong>菜单下选择颜色进行高亮。</p>
+                <p>选中文本后点击鼠标右键打开右键菜单。在<strong>“Marks: Text Highlighter”</strong>菜单下选择颜色进行高亮。</p>
                 <div class="warning">
                     <span class="warning-title">限制</span>
                     Firefox Android 版本不支持通过右键菜单添加高亮。
@@ -122,7 +122,7 @@
                 <h2>删除高亮</h2>
                 <p>您可以通过以下方式删除不需要的高亮。</p>
                 <ul>
-                    <li><strong>单个删除 (控制界面):</strong> 点击已高亮的文本，会出现控制界面。点击其中的<strong>垃圾桶图标</strong>进行删除。</li>
+                    <li><strong>单个删除 (调色板):</strong> 点击已高亮的文本，会打开调色板。点击调色板开头的<strong>垃圾桶图标</strong>进行删除。</li>
                     <li><strong>单个删除 (Popup):</strong> 点击浏览器工具栏的扩展图标打开弹出菜单。在“当前页面高亮”列表中，点击要删除项目旁边的<strong>X按钮</strong>。</li>
                     <li><strong>清空页面 (Popup):</strong> 点击弹出菜单底部的<strong>“删除此页面上的所有高亮”</strong>按钮，即可删除当前页面上的所有高亮。</li>
                     <li><strong>删除页面 (Pages List):</strong> 在高亮列表页面中，点击特定页面卡片的<strong>“删除”</strong>按钮，即可删除该页面的所有数据。</li>
@@ -136,13 +136,13 @@
                 <h3>添加和更改颜色</h3>
                 <p>除了5种默认颜色（黄色、绿色、蓝色、粉色、橙色）外，您还可以添加自己的颜色。既可以在页面上直接添加，也可以在设置界面中管理。</p>
                 <ol>
-                    <li>选中文本后打开控制界面，或点击已高亮的文本。</li>
-                    <li>点击颜色列表末尾的<strong>+按钮</strong>。（在移动设备上，请从<strong>⋮</strong>菜单中选择<strong>添加颜色</strong>。）</li>
+                    <li>选中文本后按下选择图标打开调色板，或点击已高亮的文本打开调色板。</li>
+                    <li>点击调色板末尾的<strong>+按钮</strong>。（在移动设备上，请从<strong>⋮</strong>菜单中选择<strong>添加颜色</strong>。）</li>
                     <li>从颜色选择器中选择您喜欢的颜色，然后点击“应用”。</li>
                 </ol>
                 <div class="note">
                     <span class="note-title">注意</span>
-                    如果在选中文本时打开的控制界面中添加颜色，所选文本会立即以新颜色高亮。
+                    如果在选中文本时打开的调色板中添加颜色，所选文本会立即以新颜色高亮。
                 </div>
 
                 <h3>在设置界面中管理</h3>
@@ -156,9 +156,9 @@
                 </ul>
                 <h3 id="hide-default-colors">隐藏默认颜色</h3>
                 <p>如果只想使用自己添加的颜色，请打开设置界面“自定义颜色”部分中的<strong>“隐藏默认颜色”</strong>开关。默认为关闭。</p>
-                <p>该开关<strong>只在选择颜色的列表中</strong>隐藏默认颜色，默认颜色本身不会被删除，也不会失效。</p>
+                <p>该开关<strong>只在调色板和右键菜单中</strong>隐藏默认颜色，默认颜色本身不会被删除，也不会失效。</p>
                 <ul>
-                    <li><strong>隐藏位置:</strong> 选中文本时出现的控制 UI、点击高亮时出现的颜色列表，以及右键菜单。</li>
+                    <li><strong>隐藏位置:</strong> 通过选择图标打开的调色板、点击高亮打开的调色板，以及右键菜单。</li>
                     <li><strong>保持不变:</strong> 已用默认颜色创建的高亮，颜色和列表中的显示都保持不变。快捷键槽位中指定的默认颜色也照常可用。</li>
                     <li><strong>一键高亮:</strong> 如果上次使用的颜色是被隐藏的默认颜色，则改用列表中的第一个自定义颜色。</li>
                     <li><strong>想再改回默认颜色时:</strong> 列表中不再显示默认颜色，请暂时关闭该开关，或使用指定了该颜色的快捷键。</li>
@@ -183,7 +183,7 @@
                 <h2>弹出菜单说明</h2>
                 <p>点击浏览器工具栏中的 Marks 图标时出现的菜单。</p>
                 <ul>
-                    <li><strong>设置 (⚙) 图标:</strong> 点击右上角的齿轮可打开<a href="#settings">设置界面</a>。小地图、控制界面、一键高亮等选项均在其中。</li>
+                    <li><strong>设置 (⚙) 图标:</strong> 点击右上角的齿轮可打开<a href="#settings">设置界面</a>。小地图、选择图标、一键高亮等选项均在其中。</li>
                     <li><strong>当前页面高亮:</strong> 当前页面已保存的高亮列表。点击条目可跳转到相应位置，点击右上角的<strong>X按钮</strong>可单个删除。</li>
                     <li><strong>已高亮页面列表:</strong> 打开管理所有已保存页面的仪表板屏幕。</li>
                     <li><strong>删除此页面上的所有高亮:</strong> 清除当前页面的所有高亮。没有可删除的高亮时该按钮为禁用状态。</li>
@@ -201,16 +201,16 @@
                 <h3 id="settings-general">常规</h3>
                 <ul>
                     <li><strong>显示小地图:</strong> 设置是否在页面右侧显示小地图。</li>
-                    <li><strong>选择文本时显示控制UI:</strong> 开启或关闭拖动文本时自动显示高亮图标的功能。</li>
+                    <li><strong>选择文本时显示选择图标:</strong> 开启或关闭拖动文本时自动显示选择图标的功能。关闭后，点击高亮仍会打开调色板。移动设备上没有此选项，选择图标始终显示。</li>
                     <li><strong>一键高亮:</strong> 开启后，按下选择图标即会不打开调色板、直接以<strong>上次使用的颜色</strong>高亮。默认关闭；如需其他颜色，点击生成的高亮并从调色板中选择。</li>
                 </ul>
                 <div class="note">
                     <span class="note-title">注意</span>
-                    一键高亮需要选择图标才能生效，因此当“选择文本时显示控制UI”关闭时，该项会变灰且无法使用。
+                    一键高亮需要选择图标才能生效，因此当“选择文本时显示选择图标”关闭时，该项会变灰且无法使用。
                 </div>
 
                 <h3>自定义颜色</h3>
-                <p>可对添加的颜色进行重命名、更改颜色、单个删除和全部删除。详情请参阅<a href="#custom-colors">自定义颜色</a>。打开同一部分中的<strong>“隐藏默认颜色”</strong>开关后，颜色列表中只显示自定义颜色，具体行为请参阅<a href="#hide-default-colors">隐藏默认颜色</a>。</p>
+                <p>可对添加的颜色进行重命名、更改颜色、单个删除和全部删除。详情请参阅<a href="#custom-colors">自定义颜色</a>。打开同一部分中的<strong>“隐藏默认颜色”</strong>开关后，调色板和右键菜单中只显示自定义颜色，具体行为请参阅<a href="#hide-default-colors">隐藏默认颜色</a>。</p>
 
                 <h3>云同步 (测试版)</h3>
                 <p>用于生成同步代码、连接设备以及立即同步。详情请参阅<a href="#cloud-sync">云同步 (测试版)</a>。</p>

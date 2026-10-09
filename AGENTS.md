@@ -165,6 +165,14 @@ Highlights and metadata live in extension local storage, keyed per page.
 `constants/storage-keys.js` is the authority on key shapes - read it rather than
 composing keys by hand. Translations live in `_locales/`.
 
+## User-facing wording
+
+The selection icon, the color palette and the right-click menu each have one
+name per locale, listed in `arch-docs/ui-terminology.md`. Follow it in
+`_locales/`, the extension pages and `docs/guide/`. Code identifiers keep their
+old names (`selectionControlsVisible`, "controls" in `controls.js`), so they are
+not a guide to wording.
+
 ## Skills
 
 Repository skills live in `.agents/skills/`, which is tracked in git. Claude Code

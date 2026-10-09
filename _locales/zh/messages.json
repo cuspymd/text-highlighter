@@ -84,7 +84,7 @@
     "message": "Marks"
   },
   "popupDescription": {
-    "message": "在网页上选择文本后，可使用控制UI进行高亮。"
+    "message": "在网页上选择文本后，可从调色板中选择颜色进行高亮。"
   },
   "exportAll": {
     "message": "导出"
@@ -135,7 +135,7 @@
     "message": "显示小地图"
   },
   "showControlsOnSelection": {
-    "message": "选择文本时显示控制UI"
+    "message": "选择文本时显示选择图标"
   },
   "oneClickHighlight": {
     "message": "一键高亮"
@@ -279,7 +279,7 @@
     "message": "隐藏默认颜色"
   },
   "hideDefaultColorsHelp": {
-    "message": "高亮调色板和右键菜单只显示自定义颜色。快捷键以及已用默认颜色创建的高亮不受影响。如果没有任何自定义颜色，仍会显示默认颜色。"
+    "message": "调色板和右键菜单只显示自定义颜色。快捷键以及已用默认颜色创建的高亮不受影响。如果没有任何自定义颜色，仍会显示默认颜色。"
   },
   "hideDefaultColorsFallback": {
     "message": "尚无自定义颜色，因此仍显示默认颜色。添加一个自定义颜色后即可隐藏默认颜色。"
@@ -400,19 +400,19 @@
     "message": "创建高亮"
   },
   "onboardingCreateBody": {
-    "message": "在页面上选择文本，旁边会出现高亮图标。点击图标打开调色板，选择颜色即可高亮。"
+    "message": "在页面上选择文本，旁边会出现选择图标。点击图标打开调色板，选择颜色即可高亮。"
   },
   "onboardingEditTitle": {
     "message": "更改颜色或删除"
   },
   "onboardingEditBody": {
-    "message": "点击已有的高亮会弹出控制按钮，可以更换颜色或将其删除。"
+    "message": "点击已有的高亮会打开调色板，可以更换颜色或将其删除。"
   },
   "onboardingContextMenuTitle": {
     "message": "使用右键菜单"
   },
   "onboardingContextMenuBody": {
-    "message": "选择文本后点击右键，无需使用图标，可直接从上下文菜单高亮。"
+    "message": "选择文本后点击右键，无需使用选择图标，可直接从右键菜单高亮。"
   },
   "onboardingShortcutsTitle": {
     "message": "快捷键"
@@ -449,10 +449,10 @@
     "message": "查看使用说明"
   },
   "popupTipSelect": {
-    "message": "在页面上选择文本，高亮图标就会出现。"
+    "message": "在页面上选择文本，选择图标就会出现。"
   },
   "popupTipPick": {
-    "message": "点击图标并选择颜色。"
+    "message": "点击图标并从调色板中选择颜色。"
   },
   "popupTipManage": {
     "message": "点击高亮可更改颜色或删除。"

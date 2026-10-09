@@ -11,7 +11,7 @@ A cross-browser extension that allows you to highlight and manage text on web pa
 - Multilingual Support: Available in English, Korean, Japanese, and Chinese
 - Cross-Browser Support: Works on Chrome, Firefox, and Firefox for Android
 - Keyboard Shortcuts: Quick highlighting with customizable keyboard shortcuts (desktop only)
-- Selection Controls: Floating highlight UI on text selection, ideal for mobile devices
+- Selection Icon & Color Palette: Select text, press the selection icon and pick a color - ideal for mobile devices
 
 ## Getting Started
 
@@ -41,8 +41,8 @@ This extension supports:
 #### Firefox Android Notes
 
 On Firefox for Android, the following desktop-only APIs are unavailable and handled gracefully:
-- **Context Menus** (`contextMenus`): Not supported. Use the Selection Controls UI instead (enabled by default on mobile).
-- **Keyboard Shortcuts** (`commands`): Not supported. Use the Selection Controls UI instead.
+- **Context Menus** (`contextMenus`): Not supported. Use the selection icon and color palette instead (always shown on mobile).
+- **Keyboard Shortcuts** (`commands`): Not supported. Use the selection icon and color palette instead.
 - **Windows API** (`windows`): Not supported. The extension uses the Tabs API as a fallback.
 - **Sync Storage** (`storage.sync`): Sync currently works between Firefox desktop devices, but Firefox for Android does not sync highlight data.
 
