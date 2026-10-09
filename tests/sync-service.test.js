@@ -405,6 +405,50 @@ describe('sync-service', () => {
       const [[written]] = chrome.storage.sync.set.mock.calls;
       expect(written.settings).not.toHaveProperty('oneClickHighlightEnabled');
     });
+
+    // The settings service loaded its in-memory copy and built the context menu
+    // before the migration ran, and writing back what sync already holds raises
+    // no change event. Startup applies what this returns; without it the menu
+    // keeps the defaults another device hid.
+    it('returns the settings it adopted from sync so startup can apply them', async () => {
+      const local = {};
+      chrome.storage.local.get.mockImplementation(async (keys) => {
+        if (keys === null) return { ...local };
+        const wanted = Array.isArray(keys) ? keys : [keys];
+        return Object.fromEntries(
+          wanted.filter(key => key in local).map(key => [key, local[key]])
+        );
+      });
+      chrome.storage.local.set.mockImplementation(async (items) => {
+        Object.assign(local, items);
+      });
+      chrome.storage.sync.get.mockImplementation(async (key) => (
+        key === 'settings'
+          ? {
+            settings: {
+              customColors: [{ id: 'custom_1', colorNumber: 1, color: '#123456' }],
+              minimapVisible: true,
+              selectionControlsVisible: true,
+              hideDefaultColors: true,
+            },
+          }
+          : {}
+      ));
+
+      const adopted = await migrateLocalToSync();
+
+      expect(local.hideDefaultColors).toBe(true);
+      expect(adopted).toEqual(expect.objectContaining({
+        hideDefaultColors: true,
+        customColors: [expect.objectContaining({ id: 'custom_1' })],
+      }));
+    });
+
+    it('returns nothing to apply once the migration has run', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ syncMigrationDone: true });
+
+      expect(await migrateLocalToSync()).toBeNull();
+    });
   });
 
   describe('cleanupEmptyHighlightData', () => {

@@ -413,11 +413,18 @@ export async function clearAllSyncedHighlights(localUrls = []) {
 /**
  * Initial synchronization on first run or fresh install.
  * Satisfies Rule S-9 and M-1.
+ *
+ * Returns the settings it merged in from sync, or null when there were none.
+ * They are written to local storage only: the settings service has already
+ * loaded its in-memory copy and built the context menu by now, and no sync
+ * change event follows when the value written back equals what sync held. The
+ * caller applies them, which is what puts them in front of the menu.
  */
 export async function migrateLocalToSync() {
   const flagResult = await browserAPI.storage.local.get(STORAGE_KEYS.SYNC_MIGRATION_DONE);
-  if (flagResult.syncMigrationDone) return;
+  if (flagResult.syncMigrationDone) return null;
 
+  let adoptedSettings = null;
   debugLog('Starting initial sync migration and pull...');
   try {
     const syncSettingsResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
@@ -480,6 +487,7 @@ export async function migrateLocalToSync() {
       }
 
       await browserAPI.storage.local.set(mergedSettings);
+      adoptedSettings = mergedSettings;
       await saveSettingsToSync();
     } else {
       await saveSettingsToSync();
@@ -546,6 +554,8 @@ export async function migrateLocalToSync() {
   } catch (e) {
     debugLog('Sync migration error:', e.message);
   }
+
+  return adoptedSettings;
 }
 
 /**

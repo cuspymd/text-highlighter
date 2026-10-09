@@ -130,6 +130,21 @@ describe('hiding the default colours in the page', () => {
     expect(lastSavedGroup().color).toBe('#654321');
   });
 
+  // Nothing redraws an open selection palette, so a palette change while one is
+  // up leaves its buttons as they were drawn. Each must still paint with the
+  // colour it shows, not with whatever now sits at its position.
+  it('paints with the colour shown when the palette changes while it is open', async () => {
+    const bar = await openSelectionBar('changed while open paragraph');
+    expect(stripColors(bar)).toEqual(['rgb(18, 52, 86)', 'rgb(101, 67, 33)']);
+
+    // The defaults come back while the bar is up; position 0 is now yellow.
+    await page.sendToContentScript({ action: 'setHideDefaultColors', hidden: false });
+    bar.querySelectorAll('.color-button')[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(lastSavedGroup().color).toBe('#123456');
+    await page.sendToContentScript({ action: 'setHideDefaultColors', hidden: true });
+  });
+
   it('keeps showing the defaults while there is no custom colour', () => {
     receivePalette(defaults.slice());
 

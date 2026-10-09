@@ -342,6 +342,9 @@ function createColorButton(colorInfo) {
   const colorButton = document.createElement('div');
   colorButton.className = 'text-highlighter-control-button color-button';
   colorButton.style.backgroundColor = colorInfo.color;
+  // The selection palette is a clone, and its buttons lose this closure; they
+  // read the colour back from here.
+  colorButton.dataset.color = colorInfo.color;
   colorButton.title = colorDisplayName(colorInfo);
   colorButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
@@ -1693,8 +1696,12 @@ function showSelectionControls(mouseX, mouseY) {
   }, 300);
 
   // Update event listeners for color buttons to create highlights instead of changing existing ones
+  // Each button paints with the colour it shows. Looking it up by position in the
+  // palette would go wrong once the palette changes while this one is open - a
+  // colour added or removed, the defaults hidden or shown - since nothing
+  // redraws an open selection palette.
   const colorButtons = selectionControlsContainer.querySelectorAll('.color-button');
-  colorButtons.forEach((colorButton, idx) => {
+  colorButtons.forEach((colorButton) => {
     // Remove existing event listeners by cloning the node
     const newColorButton = colorButton.cloneNode(true);
     colorButton.parentNode.replaceChild(newColorButton, colorButton);
@@ -1705,9 +1712,9 @@ function showSelectionControls(mouseX, mouseY) {
       if (thisContainer.dataset.justShown) {
         return;
       }
-      const colorInfo = getVisibleColors()[idx];
-      if (colorInfo) {
-        createHighlightWithColor(colorInfo.color);
+      const color = newColorButton.dataset.color;
+      if (color) {
+        createHighlightWithColor(color);
       }
     });
   });
