@@ -70,6 +70,7 @@ const NEIGHBOUR_GLOBALS = {
     'refreshHighlightControlsColors',
     'setSelectionControlsVisibility',
     'setOneClickHighlightEnabled',
+    'setHideDefaultColors',
     'initializeSelectionControls',
   ],
   minimap: [

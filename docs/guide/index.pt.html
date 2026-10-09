@@ -37,7 +37,11 @@
                     </ul>
                 </li>
                 <li><a href="#delete-highlights">Como excluir destaques</a></li>
-                <li><a href="#custom-colors">Cores personalizadas</a></li>
+                <li><a href="#custom-colors">Cores personalizadas</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#hide-default-colors">Ocultar as cores padrão</a></li>
+                    </ul>
+                </li>
                 <li><a href="#minimap">Minimapa</a></li>
                 <li><a href="#popup-menu">Menu pop-up</a></li>
                 <li><a href="#settings">Tela de configurações</a>
@@ -150,6 +154,19 @@
                     <li><strong>Excluir uma:</strong> cada cor tem o seu próprio botão <strong>"Remover"</strong>.</li>
                     <li><strong>Excluir todas:</strong> o botão <strong>"Remover tudo"</strong>, no canto superior direito da seção, apaga todas as cores adicionadas e mantém apenas as 5 padrão.</li>
                 </ul>
+                <h3 id="hide-default-colors">Ocultar as cores padrão</h3>
+                <p>Se você quiser usar apenas as cores que adicionou, ative o interruptor <strong>"Ocultar cores padrão"</strong> na seção "Cores Personalizadas" das configurações. Ele vem desativado.</p>
+                <p>O interruptor oculta as cores padrão <strong>apenas nas listas em que você escolhe uma cor</strong>. As cores padrão não são excluídas nem deixam de funcionar.</p>
+                <ul>
+                    <li><strong>Ficam ocultas em:</strong> a interface de controle que aparece ao selecionar texto, a lista de cores que aparece ao clicar em um destaque e o menu de clique direito.</li>
+                    <li><strong>Não muda:</strong> os destaques já feitos com uma cor padrão mantêm a cor e continuam aparecendo nas suas listas. As cores padrão atribuídas a espaços de atalho continuam funcionando.</li>
+                    <li><strong>Destaque com um clique:</strong> se a última cor usada for uma cor padrão oculta, é usada a primeira cor personalizada da lista.</li>
+                    <li><strong>Para voltar a pintar com uma cor padrão:</strong> ela não está na lista, então desative o interruptor por um momento ou use um atalho atribuído a essa cor.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Quando não há cores personalizadas</span>
+                    Mesmo com o interruptor ativado, as cores padrão continuam aparecendo enquanto você não tiver cores personalizadas, porque não sobraria nenhuma para escolher. Uma nota abaixo do interruptor nas configurações avisa sobre isso. As cores padrão ficam ocultas assim que você adiciona uma cor e voltam a aparecer se você excluir todas as suas cores personalizadas.
+                </div>
             </section>
 
             <section id="minimap">
@@ -193,13 +210,13 @@
                 </div>
 
                 <h3>Cores personalizadas</h3>
-                <p>Permite renomear uma cor, alterar o tom dela e excluir cores uma a uma ou todas de uma vez. Veja <a href="#custom-colors">Cores personalizadas</a> para mais detalhes.</p>
+                <p>Permite renomear uma cor, alterar o tom dela e excluir cores uma a uma ou todas de uma vez. Veja <a href="#custom-colors">Cores personalizadas</a> para mais detalhes. O interruptor <strong>"Ocultar cores padrão"</strong> da mesma seção limita as listas de cores às suas cores personalizadas; veja <a href="#hide-default-colors">Ocultar as cores padrão</a> para saber como funciona.</p>
 
                 <h3>Sincronização na nuvem (Beta)</h3>
                 <p>Aqui você gera o código de sincronização, vincula dispositivos e sincroniza na hora. Veja <a href="#cloud-sync">Sincronização na nuvem (Beta)</a> para mais detalhes.</p>
 
                 <h3 id="settings-shortcuts">Atalhos de Teclado</h3>
-                <p>Escolha qual cor cada um dos 5 espaços de atalho aplica. Os padrões dos espaços 1 a 5 são amarelo, verde, azul, rosa e laranja, e cores personalizadas também podem ser atribuídas. As combinações de teclas em si são alteradas nas configurações de atalhos do navegador. Abaixo dos espaços são listados os dois atalhos de navegação entre destaques, com as teclas atribuídas.</p>
+                <p>Escolha qual cor cada um dos 5 espaços de atalho aplica. Os padrões dos espaços 1 a 5 são amarelo, verde, azul, rosa e laranja, e cores personalizadas também podem ser atribuídas. As combinações de teclas em si são alteradas nas configurações de atalhos do navegador. Abaixo dos espaços são listados os dois atalhos de navegação entre destaques, com as teclas atribuídas. As cores padrão atribuídas aos espaços continuam funcionando mesmo com <a href="#hide-default-colors">Ocultar cores padrão</a> ativado.</p>
 
                 <h3>Ajuda</h3>
                 <p>O botão <strong>"Ver o guia de uso"</strong> abre o guia de primeiros passos incluído na extensão.</p>

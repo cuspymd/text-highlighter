@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "Aún no hay colores personalizados."
   },
+  "hideDefaultColors": {
+    "message": "Ocultar colores predeterminados"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "La paleta de resaltado y el menú contextual muestran solo tus colores personalizados. Los atajos y los resaltados ya hechos con un color predeterminado siguen funcionando. Si no tienes colores personalizados, se muestran los predeterminados igualmente."
+  },
+  "hideDefaultColorsFallback": {
+    "message": "Aún no tienes colores personalizados, así que se siguen mostrando los predeterminados. Añade uno para ocultarlos."
+  },
   "editNameTooltip": {
     "message": "Haz clic para editar el nombre"
   },

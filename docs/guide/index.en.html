@@ -37,7 +37,11 @@
                     </ul>
                 </li>
                 <li><a href="#delete-highlights">How to Delete Highlights</a></li>
-                <li><a href="#custom-colors">Custom Colors</a></li>
+                <li><a href="#custom-colors">Custom Colors</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#hide-default-colors">Hiding the Default Colors</a></li>
+                    </ul>
+                </li>
                 <li><a href="#minimap">Minimap</a></li>
                 <li><a href="#popup-menu">Popup Menu</a></li>
                 <li><a href="#settings">Settings Screen</a>
@@ -150,6 +154,19 @@
                     <li><strong>Delete one:</strong> Each color has its own <strong>"Remove"</strong> button.</li>
                     <li><strong>Delete all:</strong> The <strong>"Remove All"</strong> button at the top right of the section deletes every added color, leaving the 5 defaults.</li>
                 </ul>
+                <h3 id="hide-default-colors">Hiding the Default Colors</h3>
+                <p>If you only want to use the colors you added, turn on the <strong>"Hide Default Colors"</strong> switch in the "Custom Colors" section of the Settings page. It is off by default.</p>
+                <p>The switch hides the defaults <strong>only from the lists you pick a color from</strong>. The default colors are not deleted and do not stop working.</p>
+                <ul>
+                    <li><strong>Hidden from:</strong> the control UI that appears when you select text, the color list that appears when you click a highlight, and the right-click context menu.</li>
+                    <li><strong>Unchanged:</strong> highlights already made in a default color keep their color and stay in your lists. Default colors assigned to shortcut slots keep working.</li>
+                    <li><strong>One-click highlight:</strong> if the color you used last is a hidden default, the first custom color in the list is used instead.</li>
+                    <li><strong>To paint with a default color again:</strong> it is not in the list, so turn the switch off for a moment or use a shortcut assigned to that color.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">When you have no custom colors</span>
+                    Even with the switch on, the default colors stay visible while you have no custom colors, because there would be nothing left to pick. A note under the switch on the Settings page says so. The defaults are hidden as soon as you add a color, and come back if you delete all your custom colors.
+                </div>
             </section>
 
             <section id="minimap">
@@ -193,13 +210,13 @@
                 </div>
 
                 <h3>Custom Colors</h3>
-                <p>Rename a color, change its color, and delete colors one at a time or all at once. See <a href="#custom-colors">Custom Colors</a> for details.</p>
+                <p>Rename a color, change its color, and delete colors one at a time or all at once. See <a href="#custom-colors">Custom Colors</a> for details. The <strong>"Hide Default Colors"</strong> switch in the same section limits the color lists to your custom colors; see <a href="#hide-default-colors">Hiding the Default Colors</a> for how it behaves.</p>
 
                 <h3>Cloud Sync (Beta)</h3>
                 <p>Issue a sync code, pair devices, and sync on demand. See <a href="#cloud-sync">Cloud Sync (Beta)</a> for details.</p>
 
                 <h3 id="settings-shortcuts">Keyboard Shortcuts</h3>
-                <p>Choose which color each of the 5 shortcut slots applies. The defaults for slots 1-5 are Yellow, Green, Blue, Pink and Orange, and custom colors can be assigned too. The key combinations themselves are changed in the browser's shortcut settings. Below the slots, the two highlight navigation shortcuts are listed with the keys currently assigned to them.</p>
+                <p>Choose which color each of the 5 shortcut slots applies. The defaults for slots 1-5 are Yellow, Green, Blue, Pink and Orange, and custom colors can be assigned too. The key combinations themselves are changed in the browser's shortcut settings. Below the slots, the two highlight navigation shortcuts are listed with the keys currently assigned to them. Default colors assigned to slots keep working even with <a href="#hide-default-colors">Hide Default Colors</a> turned on.</p>
 
                 <h3>Help</h3>
                 <p>The <strong>"View Usage Guide"</strong> button opens the getting-started guide built into the extension.</p>

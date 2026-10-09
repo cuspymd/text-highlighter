@@ -25,6 +25,7 @@ import {
   addCustomColor,
   clearCustomColors,
   broadcastSettingsToTabs,
+  setHideDefaultColors,
   createOrUpdateContextMenus,
   updateCustomColor,
   updateCustomColorName,
@@ -65,6 +66,7 @@ async function handleSaveSettings(message) {
   if (message.minimapVisible !== undefined) settings.minimapVisible = message.minimapVisible;
   if (message.selectionControlsVisible !== undefined) settings.selectionControlsVisible = message.selectionControlsVisible;
   if (message.oneClickHighlightEnabled !== undefined) settings.oneClickHighlightEnabled = message.oneClickHighlightEnabled;
+  if (message.hideDefaultColors !== undefined) settings.hideDefaultColors = message.hideDefaultColors;
 
   const keys = Object.keys(settings);
   if (keys.length === 0) return successResponse();
@@ -77,6 +79,11 @@ async function handleSaveSettings(message) {
 
   await browserAPI.storage.local.set(settings);
   await broadcastSettingsToTabs(changedSettings);
+
+  if (changedSettings.hideDefaultColors !== undefined) {
+    setHideDefaultColors(changedSettings.hideDefaultColors);
+    await createOrUpdateContextMenus();
+  }
 
   saveSettingsToSync().catch(e => {
     debugLog('Failed to save settings to sync (local already applied):', e.message);

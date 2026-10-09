@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "사용자 정의 색상이 없습니다."
   },
+  "hideDefaultColors": {
+    "message": "기본 색상 숨기기"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "하이라이트 팔레트와 우클릭 메뉴에 사용자 정의 색상만 표시합니다. 단축키와 이미 기본 색상으로 칠한 하이라이트는 그대로 동작합니다. 사용자 정의 색상이 하나도 없으면 기본 색상이 계속 표시됩니다."
+  },
+  "hideDefaultColorsFallback": {
+    "message": "아직 사용자 정의 색상이 없어서 기본 색상이 계속 표시됩니다. 색상을 하나 추가하면 기본 색상이 숨겨집니다."
+  },
   "editNameTooltip": {
     "message": "클릭하여 이름 편집"
   },

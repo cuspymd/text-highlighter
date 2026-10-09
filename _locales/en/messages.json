@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "No custom colors yet."
   },
+  "hideDefaultColors": {
+    "message": "Hide Default Colors"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "The highlight palette and the right-click menu show only your custom colors. Shortcuts and highlights already made in a default color keep working. If you have no custom colors, the default colors are shown anyway."
+  },
+  "hideDefaultColorsFallback": {
+    "message": "You have no custom colors yet, so the default colors are still shown. Add one to hide them."
+  },
   "editNameTooltip": {
     "message": "Click to edit name"
   },

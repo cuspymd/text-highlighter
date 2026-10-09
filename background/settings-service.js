@@ -24,6 +24,7 @@ let currentColors = [...COLORS];
 let platformInfo = { os: 'unknown' };
 let storedShortcuts = {};
 let shortcutColorMap = { ...DEFAULT_SHORTCUT_COLOR_MAP };
+let hideDefaultColors = false;
 let hasLoadedCustomColors = false;
 let customColorsLoadInFlight = null;
 
@@ -143,6 +144,24 @@ export function getCurrentColors() {
   return currentColors;
 }
 
+// The colours offered to pick from - the context menu here, the colour strips
+// in the page. Hiding the defaults leaves only the custom colours, unless there
+// are none: an empty palette would leave nothing to highlight with, so the
+// defaults stay until the first custom colour exists.
+//
+// It is only the offer that shrinks. getCurrentColors stays the full list,
+// because the shortcut slots and existing highlights still use the defaults.
+// content-scripts/color-core.js applies the same rule to the page's strips.
+export function getVisibleColors() {
+  if (!hideDefaultColors) return currentColors;
+  const customColors = currentColors.filter(isCustomColor);
+  return customColors.length > 0 ? customColors : currentColors;
+}
+
+export function setHideDefaultColors(hidden) {
+  hideDefaultColors = hidden === true;
+}
+
 export function getStoredShortcuts() {
   return storedShortcuts;
 }
@@ -160,6 +179,11 @@ export async function saveShortcutColorMap(newMap) {
 async function loadShortcutColorMap() {
   const result = await browserAPI.storage.local.get([STORAGE_KEYS.SHORTCUT_COLOR_MAP]);
   shortcutColorMap = result[STORAGE_KEYS.SHORTCUT_COLOR_MAP] || { ...DEFAULT_SHORTCUT_COLOR_MAP };
+}
+
+async function loadHideDefaultColors() {
+  const result = await browserAPI.storage.local.get([STORAGE_KEYS.HIDE_DEFAULT_COLORS]);
+  hideDefaultColors = result[STORAGE_KEYS.HIDE_DEFAULT_COLORS] === true;
 }
 
 export async function getCurrentShortcuts() {
@@ -200,7 +224,7 @@ export async function createOrUpdateContextMenus() {
   const commandShortcuts = await getCurrentShortcuts();
   storedShortcuts = { ...commandShortcuts };
 
-  for (const color of currentColors) {
+  for (const color of getVisibleColors()) {
     const slotName = Object.keys(shortcutColorMap).find(key => shortcutColorMap[key] === color.id);
     const shortcutDisplay = (slotName && commandShortcuts[slotName]) || '';
 
@@ -264,6 +288,7 @@ async function loadCustomColorsFromStorage() {
   }
 
   await loadShortcutColorMap();
+  await loadHideDefaultColors();
 }
 
 export async function loadCustomColors() {
@@ -455,6 +480,12 @@ export async function broadcastSettingsToTabs(changedSettings) {
         enabled: changedSettings.oneClickHighlightEnabled,
       });
     }
+    if (changedSettings.hideDefaultColors !== undefined) {
+      await sendMessageToTab(tab.id, {
+        action: 'setHideDefaultColors',
+        hidden: changedSettings.hideDefaultColors,
+      });
+    }
   }
 }
 
@@ -493,6 +524,15 @@ export async function applySettingsFromSync(newSettings) {
   if (newSettings.oneClickHighlightEnabled !== undefined) {
     await browserAPI.storage.local.set({ oneClickHighlightEnabled: newSettings.oneClickHighlightEnabled });
     await broadcastToAllTabs({ action: 'setOneClickHighlight', enabled: newSettings.oneClickHighlightEnabled });
+  }
+
+  // Reported as a colour change: the context menu lists only what is visible,
+  // so it has to be rebuilt the same way.
+  if (newSettings.hideDefaultColors !== undefined) {
+    await browserAPI.storage.local.set({ [STORAGE_KEYS.HIDE_DEFAULT_COLORS]: newSettings.hideDefaultColors });
+    hideDefaultColors = newSettings.hideDefaultColors === true;
+    await broadcastToAllTabs({ action: 'setHideDefaultColors', hidden: newSettings.hideDefaultColors });
+    colorsChanged = true;
   }
 
   // `null` is a value here ("no custom mapping"), not an absent field, so it has to be

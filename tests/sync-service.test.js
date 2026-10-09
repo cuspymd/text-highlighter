@@ -260,6 +260,37 @@ describe('sync-service', () => {
       );
     });
 
+    // The same rule as the one-click setting: no local value is no opinion.
+    it('should keep the synced hide-default-colours value when this device has none of its own', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ oneClickHighlightEnabled: false });
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { hideDefaultColors: true, shortcutColorMap: null },
+      });
+
+      await saveSettingsToSync();
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({ hideDefaultColors: true }),
+        }),
+      );
+    });
+
+    it('should send this device own hide-default-colours value over the synced one', async () => {
+      chrome.storage.local.get.mockResolvedValueOnce({ hideDefaultColors: false });
+      chrome.storage.sync.get.mockResolvedValueOnce({
+        settings: { hideDefaultColors: true, shortcutColorMap: null },
+      });
+
+      await saveSettingsToSync();
+
+      expect(chrome.storage.sync.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({ hideDefaultColors: false }),
+        }),
+      );
+    });
+
     it('should send no one-click value when neither this device nor sync has one', async () => {
       chrome.storage.local.get.mockResolvedValueOnce({ minimapVisible: true });
       chrome.storage.sync.get.mockResolvedValueOnce({

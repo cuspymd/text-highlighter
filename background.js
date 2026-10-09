@@ -51,7 +51,8 @@ async function adoptSettingsMissingLocally() {
   if (!missing) return;
 
   debugLog('Adopting settings this device had never been told about:', missing);
-  await applySettingsFromSync(missing);
+  const { colorsChanged } = await applySettingsFromSync(missing);
+  if (colorsChanged) await createOrUpdateContextMenus();
 }
 
 (async () => {

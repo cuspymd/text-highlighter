@@ -37,7 +37,11 @@
                     </ul>
                 </li>
                 <li><a href="#delete-highlights">Cómo eliminar resaltados</a></li>
-                <li><a href="#custom-colors">Colores personalizados</a></li>
+                <li><a href="#custom-colors">Colores personalizados</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#hide-default-colors">Ocultar los colores predeterminados</a></li>
+                    </ul>
+                </li>
                 <li><a href="#minimap">Minimapa</a></li>
                 <li><a href="#popup-menu">Menú emergente</a></li>
                 <li><a href="#settings">Pantalla de ajustes</a>
@@ -150,6 +154,19 @@
                     <li><strong>Eliminar uno:</strong> cada color tiene su propio botón <strong>"Eliminar"</strong>.</li>
                     <li><strong>Eliminar todos:</strong> el botón <strong>"Eliminar todo"</strong>, arriba a la derecha de la sección, borra todos los colores añadidos y deja solo los 5 predeterminados.</li>
                 </ul>
+                <h3 id="hide-default-colors">Ocultar los colores predeterminados</h3>
+                <p>Si solo quieres usar los colores que has añadido, activa el interruptor <strong>"Ocultar colores predeterminados"</strong> en la sección "Colores personalizados" de los ajustes. Está desactivado por defecto.</p>
+                <p>El interruptor oculta los predeterminados <strong>solo en las listas donde eliges un color</strong>. Los colores predeterminados no se eliminan ni dejan de funcionar.</p>
+                <ul>
+                    <li><strong>Se ocultan en:</strong> la interfaz de control que aparece al seleccionar texto, la lista de colores que aparece al hacer clic en un resaltado y el menú contextual del botón derecho.</li>
+                    <li><strong>No cambia:</strong> los resaltados ya hechos con un color predeterminado conservan su color y siguen apareciendo en tus listas. Los colores predeterminados asignados a espacios de atajo siguen funcionando.</li>
+                    <li><strong>Resaltado con un clic:</strong> si el último color usado es un predeterminado oculto, se usa el primer color personalizado de la lista.</li>
+                    <li><strong>Para volver a pintar con un color predeterminado:</strong> no está en la lista, así que desactiva el interruptor un momento o usa un atajo asignado a ese color.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Si no tienes colores personalizados</span>
+                    Aunque el interruptor esté activado, los colores predeterminados se siguen mostrando mientras no tengas colores personalizados, porque no quedaría ninguno para elegir. Una nota bajo el interruptor en los ajustes lo indica. Los predeterminados se ocultan en cuanto añades un color y vuelven a aparecer si eliminas todos tus colores personalizados.
+                </div>
             </section>
 
             <section id="minimap">
@@ -193,13 +210,13 @@
                 </div>
 
                 <h3>Colores personalizados</h3>
-                <p>Permite renombrar un color, cambiar su tono y eliminar colores de uno en uno o todos a la vez. Consulta <a href="#custom-colors">Colores personalizados</a> para más detalles.</p>
+                <p>Permite renombrar un color, cambiar su tono y eliminar colores de uno en uno o todos a la vez. Consulta <a href="#custom-colors">Colores personalizados</a> para más detalles. El interruptor <strong>"Ocultar colores predeterminados"</strong> de la misma sección limita las listas de colores a tus colores personalizados; consulta <a href="#hide-default-colors">Ocultar los colores predeterminados</a> para ver cómo funciona.</p>
 
                 <h3>Sincronización en la nube (Beta)</h3>
                 <p>Aquí se genera el código de sincronización, se vinculan dispositivos y se sincroniza al momento. Consulta <a href="#cloud-sync">Sincronización en la nube (Beta)</a> para más detalles.</p>
 
                 <h3 id="settings-shortcuts">Atajos de teclado</h3>
-                <p>Elige qué color aplica cada uno de los 5 espacios de atajo. Los valores por defecto de los espacios 1 a 5 son amarillo, verde, azul, rosa y naranja, y también puedes asignar colores personalizados. Las combinaciones de teclas se cambian en los ajustes de atajos del navegador. Debajo de los espacios se muestran los dos atajos para moverse entre resaltados, con las teclas asignadas.</p>
+                <p>Elige qué color aplica cada uno de los 5 espacios de atajo. Los valores por defecto de los espacios 1 a 5 son amarillo, verde, azul, rosa y naranja, y también puedes asignar colores personalizados. Las combinaciones de teclas se cambian en los ajustes de atajos del navegador. Debajo de los espacios se muestran los dos atajos para moverse entre resaltados, con las teclas asignadas. Los colores predeterminados asignados a los espacios siguen funcionando aunque actives <a href="#hide-default-colors">Ocultar colores predeterminados</a>.</p>
 
                 <h3>Ayuda</h3>
                 <p>El botón <strong>"Ver la guía de uso"</strong> abre la guía de inicio incluida en la extensión.</p>

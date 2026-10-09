@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "Ainda não há cores personalizadas."
   },
+  "hideDefaultColors": {
+    "message": "Ocultar cores padrão"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "A paleta de destaque e o menu de clique direito mostram apenas suas cores personalizadas. Os atalhos e os destaques já feitos com uma cor padrão continuam funcionando. Se você não tiver cores personalizadas, as cores padrão são exibidas mesmo assim."
+  },
+  "hideDefaultColorsFallback": {
+    "message": "Você ainda não tem cores personalizadas, então as cores padrão continuam aparecendo. Adicione uma para ocultá-las."
+  },
   "editNameTooltip": {
     "message": "Clique para editar o nome"
   },

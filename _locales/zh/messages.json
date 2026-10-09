@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "暂无自定义颜色。"
   },
+  "hideDefaultColors": {
+    "message": "隐藏默认颜色"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "高亮调色板和右键菜单只显示自定义颜色。快捷键以及已用默认颜色创建的高亮不受影响。如果没有任何自定义颜色，仍会显示默认颜色。"
+  },
+  "hideDefaultColorsFallback": {
+    "message": "尚无自定义颜色，因此仍显示默认颜色。添加一个自定义颜色后即可隐藏默认颜色。"
+  },
   "editNameTooltip": {
     "message": "点击以编辑名称"
   },

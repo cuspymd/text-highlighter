@@ -213,6 +213,21 @@ describe('message-router', () => {
       expect(tabMessages('setOneClickHighlight')).toHaveLength(1);
     });
 
+    // The context menu lists only the colours on offer, so hiding the defaults
+    // has to rebuild it as well as reach the tabs.
+    it('carries the hide-default-colours setting to the tabs and rebuilds the menus', async () => {
+      openTabs(PAGE);
+      chrome.contextMenus.create.mockClear();
+
+      await send({ action: 'saveSettings', hideDefaultColors: true });
+
+      expect(local.hideDefaultColors).toBe(true);
+      expect(tabMessages('setHideDefaultColors')).toHaveLength(1);
+      expect(chrome.contextMenus.create).toHaveBeenCalled();
+
+      await send({ action: 'saveSettings', hideDefaultColors: false });
+    });
+
     // The mirror to sync is deliberately not awaited: the local write has already
     // happened, so a sync that fails must not turn into a failed save.
     it('still reports success when the settings could not be mirrored to sync', async () => {

@@ -204,6 +204,70 @@ describe('settings', () => {
       expect(byId('one-click-highlight-toggle').disabled).toBe(false);
       expect(byId('one-click-highlight-row').classList.contains('is-disabled')).toBe(false);
     });
+    // Hiding the defaults with no custom colour to show instead leaves them on
+    // offer, which looks like a switch that does nothing unless the page says why.
+    describe('hide default colors', () => {
+      it('is off when nothing has been stored, with no fallback note', async () => {
+        await openSettings();
+
+        expect(byId('hide-default-colors-toggle').checked).toBe(false);
+        expect(byId('hide-default-colors-fallback').hidden).toBe(true);
+      });
+
+      it('saves the preference when it is toggled', async () => {
+        await openSettings();
+
+        const toggle = byId('hide-default-colors-toggle');
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+        await flush();
+
+        expect(lastMessage('saveSettings')).toEqual({
+          action: 'saveSettings',
+          hideDefaultColors: true,
+        });
+      });
+
+      it('says the defaults are still shown while there is no custom color', async () => {
+        chrome.storage.local.get.mockResolvedValue({ hideDefaultColors: true });
+        respondToBackground({ getColors: { success: true, colors: [BUILT_IN_COLOR] } });
+        await openSettings();
+
+        expect(byId('hide-default-colors-toggle').checked).toBe(true);
+        expect(byId('hide-default-colors-fallback').hidden).toBe(false);
+        expect(byId('hide-default-colors-fallback').textContent).toBe('hideDefaultColorsFallback');
+      });
+
+      it('shows the note the moment the switch is turned on with no custom color', async () => {
+        respondToBackground({ getColors: { success: true, colors: [BUILT_IN_COLOR] } });
+        await openSettings();
+
+        const toggle = byId('hide-default-colors-toggle');
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+
+        expect(byId('hide-default-colors-fallback').hidden).toBe(false);
+      });
+
+      it('drops the note once custom colors exist', async () => {
+        chrome.storage.local.get.mockResolvedValue({ hideDefaultColors: true });
+        await openSettings();
+
+        expect(byId('hide-default-colors-fallback').hidden).toBe(true);
+      });
+
+      it('explains what is hidden through a help tip beside the label', async () => {
+        await openSettings();
+
+        const label = byId('hide-default-colors-row').querySelector('label[for="hide-default-colors-toggle"]');
+        const bubble = byId('hide-default-colors-help');
+
+        expect(label.textContent).toBe('hideDefaultColors');
+        expect(bubble.textContent).toBe('hideDefaultColorsHelp');
+        expect(label.contains(bubble)).toBe(false);
+      });
+    });
+
     it('hides the selection-controls row where windows is unavailable', async () => {
       await withoutBrowserApi('windows', async () => {
         await openSettings();

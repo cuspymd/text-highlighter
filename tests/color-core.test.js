@@ -241,6 +241,28 @@ describe('color-core', () => {
       expect(core.resolveLastUsedColor(null, '#FFFF00')).toBeNull();
     });
   });
+  // What the colour strips offer once "hide default colors" has had its say.
+  describe('visiblePalette', () => {
+    const defaults = [{ id: 'yellow', color: '#FFFF00' }, { id: 'green', color: '#AAFFAA' }];
+    const customs = [{ id: 'custom_1', color: '#123456' }];
+
+    it('offers everything while the setting is off', () => {
+      expect(core.visiblePalette([...defaults, ...customs], false)).toEqual([...defaults, ...customs]);
+    });
+
+    it('offers only the custom colours while the setting is on', () => {
+      expect(core.visiblePalette([...defaults, ...customs], true)).toEqual(customs);
+    });
+
+    it('keeps the defaults when there is no custom colour to offer instead', () => {
+      expect(core.visiblePalette(defaults, true)).toEqual(defaults);
+    });
+
+    it('offers nothing before the palette has arrived', () => {
+      expect(core.visiblePalette(undefined, true)).toEqual([]);
+    });
+  });
+
   // The picker reads a colour back out of the DOM after writing it, so a value
   // that does not survive the round trip shifts every time it is reopened.
   it('round-trips a picked colour through rgb and back', () => {

@@ -11,7 +11,10 @@ import {
   broadcastSettingsToTabs,
   loadCustomColors,
   getShortcutColorMap,
+  getVisibleColors,
+  setHideDefaultColors,
 } from '../background/settings-service.js';
+import { initContextMenus } from '../background/context-menu.js';
 
 describe('settings-service', () => {
   beforeEach(() => {
@@ -349,6 +352,87 @@ describe('settings-service', () => {
     it('should not query tabs when changedSettings is null', async () => {
       await broadcastSettingsToTabs(null);
       expect(chrome.tabs.query).not.toHaveBeenCalled();
+    });
+
+    it('should send setHideDefaultColors to every tab', async () => {
+      chrome.tabs.query.mockResolvedValueOnce([{ id: 5 }]);
+      await broadcastSettingsToTabs({ hideDefaultColors: true });
+
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+        5,
+        { action: 'setHideDefaultColors', hidden: true },
+      );
+    });
+  });
+
+  // ===================================================================
+  // Hiding the default colours
+  // ===================================================================
+
+  // The setting narrows what is offered to pick from - the context menu here -
+  // and nothing else. The defaults stay in the palette for shortcuts and
+  // existing highlights, and stay on offer while there is no custom colour.
+  describe('hide default colors', () => {
+    const custom = { id: 'custom_hide', colorNumber: 1, color: '#13579B' };
+
+    function createdMenuIds() {
+      return chrome.contextMenus.create.mock.calls.map(([item]) => item.id);
+    }
+
+    beforeEach(async () => {
+      chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'win' });
+      await initializePlatform();
+      await applySettingsFromSync({ customColors: [custom] });
+      setHideDefaultColors(true);
+      jest.clearAllMocks();
+    });
+
+    afterAll(() => {
+      setHideDefaultColors(false);
+    });
+
+    it('offers only the custom colours while keeping the full palette', () => {
+      expect(getVisibleColors().map(c => c.id)).toEqual(['custom_hide']);
+      expect(getCurrentColors().map(c => c.id)).toEqual(
+        ['yellow', 'green', 'blue', 'pink', 'orange', 'custom_hide'],
+      );
+    });
+
+    it('keeps offering the defaults while there is no custom colour', async () => {
+      await applySettingsFromSync({ customColors: [] });
+
+      expect(getVisibleColors().map(c => c.id)).toEqual(['yellow', 'green', 'blue', 'pink', 'orange']);
+    });
+
+    it('lists only the visible colours in the context menu', async () => {
+      await createOrUpdateContextMenus();
+
+      expect(createdMenuIds()).toEqual(['highlight-text', 'highlight-custom_hide']);
+    });
+
+    it('still paints with a default colour from its shortcut slot', async () => {
+      // Earlier tests leave a custom mapping behind; null is "the defaults".
+      await applySettingsFromSync({ shortcutColorMap: null });
+      initContextMenus();
+      const onCommand = chrome.commands.onCommand.addListener.mock.calls[0][0];
+      chrome.tabs.query.mockResolvedValueOnce([{ id: 9 }]);
+
+      await onCommand('command_slot_1');
+
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(9, { action: 'highlight', color: '#FFFF00' });
+    });
+
+    it('adopts the setting from sync, tells the tabs, and asks for the menus to be rebuilt', async () => {
+      chrome.tabs.query.mockResolvedValueOnce([{ id: 3 }]);
+      const result = await applySettingsFromSync({ hideDefaultColors: false });
+
+      expect(result.colorsChanged).toBe(true);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({ hideDefaultColors: false });
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+        3,
+        { action: 'setHideDefaultColors', hidden: false },
+      );
+      expect(getVisibleColors()).toHaveLength(6);
     });
   });
 });

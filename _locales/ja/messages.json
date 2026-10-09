@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "カスタムカラーはありません。"
   },
+  "hideDefaultColors": {
+    "message": "デフォルトの色を隠す"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "ハイライトのパレットと右クリックメニューにカスタムカラーだけを表示します。ショートカットや、デフォルトの色で作成済みのハイライトはそのまま使えます。カスタムカラーが1つもない場合は、デフォルトの色が表示されます。"
+  },
+  "hideDefaultColorsFallback": {
+    "message": "カスタムカラーがまだないため、デフォルトの色が表示されたままです。1つ追加するとデフォルトの色が隠れます。"
+  },
   "editNameTooltip": {
     "message": "クリックして名前を編集"
   },

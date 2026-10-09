@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'minimapVisible',
       'selectionControlsVisible',
       'oneClickHighlightEnabled',
+      'hideDefaultColors',
     ]);
 
     const minimapVisible = result.minimapVisible !== undefined ? result.minimapVisible : true;
@@ -67,6 +68,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     oneClickToggle.checked = result.oneClickHighlightEnabled === true;
     syncOneClickAvailability();
+
+    hideDefaultsToggle.checked = result.hideDefaultColors === true;
+    syncHideDefaultsFallback();
   }
 
   minimapToggle.addEventListener('change', async () => {
@@ -96,6 +100,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const addCustomColorBtn = document.getElementById('add-custom-color-btn');
   const clearCustomColorsBtn = document.getElementById('clear-custom-colors-btn');
   const colorPicker = document.getElementById('color-picker-hidden');
+  const hideDefaultsToggle = document.getElementById('hide-default-colors-toggle');
+  const hideDefaultsFallback = document.getElementById('hide-default-colors-fallback');
+  let customColorCount = null;
+
+  // Hiding the defaults with no custom colour to show instead would leave the
+  // palette empty, so the defaults stay - which looks like the switch is not
+  // working unless the page says why.
+  function syncHideDefaultsFallback() {
+    hideDefaultsFallback.hidden = !(hideDefaultsToggle.checked && customColorCount === 0);
+  }
+
+  hideDefaultsToggle.addEventListener('change', async () => {
+    syncHideDefaultsFallback();
+    await sendToBackground({
+      action: 'saveSettings',
+      hideDefaultColors: hideDefaultsToggle.checked
+    });
+  });
 
   let activeColorIdForUpdate = null;
 
@@ -209,6 +231,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderCustomColorsList(customColors) {
     customColorsList.innerHTML = '';
+    customColorCount = customColors.length;
+    syncHideDefaultsFallback();
 
     // With one colour its own row's Remove is enough; the bulk button is for
     // the case the rows make tedious.
