@@ -3,6 +3,50 @@ import '../content-scripts/color-core.js';
 describe('color-core', () => {
   const core = window.TextHighlighterColorCore;
 
+  describe('normalizeHexColor', () => {
+    it('reads long and short codes, with or without #, as lowercase #rrggbb', () => {
+      expect(core.normalizeHexColor('#1E3A8A')).toBe('#1e3a8a');
+      expect(core.normalizeHexColor('1e3a8a')).toBe('#1e3a8a');
+      expect(core.normalizeHexColor(' #FA0 ')).toBe('#ffaa00');
+    });
+
+    it('returns null for anything else', () => {
+      expect(core.normalizeHexColor('#12345')).toBeNull();
+      expect(core.normalizeHexColor('#1234')).toBeNull();
+      expect(core.normalizeHexColor('#12345678')).toBeNull();
+      expect(core.normalizeHexColor('##123')).toBeNull();
+      expect(core.normalizeHexColor('red')).toBeNull();
+      expect(core.normalizeHexColor('')).toBeNull();
+      expect(core.normalizeHexColor(undefined)).toBeNull();
+    });
+  });
+
+  describe('hexToHsv', () => {
+    it('reads the primaries and greys', () => {
+      expect(core.hexToHsv('#ff0000')).toEqual({ h: 0, s: 100, v: 100 });
+      expect(core.hexToHsv('#00ff00')).toEqual({ h: 120, s: 100, v: 100 });
+      expect(core.hexToHsv('#0000ff')).toEqual({ h: 240, s: 100, v: 100 });
+      expect(core.hexToHsv('#000000')).toEqual({ h: 0, s: 0, v: 0 });
+      expect(core.hexToHsv('#ffffff')).toEqual({ h: 0, s: 0, v: 100 });
+    });
+
+    it('wraps hues past magenta back under 360', () => {
+      expect(core.hexToHsv('#ff0080').h).toBeCloseTo(329.88, 1);
+    });
+
+    it('round-trips through hsvToRgb', () => {
+      ['#1e3a8a', '#4ecdc4', '#f39c12', '#808080', '#ff90a0'].forEach(hex => {
+        const { h, s, v } = core.hexToHsv(hex);
+        const { r, g, b } = core.hsvToRgb(h, s, v);
+        expect(core.rgbToHex(`rgb(${r}, ${g}, ${b})`)).toBe(hex);
+      });
+    });
+
+    it('returns null for a code it cannot read', () => {
+      expect(core.hexToHsv('nope')).toBeNull();
+    });
+  });
+
   describe('parseRgb', () => {
     it('reads long and short hex, in either case, as opaque', () => {
       expect(core.parseRgb('#1E3A8A')).toEqual({ r: 30, g: 58, b: 138, a: 1 });

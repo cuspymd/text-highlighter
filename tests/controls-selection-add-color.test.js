@@ -165,4 +165,13 @@ describe('selection bar add-colour button', () => {
     expect(selectionTextAtHighlight).toBe('another paragraph');
     expect(selectionControls()).toBeNull();
   });
+
+  it('has no colour code field, which would take focus from the selection', async () => {
+    api.highlightSelection.mockClear();
+    respondToBackground(() => ({}));
+    await openSelectionBarOver('fourth paragraph');
+    selectionControls().querySelector('.add-color-button').click();
+
+    expect(picker().querySelector('.color-picker-hex')).toBeNull();
+  });
 });

@@ -5,6 +5,9 @@ import {
   readPageBody,
   stubPageEnvironment,
 } from './helpers/extension-page.js';
+// settings.html loads these as classic scripts ahead of settings.js.
+import '../content-scripts/color-core.js';
+import '../content-scripts/color-picker.js';
 
 const SETTINGS_BODY = readPageBody(new URL('../settings.html', import.meta.url));
 
@@ -320,17 +323,48 @@ describe('settings', () => {
         .toBe('noCustomColors');
     });
 
+    function pickerDialog() {
+      return document.querySelector('.color-picker-modal');
+    }
+
+    function hexField() {
+      return pickerDialog().querySelector('.color-picker-hex');
+    }
+
+    function typeHex(value) {
+      hexField().value = value;
+      hexField().dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    async function applyPicker() {
+      pickerDialog().querySelector('.color-picker-apply').click();
+      await flush();
+    }
+
+    it('opens its own picker rather than the browser one', async () => {
+      await openSettings();
+
+      expect(document.querySelector('input[type="color"]')).toBeNull();
+      byId('add-custom-color-btn').click();
+
+      expect(pickerDialog()).not.toBeNull();
+      expect(pickerDialog().querySelector('[role="dialog"]').getAttribute('aria-labelledby'))
+        .toBe('color-picker-title');
+      expect(pickerDialog().querySelectorAll('.color-preset').length).toBeGreaterThan(0);
+      expect(pickerDialog().querySelector('.saturation-value-picker')).not.toBeNull();
+    });
+
     it('adds the picked color and re-renders the list', async () => {
       await openSettings();
       const added = { id: 'custom_3', color: '#00e676', colorNumber: 3 };
       respondToBackground({ addColor: { success: true, colors: [...ALL_COLORS, added] } });
 
-      const picker = byId('color-picker-hidden');
-      picker.value = '#00e676';
-      picker.dispatchEvent(new Event('change'));
-      await flush();
+      byId('add-custom-color-btn').click();
+      typeHex('#00E676');
+      await applyPicker();
 
       expect(lastMessage('addColor')).toEqual({ action: 'addColor', color: '#00e676' });
+      expect(pickerDialog()).toBeNull();
       expect(colorRows()).toHaveLength(3);
     });
 
@@ -338,24 +372,22 @@ describe('settings', () => {
       await openSettings();
       respondToBackground({ addColor: { success: true, exists: true } });
 
-      const picker = byId('color-picker-hidden');
-      picker.value = '#ff8a80';
-      picker.dispatchEvent(new Event('change'));
-      await flush();
+      byId('add-custom-color-btn').click();
+      typeHex('ff8a80');
+      await applyPicker();
 
       expect(alertText()).toBe('colorAlreadyExists');
       expect(colorRows()).toHaveLength(2);
     });
 
-    it('updates the color the edit button selected, not a new one', async () => {
+    it('opens on the color being edited and updates that one, not a new one', async () => {
       await openSettings();
       respondToBackground({ updateCustomColor: { success: true, colors: ALL_COLORS } });
 
       colorRows()[0].querySelectorAll('.btn-icon')[0].click();
-      const picker = byId('color-picker-hidden');
-      picker.value = '#111111';
-      picker.dispatchEvent(new Event('change'));
-      await flush();
+      expect(hexField().value).toBe('#FF8A80');
+      typeHex('#111');
+      await applyPicker();
 
       expect(lastMessage('updateCustomColor')).toEqual({
         action: 'updateCustomColor',
@@ -363,6 +395,122 @@ describe('settings', () => {
         color: '#111111',
       });
       expect(backgroundMessages('addColor')).toHaveLength(0);
+    });
+
+    it('loads a preset for adjusting instead of adding it on the spot', async () => {
+      await openSettings();
+      respondToBackground({ addColor: { success: true, colors: ALL_COLORS } });
+
+      byId('add-custom-color-btn').click();
+      pickerDialog().querySelector('[data-color="#4ECDC4"]').click();
+      await flush();
+
+      expect(pickerDialog()).not.toBeNull();
+      expect(hexField().value).toBe('#4ECDC4');
+      expect(backgroundMessages('addColor')).toHaveLength(0);
+
+      await applyPicker();
+      expect(lastMessage('addColor')).toEqual({ action: 'addColor', color: '#4ecdc4' });
+    });
+
+    it('adds nothing when the picker is cancelled, by button, Escape or backdrop', async () => {
+      await openSettings();
+
+      byId('add-custom-color-btn').click();
+      pickerDialog().querySelector('.color-picker-close').click();
+      await flush();
+      expect(pickerDialog()).toBeNull();
+
+      byId('add-custom-color-btn').click();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await flush();
+      expect(pickerDialog()).toBeNull();
+
+      byId('add-custom-color-btn').click();
+      pickerDialog().querySelector('.modal-overlay').click();
+      await flush();
+      expect(pickerDialog()).toBeNull();
+
+      expect(backgroundMessages('addColor')).toHaveLength(0);
+    });
+
+    it('marks a half-typed code and keeps the last whole one', async () => {
+      await openSettings();
+      respondToBackground({ addColor: { success: true, colors: ALL_COLORS } });
+
+      byId('add-custom-color-btn').click();
+      typeHex('#123456');
+      typeHex('#12z');
+      expect(hexField().getAttribute('aria-invalid')).toBe('true');
+
+      // Enter does not apply a code that is not one.
+      hexField().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await flush();
+      expect(pickerDialog()).not.toBeNull();
+
+      // Nor does Apply, even once the field has lost focus to it.
+      const apply = pickerDialog().querySelector('.color-picker-apply');
+      expect(apply.disabled).toBe(true);
+      hexField().dispatchEvent(new Event('blur'));
+      expect(hexField().value).toBe('#12z');
+      expect(apply.disabled).toBe(true);
+      await applyPicker();
+      expect(pickerDialog()).not.toBeNull();
+      expect(lastMessage('addColor')).toBeUndefined();
+
+      // Finishing the code lets it through.
+      typeHex('#123456');
+      expect(apply.disabled).toBe(false);
+      hexField().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await flush();
+      expect(pickerDialog()).toBeNull();
+      expect(lastMessage('addColor')).toEqual({ action: 'addColor', color: '#123456' });
+    });
+
+    it('holds keyboard focus inside the picker and gives it back on close', async () => {
+      await openSettings();
+      const addButton = byId('add-custom-color-btn');
+      addButton.focus();
+      addButton.click();
+
+      const dialog = pickerDialog().querySelector('.custom-color-picker');
+      expect(document.activeElement).toBe(dialog);
+
+      const apply = pickerDialog().querySelector('.color-picker-apply');
+      const cancel = pickerDialog().querySelector('.color-picker-close');
+      const tab = (shiftKey = false) => document.activeElement.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true }));
+
+      // Tab from the last control wraps to the first, Shift+Tab back again.
+      cancel.focus();
+      tab();
+      expect(document.activeElement).toBe(hexField());
+      tab(true);
+      expect(document.activeElement).toBe(cancel);
+
+      // A disabled Apply is skipped.
+      typeHex('#12');
+      expect(apply.disabled).toBe(true);
+      hexField().focus();
+      tab(true);
+      expect(document.activeElement).toBe(cancel);
+
+      cancel.click();
+      await flush();
+      expect(pickerDialog()).toBeNull();
+      expect(document.activeElement).toBe(addButton);
+    });
+
+    it('opens one picker at a time', async () => {
+      await openSettings();
+
+      byId('add-custom-color-btn').click();
+      byId('add-custom-color-btn').click();
+      colorRows()[0].querySelectorAll('.btn-icon')[0].click();
+
+      expect(document.querySelectorAll('.color-picker-modal')).toHaveLength(1);
+      pickerDialog().querySelector('.color-picker-close').click();
+      await flush();
     });
 
     it('removes a color and re-renders without it', async () => {

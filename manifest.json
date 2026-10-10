@@ -74,6 +74,7 @@
         "content-scripts/content-common.js",
         "content-scripts/minimap.js",
         "content-scripts/color-core.js",
+        "content-scripts/color-picker.js",
         "content-scripts/content-core.js",
         "content-scripts/restore-core.js",
         "content-scripts/jump-core.js",
@@ -81,7 +82,8 @@
         "content-scripts/content.js"
       ],
       "css": [
-        "styles.css"
+        "styles.css",
+        "content-scripts/color-picker.css"
       ]
     }
   ],

@@ -218,6 +218,9 @@
   "apply": {
     "message": "Применить"
   },
+  "colorHexCode": {
+    "message": "HEX-код"
+  },
   "cancel": {
     "message": "Отмена"
   },

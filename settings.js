@@ -28,6 +28,91 @@ const { showAlertModal, showConfirmModal } = createLocalizedModalHelpers(
   (key, defaultValue) => browserAPI.i18n.getMessage(key) || defaultValue
 );
 
+/**
+ * Ask for a colour with the extension's own picker, in a dialog.
+ *
+ * Not <input type="color">: Firefox for Android shows that as a short list of
+ * fixed colours, with nothing in between. The picker the in-page controls use
+ * reaches every colour by touch, and here it also takes a typed colour code.
+ *
+ * @param {string} initialColor colour code to open on
+ * @returns {Promise<string|null>} `#rrggbb`, or null when cancelled
+ */
+function pickColor(initialColor) {
+  return new Promise((resolve) => {
+    const picker = window.TextHighlighterColorPicker.createColorPicker({
+      getMessage: key => browserAPI.i18n.getMessage(key),
+      initialColor,
+      hexInput: true,
+      presetsEdit: true,
+    });
+
+    // The picker is the dialog itself, with no card around it, so it looks as
+    // it does over a page.
+    const modal = document.createElement('div');
+    modal.className = 'custom-modal color-picker-modal';
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const dialog = picker.element;
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    const header = dialog.querySelector('.color-picker-header');
+    header.id = 'color-picker-title';
+    dialog.setAttribute('aria-labelledby', header.id);
+    modal.appendChild(overlay);
+    modal.appendChild(dialog);
+    document.body.appendChild(modal);
+
+    // Keyboard focus moves into the dialog and stays there while it is open,
+    // then goes back to the button that opened it. The dialog itself takes
+    // focus rather than the code field, which would pop up the on-screen
+    // keyboard on a phone.
+    const opener = document.activeElement;
+    dialog.tabIndex = -1;
+    dialog.focus();
+
+    let closed = false;
+    const close = (result) => {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener('keydown', onKeyDown);
+      modal.remove();
+      if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus();
+      resolve(result);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        close(null);
+      } else if (e.key === 'Tab') {
+        const focusable = [...dialog.querySelectorAll('input, button')].filter(el => !el.disabled);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const inside = dialog.contains(document.activeElement);
+        if (e.shiftKey && (!inside || document.activeElement === first || document.activeElement === dialog)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+          e.preventDefault();
+          first.focus();
+        }
+      } else if (e.key === 'Enter' && e.target.classList.contains('color-picker-hex')) {
+        // Enter in the code field applies what was typed, if it was a colour.
+        e.preventDefault();
+        if (!e.target.hasAttribute('aria-invalid')) close(picker.getColor());
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+
+    overlay.addEventListener('click', () => close(null));
+    picker.element.querySelector('.color-picker-close').addEventListener('click', () => close(null));
+    picker.element.querySelector('.color-picker-apply').addEventListener('click', () => {
+      close(picker.getColor());
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   initializeI18n();
   initializeThemeWatcher();
@@ -106,7 +191,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const reorderSaveBtn = document.getElementById('reorder-save-btn');
   const reorderHint = document.getElementById('reorder-hint');
   const reorderSavedStatus = document.getElementById('reorder-saved-status');
-  const colorPicker = document.getElementById('color-picker-hidden');
   const hideDefaultsToggle = document.getElementById('hide-default-colors-toggle');
   const hideDefaultsFallback = document.getElementById('hide-default-colors-fallback');
   let customColorCount = null;
@@ -133,8 +217,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       hideDefaultColors: hideDefaultsToggle.checked
     });
   });
-
-  let activeColorIdForUpdate = null;
 
   function buildColorRow(colorObj) {
     const row = document.createElement('div');
@@ -223,9 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     editBtn.className = 'btn-icon';
     editBtn.textContent = browserAPI.i18n.getMessage('editColor') || 'Edit';
     editBtn.addEventListener('click', () => {
-      activeColorIdForUpdate = colorObj.id;
-      colorPicker.value = colorObj.color;
-      colorPicker.click();
+      chooseCustomColor(colorObj.id, colorObj.color);
     });
 
     const removeBtn = document.createElement('button');
@@ -549,17 +629,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     event.returnValue = '';
   });
 
-  colorPicker.addEventListener('change', async () => {
-    const colorValue = colorPicker.value;
+  // Pick a colour and add it, or - given the id of a custom colour - change
+  // that one to it. One picker at a time: a second press while it is open has
+  // nothing to add.
+  let pickingColor = false;
 
-    if (activeColorIdForUpdate) {
+  async function chooseCustomColor(colorIdToUpdate, initialColor) {
+    if (pickingColor) return;
+    pickingColor = true;
+    const colorValue = await pickColor(initialColor);
+    pickingColor = false;
+    if (!colorValue) return;
+
+    if (colorIdToUpdate) {
       // Update
       const response = await browserAPI.runtime.sendMessage({
         action: 'updateCustomColor',
-        id: activeColorIdForUpdate,
+        id: colorIdToUpdate,
         color: colorValue
       });
-      activeColorIdForUpdate = null;
 
       if (response.success) {
         if (response.exists) {
@@ -586,12 +674,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     }
-  });
+  }
 
   addCustomColorBtn.addEventListener('click', () => {
-    activeColorIdForUpdate = null;
-    colorPicker.value = '#ff0000';
-    colorPicker.click();
+    chooseCustomColor(null, window.TextHighlighterColorPicker.PRESET_COLORS[0]);
   });
 
   clearCustomColorsBtn.addEventListener('click', async () => {
