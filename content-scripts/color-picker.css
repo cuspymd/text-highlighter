@@ -1,0 +1,248 @@
+/* The colour picker from color-picker.js. Shared by the in-page controls
+   (listed with styles.css in the manifests) and the settings page, so the two
+   look the same. Where the picker sits is each page's own: styles.css fixes it
+   over the page, settings.html centres it in a dialog.
+
+   The --th-* properties come from styles.css; the fallbacks are for the
+   settings page, which does not load it. */
+.custom-color-picker {
+  background: var(--th-surface, #fff);
+  border: 1px solid var(--th-surface-border, rgba(0, 0, 0, 0.08));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: var(--th-shadow-2, 0 8px 32px rgba(0, 0, 0, 0.12));
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 240px;
+  opacity: 0;
+  transform: scale(0.8) translateY(-10px);
+  animation: pop-out-color-picker 0.3s cubic-bezier(.22,1.6,.42,1.01) forwards;
+}
+
+@keyframes pop-out-color-picker {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.color-picker-header {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.color-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.color-preset {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.color-preset:hover {
+  border-color: #999;
+}
+
+.custom-color-section {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hue-slider-container {
+  width: 100%;
+  height: 12px;
+  position: relative;
+}
+
+.hue-slider {
+  width: 100%;
+  height: 12px;
+  background: linear-gradient(to right, 
+    #ff0000 0%, #ffff00 16.66%, #00ff00 33.33%, 
+    #00ffff 50%, #0000ff 66.66%, #ff00ff 83.33%, #ff0000 100%);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+}
+
+.hue-handle {
+  width: 16px;
+  height: 16px;
+  background: white;
+  border: 2px solid #333;
+  border-radius: 50%;
+  position: absolute;
+  top: -2px;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.saturation-value-picker {
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent 0%, black 100%),
+              linear-gradient(to right, white 0%, red 100%);
+  border-radius: 4px;
+  cursor: crosshair;
+  position: relative;
+}
+
+.sv-handle {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: 2px solid #333;
+  border-radius: 50%;
+  position: absolute;
+  cursor: pointer;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.color-preview {
+  width: 40px;
+  height: 30px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  align-self: center;
+}
+
+.color-picker-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.color-picker-apply, .color-picker-close {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #333;
+  line-height: 1.2;
+}
+
+.color-picker-apply {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.color-picker-apply:hover {
+  background: #0056b3;
+}
+
+.color-picker-close:hover {
+  background: #e0e0e0;
+}
+
+/* The colour code field, when the picker has one (settings page only). The
+   preview moves into this row then, beside the field. */
+.color-picker-hex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-picker-hex-row .color-preview {
+  flex: 0 0 auto;
+}
+
+.color-picker-hex-label {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.color-picker-hex {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font: 13px monospace;
+  text-transform: uppercase;
+  box-sizing: border-box;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.color-picker-hex:focus {
+  outline: 2px solid #007bff;
+  outline-offset: -1px;
+}
+
+.color-picker-hex[aria-invalid="true"] {
+  border-color: #e53935;
+  outline-color: #e53935;
+}
+
+@media (pointer: coarse) {
+  /* Larger color presets in custom picker */
+  .color-preset {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Larger HSV slider handles */
+  .hue-handle {
+    width: 22px;
+    height: 22px;
+    top: -5px;
+  }
+
+  .hue-slider-container,
+  .hue-slider {
+    height: 18px;
+  }
+
+  .sv-handle {
+    width: 18px;
+    height: 18px;
+  }
+
+  .saturation-value-picker {
+    height: 100px;
+  }
+
+  /* Larger picker buttons */
+  .color-picker-apply, .color-picker-close {
+    padding: 10px 16px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .color-preset:hover {
+    border-color: transparent;
+  }
+
+  .color-preset:active {
+    border-color: #999;
+  }
+}

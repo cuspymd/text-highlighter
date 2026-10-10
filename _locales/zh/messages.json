@@ -218,6 +218,9 @@
   "apply": {
     "message": "应用"
   },
+  "colorHexCode": {
+    "message": "颜色代码"
+  },
   "cancel": {
     "message": "取消"
   },

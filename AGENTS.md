@@ -112,6 +112,14 @@ still coming), `color-core.js` (the picker's colour maths). `content.js` and
 `controls.js` keep same-named wrappers that delegate, so call sites read as
 before.
 
+`color-picker.js` (the custom colour picker, styled by `color-picker.css`) and
+`color-core.js` are also loaded by `settings.html`, as classic scripts ahead of
+`settings.js` - the settings page does not use `<input type="color">`, which
+Firefox for Android reduces to a list of a few fixed colours. Keep both free of
+extension APIs and of anything only a web page has; the picker takes its i18n
+lookup as an option. The stylesheet is listed beside `styles.css` in both
+manifests' `css`.
+
 The point is testability. Those files are importable, so a test calls them
 directly and the coverage instrumenter sees them - the evaluated scripts report
 0% whether or not a test drove them. Put new pure logic there rather than in

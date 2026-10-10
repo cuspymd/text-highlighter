@@ -49,6 +49,55 @@
   }
 
   /**
+   * What someone types as a colour code - `#rgb` or `#rrggbb`, the `#`
+   * optional, any case, surrounding space ignored - as lowercase `#rrggbb`.
+   *
+   * @param {string} value
+   * @returns {string|null} null when it is not one of those
+   */
+  function normalizeHexColor(value) {
+    if (typeof value !== 'string') return null;
+    const match = value.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!match) return null;
+    let hex = match[1].toLowerCase();
+    if (hex.length === 3) hex = hex.split('').map(digit => digit + digit).join('');
+    return `#${hex}`;
+  }
+
+  /**
+   * The inverse of hsvToRgb, from a colour code, so the picker can open on a
+   * colour that already exists. Hue is 0 for greys, where it means nothing.
+   *
+   * @param {string} hex anything normalizeHexColor accepts
+   * @returns {{h: number, s: number, v: number}|null} as hsvToRgb takes them
+   */
+  function hexToHsv(hex) {
+    const normalized = normalizeHexColor(hex);
+    if (!normalized) return null;
+
+    const r = parseInt(normalized.slice(1, 3), 16) / 255;
+    const g = parseInt(normalized.slice(3, 5), 16) / 255;
+    const b = parseInt(normalized.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b);
+    const delta = max - Math.min(r, g, b);
+
+    let h = 0;
+    if (delta !== 0) {
+      if (max === r) h = ((g - b) / delta) % 6;
+      else if (max === g) h = (b - r) / delta + 2;
+      else h = (r - g) / delta + 4;
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+
+    return {
+      h,
+      s: max === 0 ? 0 : (delta / max) * 100,
+      v: max * 100,
+    };
+  }
+
+  /**
    * An `hsl(...)` string to `#rrggbb`.
    *
    * @param {string} hsl
@@ -270,6 +319,8 @@
     FALLBACK_HEX,
     TEXT_TONE_ATTRIBUTE,
     hsvToRgb,
+    normalizeHexColor,
+    hexToHsv,
     hslToHex,
     rgbToHex,
     resolveLastUsedColor,

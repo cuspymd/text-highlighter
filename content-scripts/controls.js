@@ -632,107 +632,26 @@ function positionPopoverNearControls(popover, triggerButton) {
 // Variable to track the currently active closeHandler
 let currentCloseHandler = null;
 
-// Common color picker UI creation function
+// The picker itself is color-picker.js, shared with the settings page. What is
+// particular to a picker over a web page is added here.
 function createColorPickerUI() {
-  // Color preset array
-  const presetColors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
-    '#F39C12', '#E74C3C', '#9B59B6', '#3498DB', '#1ABC9C',
-    '#2ECC71', '#F1C40F', '#E67E22', '#FF90A0', '#A8E6CF'
-  ];
-  
-  // Create custom color picker
-  const customColorPicker = document.createElement('div');
-  customColorPicker.className = 'custom-color-picker';
+  const { element } = window.TextHighlighterColorPicker.createColorPicker({
+    getMessage: key => browserAPI.i18n.getMessage(key),
+  });
 
   // Dragging the sliders must not start a page selection, and clicking the
   // header must not collapse the one the selection bar is about to paint.
   // Cancelling mousedown keeps the browser out of the selection entirely; the
   // sliders' own mousedown handlers still run, and the buttons still click.
-  customColorPicker.addEventListener('mousedown', (e) => {
+  //
+  // This is also why there is no colour code field here, as there is in
+  // settings: a text field would have to take focus, and focusing it visibly
+  // drops the page selection the user is about to paint.
+  element.addEventListener('mousedown', (e) => {
     e.preventDefault();
   });
 
-  // Create header
-  const header = document.createElement('div');
-  header.className = 'color-picker-header';
-  header.textContent = browserAPI.i18n.getMessage('selectColor');
-  customColorPicker.appendChild(header);
-  
-  // Create color preset grid
-  const presetGrid = document.createElement('div');
-  presetGrid.className = 'color-preset-grid';
-  
-  presetColors.forEach(color => {
-    const colorDiv = document.createElement('div');
-    colorDiv.className = 'color-preset';
-    colorDiv.style.backgroundColor = color;
-    colorDiv.dataset.color = color;
-    presetGrid.appendChild(colorDiv);
-  });
-  
-  customColorPicker.appendChild(presetGrid);
-  
-  // Create custom color section
-  const customSection = document.createElement('div');
-  customSection.className = 'custom-color-section';
-  
-  // Hue slider container
-  const hueContainer = document.createElement('div');
-  hueContainer.className = 'hue-slider-container';
-  
-  const hueSlider = document.createElement('div');
-  hueSlider.className = 'hue-slider';
-  hueSlider.id = 'hueSlider';
-  
-  const hueHandle = document.createElement('div');
-  hueHandle.className = 'hue-handle';
-  hueHandle.id = 'hueHandle';
-  
-  hueSlider.appendChild(hueHandle);
-  hueContainer.appendChild(hueSlider);
-  customSection.appendChild(hueContainer);
-  
-  // Saturation-Value picker
-  const svPicker = document.createElement('div');
-  svPicker.className = 'saturation-value-picker';
-  svPicker.id = 'svPicker';
-  
-  const svHandle = document.createElement('div');
-  svHandle.className = 'sv-handle';
-  svHandle.id = 'svHandle';
-  
-  svPicker.appendChild(svHandle);
-  customSection.appendChild(svPicker);
-  
-  // Color preview
-  const colorPreview = document.createElement('div');
-  colorPreview.className = 'color-preview';
-  colorPreview.id = 'colorPreview';
-  colorPreview.style.backgroundColor = '#FF6B6B';
-  customSection.appendChild(colorPreview);
-  
-  customColorPicker.appendChild(customSection);
-  
-  // Create buttons section
-  const buttonsSection = document.createElement('div');
-  buttonsSection.className = 'color-picker-buttons';
-  
-  const applyButton = document.createElement('button');
-  applyButton.className = 'color-picker-apply';
-  applyButton.id = 'applyColor';
-  applyButton.textContent = browserAPI.i18n.getMessage('apply');
-  
-  const cancelButton = document.createElement('button');
-  cancelButton.className = 'color-picker-close';
-  cancelButton.textContent = browserAPI.i18n.getMessage('cancel');
-  
-  buttonsSection.appendChild(applyButton);
-  buttonsSection.appendChild(cancelButton);
-  customColorPicker.appendChild(buttonsSection);
-  
-  return customColorPicker;
+  return element;
 }
 
 // Color picker common event handling function
@@ -788,9 +707,6 @@ function showCustomColorPicker(triggerButton, onColorSelect = addCustomColor) {
 
   positionPopoverNearControls(customColorPicker, triggerButton);
   
-  // Initialize HSV sliders
-  initHSVSliders(customColorPicker);
-  
   // Remove closeHandler and close picker common function
   const closeColorPicker = () => {
     customColorPicker.remove();
@@ -832,164 +748,10 @@ function addCustomColorAndHighlight(color) {
   return addCustomColor(color);
 }
 
-// HSV to RGB conversion function
-// Colour maths lives in color-core.js, which the manifest loads first. These
-// stay as names the rest of this file already calls.
-function hsvToRgb(h, s, v) {
-  return colorCore.hsvToRgb(h, s, v);
-}
-
+// Colour maths lives in color-core.js, which the manifest loads first. This
+// stays as a name the rest of this file already calls.
 function rgbToHex(rgb) {
   return colorCore.rgbToHex(rgb);
-}
-
-function hslToHex(hsl) {
-  return colorCore.hslToHex(hsl);
-}
-
-function initHSVSliders(picker) {
-  // Check if elements exist
-  const hueSlider = picker.querySelector('#hueSlider');
-  const hueHandle = picker.querySelector('#hueHandle');
-  const svPicker = picker.querySelector('#svPicker');
-  const svHandle = picker.querySelector('#svHandle');
-  const colorPreview = picker.querySelector('#colorPreview');
-  
-  if (!hueSlider || !hueHandle || !svPicker || !svHandle || !colorPreview) {
-    return; // Do not initialize if required elements are missing
-  }
-  
-  let currentHue = 0;
-  let currentSaturation = 100;
-  let currentValue = 100;
-  
-  // Hue slider events
-  let isDraggingHue = false;
-
-  function updateHueAt(clientX) {
-    const rect = hueSlider.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-    currentHue = (x / rect.width) * 360;
-    hueHandle.style.left = `${x}px`;
-    updateSVBackground();
-    updateColorPreview();
-  }
-
-  // Mouse handlers for hue slider
-  const hueMouseMoveHandler = (e) => { if (isDraggingHue) updateHueAt(e.clientX); };
-  const hueMouseUpHandler = () => {
-    isDraggingHue = false;
-    document.removeEventListener('mousemove', hueMouseMoveHandler);
-    document.removeEventListener('mouseup', hueMouseUpHandler);
-  };
-
-  hueSlider.addEventListener('mousedown', (e) => {
-    isDraggingHue = true;
-    updateHueAt(e.clientX);
-    document.addEventListener('mousemove', hueMouseMoveHandler);
-    document.addEventListener('mouseup', hueMouseUpHandler);
-  });
-
-  // Touch handlers for hue slider
-  const hueTouchMoveHandler = (e) => {
-    if (isDraggingHue) {
-      e.preventDefault();
-      updateHueAt(e.touches[0].clientX);
-    }
-  };
-  const hueTouchEndHandler = () => {
-    isDraggingHue = false;
-    document.removeEventListener('touchmove', hueTouchMoveHandler);
-    document.removeEventListener('touchend', hueTouchEndHandler);
-  };
-
-  hueSlider.addEventListener('touchstart', (e) => {
-    isDraggingHue = true;
-    updateHueAt(e.touches[0].clientX);
-    document.addEventListener('touchmove', hueTouchMoveHandler, { passive: false });
-    document.addEventListener('touchend', hueTouchEndHandler);
-  }, { passive: true });
-
-  // Saturation/Value picker events
-  let isDraggingSV = false;
-
-  function updateSVAt(clientX, clientY) {
-    const rect = svPicker.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-    // x-axis: 0 (left/low saturation) -> 100 (right/high saturation)
-    currentSaturation = (x / rect.width) * 100;
-    // y-axis: 100 (top/high value) -> 0 (bottom/low value)
-    currentValue = 100 - (y / rect.height) * 100;
-    svHandle.style.left = `${x}px`;
-    svHandle.style.top = `${y}px`;
-    updateColorPreview();
-  }
-
-  // Mouse handlers for SV picker
-  const svMouseMoveHandler = (e) => { if (isDraggingSV) updateSVAt(e.clientX, e.clientY); };
-  const svMouseUpHandler = () => {
-    isDraggingSV = false;
-    document.removeEventListener('mousemove', svMouseMoveHandler);
-    document.removeEventListener('mouseup', svMouseUpHandler);
-  };
-
-  svPicker.addEventListener('mousedown', (e) => {
-    isDraggingSV = true;
-    updateSVAt(e.clientX, e.clientY);
-    document.addEventListener('mousemove', svMouseMoveHandler);
-    document.addEventListener('mouseup', svMouseUpHandler);
-  });
-
-  // Touch handlers for SV picker
-  const svTouchMoveHandler = (e) => {
-    if (isDraggingSV) {
-      e.preventDefault();
-      updateSVAt(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  };
-  const svTouchEndHandler = () => {
-    isDraggingSV = false;
-    document.removeEventListener('touchmove', svTouchMoveHandler);
-    document.removeEventListener('touchend', svTouchEndHandler);
-  };
-
-  svPicker.addEventListener('touchstart', (e) => {
-    isDraggingSV = true;
-    updateSVAt(e.touches[0].clientX, e.touches[0].clientY);
-    document.addEventListener('touchmove', svTouchMoveHandler, { passive: false });
-    document.addEventListener('touchend', svTouchEndHandler);
-  }, { passive: true });
-  
-  function updateSVBackground() {
-    svPicker.style.background = `
-      linear-gradient(to bottom, transparent 0%, black 100%),
-      linear-gradient(to right, white 0%, hsl(${currentHue}, 100%, 50%) 100%)`;
-  }
-  
-  function updateColorPreview() {
-    const rgb = hsvToRgb(currentHue, currentSaturation, currentValue);
-    const color = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-    colorPreview.style.backgroundColor = color;
-  }
-  
-  // Initial setup
-  updateSVBackground();
-  updateColorPreview();
-  
-  // Initial handle position setting (high saturation, high value)
-  setTimeout(() => {
-    const svRect = svPicker.getBoundingClientRect();
-    const initialX = svRect.width * 0.8;
-    const initialY = svRect.height * 0.2;
-    
-    currentSaturation = 80;
-    currentValue = 80;
-    
-    svHandle.style.left = `${initialX}px`;
-    svHandle.style.top = `${initialY}px`;
-    updateColorPreview();
-  }, 10);
 }
 
 function appendColorSeparator(container) {

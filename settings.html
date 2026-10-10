@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="settingsTitle">Settings</title>
     <link rel="stylesheet" href="shared/modal.css" />
+    <link rel="stylesheet" href="content-scripts/color-picker.css" />
     <style>
       :root {
         --bg: #ffffff;
@@ -617,6 +618,96 @@
         margin-top: 12px;
       }
 
+      /* The colour picker's layout is content-scripts/color-picker.css, the
+         same as over a page. Its colours are this page's, so it reads as part
+         of settings - light or dark with the rest. */
+      /* No pop-out: that animation is for growing out of a button over a page.
+         A centred dialog just appears, as the page's other dialogs do. */
+      .color-picker-modal .custom-color-picker {
+        animation: none;
+        opacity: 1;
+        transform: none;
+        position: relative;
+        z-index: 1;
+        max-height: 100%;
+        overflow-y: auto;
+        user-select: none;
+        -webkit-user-select: none;
+        background: var(--surface-strong);
+        border-color: var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow-2);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        color: var(--text);
+        font-family: inherit;
+      }
+
+      .color-picker-modal .color-picker-header {
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .color-picker-modal .color-preset:hover,
+      .color-picker-modal .color-preset:active {
+        border-color: var(--muted);
+      }
+
+      .color-picker-modal .color-preview {
+        border-color: var(--border);
+        border-radius: 6px;
+      }
+
+      .color-picker-modal .color-picker-hex-label {
+        color: var(--muted);
+      }
+
+      .color-picker-modal .color-picker-hex {
+        border-color: var(--border);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      .color-picker-modal .color-picker-hex:focus {
+        outline-color: var(--accent);
+      }
+
+      .color-picker-modal .color-picker-hex[aria-invalid="true"] {
+        border-color: var(--danger);
+        outline-color: var(--danger);
+      }
+
+      /* As the page's own buttons (.btn, .btn-primary). */
+      .color-picker-modal .color-picker-apply,
+      .color-picker-modal .color-picker-close {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .color-picker-modal .color-picker-close:hover {
+        background: var(--surface);
+      }
+
+      .color-picker-modal .color-picker-apply {
+        border-color: rgba(139, 92, 246, 0.45);
+        color: var(--accent);
+      }
+
+      .color-picker-modal .color-picker-apply:hover {
+        background: rgba(139, 92, 246, 0.08);
+      }
+
+      /* Dragging a slider must not scroll the page under it. */
+      .color-picker-modal .hue-slider,
+      .color-picker-modal .saturation-value-picker {
+        touch-action: none;
+      }
+
 </style>
   </head>
   <body>
@@ -712,7 +803,6 @@
         </div>
         <p class="hint-text saved-status" id="reorder-saved-status" role="status"></p>
         <button id="add-custom-color-btn" class="btn btn-primary" data-i18n="addCustomColor">+ Add Custom Color</button>
-        <input type="color" id="color-picker-hidden" style="display:none" />
       </section>
 
       <!-- Cloud Sync Section -->
@@ -789,6 +879,9 @@
         >
       </section>
     </div>
+    <!-- The colour picker the in-page controls use, and the maths it needs. -->
+    <script src="content-scripts/color-core.js"></script>
+    <script src="content-scripts/color-picker.js"></script>
     <script type="module" src="settings.js"></script>
   </body>
 </html>

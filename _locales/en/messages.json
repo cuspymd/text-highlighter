@@ -218,6 +218,9 @@
   "apply": {
     "message": "Apply"
   },
+  "colorHexCode": {
+    "message": "Hex code"
+  },
   "cancel": {
     "message": "Cancel"
   },
