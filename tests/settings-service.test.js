@@ -450,6 +450,29 @@ describe('settings-service', () => {
         { action: 'setHideDefaultColors', hidden: false },
       );
       expect(getVisibleColors()).toHaveLength(6);
+      expect(createdMenuIds()).toEqual([
+        'highlight-text', 'highlight-yellow', 'highlight-green', 'highlight-blue',
+        'highlight-pink', 'highlight-orange', 'highlight-custom_hide',
+      ]);
+    });
+
+    // A whole settings object from sync carries the colours and the hide flag
+    // together. The menu is built once, from both.
+    it('builds the menu from the colours and the hide flag that arrived together', async () => {
+      const other = { id: 'custom_other', colorNumber: 2, color: '#2468AC' };
+      await applySettingsFromSync({ customColors: [custom, other], hideDefaultColors: false });
+
+      expect(createdMenuIds()).toEqual([
+        'highlight-text', 'highlight-yellow', 'highlight-green', 'highlight-blue',
+        'highlight-pink', 'highlight-orange', 'highlight-custom_hide', 'highlight-custom_other',
+      ]);
+    });
+
+    // The menu labels each colour with its shortcut.
+    it('rebuilds the menu when only the shortcut map arrives', async () => {
+      await applySettingsFromSync({ shortcutColorMap: { command_slot_1: 'custom_hide' } });
+
+      expect(createdMenuIds()).toEqual(['highlight-text', 'highlight-custom_hide']);
     });
   });
 });

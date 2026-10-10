@@ -588,7 +588,7 @@ export const applySettingsFromSync = serializePaletteChange(async function apply
     sanitizeCustomColors(customColors);
     await browserAPI.storage.local.set({ customColors });
     currentColors = buildPalette(customColors);
-    await publishPalette();
+    await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
     colorsChanged = true;
   }
 
@@ -626,6 +626,13 @@ export const applySettingsFromSync = serializePaletteChange(async function apply
   if (newSettings.shortcutColorMap !== undefined) {
     await browserAPI.storage.local.set({ [STORAGE_KEYS.SHORTCUT_COLOR_MAP]: newSettings.shortcutColorMap });
     shortcutColorMap = newSettings.shortcutColorMap || { ...DEFAULT_SHORTCUT_COLOR_MAP };
+  }
+
+  // Rebuilt once everything it shows has been applied: the colours, which of
+  // them are hidden, and the shortcut each one is labelled with. Still inside
+  // the queue, so a palette change made right after cannot be overtaken.
+  if (colorsChanged || newSettings.shortcutColorMap !== undefined) {
+    await createOrUpdateContextMenus();
   }
 
   return { colorsChanged };
