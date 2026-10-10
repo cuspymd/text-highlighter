@@ -142,9 +142,16 @@
   animation: pop-in-new-color 0.5s cubic-bezier(.22,1.6,.42,1.01);
 }
 
+/* The X and + are background images, not inline <svg>. Firefox snaps an
+   inline SVG to the pixel grid on its own while the button scales on hover:
+   the glyph drifts off centre mid-transition, then jumps when it ends. A
+   background image is painted with the button and scales with it. */
 .delete-highlight {
   background-color: #ff4d4f;
-  color: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
   width: 24px;
   height: 24px;
   display: flex;
@@ -152,21 +159,15 @@
   justify-content: center;
   border-radius: 50%;
   padding: 0;
-  /* No font styles needed since SVG is used */
-}
-
-.delete-highlight svg {
-  display: block;
-  width: 16px;
-  height: 16px;
-  pointer-events: none;
-  fill: none;
 }
 
 .add-color-button {
   background-color: rgba(255, 255, 255, 0.85);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 3v10M3 8h10' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
   border: 1px solid var(--th-stroke);
-  color: #999;
   width: 24px;
   height: 24px;
   display: flex;
@@ -177,17 +178,42 @@
   position: relative;
 }
 
-.add-color-button svg {
-  display: block;
-  width: 16px;
-  height: 16px;
-  pointer-events: none;
-  fill: none;
+/* Forced colours (Windows high contrast) swap the red fill for the canvas
+   colour but leave the white X image as it is, so on a light canvas it
+   vanishes. There the glyphs are a mask over a system colour instead. */
+@media (forced-colors: active) {
+  .delete-highlight,
+  .add-color-button {
+    background-image: none;
+    position: relative;
+  }
+
+  .delete-highlight::before,
+  .add-color-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    forced-color-adjust: none;
+    background-color: ButtonText;
+    -webkit-mask: var(--th-glyph) center / 16px 16px no-repeat;
+    mask: var(--th-glyph) center / 16px 16px no-repeat;
+    pointer-events: none;
+  }
+
+  .delete-highlight {
+    --th-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  }
+
+  .add-color-button {
+    --th-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 3v10M3 8h10' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  }
 }
 
-
-.add-color-button {
-  position: relative;
+@media (forced-colors: active) and (pointer: coarse) {
+  .delete-highlight::before {
+    -webkit-mask-size: 22px 22px;
+    mask-size: 22px 22px;
+  }
 }
 
 /* Mobile: a vertical more button takes the '+' button's place at the end of
@@ -685,9 +711,9 @@
   .delete-highlight {
     width: 36px !important;
     height: 36px !important;
+    background-size: 22px 22px;
   }
 
-  .delete-highlight svg,
   .text-highlighter-more-button svg {
     width: 22px;
     height: 22px;
