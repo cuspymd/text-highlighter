@@ -16,6 +16,11 @@ describe('color-picker', () => {
     return picker.element.querySelector(selector);
   }
 
+  // Where the hue handle sits along the strip, 0 to 1.
+  function huePosition(picker) {
+    return parseFloat(part(picker, '.hue-handle').style.getPropertyValue('--th-hue-position'));
+  }
+
   afterEach(() => {
     document.body.replaceChildren();
   });
@@ -38,7 +43,7 @@ describe('color-picker', () => {
     expect(picker.getColor()).toBe('#cc2929');
     expect(part(picker, '.sv-handle').style.left).toBe('80%');
     expect(part(picker, '.sv-handle').style.top).toBe('20%');
-    expect(part(picker, '.hue-handle').style.left).toBe('0%');
+    expect(huePosition(picker)).toBe(0);
   });
 
   it('opens on the colour it is given, handles already in place', () => {
@@ -46,7 +51,7 @@ describe('color-picker', () => {
 
     expect(picker.getColor()).toBe('#00ff00');
     expect(part(picker, '.color-picker-hex').value).toBe('#00FF00');
-    expect(parseFloat(part(picker, '.hue-handle').style.left)).toBeCloseTo((120 / 360) * 100);
+    expect(huePosition(picker)).toBeCloseTo(120 / 360);
     expect(part(picker, '.sv-handle').style.left).toBe('100%');
     expect(part(picker, '.sv-handle').style.top).toBe('0%');
   });
@@ -84,7 +89,7 @@ describe('color-picker', () => {
     document.dispatchEvent(new MouseEvent('mouseup'));
 
     expect(picker.getColor()).toBe('#0000ff');
-    expect(parseFloat(part(picker, '.hue-handle').style.left)).toBeCloseTo((240 / 360) * 100);
+    expect(huePosition(picker)).toBeCloseTo(240 / 360);
   });
 
   it('keeps the hue where it was when set to a grey', () => {
@@ -92,7 +97,7 @@ describe('color-picker', () => {
 
     picker.setColor('#808080');
 
-    expect(parseFloat(part(picker, '.hue-handle').style.left)).toBeCloseTo((240 / 360) * 100);
+    expect(huePosition(picker)).toBeCloseTo(240 / 360);
     expect(picker.getColor()).toBe('#808080');
   });
 

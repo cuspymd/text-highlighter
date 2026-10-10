@@ -631,6 +631,9 @@
         z-index: 1;
         max-height: 100%;
         overflow-y: auto;
+        /* Only ever scrolls down: a handle at the square's edge must not
+           bring in a sideways scrollbar. */
+        overflow-x: hidden;
         user-select: none;
         -webkit-user-select: none;
         background: var(--surface-strong);

@@ -130,7 +130,7 @@
     // Handles are placed in percent, so they are right before the picker has
     // been laid out - and stay right if it is resized.
     function render({ keepHexField = false } = {}) {
-      hueHandle.style.left = `${(hsv.h / 360) * 100}%`;
+      hueHandle.style.setProperty('--th-hue-position', String(hsv.h / 360));
       svHandle.style.left = `${hsv.s}%`;
       svHandle.style.top = `${100 - hsv.v}%`;
       svPicker.style.background = `

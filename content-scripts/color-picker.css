@@ -81,19 +81,32 @@
   background: linear-gradient(to right, 
     #ff0000 0%, #ffff00 16.66%, #00ff00 33.33%, 
     #00ffff 50%, #0000ff 66.66%, #ff00ff 83.33%, #ff0000 100%);
-  border-radius: 6px;
+  /* Fully round ends, whatever the height: the handle at either end then
+     covers the end completely. A fixed 6px radius left the corners of the
+     taller touch strip poking out past the handle. */
+  border-radius: 9999px;
   cursor: pointer;
   position: relative;
 }
 
+/* The handle stays inside the strip: it travels the strip's width less its
+   own, so at either end it sits flush instead of hanging past the edge.
+   --th-hue-position (0 to 1) is set inline by color-picker.js. Centred
+   vertically by transform, so any handle and strip height line up.
+   border-box everywhere: over a page the root resets box-sizing, and the
+   settings page sets it, so the declared size is the size on both. */
 .hue-handle {
-  width: 16px;
-  height: 16px;
+  --th-hue-handle-size: 20px;
+  width: var(--th-hue-handle-size);
+  height: var(--th-hue-handle-size);
+  box-sizing: border-box;
   background: white;
   border: 2px solid #333;
   border-radius: 50%;
   position: absolute;
-  top: -2px;
+  top: 50%;
+  left: calc(var(--th-hue-position, 0) * (100% - var(--th-hue-handle-size)));
+  transform: translateY(-50%);
   cursor: pointer;
   pointer-events: none;
 }
@@ -109,8 +122,9 @@
 }
 
 .sv-handle {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
   background: white;
   border: 2px solid #333;
   border-radius: 50%;
@@ -212,9 +226,7 @@
 
   /* Larger HSV slider handles */
   .hue-handle {
-    width: 22px;
-    height: 22px;
-    top: -5px;
+    --th-hue-handle-size: 26px;
   }
 
   .hue-slider-container,
@@ -223,8 +235,8 @@
   }
 
   .sv-handle {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
   }
 
   .saturation-value-picker {
