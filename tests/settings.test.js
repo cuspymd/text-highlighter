@@ -702,6 +702,40 @@ describe('settings', () => {
         expect(byId('reorder-saved-status').textContent).toBe('');
       });
 
+      it('holds every reorder control still until the save is answered', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+        const answer = chrome.runtime.sendMessage.getMockImplementation();
+        let finishSave;
+        chrome.runtime.sendMessage.mockImplementation(message => (
+          message.action === 'reorderCustomColors'
+            ? new Promise((resolve) => { finishSave = resolve; })
+            : answer(message)
+        ));
+
+        byId('reorder-save-btn').click();
+        await flush();
+
+        expect(colorRows().every(row => moveButtons(row).up.disabled && moveButtons(row).down.disabled))
+          .toBe(true);
+        expect(byId('reorder-cancel-btn').disabled).toBe(true);
+        expect(byId('reorder-save-btn').disabled).toBe(true);
+        pointer(colorRows()[0].querySelector('.drag-handle'), 'pointerdown', 20);
+        expect(document.querySelector('.dragging')).toBeNull();
+        byId('reorder-save-btn').click();
+        expect(backgroundMessages('reorderCustomColors')).toHaveLength(1);
+
+        finishSave({
+          success: true,
+          colors: [BUILT_IN_COLOR, NAMED_CUSTOM_COLOR, CUSTOM_COLOR, THIRD_COLOR],
+        });
+        await flush();
+
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+        expect(byId('reorder-actions').hidden).toBe(true);
+        expect(byId('reorder-cancel-btn').disabled).toBe(false);
+      });
+
       it('puts the old order back on cancel without saving', async () => {
         await startReordering();
         moveButtons(colorRows()[0]).down.click();
@@ -746,6 +780,8 @@ describe('settings', () => {
         expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
         expect(byId('reorder-actions').hidden).toBe(false);
         expect(byId('reorder-save-btn').disabled).toBe(false);
+        expect(byId('reorder-cancel-btn').disabled).toBe(false);
+        expect(moveButtons(colorRows()[0]).down.disabled).toBe(false);
       });
 
       it('does not reload the colors over the draft when the window regains focus', async () => {

@@ -114,6 +114,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // being put together from them, or null outside reorder mode.
   let shownCustomColors = [];
   let reorderDraft = null;
+  // While Save is waiting on the background, the draft it sent is the one that
+  // will come back: a move made meanwhile would be drawn over, and Cancel
+  // could not stop the write. Everything in reorder mode holds still.
+  let reorderSaving = false;
 
   // Hiding the defaults with no custom colour to show instead would leave the
   // palette empty, so the defaults stay - which looks like the switch is not
@@ -269,7 +273,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearCustomColorsBtn.hidden = reordering || !several;
     reorderModeLabel.hidden = !reordering;
     reorderActions.hidden = !reordering;
-    reorderSaveBtn.disabled = !reordering || !reorderDraftChanged();
+    reorderSaveBtn.disabled = !reordering || reorderSaving || !reorderDraftChanged();
+    reorderCancelBtn.disabled = reorderSaving;
+    customColorsList.classList.toggle('reorder-saving', reorderSaving);
     reorderHint.hidden = !reordering;
     addCustomColorBtn.hidden = reordering;
   }
@@ -347,12 +353,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.setAttribute('aria-label', label);
     btn.dataset.colorId = colorObj.id;
     btn.dataset.offset = String(offset);
-    btn.disabled = up ? index === 0 : index === reorderDraft.length - 1;
+    btn.disabled = reorderSaving || (up ? index === 0 : index === reorderDraft.length - 1);
     btn.addEventListener('click', () => moveDraftColor(index, offset));
     return btn;
   }
 
   function moveDraftColor(index, offset) {
+    if (reorderSaving) return;
     const target = index + offset;
     if (target < 0 || target >= reorderDraft.length) return;
     const [moved] = reorderDraft.splice(index, 1);
@@ -387,7 +394,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let rowDragActive = false;
 
   function startRowDrag(event, row) {
-    if (event.button !== 0 || rowDragActive) return;
+    if (event.button !== 0 || rowDragActive || reorderSaving) return;
     event.preventDefault();
     rowDragActive = true;
     const handle = event.currentTarget;
@@ -489,21 +496,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   reorderCancelBtn.addEventListener('click', () => {
+    if (reorderSaving) return;
     reorderDraft = null;
     renderCustomColorsList(shownCustomColors);
   });
 
   reorderSaveBtn.addEventListener('click', async () => {
-    if (!reorderDraftChanged()) return;
-    reorderSaveBtn.disabled = true;
+    // A dropped row still gliding into place has not reached the draft yet.
+    if (reorderSaving || rowDragActive || !reorderDraftChanged()) return;
+    reorderSaving = true;
+    renderReorderList();
 
     const response = await sendToBackground({
       action: 'reorderCustomColors',
       ids: reorderDraft.map(c => c.id),
     });
+    reorderSaving = false;
     // Nothing was saved, so the draft stays for another try.
     if (!response || !response.success) {
-      syncCustomColorControls();
+      renderReorderList();
       return;
     }
 

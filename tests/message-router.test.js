@@ -427,6 +427,17 @@ describe('message-router', () => {
         .toEqual(['custom_blue', 'custom_red', 'custom_green']);
     });
 
+    it('answers a stale order with the stored colors even when the palette load had failed', async () => {
+      const read = chrome.storage.local.get.getMockImplementation();
+      chrome.storage.local.get.mockImplementationOnce(async () => { throw new Error('storage busy'); });
+      chrome.storage.local.get.mockImplementation(read);
+
+      const result = await send({ action: 'reorderCustomColors', ids: ['custom_blue', 'custom_red'] });
+
+      expect(result.mismatch).toBe(true);
+      expect(customColorIds(result.colors)).toEqual(['custom_red', 'custom_green', 'custom_blue']);
+    });
+
     it('rebuilds the menus and tells the tabs', async () => {
       openTabs(PAGE);
 

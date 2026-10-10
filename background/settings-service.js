@@ -430,7 +430,9 @@ export async function reorderCustomColors(orderedIds) {
     && orderedIds.length === customColors.length
     && new Set(orderedIds).size === orderedIds.length
     && orderedIds.every(id => byId.has(id));
-  if (!matches) return { mismatch: true, colors: currentColors };
+  // Answered from storage for the same reason as the reorder below. The palette
+  // in memory is left alone: nothing rebuilds the menu on this path.
+  if (!matches) return { mismatch: true, colors: buildPalette(customColors) };
 
   const reordered = orderedIds.map(id => byId.get(id));
   await browserAPI.storage.local.set({ customColors: reordered });
