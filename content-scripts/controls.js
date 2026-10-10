@@ -221,7 +221,6 @@ function createHighlightControls() {
   highlightControlsContainer.className = 'text-highlighter-controls';
   const deleteButton = document.createElement('div');
   deleteButton.className = 'text-highlighter-control-button delete-highlight';
-  deleteButton.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="4" y1="4" x2="12" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`;
   deleteButton.title = getMessage('deleteHighlight');
   deleteButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
@@ -377,7 +376,6 @@ function createColorButton(colorInfo) {
 function createAddColorButton(onColorSelect = addCustomColor) {
   const addColorBtn = document.createElement('div');
   addColorBtn.className = 'text-highlighter-control-button add-color-button';
-  addColorBtn.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><line x1="8" y1="3" x2="8" y2="13" stroke="#999" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>`;
   addColorBtn.title = getMessage('addColor') || '+';
 
   // A mousedown the page never sees leaves the text selection where it is.
