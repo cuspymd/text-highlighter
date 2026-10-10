@@ -92,6 +92,24 @@ describe('color-picker', () => {
     expect(huePosition(picker)).toBeCloseTo(240 / 360);
   });
 
+  it('reads the hue along the track the handle travels', () => {
+    const picker = createColorPicker({ getMessage, initialColor: '#ff0000' });
+    const strip = part(picker, '.hue-slider');
+    giveSize(strip, { width: 240, height: 20 });
+    Object.defineProperty(part(picker, '.hue-handle'), 'offsetWidth', { value: 20 });
+
+    // Grabbing the handle at its centre, where it sits at red, keeps red.
+    strip.dispatchEvent(new MouseEvent('mousedown', { clientX: 10, bubbles: true }));
+    document.dispatchEvent(new MouseEvent('mouseup'));
+    expect(picker.getColor()).toBe('#ff0000');
+    expect(huePosition(picker)).toBe(0);
+
+    // The handle's centre at the right end is the end of the hue.
+    strip.dispatchEvent(new MouseEvent('mousedown', { clientX: 230, bubbles: true }));
+    document.dispatchEvent(new MouseEvent('mouseup'));
+    expect(huePosition(picker)).toBe(1);
+  });
+
   it('keeps the hue where it was when set to a grey', () => {
     const picker = createColorPicker({ getMessage, initialColor: '#0000ff' });
 
@@ -122,5 +140,28 @@ describe('color-picker', () => {
 
     field.dispatchEvent(new Event('blur'));
     expect(field.value).toBe('#AABBCC');
+  });
+
+  it('holds Apply while the code is half-typed, until the picker moves', () => {
+    const picker = createColorPicker({
+      getMessage, initialColor: '#123456', hexInput: true, presetsEdit: true,
+    });
+    const field = part(picker, '.color-picker-hex');
+    const apply = part(picker, '.color-picker-apply');
+
+    field.value = '#12';
+    field.dispatchEvent(new Event('input'));
+    expect(apply.disabled).toBe(true);
+
+    // Leaving the field does not swap the half-typed code for the old colour.
+    field.dispatchEvent(new Event('blur'));
+    expect(field.value).toBe('#12');
+    expect(field.getAttribute('aria-invalid')).toBe('true');
+    expect(apply.disabled).toBe(true);
+
+    // A preset replaces it.
+    picker.element.querySelector('[data-color="#3498DB"]').click();
+    expect(field.value).toBe('#3498DB');
+    expect(apply.disabled).toBe(false);
   });
 });

@@ -448,11 +448,19 @@ describe('settings', () => {
       await flush();
       expect(pickerDialog()).not.toBeNull();
 
-      // Leaving the field puts back the colour the picker is on.
+      // Nor does Apply, even once the field has lost focus to it.
+      const apply = pickerDialog().querySelector('.color-picker-apply');
+      expect(apply.disabled).toBe(true);
       hexField().dispatchEvent(new Event('blur'));
-      expect(hexField().value).toBe('#123456');
-      expect(hexField().hasAttribute('aria-invalid')).toBe(false);
+      expect(hexField().value).toBe('#12z');
+      expect(apply.disabled).toBe(true);
+      await applyPicker();
+      expect(pickerDialog()).not.toBeNull();
+      expect(lastMessage('addColor')).toBeUndefined();
 
+      // Finishing the code lets it through.
+      typeHex('#123456');
+      expect(apply.disabled).toBe(false);
       hexField().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       await flush();
       expect(pickerDialog()).toBeNull();

@@ -139,8 +139,19 @@
       colorPreview.style.backgroundColor = currentHex;
       if (hexField && !keepHexField) {
         hexField.value = currentHex.toUpperCase();
+        markHexInvalid(false);
+      }
+    }
+
+    // Apply waits while the field holds something that is not a colour code,
+    // so a half-typed code can never be taken for the colour the picker is on.
+    function markHexInvalid(invalid) {
+      if (invalid) {
+        hexField.setAttribute('aria-invalid', 'true');
+      } else {
         hexField.removeAttribute('aria-invalid');
       }
+      applyButton.disabled = invalid;
     }
 
     function moveTo(nextHsv) {
@@ -162,11 +173,16 @@
       return true;
     }
 
+    // The handle travels the strip less its own width (see the CSS), so the
+    // pointer is read along that same track: the handle's centre stays under
+    // it, and grabbing the handle where it sits does not move the hue.
     function updateHueAt(clientX) {
       const rect = hueSlider.getBoundingClientRect();
-      if (rect.width <= 0) return;
-      const x = clamp(clientX - rect.left, 0, rect.width);
-      moveTo({ ...hsv, h: (x / rect.width) * 360 });
+      const half = hueHandle.offsetWidth / 2;
+      const track = rect.width - 2 * half;
+      if (track <= 0) return;
+      const x = clamp(clientX - rect.left - half, 0, track);
+      moveTo({ ...hsv, h: (x / track) * 360 });
     }
 
     function updateSVAt(clientX, clientY) {
@@ -223,16 +239,17 @@
 
     if (hexField) {
       // Each keystroke that makes a whole code moves the picker; anything in
-      // between is left alone to be finished. Leaving the field puts back the
-      // colour the picker is actually on.
+      // between is left alone, marked, to be finished. Leaving the field
+      // writes a whole code out in full; a half-typed one stays as typed and
+      // keeps Apply waiting - putting the old colour back there would let the
+      // Apply click that took focus away save a colour nobody chose. Moving a
+      // slider or picking a preset replaces it.
       hexField.addEventListener('input', () => {
-        if (setColor(hexField.value, { keepHexField: true })) {
-          hexField.removeAttribute('aria-invalid');
-        } else {
-          hexField.setAttribute('aria-invalid', 'true');
-        }
+        markHexInvalid(!setColor(hexField.value, { keepHexField: true }));
       });
-      hexField.addEventListener('blur', () => render());
+      hexField.addEventListener('blur', () => {
+        if (!hexField.hasAttribute('aria-invalid')) render();
+      });
     }
 
     if (!initialColor || !setColor(initialColor)) render();

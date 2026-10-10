@@ -165,8 +165,13 @@
   border-color: #007bff;
 }
 
-.color-picker-apply:hover {
+.color-picker-apply:hover:not(:disabled) {
   background: #0056b3;
+}
+
+.color-picker-apply:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .color-picker-close:hover {
