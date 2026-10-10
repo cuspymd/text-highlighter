@@ -499,8 +499,11 @@ describe('settings', () => {
         });
       }
 
-      function pointer(target, type, clientY) {
-        target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientY }));
+      // jsdom has no PointerEvent; a mouse event with the pointer's id stands in.
+      function pointer(target, type, clientY, pointerId) {
+        const event = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientY });
+        if (pointerId !== undefined) Object.defineProperty(event, 'pointerId', { value: pointerId });
+        target.dispatchEvent(event);
       }
 
       beforeEach(() => {
@@ -639,20 +642,41 @@ describe('settings', () => {
         const [held, second] = colorRows();
         const handle = held.querySelector('.drag-handle');
         handle.setPointerCapture = jest.fn();
-        const down = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, clientY: 20 });
-        Object.defineProperty(down, 'pointerId', { value: 7 });
-        handle.dispatchEvent(down);
+        pointer(handle, 'pointerdown', 20, 7);
         expect(handle.setPointerCapture).toHaveBeenCalledWith(7);
 
-        pointer(second, 'pointermove', 70);
-        handle.dispatchEvent(new Event('lostpointercapture'));
+        pointer(second, 'pointermove', 70, 7);
+        pointer(handle, 'lostpointercapture', 70, 7);
         await new Promise(resolve => setTimeout(resolve, 200));
 
         expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
         expect(document.querySelector('.dragging')).toBeNull();
 
         // The drag is over: a later release elsewhere does nothing more.
-        pointer(document.body, 'pointerup', 400);
+        pointer(document.body, 'pointerup', 400, 7);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+      });
+
+      it('moves and drops the row only with the pointer that picked it up', async () => {
+        await startReordering();
+        layOutRows();
+
+        const [held, second] = colorRows();
+        const handle = held.querySelector('.drag-handle');
+        pointer(handle, 'pointerdown', 20, 1);
+        pointer(second, 'pointermove', 70, 1);
+        expect(held.style.transform).toBe('translateY(50px)');
+
+        // A second finger moving and lifting leaves the held row where it is.
+        pointer(document.body, 'pointermove', 400, 2);
+        pointer(document.body, 'pointerup', 400, 2);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect(held.style.transform).toBe('translateY(50px)');
+        expect(held.classList.contains('dragging')).toBe(true);
+        expect(colorRows()[0]).toBe(held);
+
+        pointer(second, 'pointerup', 70, 1);
         await new Promise(resolve => setTimeout(resolve, 200));
         expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
       });

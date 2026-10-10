@@ -398,6 +398,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     event.preventDefault();
     rowDragActive = true;
     const handle = event.currentTarget;
+    // Only the pointer that picked the row up moves or drops it: with several
+    // fingers down, another one lifting must not drop the row.
+    const pointerId = event.pointerId;
+    const isOtherPointer = otherEvent => otherEvent.pointerId !== pointerId;
     if (handle.setPointerCapture && event.pointerId !== undefined) {
       handle.setPointerCapture(event.pointerId);
     }
@@ -419,6 +423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     rows.forEach((r) => { if (r !== row) r.classList.add('make-way'); });
 
     const onMove = (moveEvent) => {
+      if (isOtherPointer(moveEvent)) return;
       const dy = Math.min(maxDy, Math.max(minDy, moveEvent.clientY - startY));
       row.style.transform = `translateY(${dy}px)`;
 
@@ -455,7 +460,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderReorderList();
     };
 
-    const onEnd = () => {
+    const onEnd = (endEvent) => {
+      if (isOtherPointer(endEvent)) return;
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onEnd);
       document.removeEventListener('pointercancel', onEnd);

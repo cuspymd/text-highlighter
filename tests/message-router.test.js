@@ -438,6 +438,26 @@ describe('message-router', () => {
       expect(customColorIds(result.colors)).toEqual(['custom_red', 'custom_green', 'custom_blue']);
     });
 
+    // Two pages at once: each change reads the stored list, works out its own
+    // and writes it back. Run side by side, the second write would be built
+    // without the first one's change.
+    it.each([
+      ['an add', { action: 'addColor', color: '#abcabc' }, list => expect(list.map(c => c.color)).toContain('#abcabc')],
+      ['a removal', { action: 'removeCustomColor', id: 'custom_green' }, list => expect(list.map(c => c.id)).not.toContain('custom_green')],
+      ['a rename', { action: 'updateCustomColorName', id: 'custom_red', name: 'Ruby' }, list => expect(list.find(c => c.id === 'custom_red').customName).toBe('Ruby')],
+    ])('does not undo %s that lands while it runs', async (_case, other, check) => {
+      await send({ action: 'getColors' }); // the palette is loaded, as on an open settings page
+
+      await Promise.all([
+        send({ action: 'reorderCustomColors', ids: ['custom_blue', 'custom_red', 'custom_green'] }),
+        send(other),
+      ]);
+
+      check(local.customColors);
+      check(sync.settings.customColors);
+      expect(local.customColors.slice(0, 2).map(c => c.id)).toEqual(['custom_blue', 'custom_red']);
+    });
+
     it('rebuilds the menus and tells the tabs', async () => {
       openTabs(PAGE);
 

@@ -325,6 +325,22 @@ export async function ensureCustomColorsLoaded() {
   await loadCustomColors();
 }
 
+// Palette changes run one at a time. Each reads the stored colours, works out
+// the new list and writes it back, with awaits in between; two running
+// together - two settings pages, or a sync landing during a change - would
+// each write a list built without the other, and a colour one of them added
+// would vanish under the other's write. A change that fails does not hold up
+// the ones queued after it.
+let paletteChangeQueue = Promise.resolve();
+
+function serializePaletteChange(change) {
+  return (...args) => {
+    const run = paletteChangeQueue.then(() => change(...args));
+    paletteChangeQueue = run.catch(() => {});
+    return run;
+  };
+}
+
 // Every change to the palette starts here. A worker that a message woke up is
 // still loading the colours when it handles that message; a change made before
 // the load lands is overwritten by it, and the palette the tabs were sent
@@ -341,7 +357,7 @@ async function settleLoadBeforeChange() {
   }
 }
 
-export async function updateCustomColorName(id, newName) {
+export const updateCustomColorName = serializePaletteChange(async function updateCustomColorName(id, newName) {
   await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = stored.customColors || [];
@@ -368,9 +384,9 @@ export async function updateCustomColorName(id, newName) {
 
   await saveSettingsToSync();
   return { exists: false, colors: currentColors };
-}
+});
 
-export async function updateCustomColor(id, newColorValue) {
+export const updateCustomColor = serializePaletteChange(async function updateCustomColor(id, newColorValue) {
   await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = stored.customColors || [];
@@ -392,9 +408,9 @@ export async function updateCustomColor(id, newColorValue) {
 
   await saveSettingsToSync();
   return { exists: false, colors: currentColors };
-}
+});
 
-export async function removeCustomColor(id) {
+export const removeCustomColor = serializePaletteChange(async function removeCustomColor(id) {
   await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   let customColors = stored.customColors || [];
@@ -408,7 +424,7 @@ export async function removeCustomColor(id) {
 
   await saveSettingsToSync();
   return { colors: currentColors };
-}
+});
 
 /**
  * Put the custom colours in the given order. The order is the palette's and the
@@ -420,7 +436,7 @@ export async function removeCustomColor(id) {
  * the current list back instead, to render and try again from.
  * @returns {{ mismatch: boolean, colors: object[] }}
  */
-export async function reorderCustomColors(orderedIds) {
+export const reorderCustomColors = serializePaletteChange(async function reorderCustomColors(orderedIds) {
   await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = stored.customColors || [];
@@ -444,13 +460,13 @@ export async function reorderCustomColors(orderedIds) {
 
   await saveSettingsToSync();
   return { mismatch: false, colors: currentColors };
-}
+});
 
 /**
  * Add a new custom color.
  * @returns {{ exists: boolean, colors: object[] }}
  */
-export async function addCustomColor(newColorValue) {
+export const addCustomColor = serializePaletteChange(async function addCustomColor(newColorValue) {
   if (!newColorValue) return { exists: true, colors: currentColors };
 
   await settleLoadBeforeChange();
@@ -476,13 +492,13 @@ export async function addCustomColor(newColorValue) {
 
   await saveSettingsToSync();
   return { exists: false, colors: currentColors };
-}
+});
 
 /**
  * Clear all custom colors.
  * @returns {{ hadColors: boolean, colors: object[] }}
  */
-export async function clearCustomColors() {
+export const clearCustomColors = serializePaletteChange(async function clearCustomColors() {
   await settleLoadBeforeChange();
   const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = result.customColors || [];
@@ -498,7 +514,7 @@ export async function clearCustomColors() {
 
   await saveSettingsToSync();
   return { hadColors: true, colors: currentColors };
-}
+});
 
 export async function broadcastSettingsToTabs(changedSettings) {
   if (!changedSettings || Object.keys(changedSettings).length === 0) return;
@@ -536,7 +552,7 @@ export async function broadcastSettingsToTabs(changedSettings) {
  * Apply settings received from sync storage on another device.
  * @returns {{ colorsChanged: boolean }}
  */
-export async function applySettingsFromSync(newSettings) {
+export const applySettingsFromSync = serializePaletteChange(async function applySettingsFromSync(newSettings) {
   let colorsChanged = false;
 
   if (newSettings.customColors) {
@@ -586,4 +602,4 @@ export async function applySettingsFromSync(newSettings) {
   }
 
   return { colorsChanged };
-}
+});
