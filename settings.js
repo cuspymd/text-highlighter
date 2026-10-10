@@ -359,7 +359,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function moveDraftColor(index, offset) {
-    if (reorderSaving) return;
+    // A drag in progress or still settling commits by index into the draft as
+    // it was when the row was picked up.
+    if (reorderSaving || rowDragActive) return;
     const target = index + offset;
     if (target < 0 || target >= reorderDraft.length) return;
     const [moved] = reorderDraft.splice(index, 1);
@@ -502,7 +504,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   reorderCancelBtn.addEventListener('click', () => {
-    if (reorderSaving) return;
+    // Another finger can tap Cancel mid-drag; the drop would then commit into a
+    // draft that is gone.
+    if (reorderSaving || rowDragActive) return;
     reorderDraft = null;
     renderCustomColorsList(shownCustomColors);
   });

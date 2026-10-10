@@ -10,7 +10,7 @@ import {
 } from '../constants/cloud-sync-config.js';
 import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob, estimateEncryptedEnvelopeBytes } from '../shared/crypto-utils.js';
 import { mergeHighlights, cleanupTombstones, mergeTombstonesByMax } from './sync-service.js';
-import { applySettingsFromSync, createOrUpdateContextMenus } from './settings-service.js';
+import { applySettingsFromSync } from './settings-service.js';
 
 const LOCAL_ONLY_KEYS = new Set([
   STORAGE_KEYS.CUSTOM_COLORS,
@@ -390,9 +390,8 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
     await broadcastMergedPages(merged.pages, localBlob.pages, removedUrls);
 
     if (merged.settings !== localBlob.settings) {
-      const { colorsChanged } = await applySettingsFromSync(merged.settings);
+      await applySettingsFromSync(merged.settings);
       await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT]: merged.settings.updatedAt || 0 });
-      if (colorsChanged) await createOrUpdateContextMenus();
     }
 
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });

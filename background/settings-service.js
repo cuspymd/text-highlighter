@@ -198,7 +198,20 @@ export async function getCurrentShortcuts() {
   return shortcuts;
 }
 
-export async function createOrUpdateContextMenus() {
+// Rebuilds run one at a time. Each removes every item and creates them again
+// with awaits in between; two running together would interleave their items,
+// and the menu could end up with an earlier palette's colours or its order.
+// Each rebuild reads the palette when it starts, so the last one shows the
+// latest.
+let contextMenuRebuildQueue = Promise.resolve();
+
+export function createOrUpdateContextMenus() {
+  const run = contextMenuRebuildQueue.then(rebuildContextMenus);
+  contextMenuRebuildQueue = run.catch(() => {});
+  return run;
+}
+
+async function rebuildContextMenus() {
   if (isMobile() || !browserAPI.contextMenus) return;
   debugLog('Creating/updating context menus...');
 
@@ -357,6 +370,14 @@ async function settleLoadBeforeChange() {
   }
 }
 
+// A change goes out to the context menu and the open tabs before the next one
+// starts. Sent after the queue moved on, an earlier change's palette could reach
+// the tabs after a later one's and leave them showing the older list.
+async function publishPalette() {
+  await createOrUpdateContextMenus();
+  await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
+}
+
 export const updateCustomColorName = serializePaletteChange(async function updateCustomColorName(id, newName) {
   await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
@@ -383,6 +404,7 @@ export const updateCustomColorName = serializePaletteChange(async function updat
   if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], customName: finalName };
 
   await saveSettingsToSync();
+  await publishPalette();
   return { exists: false, colors: currentColors };
 });
 
@@ -407,6 +429,7 @@ export const updateCustomColor = serializePaletteChange(async function updateCus
   if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], color: newColorValue };
 
   await saveSettingsToSync();
+  await publishPalette();
   return { exists: false, colors: currentColors };
 });
 
@@ -423,6 +446,7 @@ export const removeCustomColor = serializePaletteChange(async function removeCus
   currentColors = currentColors.filter(c => c.id !== id);
 
   await saveSettingsToSync();
+  await publishPalette();
   return { colors: currentColors };
 });
 
@@ -459,6 +483,7 @@ export const reorderCustomColors = serializePaletteChange(async function reorder
   currentColors = buildPalette(reordered);
 
   await saveSettingsToSync();
+  await publishPalette();
   return { mismatch: false, colors: currentColors };
 });
 
@@ -491,6 +516,7 @@ export const addCustomColor = serializePaletteChange(async function addCustomCol
   debugLog('Added custom color:', newColorObj);
 
   await saveSettingsToSync();
+  await publishPalette();
   return { exists: false, colors: currentColors };
 });
 
@@ -513,6 +539,7 @@ export const clearCustomColors = serializePaletteChange(async function clearCust
   debugLog('Cleared all custom colors');
 
   await saveSettingsToSync();
+  await publishPalette();
   return { hadColors: true, colors: currentColors };
 });
 
@@ -561,7 +588,7 @@ export const applySettingsFromSync = serializePaletteChange(async function apply
     sanitizeCustomColors(customColors);
     await browserAPI.storage.local.set({ customColors });
     currentColors = buildPalette(customColors);
-    await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
+    await publishPalette();
     colorsChanged = true;
   }
 

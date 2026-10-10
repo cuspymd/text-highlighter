@@ -458,6 +458,30 @@ describe('message-router', () => {
       expect(local.customColors.slice(0, 2).map(c => c.id)).toEqual(['custom_blue', 'custom_red']);
     });
 
+    // The first save's menu rebuild is slow. Were the menu and the tabs updated
+    // after the queue moved on, the second save would go out first and the
+    // first one's older order would land on top of it.
+    it('sends two saves out in the order they were made', async () => {
+      openTabs(PAGE);
+      await send({ action: 'getColors' });
+      chrome.contextMenus.removeAll.mockImplementationOnce(
+        () => new Promise(resolve => setTimeout(resolve, 20))
+      );
+
+      await Promise.all([
+        send({ action: 'reorderCustomColors', ids: ['custom_blue', 'custom_red', 'custom_green'] }),
+        send({ action: 'reorderCustomColors', ids: ['custom_green', 'custom_blue', 'custom_red'] }),
+      ]);
+
+      const updates = tabMessages('colorsUpdated');
+      expect(updates).toHaveLength(2);
+      expect(customColorIds(updates[1].message.colors)).toEqual(['custom_green', 'custom_blue', 'custom_red']);
+      const menuIds = chrome.contextMenus.create.mock.calls
+        .map(([item]) => item.id)
+        .filter(id => id.startsWith('highlight-custom_'));
+      expect(menuIds.slice(-3)).toEqual(['highlight-custom_green', 'highlight-custom_blue', 'highlight-custom_red']);
+    });
+
     it('rebuilds the menus and tells the tabs', async () => {
       openTabs(PAGE);
 

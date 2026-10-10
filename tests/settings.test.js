@@ -681,6 +681,34 @@ describe('settings', () => {
         expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
       });
 
+      // A second finger can reach Cancel or an arrow while the first still holds
+      // a row, and the drop lands 150ms after release. Either would leave the
+      // drop committing into a draft that changed or is gone.
+      it('ignores Cancel and the arrows until a dragged row has landed', async () => {
+        await startReordering();
+        layOutRows();
+
+        const [held, second] = colorRows();
+        const handle = held.querySelector('.drag-handle');
+        pointer(handle, 'pointerdown', 20, 1);
+        pointer(second, 'pointermove', 70, 1);
+
+        byId('reorder-cancel-btn').click();
+        moveButtons(colorRows()[2]).up.click();
+        expect(byId('reorder-actions').hidden).toBe(false);
+        expect(colorRows()[0]).toBe(held);
+
+        pointer(second, 'pointerup', 70, 1);
+        byId('reorder-cancel-btn').click(); // still settling
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect(byId('reorder-actions').hidden).toBe(false);
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+
+        byId('reorder-cancel-btn').click();
+        expect(byId('reorder-actions').hidden).toBe(true);
+        expect(colorNames()).toEqual(['customColor 1', 'Ocean', 'Mint']);
+      });
+
       it('saves the whole order in one message and leaves reorder mode', async () => {
         await startReordering();
         moveButtons(colorRows()[0]).down.click();
