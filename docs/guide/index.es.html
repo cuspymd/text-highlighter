@@ -31,13 +31,17 @@
                 <li><a href="#intro">Introducción</a></li>
                 <li><a href="#add-highlights">Cómo añadir resaltados</a>
                     <ul class="toc-sublist">
-                        <li><a href="#add-control-ui">1. Con la interfaz de control</a></li>
+                        <li><a href="#add-control-ui">1. Con el icono de selección</a></li>
                         <li><a href="#add-context-menu">2. Con el menú contextual</a></li>
                         <li><a href="#add-shortcuts">3. Con atajos de teclado</a></li>
                     </ul>
                 </li>
                 <li><a href="#delete-highlights">Cómo eliminar resaltados</a></li>
-                <li><a href="#custom-colors">Colores personalizados</a></li>
+                <li><a href="#custom-colors">Colores personalizados</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#hide-default-colors">Ocultar los colores predeterminados</a></li>
+                    </ul>
+                </li>
                 <li><a href="#minimap">Minimapa</a></li>
                 <li><a href="#popup-menu">Menú emergente</a></li>
                 <li><a href="#settings">Pantalla de ajustes</a>
@@ -70,11 +74,11 @@
                 <h2>Cómo añadir resaltados</h2>
                 <p>Hay tres formas de resaltar el texto que selecciones en una página web.</p>
 
-                <h3 id="add-control-ui">1. Con la interfaz de control</h3>
-                <p>Al seleccionar texto aparece un icono de resaltador (con forma de bolígrafo) junto a la selección. Haz clic en el icono para mostrar la <strong>interfaz de control</strong> con la paleta de colores. Haz clic en un color para aplicar el resaltado.</p>
+                <h3 id="add-control-ui">1. Con el icono de selección</h3>
+                <p>Al seleccionar texto aparece junto a la selección el <strong>icono de selección</strong>, con forma de bolígrafo. Haz clic en él para abrir la <strong>paleta de colores</strong> y haz clic en un color para aplicar el resaltado.</p>
                 <div class="note">
                     <span class="note-title">Nota</span>
-                    Funciona si la opción "Mostrar interfaz de control al seleccionar texto" está activada en los ajustes. También es el método principal en dispositivos móviles. En el móvil, el botón <strong>⋮ (Más)</strong> al final de la paleta abre un menú con <strong>Agregar Color</strong>, <strong>Lista de Páginas Resaltadas</strong> y <strong>Configuración</strong>.
+                    En el escritorio, el icono de selección aparece si la opción "Mostrar icono de selección al seleccionar texto" está activada en los ajustes; en el móvil aparece siempre y es el método principal. En el móvil, el botón <strong>⋮ (Más)</strong> al final de la paleta abre un menú con <strong>Agregar Color</strong>, <strong>Lista de Páginas Resaltadas</strong> y <strong>Configuración</strong>.
                 </div>
 
                 <h3 id="add-context-menu">2. Con el menú contextual</h3>
@@ -118,7 +122,7 @@
                 <h2>Cómo eliminar resaltados</h2>
                 <p>Puedes quitar los resaltados que ya no necesites de las siguientes formas:</p>
                 <ul>
-                    <li><strong>Eliminar uno (interfaz de control):</strong> haz clic en un resaltado existente para abrir la interfaz de control y pulsa el <strong>icono de papelera</strong>.</li>
+                    <li><strong>Eliminar uno (paleta de colores):</strong> haz clic en un resaltado existente para abrir su paleta de colores y pulsa el <strong>icono de papelera</strong> al principio de la paleta.</li>
                     <li><strong>Eliminar uno (menú emergente):</strong> haz clic en el icono de la extensión en la barra de herramientas para abrir el menú emergente. En la lista "Resaltados de Página Actual", pulsa el <strong>botón X</strong> del elemento que quieras quitar.</li>
                     <li><strong>Vaciar la página (menú emergente):</strong> pulsa el botón <strong>"Eliminar todos los resaltados de esta página"</strong> en la parte inferior del menú emergente para quitar todos los resaltados de la página actual.</li>
                     <li><strong>Eliminar una página (lista de páginas):</strong> en el panel de páginas resaltadas, pulsa el botón <strong>"Eliminar"</strong> de una tarjeta de página para borrar todos sus datos.</li>
@@ -132,13 +136,13 @@
                 <h3>Añadir y cambiar colores</h3>
                 <p>Además de los 5 colores predeterminados (amarillo, verde, azul, rosa y naranja), puedes añadir los tuyos propios. Puedes añadirlos directamente desde la página o gestionarlos en la pantalla de ajustes.</p>
                 <ol>
-                    <li>Selecciona texto y abre la interfaz de control, o haz clic en un resaltado existente.</li>
-                    <li>Pulsa el <strong>botón +</strong> al final de la lista de colores. (En el móvil, elige <strong>Agregar Color</strong> en el menú <strong>⋮</strong>).</li>
+                    <li>Selecciona texto y pulsa el icono de selección para abrir la paleta de colores, o haz clic en un resaltado existente para abrir su paleta.</li>
+                    <li>Pulsa el <strong>botón +</strong> al final de la paleta. (En el móvil, elige <strong>Agregar Color</strong> en el menú <strong>⋮</strong>).</li>
                     <li>Elige un color en el selector y pulsa "Aplicar".</li>
                 </ol>
                 <div class="note">
                     <span class="note-title">Nota</span>
-                    Si añades un color desde la interfaz de control abierta para un texto seleccionado, ese texto se resalta al instante con el nuevo color.
+                    Si añades un color desde la paleta abierta para un texto seleccionado, ese texto se resalta al instante con el nuevo color.
                 </div>
 
                 <h3>Gestionarlos en los ajustes</h3>
@@ -150,6 +154,19 @@
                     <li><strong>Eliminar uno:</strong> cada color tiene su propio botón <strong>"Eliminar"</strong>.</li>
                     <li><strong>Eliminar todos:</strong> el botón <strong>"Eliminar todo"</strong>, arriba a la derecha de la sección, borra todos los colores añadidos y deja solo los 5 predeterminados.</li>
                 </ul>
+                <h3 id="hide-default-colors">Ocultar los colores predeterminados</h3>
+                <p>Si solo quieres usar los colores que has añadido, activa el interruptor <strong>"Ocultar colores predeterminados"</strong> en la sección "Colores personalizados" de los ajustes. Está desactivado por defecto.</p>
+                <p>El interruptor oculta los predeterminados <strong>solo en la paleta de colores y el menú contextual</strong>. Los colores predeterminados no se eliminan ni dejan de funcionar.</p>
+                <ul>
+                    <li><strong>Se ocultan en:</strong> la paleta de colores que se abre con el icono de selección, la paleta que se abre al hacer clic en un resaltado y el menú contextual.</li>
+                    <li><strong>No cambia:</strong> los resaltados ya hechos con un color predeterminado conservan su color y siguen apareciendo en tus listas. Los colores predeterminados asignados a espacios de atajo siguen funcionando.</li>
+                    <li><strong>Resaltado con un clic:</strong> si el último color usado es un predeterminado oculto, se usa el primer color personalizado de la lista.</li>
+                    <li><strong>Para volver a pintar con un color predeterminado:</strong> no está en la lista, así que desactiva el interruptor un momento o usa un atajo asignado a ese color.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Si no tienes colores personalizados</span>
+                    Aunque el interruptor esté activado, los colores predeterminados se siguen mostrando mientras no tengas colores personalizados, porque no quedaría ninguno para elegir. Una nota bajo el interruptor en los ajustes lo indica. Los predeterminados se ocultan en cuanto añades un color y vuelven a aparecer si eliminas todos tus colores personalizados.
+                </div>
             </section>
 
             <section id="minimap">
@@ -166,7 +183,7 @@
                 <h2>Menú emergente</h2>
                 <p>Es el menú que aparece al hacer clic en el icono de Marks en la barra de herramientas del navegador.</p>
                 <ul>
-                    <li><strong>Icono de ajustes (⚙):</strong> el engranaje de arriba a la derecha abre la <a href="#settings">pantalla de ajustes</a>. Opciones como el minimapa, la interfaz de control y el resaltado con un clic están todas ahí.</li>
+                    <li><strong>Icono de ajustes (⚙):</strong> el engranaje de arriba a la derecha abre la <a href="#settings">pantalla de ajustes</a>. Opciones como el minimapa, el icono de selección y el resaltado con un clic están todas ahí.</li>
                     <li><strong>Resaltados de la página actual:</strong> los resaltados guardados en la página que estás viendo. Haz clic en una entrada para saltar hasta ella, o usa el <strong>botón X</strong> de su esquina superior derecha para eliminarla.</li>
                     <li><strong>Lista de páginas resaltadas:</strong> abre el panel donde se gestionan todas las páginas guardadas.</li>
                     <li><strong>Eliminar todos los resaltados de esta página:</strong> quita todos los resaltados de la página actual. El botón se desactiva cuando no hay nada que eliminar.</li>
@@ -184,22 +201,22 @@
                 <h3 id="settings-general">General</h3>
                 <ul>
                     <li><strong>Mostrar minimapa:</strong> activa o desactiva el minimapa en el lado derecho de la página.</li>
-                    <li><strong>Mostrar interfaz de control al seleccionar texto:</strong> activa o desactiva que el icono de resaltador aparezca automáticamente al seleccionar texto.</li>
+                    <li><strong>Mostrar icono de selección al seleccionar texto:</strong> activa o desactiva que el icono de selección aparezca automáticamente al seleccionar texto. Aunque esté desactivado, al hacer clic en un resaltado se sigue abriendo su paleta de colores. En el móvil no existe esta opción y el icono aparece siempre.</li>
                     <li><strong>Resaltado con un clic:</strong> al activarlo, pulsar el icono de selección resalta directamente con el <strong>último color que usaste</strong>, sin abrir la paleta. Está desactivado por defecto; para usar otro color, haz clic en el resaltado creado y elígelo en la paleta.</li>
                 </ul>
                 <div class="note">
                     <span class="note-title">Nota</span>
-                    El resaltado con un clic necesita que exista el icono de selección, así que mientras "Mostrar interfaz de control al seleccionar texto" esté desactivado, esta fila aparece atenuada y no se puede usar.
+                    El resaltado con un clic necesita que exista el icono de selección, así que mientras "Mostrar icono de selección al seleccionar texto" esté desactivado, esta fila aparece atenuada y no se puede usar.
                 </div>
 
                 <h3>Colores personalizados</h3>
-                <p>Permite renombrar un color, cambiar su tono y eliminar colores de uno en uno o todos a la vez. Consulta <a href="#custom-colors">Colores personalizados</a> para más detalles.</p>
+                <p>Permite renombrar un color, cambiar su tono y eliminar colores de uno en uno o todos a la vez. Consulta <a href="#custom-colors">Colores personalizados</a> para más detalles. El interruptor <strong>"Ocultar colores predeterminados"</strong> de la misma sección limita la paleta de colores y el menú contextual a tus colores personalizados; consulta <a href="#hide-default-colors">Ocultar los colores predeterminados</a> para ver cómo funciona.</p>
 
                 <h3>Sincronización en la nube (Beta)</h3>
                 <p>Aquí se genera el código de sincronización, se vinculan dispositivos y se sincroniza al momento. Consulta <a href="#cloud-sync">Sincronización en la nube (Beta)</a> para más detalles.</p>
 
                 <h3 id="settings-shortcuts">Atajos de teclado</h3>
-                <p>Elige qué color aplica cada uno de los 5 espacios de atajo. Los valores por defecto de los espacios 1 a 5 son amarillo, verde, azul, rosa y naranja, y también puedes asignar colores personalizados. Las combinaciones de teclas se cambian en los ajustes de atajos del navegador. Debajo de los espacios se muestran los dos atajos para moverse entre resaltados, con las teclas asignadas.</p>
+                <p>Elige qué color aplica cada uno de los 5 espacios de atajo. Los valores por defecto de los espacios 1 a 5 son amarillo, verde, azul, rosa y naranja, y también puedes asignar colores personalizados. Las combinaciones de teclas se cambian en los ajustes de atajos del navegador. Debajo de los espacios se muestran los dos atajos para moverse entre resaltados, con las teclas asignadas. Los colores predeterminados asignados a los espacios siguen funcionando aunque actives <a href="#hide-default-colors">Ocultar colores predeterminados</a>.</p>
 
                 <h3>Ayuda</h3>
                 <p>El botón <strong>"Ver la guía de uso"</strong> abre la guía de inicio incluida en la extensión.</p>

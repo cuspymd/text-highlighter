@@ -31,13 +31,17 @@
                 <li><a href="#intro">Introduction</a></li>
                 <li><a href="#add-highlights">How to Add Highlights</a>
                     <ul class="toc-sublist">
-                        <li><a href="#add-control-ui">1. Using Control UI</a></li>
-                        <li><a href="#add-context-menu">2. Using Context Menu</a></li>
+                        <li><a href="#add-control-ui">1. Using the Selection Icon</a></li>
+                        <li><a href="#add-context-menu">2. Using the Right-Click Menu</a></li>
                         <li><a href="#add-shortcuts">3. Using Shortcuts</a></li>
                     </ul>
                 </li>
                 <li><a href="#delete-highlights">How to Delete Highlights</a></li>
-                <li><a href="#custom-colors">Custom Colors</a></li>
+                <li><a href="#custom-colors">Custom Colors</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#hide-default-colors">Hiding the Default Colors</a></li>
+                    </ul>
+                </li>
                 <li><a href="#minimap">Minimap</a></li>
                 <li><a href="#popup-menu">Popup Menu</a></li>
                 <li><a href="#settings">Settings Screen</a>
@@ -70,18 +74,18 @@
                 <h2>How to Add Highlights</h2>
                 <p>There are three ways to add highlights to selected text on a web page.</p>
 
-                <h3 id="add-control-ui">1. Using Control UI</h3>
-                <p>When you select text, a highlight icon (pen shape) appears near the selection. Click this icon to reveal the <strong>Control UI</strong> with a color palette. Click a color to apply the highlight.</p>
+                <h3 id="add-control-ui">1. Using the Selection Icon</h3>
+                <p>When you select text, the pen-shaped <strong>selection icon</strong> appears near the selection. Click it to open the <strong>color palette</strong>, then click a color to apply the highlight.</p>
                 <div class="note">
                     <span class="note-title">Note</span>
-                    This works when 'Show Control UI on text selection' is enabled in settings. It is also the primary method for mobile devices. On mobile, the <strong>⋮ (More)</strong> button at the end of the palette opens a menu with <strong>Add Color</strong>, <strong>Highlighted Pages List</strong> and <strong>Settings</strong>.
+                    On desktop the selection icon appears while 'Show Selection Icon on Text Selection' is on in settings; on mobile it always appears, and it is the primary way to highlight there. On mobile, the <strong>⋮ (More)</strong> button at the end of the palette opens a menu with <strong>Add Color</strong>, <strong>Highlighted Pages List</strong> and <strong>Settings</strong>.
                 </div>
 
-                <h3 id="add-context-menu">2. Using Context Menu</h3>
-                <p>Select text and right-click to open the context menu. Navigate to <strong>"Marks: Text Highlighter"</strong> and select a color to highlight.</p>
+                <h3 id="add-context-menu">2. Using the Right-Click Menu</h3>
+                <p>Select text and right-click to open the right-click menu. Navigate to <strong>"Marks: Text Highlighter"</strong> and select a color to highlight.</p>
                 <div class="warning">
                     <span class="warning-title">Limitation</span>
-                    Context menu highlighting is not supported on Firefox for Android.
+                    Highlighting from the right-click menu is not supported on Firefox for Android.
                 </div>
 
                 <h3 id="add-shortcuts">3. Using Shortcuts</h3>
@@ -118,7 +122,7 @@
                 <h2>How to Delete Highlights</h2>
                 <p>You can remove unnecessary highlights using the following methods:</p>
                 <ul>
-                    <li><strong>Individual Delete (Control UI):</strong> Click on an existing highlight to open the Control UI. Click the <strong>Trash icon</strong> to delete it.</li>
+                    <li><strong>Individual Delete (Color Palette):</strong> Click on an existing highlight to open its color palette. Click the <strong>Trash icon</strong> at the start of the palette to delete it.</li>
                     <li><strong>Individual Delete (Popup):</strong> Click the extension icon in the toolbar to open the Popup menu. In the "Current Page Highlights" list, click the <strong>X button</strong> next to the item you want to remove.</li>
                     <li><strong>Clear Page (Popup):</strong> Click the <strong>"Delete All Highlights On Page"</strong> button at the bottom of the Popup menu to remove all highlights on the current page.</li>
                     <li><strong>Delete Page (Pages List):</strong> In the Highlighted Pages List dashboard, click the <strong>"Delete"</strong> button on a specific page card to remove all data for that page.</li>
@@ -132,13 +136,13 @@
                 <h3>Adding and Changing Colors</h3>
                 <p>You can add your own colors in addition to the 5 default ones (Yellow, Green, Blue, Pink, Orange). Add them straight from the page, or manage them on the settings screen.</p>
                 <ol>
-                    <li>Select text and open the Control UI, or click an existing highlight.</li>
-                    <li>Click the <strong>+ button</strong> at the end of the color list. (On mobile, choose <strong>Add Color</strong> from the <strong>⋮</strong> menu instead.)</li>
+                    <li>Select text and press the selection icon to open the color palette, or click an existing highlight to open its palette.</li>
+                    <li>Click the <strong>+ button</strong> at the end of the palette. (On mobile, choose <strong>Add Color</strong> from the <strong>⋮</strong> menu instead.)</li>
                     <li>Pick a color from the selector and click "Apply".</li>
                 </ol>
                 <div class="note">
                     <span class="note-title">Note</span>
-                    If you add a color from the Control UI opened for selected text, that text is highlighted in the new color right away.
+                    If you add a color from the palette opened for selected text, that text is highlighted in the new color right away.
                 </div>
 
                 <h3>Managing Colors in Settings</h3>
@@ -150,6 +154,19 @@
                     <li><strong>Delete one:</strong> Each color has its own <strong>"Remove"</strong> button.</li>
                     <li><strong>Delete all:</strong> The <strong>"Remove All"</strong> button at the top right of the section deletes every added color, leaving the 5 defaults.</li>
                 </ul>
+                <h3 id="hide-default-colors">Hiding the Default Colors</h3>
+                <p>If you only want to use the colors you added, turn on the <strong>"Hide Default Colors"</strong> switch in the "Custom Colors" section of the Settings page. It is off by default.</p>
+                <p>The switch hides the defaults <strong>only from the color palette and the right-click menu</strong>. The default colors are not deleted and do not stop working.</p>
+                <ul>
+                    <li><strong>Hidden from:</strong> the color palette opened from the selection icon, the color palette opened by clicking a highlight, and the right-click menu.</li>
+                    <li><strong>Unchanged:</strong> highlights already made in a default color keep their color and stay in your lists. Default colors assigned to shortcut slots keep working.</li>
+                    <li><strong>One-click highlight:</strong> if the color you used last is a hidden default, the first custom color in the list is used instead.</li>
+                    <li><strong>To paint with a default color again:</strong> it is not in the list, so turn the switch off for a moment or use a shortcut assigned to that color.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">When you have no custom colors</span>
+                    Even with the switch on, the default colors stay visible while you have no custom colors, because there would be nothing left to pick. A note under the switch on the Settings page says so. The defaults are hidden as soon as you add a color, and come back if you delete all your custom colors.
+                </div>
             </section>
 
             <section id="minimap">
@@ -166,7 +183,7 @@
                 <h2>Popup Menu</h2>
                 <p>The menu that appears when you click the Marks icon in the browser toolbar.</p>
                 <ul>
-                    <li><strong>Settings (⚙) icon:</strong> The gear at the top right opens the <a href="#settings">settings screen</a>. Options such as the minimap, the control UI and one-click highlighting all live there.</li>
+                    <li><strong>Settings (⚙) icon:</strong> The gear at the top right opens the <a href="#settings">settings screen</a>. Options such as the minimap, the selection icon and one-click highlighting all live there.</li>
                     <li><strong>Current Page Highlights:</strong> The highlights saved on the page you are viewing. Click an entry to jump to it, or use the <strong>X button</strong> at its top right to delete that one.</li>
                     <li><strong>Highlighted Pages List:</strong> Opens the dashboard screen to manage all saved pages.</li>
                     <li><strong>Delete All Highlights On Page:</strong> Removes every highlight on the current page. The button is disabled when there is nothing to delete.</li>
@@ -184,22 +201,22 @@
                 <h3 id="settings-general">General</h3>
                 <ul>
                     <li><strong>Show Minimap:</strong> Toggles the display of the minimap on the right side of the page.</li>
-                    <li><strong>Show Control UI on Text Selection:</strong> Toggles whether the highlighter icon automatically appears when you select text.</li>
+                    <li><strong>Show Selection Icon on Text Selection:</strong> Toggles whether the selection icon automatically appears when you select text. With it off, clicking a highlight still opens its color palette. Mobile has no such switch; the selection icon always appears there.</li>
                     <li><strong>One-Click Highlight:</strong> When on, pressing the selection icon highlights straight away in the <strong>color you used last</strong>, without opening the palette. Off by default; to use a different color, click the highlight it creates and pick from the palette.</li>
                 </ul>
                 <div class="note">
                     <span class="note-title">Note</span>
-                    One-click highlighting needs the selection icon to exist, so while "Show Control UI on Text Selection" is off this row is dimmed and cannot be used.
+                    One-click highlighting needs the selection icon to exist, so while "Show Selection Icon on Text Selection" is off this row is dimmed and cannot be used.
                 </div>
 
                 <h3>Custom Colors</h3>
-                <p>Rename a color, change its color, and delete colors one at a time or all at once. See <a href="#custom-colors">Custom Colors</a> for details.</p>
+                <p>Rename a color, change its color, and delete colors one at a time or all at once. See <a href="#custom-colors">Custom Colors</a> for details. The <strong>"Hide Default Colors"</strong> switch in the same section limits the color palette and the right-click menu to your custom colors; see <a href="#hide-default-colors">Hiding the Default Colors</a> for how it behaves.</p>
 
                 <h3>Cloud Sync (Beta)</h3>
                 <p>Issue a sync code, pair devices, and sync on demand. See <a href="#cloud-sync">Cloud Sync (Beta)</a> for details.</p>
 
                 <h3 id="settings-shortcuts">Keyboard Shortcuts</h3>
-                <p>Choose which color each of the 5 shortcut slots applies. The defaults for slots 1-5 are Yellow, Green, Blue, Pink and Orange, and custom colors can be assigned too. The key combinations themselves are changed in the browser's shortcut settings. Below the slots, the two highlight navigation shortcuts are listed with the keys currently assigned to them.</p>
+                <p>Choose which color each of the 5 shortcut slots applies. The defaults for slots 1-5 are Yellow, Green, Blue, Pink and Orange, and custom colors can be assigned too. The key combinations themselves are changed in the browser's shortcut settings. Below the slots, the two highlight navigation shortcuts are listed with the keys currently assigned to them. Default colors assigned to slots keep working even with <a href="#hide-default-colors">Hide Default Colors</a> turned on.</p>
 
                 <h3>Help</h3>
                 <p>The <strong>"View Usage Guide"</strong> button opens the getting-started guide built into the extension.</p>

@@ -211,6 +211,11 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+  else if (message.action === 'setHideDefaultColors') {
+    setHideDefaultColors(message.hidden);
+    sendResponse({ success: true });
+    return true;
+  }
   else if (message.action === 'setSelectionControlsVisibility') {
     setSelectionControlsVisibility(message.visible);
     sendResponse({ success: true });

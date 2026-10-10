@@ -31,13 +31,17 @@
                 <li><a href="#intro">Introdução</a></li>
                 <li><a href="#add-highlights">Como adicionar destaques</a>
                     <ul class="toc-sublist">
-                        <li><a href="#add-control-ui">1. Com a interface de controle</a></li>
+                        <li><a href="#add-control-ui">1. Com o ícone de seleção</a></li>
                         <li><a href="#add-context-menu">2. Com o menu de contexto</a></li>
                         <li><a href="#add-shortcuts">3. Com atalhos de teclado</a></li>
                     </ul>
                 </li>
                 <li><a href="#delete-highlights">Como excluir destaques</a></li>
-                <li><a href="#custom-colors">Cores personalizadas</a></li>
+                <li><a href="#custom-colors">Cores personalizadas</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#hide-default-colors">Ocultar as cores padrão</a></li>
+                    </ul>
+                </li>
                 <li><a href="#minimap">Minimapa</a></li>
                 <li><a href="#popup-menu">Menu pop-up</a></li>
                 <li><a href="#settings">Tela de configurações</a>
@@ -70,11 +74,11 @@
                 <h2>Como adicionar destaques</h2>
                 <p>Há três maneiras de destacar o texto que você seleciona em uma página da web.</p>
 
-                <h3 id="add-control-ui">1. Com a interface de controle</h3>
-                <p>Ao selecionar um texto, aparece um ícone de marca-texto (em formato de caneta) ao lado da seleção. Clique no ícone para exibir a <strong>interface de controle</strong> com a paleta de cores. Clique em uma cor para aplicar o destaque.</p>
+                <h3 id="add-control-ui">1. Com o ícone de seleção</h3>
+                <p>Ao selecionar um texto, aparece ao lado da seleção o <strong>ícone de seleção</strong>, em formato de caneta. Clique nele para abrir a <strong>paleta de cores</strong> e clique em uma cor para aplicar o destaque.</p>
                 <div class="note">
                     <span class="note-title">Observação</span>
-                    Funciona quando a opção "Mostrar Interface de Controle ao Selecionar Texto" está ativada nas configurações. Também é o método principal em dispositivos móveis. No celular, o botão <strong>⋮ (Mais)</strong> no fim da paleta abre um menu com <strong>Adicionar Cor</strong>, <strong>Lista de Páginas Marcadas</strong> e <strong>Configurações</strong>.
+                    No computador, o ícone de seleção aparece quando a opção "Mostrar Ícone de Seleção ao Selecionar Texto" está ativada nas configurações; no celular ele aparece sempre e é o método principal. No celular, o botão <strong>⋮ (Mais)</strong> no fim da paleta abre um menu com <strong>Adicionar Cor</strong>, <strong>Lista de Páginas Marcadas</strong> e <strong>Configurações</strong>.
                 </div>
 
                 <h3 id="add-context-menu">2. Com o menu de contexto</h3>
@@ -118,7 +122,7 @@
                 <h2>Como excluir destaques</h2>
                 <p>Você pode remover os destaques desnecessários das seguintes formas:</p>
                 <ul>
-                    <li><strong>Excluir um (interface de controle):</strong> clique em um destaque existente para abrir a interface de controle e clique no <strong>ícone de lixeira</strong>.</li>
+                    <li><strong>Excluir um (paleta de cores):</strong> clique em um destaque existente para abrir a paleta de cores dele e clique no <strong>ícone de lixeira</strong> no início da paleta.</li>
                     <li><strong>Excluir um (menu pop-up):</strong> clique no ícone da extensão na barra de ferramentas para abrir o menu pop-up. Na lista "Marcações da Página Atual", clique no <strong>botão X</strong> ao lado do item que deseja remover.</li>
                     <li><strong>Limpar a página (menu pop-up):</strong> clique no botão <strong>"Excluir Todas as Marcações da Página"</strong> na parte inferior do menu pop-up para remover todos os destaques da página atual.</li>
                     <li><strong>Excluir uma página (lista de páginas):</strong> no painel de páginas destacadas, clique no botão <strong>"Excluir"</strong> de um cartão de página para apagar todos os dados dela.</li>
@@ -132,13 +136,13 @@
                 <h3>Adicionar e alterar cores</h3>
                 <p>Além das 5 cores padrão (amarelo, verde, azul, rosa e laranja), você pode adicionar as suas próprias. É possível adicioná-las direto da página ou gerenciá-las na tela de configurações.</p>
                 <ol>
-                    <li>Selecione um texto e abra a interface de controle, ou clique em um destaque existente.</li>
-                    <li>Clique no <strong>botão +</strong> no fim da lista de cores. (No celular, escolha <strong>Adicionar Cor</strong> no menu <strong>⋮</strong>.)</li>
+                    <li>Selecione um texto e pressione o ícone de seleção para abrir a paleta de cores, ou clique em um destaque existente para abrir a paleta dele.</li>
+                    <li>Clique no <strong>botão +</strong> no fim da paleta. (No celular, escolha <strong>Adicionar Cor</strong> no menu <strong>⋮</strong>.)</li>
                     <li>Escolha uma cor no seletor e clique em "Aplicar".</li>
                 </ol>
                 <div class="note">
                     <span class="note-title">Observação</span>
-                    Se você adicionar uma cor pela interface de controle aberta para um texto selecionado, esse texto é destacado na nova cor na hora.
+                    Se você adicionar uma cor pela paleta aberta para um texto selecionado, esse texto é destacado na nova cor na hora.
                 </div>
 
                 <h3>Gerenciar nas configurações</h3>
@@ -150,6 +154,19 @@
                     <li><strong>Excluir uma:</strong> cada cor tem o seu próprio botão <strong>"Remover"</strong>.</li>
                     <li><strong>Excluir todas:</strong> o botão <strong>"Remover tudo"</strong>, no canto superior direito da seção, apaga todas as cores adicionadas e mantém apenas as 5 padrão.</li>
                 </ul>
+                <h3 id="hide-default-colors">Ocultar as cores padrão</h3>
+                <p>Se você quiser usar apenas as cores que adicionou, ative o interruptor <strong>"Ocultar cores padrão"</strong> na seção "Cores Personalizadas" das configurações. Ele vem desativado.</p>
+                <p>O interruptor oculta as cores padrão <strong>apenas na paleta de cores e no menu de contexto</strong>. As cores padrão não são excluídas nem deixam de funcionar.</p>
+                <ul>
+                    <li><strong>Ficam ocultas em:</strong> a paleta de cores aberta pelo ícone de seleção, a paleta aberta ao clicar em um destaque e o menu de contexto.</li>
+                    <li><strong>Não muda:</strong> os destaques já feitos com uma cor padrão mantêm a cor e continuam aparecendo nas suas listas. As cores padrão atribuídas a espaços de atalho continuam funcionando.</li>
+                    <li><strong>Destaque com um clique:</strong> se a última cor usada for uma cor padrão oculta, é usada a primeira cor personalizada da lista.</li>
+                    <li><strong>Para voltar a pintar com uma cor padrão:</strong> ela não está na lista, então desative o interruptor por um momento ou use um atalho atribuído a essa cor.</li>
+                </ul>
+                <div class="note">
+                    <span class="note-title">Quando não há cores personalizadas</span>
+                    Mesmo com o interruptor ativado, as cores padrão continuam aparecendo enquanto você não tiver cores personalizadas, porque não sobraria nenhuma para escolher. Uma nota abaixo do interruptor nas configurações avisa sobre isso. As cores padrão ficam ocultas assim que você adiciona uma cor e voltam a aparecer se você excluir todas as suas cores personalizadas.
+                </div>
             </section>
 
             <section id="minimap">
@@ -166,7 +183,7 @@
                 <h2>Menu pop-up</h2>
                 <p>É o menu que aparece ao clicar no ícone do Marks na barra de ferramentas do navegador.</p>
                 <ul>
-                    <li><strong>Ícone de configurações (⚙):</strong> a engrenagem no canto superior direito abre a <a href="#settings">tela de configurações</a>. Opções como o minimapa, a interface de controle e o destaque com um clique ficam todas lá.</li>
+                    <li><strong>Ícone de configurações (⚙):</strong> a engrenagem no canto superior direito abre a <a href="#settings">tela de configurações</a>. Opções como o minimapa, o ícone de seleção e o destaque com um clique ficam todas lá.</li>
                     <li><strong>Destaques da página atual:</strong> os destaques salvos na página que você está vendo. Clique em um item para ir até ele, ou use o <strong>botão X</strong> no canto superior direito dele para excluí-lo.</li>
                     <li><strong>Lista de páginas destacadas:</strong> abre o painel onde todas as páginas salvas são gerenciadas.</li>
                     <li><strong>Excluir Todas as Marcações da Página:</strong> remove todos os destaques da página atual. O botão fica desativado quando não há nada a excluir.</li>
@@ -184,22 +201,22 @@
                 <h3 id="settings-general">Geral</h3>
                 <ul>
                     <li><strong>Mostrar minimapa:</strong> ativa ou desativa o minimapa no lado direito da página.</li>
-                    <li><strong>Mostrar interface de controle ao selecionar texto:</strong> ativa ou desativa a exibição automática do ícone de marca-texto ao selecionar um texto.</li>
+                    <li><strong>Mostrar ícone de seleção ao selecionar texto:</strong> ativa ou desativa a exibição automática do ícone de seleção ao selecionar um texto. Mesmo desativado, clicar em um destaque continua abrindo a paleta de cores dele. No celular essa opção não existe e o ícone aparece sempre.</li>
                     <li><strong>Destaque com um clique:</strong> quando ativado, pressionar o ícone de seleção destaca imediatamente com a <strong>última cor usada</strong>, sem abrir a paleta. Vem desativado por padrão; para usar outra cor, clique no destaque criado e escolha na paleta.</li>
                 </ul>
                 <div class="note">
                     <span class="note-title">Observação</span>
-                    O destaque com um clique depende da existência do ícone de seleção, então enquanto "Mostrar Interface de Controle ao Selecionar Texto" estiver desativado, esta linha fica esmaecida e não pode ser usada.
+                    O destaque com um clique depende da existência do ícone de seleção, então enquanto "Mostrar Ícone de Seleção ao Selecionar Texto" estiver desativado, esta linha fica esmaecida e não pode ser usada.
                 </div>
 
                 <h3>Cores personalizadas</h3>
-                <p>Permite renomear uma cor, alterar o tom dela e excluir cores uma a uma ou todas de uma vez. Veja <a href="#custom-colors">Cores personalizadas</a> para mais detalhes.</p>
+                <p>Permite renomear uma cor, alterar o tom dela e excluir cores uma a uma ou todas de uma vez. Veja <a href="#custom-colors">Cores personalizadas</a> para mais detalhes. O interruptor <strong>"Ocultar cores padrão"</strong> da mesma seção limita a paleta de cores e o menu de contexto às suas cores personalizadas; veja <a href="#hide-default-colors">Ocultar as cores padrão</a> para saber como funciona.</p>
 
                 <h3>Sincronização na nuvem (Beta)</h3>
                 <p>Aqui você gera o código de sincronização, vincula dispositivos e sincroniza na hora. Veja <a href="#cloud-sync">Sincronização na nuvem (Beta)</a> para mais detalhes.</p>
 
                 <h3 id="settings-shortcuts">Atalhos de Teclado</h3>
-                <p>Escolha qual cor cada um dos 5 espaços de atalho aplica. Os padrões dos espaços 1 a 5 são amarelo, verde, azul, rosa e laranja, e cores personalizadas também podem ser atribuídas. As combinações de teclas em si são alteradas nas configurações de atalhos do navegador. Abaixo dos espaços são listados os dois atalhos de navegação entre destaques, com as teclas atribuídas.</p>
+                <p>Escolha qual cor cada um dos 5 espaços de atalho aplica. Os padrões dos espaços 1 a 5 são amarelo, verde, azul, rosa e laranja, e cores personalizadas também podem ser atribuídas. As combinações de teclas em si são alteradas nas configurações de atalhos do navegador. Abaixo dos espaços são listados os dois atalhos de navegação entre destaques, com as teclas atribuídas. As cores padrão atribuídas aos espaços continuam funcionando mesmo com <a href="#hide-default-colors">Ocultar cores padrão</a> ativado.</p>
 
                 <h3>Ajuda</h3>
                 <p>O botão <strong>"Ver o guia de uso"</strong> abre o guia de primeiros passos incluído na extensão.</p>

@@ -29,6 +29,7 @@ let selectionIconHiddenForScroll = false;
 let oneClickHighlightEnabled = false;
 let lastUsedColorValue = null;
 let lastUsedColorWatcherAdded = false;
+let hideDefaultColors = false;
 
 const SELECTION_SCROLL_RESTORE_DELAY_MS = 220;
 // How long a synthetic click can trail the press that caused it.
@@ -263,10 +264,18 @@ function refreshOpenColorScrollHints() {
   }
 }
 
+// The colours the strips offer. currentColors stays the full palette; this is
+// what is left of it once the "hide default colors" setting has had its say.
+function getVisibleColors() {
+  return colorCore.visiblePalette(currentColors, hideDefaultColors);
+}
+
 // Fill a colour strip: the five defaults, a separator, then the custom colours.
+// With the defaults hidden only the custom colours are left, and no separator.
 function appendColorButtons(colorButtonsContainer) {
-  currentColors.forEach((colorInfo, idx) => {
-    if (idx === 5 && currentColors.length > 5) {
+  const palette = getVisibleColors();
+  palette.forEach((colorInfo, idx) => {
+    if (idx > 0 && colorCore.isCustomPaletteEntry(colorInfo) && !colorCore.isCustomPaletteEntry(palette[idx - 1])) {
       appendColorSeparator(colorButtonsContainer);
     }
     const colorButton = createColorButton(colorInfo);
@@ -333,6 +342,9 @@ function createColorButton(colorInfo) {
   const colorButton = document.createElement('div');
   colorButton.className = 'text-highlighter-control-button color-button';
   colorButton.style.backgroundColor = colorInfo.color;
+  // The selection palette is a clone, and its buttons lose this closure; they
+  // read the colour back from here.
+  colorButton.dataset.color = colorInfo.color;
   colorButton.title = colorDisplayName(colorInfo);
   colorButton.addEventListener('click', function (e) {
     if (activeHighlightElement) {
@@ -1100,6 +1112,7 @@ async function loadSelectionControlsSetting() {
     'selectionControlsVisible',
     'oneClickHighlightEnabled',
     'lastUsedColor',
+    'hideDefaultColors',
   ]);
   if (isMobilePlatform) {
     // On mobile, always enable - controls are essential for operation
@@ -1111,6 +1124,11 @@ async function loadSelectionControlsSetting() {
   oneClickHighlightEnabled = result.oneClickHighlightEnabled === true;
   lastUsedColorValue = result.lastUsedColor || null;
   debugLog('Selection controls enabled:', selectionControlsEnabled);
+
+  // A bar built before the setting arrived offered the defaults.
+  if (result.hideDefaultColors === true) {
+    setHideDefaultColors(true);
+  }
 }
 
 // The palette entry a one-click press paints with - or null when the setting is
@@ -1118,8 +1136,11 @@ async function loadSelectionControlsSetting() {
 // palette the way it always has, so every uncertain case is the old behaviour.
 function getOneClickColor() {
   if (!oneClickHighlightEnabled) return null;
-  const palette = Array.isArray(currentColors) ? currentColors : null;
-  if (!palette || palette.length === 0) return null;
+  // The visible palette, so a last used colour that is now hidden falls back to
+  // one the user can see rather than painting in a colour the strip no longer
+  // offers.
+  const palette = getVisibleColors();
+  if (palette.length === 0) return null;
   return colorCore.resolveLastUsedColor(palette, lastUsedColorValue);
 }
 
@@ -1128,6 +1149,13 @@ function setOneClickHighlightEnabled(enabled) {
   oneClickHighlightEnabled = enabled === true;
   debugLog('One-click highlight enabled:', oneClickHighlightEnabled);
   applySelectionIconAppearance();
+}
+
+// Called by the settings broadcast, the way setOneClickHighlightEnabled is.
+function setHideDefaultColors(hidden) {
+  hideDefaultColors = hidden === true;
+  debugLog('Hide default colors:', hideDefaultColors);
+  refreshHighlightControlsColors();
 }
 
 // The last used colour is written by whichever tab painted last, so this tab
@@ -1668,8 +1696,12 @@ function showSelectionControls(mouseX, mouseY) {
   }, 300);
 
   // Update event listeners for color buttons to create highlights instead of changing existing ones
+  // Each button paints with the colour it shows. Looking it up by position in the
+  // palette would go wrong once the palette changes while this one is open - a
+  // colour added or removed, the defaults hidden or shown - since nothing
+  // redraws an open selection palette.
   const colorButtons = selectionControlsContainer.querySelectorAll('.color-button');
-  colorButtons.forEach((colorButton, idx) => {
+  colorButtons.forEach((colorButton) => {
     // Remove existing event listeners by cloning the node
     const newColorButton = colorButton.cloneNode(true);
     colorButton.parentNode.replaceChild(newColorButton, colorButton);
@@ -1680,9 +1712,9 @@ function showSelectionControls(mouseX, mouseY) {
       if (thisContainer.dataset.justShown) {
         return;
       }
-      const colorInfo = currentColors[idx];
-      if (colorInfo) {
-        createHighlightWithColor(colorInfo.color);
+      const color = newColorButton.dataset.color;
+      if (color) {
+        createHighlightWithColor(color);
       }
     });
   });

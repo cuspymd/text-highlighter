@@ -84,7 +84,7 @@
     "message": "Marks"
   },
   "popupDescription": {
-    "message": "ウェブページでテキストを選択し、コントロールUIを使ってハイライトできます。"
+    "message": "ウェブページでテキストを選択し、カラーパレットから色を選んでハイライトできます。"
   },
   "exportAll": {
     "message": "エクスポート"
@@ -135,7 +135,7 @@
     "message": "ミニマップを表示"
   },
   "showControlsOnSelection": {
-    "message": "テキスト選択時にコントロールUIを表示"
+    "message": "テキスト選択時に選択アイコンを表示"
   },
   "oneClickHighlight": {
     "message": "ワンクリックハイライト"
@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "カスタムカラーはありません。"
   },
+  "hideDefaultColors": {
+    "message": "デフォルトの色を隠す"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "カラーパレットと右クリックメニューにカスタムカラーだけを表示します。ショートカットや、デフォルトの色で作成済みのハイライトはそのまま使えます。カスタムカラーが1つもない場合は、デフォルトの色が表示されます。"
+  },
+  "hideDefaultColorsFallback": {
+    "message": "カスタムカラーがまだないため、デフォルトの色が表示されたままです。1つ追加するとデフォルトの色が隠れます。"
+  },
   "editNameTooltip": {
     "message": "クリックして名前を編集"
   },
@@ -391,19 +400,19 @@
     "message": "ハイライトを作る"
   },
   "onboardingCreateBody": {
-    "message": "ページ上でテキストを選択すると、そばにハイライターのアイコンが表示されます。アイコンをクリックするとカラーパレットが開き、色を選ぶと塗られます。"
+    "message": "ページ上でテキストを選択すると、そばに選択アイコンが表示されます。アイコンをクリックするとカラーパレットが開き、色を選ぶと塗られます。"
   },
   "onboardingEditTitle": {
     "message": "色の変更と削除"
   },
   "onboardingEditBody": {
-    "message": "既存のハイライトをクリックするとコントロールが表示されます。そこから色を変えたり削除したりできます。"
+    "message": "既存のハイライトをクリックするとカラーパレットが表示されます。そこから色を変えたり削除したりできます。"
   },
   "onboardingContextMenuTitle": {
     "message": "右クリックメニューを使う"
   },
   "onboardingContextMenuBody": {
-    "message": "テキストを選択して右クリックすると、アイコンを使わずにコンテキストメニューから直接ハイライトできます。"
+    "message": "テキストを選択して右クリックすると、選択アイコンを使わずに右クリックメニューから直接ハイライトできます。"
   },
   "onboardingShortcutsTitle": {
     "message": "ショートカットキー"
@@ -440,10 +449,10 @@
     "message": "使い方を見る"
   },
   "popupTipSelect": {
-    "message": "ページ上でテキストを選択すると、ハイライターのアイコンが表示されます。"
+    "message": "ページ上でテキストを選択すると、選択アイコンが表示されます。"
   },
   "popupTipPick": {
-    "message": "アイコンをクリックして色を選びます。"
+    "message": "アイコンをクリックして、パレットから色を選びます。"
   },
   "popupTipManage": {
     "message": "ハイライトをクリックすると、色の変更や削除ができます。"

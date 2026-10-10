@@ -84,7 +84,7 @@
     "message": "Marks"
   },
   "popupDescription": {
-    "message": "웹 페이지에서 텍스트를 선택한 후 컨트롤 UI 를 이용해 하이라이트할 수 있습니다."
+    "message": "웹 페이지에서 텍스트를 선택한 후 색상 팔레트에서 색을 골라 하이라이트할 수 있습니다."
   },
   "exportAll": {
     "message": "내보내기"
@@ -135,7 +135,7 @@
     "message": "미니맵 표시"
   },
   "showControlsOnSelection": {
-    "message": "텍스트 선택 시 컨트롤 UI 표시"
+    "message": "텍스트 선택 시 선택 아이콘 표시"
   },
   "oneClickHighlight": {
     "message": "원클릭 하이라이트"
@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "사용자 정의 색상이 없습니다."
   },
+  "hideDefaultColors": {
+    "message": "기본 색상 숨기기"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "색상 팔레트와 우클릭 메뉴에 사용자 정의 색상만 표시합니다. 단축키와 이미 기본 색상으로 칠한 하이라이트는 그대로 동작합니다. 사용자 정의 색상이 하나도 없으면 기본 색상이 계속 표시됩니다."
+  },
+  "hideDefaultColorsFallback": {
+    "message": "아직 사용자 정의 색상이 없어서 기본 색상이 계속 표시됩니다. 색상을 하나 추가하면 기본 색상이 숨겨집니다."
+  },
   "editNameTooltip": {
     "message": "클릭하여 이름 편집"
   },
@@ -391,19 +400,19 @@
     "message": "하이라이트 만들기"
   },
   "onboardingCreateBody": {
-    "message": "페이지에서 텍스트를 선택하면 옆에 하이라이터 아이콘이 나타납니다. 아이콘을 클릭하면 색상 팔레트가 열리고, 원하는 색을 고르면 칠해집니다."
+    "message": "페이지에서 텍스트를 선택하면 옆에 선택 아이콘이 나타납니다. 아이콘을 클릭하면 색상 팔레트가 열리고, 원하는 색을 고르면 칠해집니다."
   },
   "onboardingEditTitle": {
     "message": "색 바꾸기와 삭제"
   },
   "onboardingEditBody": {
-    "message": "칠해진 하이라이트를 클릭하면 컨트롤이 나타납니다. 여기서 색을 바꾸거나 삭제할 수 있습니다."
+    "message": "칠해진 하이라이트를 클릭하면 색상 팔레트가 나타납니다. 여기서 색을 바꾸거나 삭제할 수 있습니다."
   },
   "onboardingContextMenuTitle": {
     "message": "우클릭 메뉴 사용하기"
   },
   "onboardingContextMenuBody": {
-    "message": "텍스트를 선택하고 우클릭하면 아이콘을 거치지 않고 컨텍스트 메뉴에서 바로 칠할 수 있습니다."
+    "message": "텍스트를 선택하고 우클릭하면 선택 아이콘을 거치지 않고 우클릭 메뉴에서 바로 칠할 수 있습니다."
   },
   "onboardingShortcutsTitle": {
     "message": "단축키"
@@ -440,10 +449,10 @@
     "message": "사용법 보기"
   },
   "popupTipSelect": {
-    "message": "페이지에서 텍스트를 선택하면 하이라이터 아이콘이 나타납니다."
+    "message": "페이지에서 텍스트를 선택하면 선택 아이콘이 나타납니다."
   },
   "popupTipPick": {
-    "message": "아이콘을 클릭하고 색을 고르세요."
+    "message": "아이콘을 클릭하고 팔레트에서 색을 고르세요."
   },
   "popupTipManage": {
     "message": "하이라이트를 클릭하면 색을 바꾸거나 지울 수 있습니다."

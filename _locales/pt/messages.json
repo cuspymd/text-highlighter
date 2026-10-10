@@ -84,7 +84,7 @@
     "message": "Marks"
   },
   "popupDescription": {
-    "message": "Selecione o texto nas páginas da web e use a interface de controle para marcar."
+    "message": "Selecione um texto em uma página da web e escolha uma cor na paleta de cores para marcá-lo."
   },
   "exportAll": {
     "message": "Exportar"
@@ -135,7 +135,7 @@
     "message": "Mostrar Minimapa"
   },
   "showControlsOnSelection": {
-    "message": "Mostrar Interface de Controle ao Selecionar Texto"
+    "message": "Mostrar Ícone de Seleção ao Selecionar Texto"
   },
   "oneClickHighlight": {
     "message": "Marcação com Um Clique"
@@ -275,6 +275,15 @@
   "noCustomColors": {
     "message": "Ainda não há cores personalizadas."
   },
+  "hideDefaultColors": {
+    "message": "Ocultar cores padrão"
+  },
+  "hideDefaultColorsHelp": {
+    "message": "A paleta de cores e o menu de contexto mostram apenas suas cores personalizadas. Os atalhos e os destaques já feitos com uma cor padrão continuam funcionando. Se você não tiver cores personalizadas, as cores padrão são exibidas mesmo assim."
+  },
+  "hideDefaultColorsFallback": {
+    "message": "Você ainda não tem cores personalizadas, então as cores padrão continuam aparecendo. Adicione uma para ocultá-las."
+  },
   "editNameTooltip": {
     "message": "Clique para editar o nome"
   },
@@ -391,19 +400,19 @@
     "message": "Criar uma marcação"
   },
   "onboardingCreateBody": {
-    "message": "Selecione o texto em uma página e um ícone de marca-texto aparecerá ao lado. Clique no ícone para abrir a paleta de cores e escolha uma cor."
+    "message": "Selecione o texto em uma página e o ícone de seleção aparecerá ao lado. Clique no ícone para abrir a paleta de cores e escolha uma cor."
   },
   "onboardingEditTitle": {
     "message": "Alterar a cor ou excluir"
   },
   "onboardingEditBody": {
-    "message": "Clique em uma marcação existente para exibir os controles. A partir dali você pode trocar a cor ou excluí-la."
+    "message": "Clique em uma marcação existente para abrir a paleta de cores dela. A partir dali você pode trocar a cor ou excluí-la."
   },
   "onboardingContextMenuTitle": {
     "message": "Usar o menu de contexto"
   },
   "onboardingContextMenuBody": {
-    "message": "Selecione o texto e clique com o botão direito para marcar direto pelo menu de contexto, sem usar o ícone."
+    "message": "Selecione o texto e clique com o botão direito para marcar direto pelo menu de contexto, sem usar o ícone de seleção."
   },
   "onboardingShortcutsTitle": {
     "message": "Atalhos de Teclado"
@@ -440,10 +449,10 @@
     "message": "Ver o guia de uso"
   },
   "popupTipSelect": {
-    "message": "Selecione o texto na página e um ícone de marca-texto aparecerá."
+    "message": "Selecione o texto na página e o ícone de seleção aparecerá."
   },
   "popupTipPick": {
-    "message": "Clique no ícone e escolha uma cor."
+    "message": "Clique no ícone e escolha uma cor na paleta."
   },
   "popupTipManage": {
     "message": "Clique em uma marcação para trocar a cor ou excluí-la."

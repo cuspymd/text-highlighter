@@ -51,7 +51,20 @@ async function adoptSettingsMissingLocally() {
   if (!missing) return;
 
   debugLog('Adopting settings this device had never been told about:', missing);
-  await applySettingsFromSync(missing);
+  const { colorsChanged } = await applySettingsFromSync(missing);
+  if (colorsChanged) await createOrUpdateContextMenus();
+}
+
+// The first-run migration writes what sync holds to local storage, after the
+// colours, the hide-defaults flag and the shortcut map have been loaded into
+// memory and the context menu built from them. Applying the merged settings is
+// what brings those up to date; nothing else will until the worker restarts.
+async function adoptMigratedSettings() {
+  const migrated = await migrateLocalToSync();
+  if (!migrated) return;
+
+  const { colorsChanged } = await applySettingsFromSync(migrated);
+  if (colorsChanged) await createOrUpdateContextMenus();
 }
 
 (async () => {
@@ -59,7 +72,7 @@ async function adoptSettingsMissingLocally() {
     await initializePlatform();
     await loadCustomColors();
     await createOrUpdateContextMenus();
-    await migrateLocalToSync();
+    await adoptMigratedSettings();
     await adoptSettingsMissingLocally();
     runCloudSync().catch(e => console.error('Initial cloud sync failed', e));
   } catch (e) {

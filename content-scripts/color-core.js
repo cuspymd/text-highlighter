@@ -134,6 +134,30 @@
     return colors[0];
   }
 
+  function isCustomPaletteEntry(entry) {
+    return Boolean(entry) && typeof entry.id === 'string' && entry.id.startsWith('custom_');
+  }
+
+  /**
+   * The colours a strip offers to pick from.
+   *
+   * Hiding the defaults leaves only the custom colours - unless there are none,
+   * because an empty strip would leave nothing to highlight with, so the
+   * defaults stay until the first custom colour exists. It is only the offer
+   * that shrinks: shortcuts and existing highlights still use the defaults.
+   * background/settings-service.js applies the same rule to the context menu.
+   *
+   * @param {{id: string}[]} colors the full palette, defaults first
+   * @param {boolean} hideDefaults the "hide default colors" setting
+   * @returns {object[]}
+   */
+  function visiblePalette(colors, hideDefaults) {
+    if (!Array.isArray(colors)) return [];
+    if (!hideDefaults) return colors;
+    const customColors = colors.filter(isCustomPaletteEntry);
+    return customColors.length > 0 ? customColors : colors;
+  }
+
   // Marks a highlight whose text styles.css turns white. Absent, the
   // stylesheet's black applies - and nothing on the host page can change that.
   const TEXT_TONE_ATTRIBUTE = 'data-th-text-tone';
@@ -249,6 +273,8 @@
     hslToHex,
     rgbToHex,
     resolveLastUsedColor,
+    isCustomPaletteEntry,
+    visiblePalette,
     parseRgb,
     highlightTextColor,
     paintHighlight,

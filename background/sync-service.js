@@ -23,6 +23,7 @@ const HYDRATABLE_SETTING_KEYS = [
   STORAGE_KEYS.MINIMAP_VISIBLE,
   STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
   STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+  STORAGE_KEYS.HIDE_DEFAULT_COLORS,
 ];
 const SYNC_HIGHLIGHT_PREFIX = SYNC_KEYS.HIGHLIGHT_PREFIX;
 const SYNC_META_KEY = SYNC_KEYS.META;
@@ -127,6 +128,7 @@ export async function saveSettingsToSync() {
     STORAGE_KEYS.MINIMAP_VISIBLE,
     STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
     STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+    STORAGE_KEYS.HIDE_DEFAULT_COLORS,
     STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   ]);
   const settings = {
@@ -145,8 +147,9 @@ export async function saveSettingsToSync() {
   // The local value arrives the ordinary way - applySettingsFromSync writes it
   // when the sync change lands - and from then on it is the one that goes out.
   const localOneClick = result.oneClickHighlightEnabled;
+  const localHideDefaults = result.hideDefaultColors;
   let remoteSettings = null;
-  if (localOneClick === undefined || !result.shortcutColorMap) {
+  if (localOneClick === undefined || localHideDefaults === undefined || !result.shortcutColorMap) {
     try {
       const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
       remoteSettings = syncResult[SYNC_SETTINGS_KEY] || null;
@@ -159,6 +162,12 @@ export async function saveSettingsToSync() {
     settings.oneClickHighlightEnabled = localOneClick === true;
   } else if (remoteSettings && remoteSettings.oneClickHighlightEnabled !== undefined) {
     settings.oneClickHighlightEnabled = remoteSettings.oneClickHighlightEnabled === true;
+  }
+
+  if (localHideDefaults !== undefined) {
+    settings.hideDefaultColors = localHideDefaults === true;
+  } else if (remoteSettings && remoteSettings.hideDefaultColors !== undefined) {
+    settings.hideDefaultColors = remoteSettings.hideDefaultColors === true;
   }
 
   if (result.shortcutColorMap) {
@@ -404,11 +413,18 @@ export async function clearAllSyncedHighlights(localUrls = []) {
 /**
  * Initial synchronization on first run or fresh install.
  * Satisfies Rule S-9 and M-1.
+ *
+ * Returns the settings it merged in from sync, or null when there were none.
+ * They are written to local storage only: the settings service has already
+ * loaded its in-memory copy and built the context menu by now, and no sync
+ * change event follows when the value written back equals what sync held. The
+ * caller applies them, which is what puts them in front of the menu.
  */
 export async function migrateLocalToSync() {
   const flagResult = await browserAPI.storage.local.get(STORAGE_KEYS.SYNC_MIGRATION_DONE);
-  if (flagResult.syncMigrationDone) return;
+  if (flagResult.syncMigrationDone) return null;
 
+  let adoptedSettings = null;
   debugLog('Starting initial sync migration and pull...');
   try {
     const syncSettingsResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
@@ -421,6 +437,7 @@ export async function migrateLocalToSync() {
         STORAGE_KEYS.MINIMAP_VISIBLE,
         STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
         STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+        STORAGE_KEYS.HIDE_DEFAULT_COLORS,
         STORAGE_KEYS.SHORTCUT_COLOR_MAP,
       ]);
 
@@ -444,6 +461,12 @@ export async function migrateLocalToSync() {
         mergedSettings.oneClickHighlightEnabled = localResult.oneClickHighlightEnabled;
       }
 
+      if (syncSettings.hideDefaultColors !== undefined) {
+        mergedSettings.hideDefaultColors = syncSettings.hideDefaultColors;
+      } else if (localResult.hideDefaultColors !== undefined) {
+        mergedSettings.hideDefaultColors = localResult.hideDefaultColors;
+      }
+
       if (syncSettings.shortcutColorMap !== undefined && syncSettings.shortcutColorMap !== null) {
         mergedSettings.shortcutColorMap = syncSettings.shortcutColorMap;
       } else if (localResult.shortcutColorMap) {
@@ -464,6 +487,7 @@ export async function migrateLocalToSync() {
       }
 
       await browserAPI.storage.local.set(mergedSettings);
+      adoptedSettings = mergedSettings;
       await saveSettingsToSync();
     } else {
       await saveSettingsToSync();
@@ -484,6 +508,7 @@ export async function migrateLocalToSync() {
       STORAGE_KEYS.MINIMAP_VISIBLE,
       STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
       STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+      STORAGE_KEYS.HIDE_DEFAULT_COLORS,
       STORAGE_KEYS.LAST_USED_COLOR,
       STORAGE_KEYS.SHORTCUT_COLOR_MAP,
       'settings',
@@ -529,6 +554,8 @@ export async function migrateLocalToSync() {
   } catch (e) {
     debugLog('Sync migration error:', e.message);
   }
+
+  return adoptedSettings;
 }
 
 /**

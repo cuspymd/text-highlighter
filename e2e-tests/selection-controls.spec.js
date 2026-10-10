@@ -203,4 +203,55 @@ test.describe('Selection Controls Tests', () => {
     const secondHighlight = page.locator('span.text-highlighter-extension:has-text("Another paragraph")');
     await expectHighlightSpan(secondHighlight, { color: greenRgb, text: 'Another paragraph' });
   });
+
+  // "Hide default colors" leaves the defaults on offer until a custom colour
+  // exists, and says so on the settings page; once one does, the selection bar
+  // offers only the custom colours and paints with the one picked.
+  test('Should offer only custom colours once the defaults are hidden', async ({ page, context, background, extensionId }) => {
+    await enableSelectionControls(background);
+
+    const settings = await context.newPage();
+    await settings.goto(`chrome-extension://${extensionId}/settings.html`);
+    const fallbackNote = settings.locator('#hide-default-colors-fallback');
+    await expect(fallbackNote).toBeHidden();
+
+    await settings.locator('#hide-default-colors-row .toggle-slider').click();
+    await expect(settings.locator('#hide-default-colors-toggle')).toBeChecked();
+    // No custom colour yet, so the switch cannot hide anything - and says why.
+    await expect(fallbackNote).toBeVisible();
+
+    await settings.evaluate(() => chrome.runtime.sendMessage({ action: 'addColor', color: '#123456' }));
+    await settings.reload();
+    await expect(settings.locator('#hide-default-colors-toggle')).toBeChecked();
+    await expect(fallbackNote).toBeHidden();
+    await settings.close();
+
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await page.waitForTimeout(200);
+
+    const paragraph = page.locator('p:has-text("This is a sample paragraph")');
+    const textToSelect = 'sample paragraph';
+    await selectTextInElement(paragraph, textToSelect);
+    const box = await paragraph.boundingBox();
+    await paragraph.dispatchEvent('mouseup', {
+      clientX: box.x + 50,
+      clientY: box.y + 10,
+      bubbles: true
+    });
+    const selectionIcon = page.locator('.text-highlighter-selection-icon');
+    await expect(selectionIcon).toBeVisible();
+    await selectionIcon.click();
+
+    const selectionControls = page.locator('.text-highlighter-selection-controls');
+    await expect(selectionControls).toBeVisible();
+    const colorButtons = selectionControls.locator('.color-button');
+    await expect(colorButtons).toHaveCount(1);
+    await expect(selectionControls.locator('.color-separator')).toHaveCount(0);
+
+    await page.waitForTimeout(350);
+    await colorButtons.nth(0).click();
+
+    const highlightedSpan = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(18, 52, 86)', text: textToSelect });
+  });
 });

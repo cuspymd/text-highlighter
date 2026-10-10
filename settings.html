@@ -416,6 +416,14 @@
         line-height: 1.4;
       }
 
+      #hide-default-colors-fallback {
+        margin: 8px 0 4px;
+      }
+
+      #custom-colors-list {
+        margin-top: 12px;
+      }
+
       .empty-text {
         color: var(--muted);
         font-size: 13px;
@@ -508,7 +516,7 @@
           </label>
         </div>
         <div class="toggle-container" id="selection-controls-row">
-          <label for="selection-controls-toggle" data-i18n="showControlsOnSelection">Show Control UI on Text Selection</label>
+          <label for="selection-controls-toggle" data-i18n="showControlsOnSelection">Show Selection Icon on Text Selection</label>
           <label class="toggle-switch">
             <input type="checkbox" id="selection-controls-toggle" checked />
             <span class="toggle-slider"></span>
@@ -546,6 +554,26 @@
             Remove All
           </button>
         </div>
+        <div class="toggle-container" id="hide-default-colors-row">
+          <div class="toggle-label">
+            <label for="hide-default-colors-toggle" data-i18n="hideDefaultColors">Hide Default Colors</label>
+            <span class="help-tip" tabindex="0" aria-describedby="hide-default-colors-help">?
+              <span
+                class="help-bubble"
+                id="hide-default-colors-help"
+                role="tooltip"
+                data-i18n="hideDefaultColorsHelp"
+              >The color palette and the right-click menu show only your custom colors.</span>
+            </span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="hide-default-colors-toggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <p class="hint-text" id="hide-default-colors-fallback" data-i18n="hideDefaultColorsFallback" hidden>
+          You have no custom colors yet, so the default colors are still shown. Add one to hide them.
+        </p>
         <div id="custom-colors-list"></div>
         <button id="add-custom-color-btn" class="btn btn-primary" data-i18n="addCustomColor">+ Add Custom Color</button>
         <input type="color" id="color-picker-hidden" style="display:none" />

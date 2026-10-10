@@ -18,6 +18,7 @@ const LOCAL_ONLY_KEYS = new Set([
   STORAGE_KEYS.MINIMAP_VISIBLE,
   STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
   STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
+  STORAGE_KEYS.HIDE_DEFAULT_COLORS,
   STORAGE_KEYS.LAST_USED_COLOR,
   STORAGE_KEYS.SHORTCUT_COLOR_MAP,
   CLOUD_SYNC_KEYS.ENABLED,
@@ -94,6 +95,10 @@ async function buildLocalBlob() {
 
   if (all[STORAGE_KEYS.ONE_CLICK_HIGHLIGHT] !== undefined) {
     settings.oneClickHighlightEnabled = all[STORAGE_KEYS.ONE_CLICK_HIGHLIGHT] === true;
+  }
+
+  if (all[STORAGE_KEYS.HIDE_DEFAULT_COLORS] !== undefined) {
+    settings.hideDefaultColors = all[STORAGE_KEYS.HIDE_DEFAULT_COLORS] === true;
   }
 
   return {

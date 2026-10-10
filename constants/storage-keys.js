@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   SYNC_MIGRATION_DONE: 'syncMigrationDone',
   META_SUFFIX: '_meta',
   SHORTCUT_COLOR_MAP: 'shortcutColorMap',
+  HIDE_DEFAULT_COLORS: 'hideDefaultColors',
 };
 
 export const SYNC_KEYS = {
