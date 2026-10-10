@@ -682,6 +682,11 @@
         outline-color: var(--danger);
       }
 
+      /* The dialog takes focus only to hold it inside; it is not a control. */
+      .color-picker-modal .custom-color-picker:focus {
+        outline: none;
+      }
+
       /* As the page's own buttons (.btn, .btn-primary). */
       .color-picker-modal .color-picker-apply,
       .color-picker-modal .color-picker-close {

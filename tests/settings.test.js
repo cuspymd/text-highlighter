@@ -467,6 +467,40 @@ describe('settings', () => {
       expect(lastMessage('addColor')).toEqual({ action: 'addColor', color: '#123456' });
     });
 
+    it('holds keyboard focus inside the picker and gives it back on close', async () => {
+      await openSettings();
+      const addButton = byId('add-custom-color-btn');
+      addButton.focus();
+      addButton.click();
+
+      const dialog = pickerDialog().querySelector('.custom-color-picker');
+      expect(document.activeElement).toBe(dialog);
+
+      const apply = pickerDialog().querySelector('.color-picker-apply');
+      const cancel = pickerDialog().querySelector('.color-picker-close');
+      const tab = (shiftKey = false) => document.activeElement.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true }));
+
+      // Tab from the last control wraps to the first, Shift+Tab back again.
+      cancel.focus();
+      tab();
+      expect(document.activeElement).toBe(hexField());
+      tab(true);
+      expect(document.activeElement).toBe(cancel);
+
+      // A disabled Apply is skipped.
+      typeHex('#12');
+      expect(apply.disabled).toBe(true);
+      hexField().focus();
+      tab(true);
+      expect(document.activeElement).toBe(cancel);
+
+      cancel.click();
+      await flush();
+      expect(pickerDialog()).toBeNull();
+      expect(document.activeElement).toBe(addButton);
+    });
+
     it('opens one picker at a time', async () => {
       await openSettings();
 

@@ -63,18 +63,40 @@ function pickColor(initialColor) {
     modal.appendChild(dialog);
     document.body.appendChild(modal);
 
+    // Keyboard focus moves into the dialog and stays there while it is open,
+    // then goes back to the button that opened it. The dialog itself takes
+    // focus rather than the code field, which would pop up the on-screen
+    // keyboard on a phone.
+    const opener = document.activeElement;
+    dialog.tabIndex = -1;
+    dialog.focus();
+
     let closed = false;
     const close = (result) => {
       if (closed) return;
       closed = true;
       document.removeEventListener('keydown', onKeyDown);
       modal.remove();
+      if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus();
       resolve(result);
     };
 
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
         close(null);
+      } else if (e.key === 'Tab') {
+        const focusable = [...dialog.querySelectorAll('input, button')].filter(el => !el.disabled);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const inside = dialog.contains(document.activeElement);
+        if (e.shiftKey && (!inside || document.activeElement === first || document.activeElement === dialog)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+          e.preventDefault();
+          first.focus();
+        }
       } else if (e.key === 'Enter' && e.target.classList.contains('color-picker-hex')) {
         // Enter in the code field applies what was typed, if it was a colour.
         e.preventDefault();
