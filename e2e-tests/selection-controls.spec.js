@@ -254,4 +254,58 @@ test.describe('Selection Controls Tests', () => {
     const highlightedSpan = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
     await expectHighlightSpan(highlightedSpan, { color: 'rgb(18, 52, 86)', text: textToSelect });
   });
+
+  // Moving a colour on the settings page changes the order the selection bar
+  // offers it in, on a page that was already open.
+  test('Should offer custom colours in the order set on the settings page', async ({ page, context, background, extensionId }) => {
+    await enableSelectionControls(background);
+
+    const settings = await context.newPage();
+    await settings.goto(`chrome-extension://${extensionId}/settings.html`);
+    await settings.locator('#hide-default-colors-row .toggle-slider').click();
+    await expect(settings.locator('#hide-default-colors-toggle')).toBeChecked();
+    await settings.evaluate(() => chrome.runtime.sendMessage({ action: 'addColor', color: '#123456' }));
+    // Custom colour ids are timestamps; keep the two apart.
+    await settings.waitForTimeout(20);
+    await settings.evaluate(() => chrome.runtime.sendMessage({ action: 'addColor', color: '#abcdef' }));
+    await settings.reload();
+
+    await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
+    await page.waitForTimeout(200);
+
+    const rows = settings.locator('#custom-colors-list .color-row');
+    await expect(rows.locator('.color-hex')).toHaveText(['#123456', '#ABCDEF']);
+
+    // Drag the second colour above the first by its handle, then save.
+    await settings.locator('#reorder-custom-colors-btn').click();
+    const handle = rows.nth(1).locator('.drag-handle');
+    const firstRow = await rows.nth(0).boundingBox();
+    await handle.hover();
+    await settings.mouse.down();
+    await settings.mouse.move(firstRow.x + 10, firstRow.y + 4, { steps: 5 });
+    await settings.mouse.up();
+    const swatches = rows.locator('.color-swatch');
+    await expect(swatches.nth(0)).toHaveCSS('background-color', 'rgb(171, 205, 239)');
+    await settings.locator('#reorder-save-btn').click();
+    await expect(rows.locator('.color-hex')).toHaveText(['#ABCDEF', '#123456']);
+    await expect(settings.locator('#reorder-saved-status')).not.toBeEmpty();
+
+    await page.bringToFront();
+    const paragraph = page.locator('p:has-text("This is a sample paragraph")');
+    await selectTextInElement(paragraph, 'sample paragraph');
+    const box = await paragraph.boundingBox();
+    await paragraph.dispatchEvent('mouseup', {
+      clientX: box.x + 50,
+      clientY: box.y + 10,
+      bubbles: true
+    });
+    const selectionIcon = page.locator('.text-highlighter-selection-icon');
+    await expect(selectionIcon).toBeVisible();
+    await selectionIcon.click();
+
+    const colorButtons = page.locator('.text-highlighter-selection-controls .color-button');
+    await expect(colorButtons).toHaveCount(2);
+    const colors = await colorButtons.evaluateAll(buttons => buttons.map(b => b.style.backgroundColor));
+    expect(colors).toEqual(['rgb(171, 205, 239)', 'rgb(18, 52, 86)']);
+  });
 });

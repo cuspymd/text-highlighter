@@ -473,6 +473,390 @@ describe('settings', () => {
       expect(alertText()).toBe('nameAlreadyExists');
       expect(colorNames()).toEqual(['customColor 1', 'Ocean']);
     });
+
+    describe('reordering', () => {
+      const THIRD_COLOR = { id: 'custom_3', color: '#00e676', colorNumber: 3, customName: 'Mint' };
+      const THREE = [BUILT_IN_COLOR, CUSTOM_COLOR, NAMED_CUSTOM_COLOR, THIRD_COLOR];
+
+      function moveButtons(row) {
+        const [up, down] = row.querySelectorAll('.btn-move');
+        return { up, down };
+      }
+
+      async function startReordering() {
+        await openSettings();
+        byId('reorder-custom-colors-btn').click();
+      }
+
+      // jsdom lays nothing out, so each row reports a 40px box at its current
+      // place in the list - which is what the drag measures against.
+      function layOutRows() {
+        colorRows().forEach((row) => {
+          row.getBoundingClientRect = () => {
+            const index = colorRows().indexOf(row);
+            return { top: index * 40, bottom: index * 40 + 40, height: 40, left: 0, right: 300, width: 300 };
+          };
+        });
+      }
+
+      // jsdom has no PointerEvent; a mouse event with the pointer's id stands in.
+      function pointer(target, type, clientY, pointerId) {
+        const event = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientY });
+        if (pointerId !== undefined) Object.defineProperty(event, 'pointerId', { value: pointerId });
+        target.dispatchEvent(event);
+      }
+
+      beforeEach(() => {
+        respondToBackground({ getColors: { success: true, colors: THREE } });
+      });
+
+      // Every opened page keeps its window listeners, and one left reordering
+      // skips its colour reload on focus - which later focus tests count.
+      afterEach(() => {
+        const cancel = byId('reorder-cancel-btn');
+        if (cancel && !byId('reorder-actions').hidden) cancel.click();
+      });
+
+      it('offers reordering only once there are two colors to order', async () => {
+        respondToBackground({ getColors: { success: true, colors: [BUILT_IN_COLOR, CUSTOM_COLOR] } });
+        await openSettings();
+        expect(byId('reorder-custom-colors-btn').hidden).toBe(true);
+
+        respondToBackground({ getColors: { success: true, colors: THREE } });
+        await openSettings();
+        expect(byId('reorder-custom-colors-btn').hidden).toBe(false);
+      });
+
+      it('keeps the move controls out of the normal list', async () => {
+        await openSettings();
+
+        expect(document.querySelectorAll('#custom-colors-list .btn-move')).toHaveLength(0);
+        expect(document.querySelectorAll('#custom-colors-list .drag-handle')).toHaveLength(0);
+      });
+
+      it('swaps the editing controls for moving ones while reordering', async () => {
+        await startReordering();
+
+        expect(colorRows()).toHaveLength(3);
+        expect(colorRows().every(row => row.querySelectorAll('.btn-move').length === 2)).toBe(true);
+        expect(colorRows().every(row => row.querySelector('.drag-handle'))).toBe(true);
+        expect(document.querySelectorAll('#custom-colors-list .btn-icon')).toHaveLength(0);
+        expect(byId('add-custom-color-btn').hidden).toBe(true);
+        expect(byId('clear-custom-colors-btn').hidden).toBe(true);
+        expect(byId('reorder-custom-colors-btn').hidden).toBe(true);
+        expect(byId('reorder-hint').hidden).toBe(false);
+        expect(byId('reorder-mode-label').hidden).toBe(false);
+        expect(byId('reorder-actions').hidden).toBe(false);
+        expect(byId('reorder-save-btn').disabled).toBe(true);
+      });
+
+      it('lets the first color only go down and the last only go up', async () => {
+        await startReordering();
+
+        const rows = colorRows();
+        expect(moveButtons(rows[0]).up.disabled).toBe(true);
+        expect(moveButtons(rows[0]).down.disabled).toBe(false);
+        expect(moveButtons(rows[2]).up.disabled).toBe(false);
+        expect(moveButtons(rows[2]).down.disabled).toBe(true);
+      });
+
+      it('names the color in the arrow labels', async () => {
+        await startReordering();
+
+        expect(chrome.i18n.getMessage).toHaveBeenCalledWith('moveColorUp', ['Ocean']);
+        expect(moveButtons(colorRows()[1]).up.getAttribute('aria-label')).toBe('moveColorUp');
+      });
+
+      it('moves colors in the draft without saving anything', async () => {
+        await startReordering();
+
+        moveButtons(colorRows()[0]).down.click();
+        moveButtons(colorRows()[1]).down.click();
+        await flush();
+
+        expect(colorNames()).toEqual(['Ocean', 'Mint', 'customColor 1']);
+        expect(backgroundMessages('reorderCustomColors')).toHaveLength(0);
+        expect(byId('reorder-save-btn').disabled).toBe(false);
+      });
+
+      it('has nothing to save once the colors are back where they were', async () => {
+        await startReordering();
+
+        moveButtons(colorRows()[0]).down.click();
+        moveButtons(colorRows()[1]).up.click();
+
+        expect(colorNames()).toEqual(['customColor 1', 'Ocean', 'Mint']);
+        expect(byId('reorder-save-btn').disabled).toBe(true);
+      });
+
+      it('keeps focus on the moved color, switching arrows at the end of the list', async () => {
+        await startReordering();
+
+        moveButtons(colorRows()[1]).down.click();
+
+        const moved = colorRows()[2];
+        expect(moved.querySelector('.color-name').textContent).toBe('Ocean');
+        expect(document.activeElement).toBe(moveButtons(moved).up);
+      });
+
+      it('moves a color dragged by its handle', async () => {
+        await startReordering();
+        layOutRows();
+
+        const [held, second, third] = colorRows();
+        const handle = held.querySelector('.drag-handle');
+        pointer(handle, 'pointerdown', 20);
+        expect(held.classList.contains('dragging')).toBe(true);
+        expect(document.documentElement.classList.contains('color-row-dragging')).toBe(true);
+
+        // Past the second row's middle: the held row follows, the second makes way.
+        pointer(second, 'pointermove', 70);
+        expect(held.style.transform).toBe('translateY(50px)');
+        expect(second.style.transform).toBe('translateY(-40px)');
+        expect(third.style.transform).toBe('');
+
+        // Far below the list: the row stops at the bottom, and both make way.
+        pointer(third, 'pointermove', 400);
+        expect(held.style.transform).toBe('translateY(80px)');
+        expect(third.style.transform).toBe('translateY(-40px)');
+
+        // The pointer is over another row by now; the release still ends the drag.
+        pointer(third, 'pointerup', 400);
+        expect(colorRows()[0]).toBe(held); // still settling into place
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        expect(colorNames()).toEqual(['Ocean', 'Mint', 'customColor 1']);
+        expect(document.querySelector('.dragging')).toBeNull();
+        expect(document.documentElement.classList.contains('color-row-dragging')).toBe(false);
+        expect(moveButtons(colorRows()[2]).down.disabled).toBe(true);
+        expect(byId('reorder-save-btn').disabled).toBe(false);
+        expect(backgroundMessages('reorderCustomColors')).toHaveLength(0);
+      });
+
+      // A release outside the window never reaches the document; the capture is
+      // what delivers it, and losing the capture has to end the drag too.
+      it('captures the pointer and ends the drag if the capture is lost', async () => {
+        await startReordering();
+        layOutRows();
+
+        const [held, second] = colorRows();
+        const handle = held.querySelector('.drag-handle');
+        handle.setPointerCapture = jest.fn();
+        pointer(handle, 'pointerdown', 20, 7);
+        expect(handle.setPointerCapture).toHaveBeenCalledWith(7);
+
+        pointer(second, 'pointermove', 70, 7);
+        pointer(handle, 'lostpointercapture', 70, 7);
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+        expect(document.querySelector('.dragging')).toBeNull();
+
+        // The drag is over: a later release elsewhere does nothing more.
+        pointer(document.body, 'pointerup', 400, 7);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+      });
+
+      it('moves and drops the row only with the pointer that picked it up', async () => {
+        await startReordering();
+        layOutRows();
+
+        const [held, second] = colorRows();
+        const handle = held.querySelector('.drag-handle');
+        pointer(handle, 'pointerdown', 20, 1);
+        pointer(second, 'pointermove', 70, 1);
+        expect(held.style.transform).toBe('translateY(50px)');
+
+        // A second finger moving and lifting leaves the held row where it is.
+        pointer(document.body, 'pointermove', 400, 2);
+        pointer(document.body, 'pointerup', 400, 2);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect(held.style.transform).toBe('translateY(50px)');
+        expect(held.classList.contains('dragging')).toBe(true);
+        expect(colorRows()[0]).toBe(held);
+
+        pointer(second, 'pointerup', 70, 1);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+      });
+
+      // A second finger can reach Cancel or an arrow while the first still holds
+      // a row, and the drop lands 150ms after release. Either would leave the
+      // drop committing into a draft that changed or is gone.
+      it('ignores Cancel and the arrows until a dragged row has landed', async () => {
+        await startReordering();
+        layOutRows();
+
+        const [held, second] = colorRows();
+        const handle = held.querySelector('.drag-handle');
+        pointer(handle, 'pointerdown', 20, 1);
+        pointer(second, 'pointermove', 70, 1);
+
+        byId('reorder-cancel-btn').click();
+        moveButtons(colorRows()[2]).up.click();
+        expect(byId('reorder-actions').hidden).toBe(false);
+        expect(colorRows()[0]).toBe(held);
+
+        pointer(second, 'pointerup', 70, 1);
+        byId('reorder-cancel-btn').click(); // still settling
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect(byId('reorder-actions').hidden).toBe(false);
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+
+        byId('reorder-cancel-btn').click();
+        expect(byId('reorder-actions').hidden).toBe(true);
+        expect(colorNames()).toEqual(['customColor 1', 'Ocean', 'Mint']);
+      });
+
+      it('saves the whole order in one message and leaves reorder mode', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+        moveButtons(colorRows()[1]).down.click();
+        respondToBackground({
+          reorderCustomColors: {
+            success: true,
+            colors: [BUILT_IN_COLOR, NAMED_CUSTOM_COLOR, THIRD_COLOR, CUSTOM_COLOR],
+          },
+        });
+
+        byId('reorder-save-btn').click();
+        await flush();
+
+        expect(backgroundMessages('reorderCustomColors')).toEqual([{
+          action: 'reorderCustomColors',
+          ids: ['custom_2', 'custom_3', 'custom_1'],
+        }]);
+        expect(colorNames()).toEqual(['Ocean', 'Mint', 'customColor 1']);
+        expect(document.querySelectorAll('#custom-colors-list .btn-move')).toHaveLength(0);
+        expect(byId('reorder-actions').hidden).toBe(true);
+        expect(byId('reorder-mode-label').hidden).toBe(true);
+        expect(byId('add-custom-color-btn').hidden).toBe(false);
+        expect(byId('reorder-custom-colors-btn').hidden).toBe(false);
+        expect(byId('reorder-saved-status').textContent).toBe('colorOrderSaved');
+      });
+
+      it('drops the saved note when reordering starts again', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+        respondToBackground({
+          reorderCustomColors: {
+            success: true,
+            colors: [BUILT_IN_COLOR, NAMED_CUSTOM_COLOR, CUSTOM_COLOR, THIRD_COLOR],
+          },
+        });
+        byId('reorder-save-btn').click();
+        await flush();
+        expect(byId('reorder-saved-status').textContent).toBe('colorOrderSaved');
+
+        byId('reorder-custom-colors-btn').click();
+
+        expect(byId('reorder-saved-status').textContent).toBe('');
+      });
+
+      it('holds every reorder control still until the save is answered', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+        const answer = chrome.runtime.sendMessage.getMockImplementation();
+        let finishSave;
+        chrome.runtime.sendMessage.mockImplementation(message => (
+          message.action === 'reorderCustomColors'
+            ? new Promise((resolve) => { finishSave = resolve; })
+            : answer(message)
+        ));
+
+        byId('reorder-save-btn').click();
+        await flush();
+
+        expect(colorRows().every(row => moveButtons(row).up.disabled && moveButtons(row).down.disabled))
+          .toBe(true);
+        expect(byId('reorder-cancel-btn').disabled).toBe(true);
+        expect(byId('reorder-save-btn').disabled).toBe(true);
+        pointer(colorRows()[0].querySelector('.drag-handle'), 'pointerdown', 20);
+        expect(document.querySelector('.dragging')).toBeNull();
+        byId('reorder-save-btn').click();
+        expect(backgroundMessages('reorderCustomColors')).toHaveLength(1);
+
+        finishSave({
+          success: true,
+          colors: [BUILT_IN_COLOR, NAMED_CUSTOM_COLOR, CUSTOM_COLOR, THIRD_COLOR],
+        });
+        await flush();
+
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+        expect(byId('reorder-actions').hidden).toBe(true);
+        expect(byId('reorder-cancel-btn').disabled).toBe(false);
+      });
+
+      it('puts the old order back on cancel without saving', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+
+        byId('reorder-cancel-btn').click();
+        await flush();
+
+        expect(colorNames()).toEqual(['customColor 1', 'Ocean', 'Mint']);
+        expect(backgroundMessages('reorderCustomColors')).toHaveLength(0);
+        expect(byId('reorder-actions').hidden).toBe(true);
+        expect(byId('add-custom-color-btn').hidden).toBe(false);
+      });
+
+      it('says so and shows the current list when the colors changed elsewhere', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+        respondToBackground({
+          reorderCustomColors: {
+            success: true,
+            mismatch: true,
+            colors: [BUILT_IN_COLOR, THIRD_COLOR, CUSTOM_COLOR],
+          },
+        });
+
+        byId('reorder-save-btn').click();
+        await flush();
+
+        expect(alertText()).toBe('colorOrderOutdated');
+        expect(colorNames()).toEqual(['Mint', 'customColor 1']);
+        expect(byId('reorder-actions').hidden).toBe(true);
+        expect(byId('reorder-saved-status').textContent).toBe('');
+      });
+
+      it('keeps the draft for another try when the save fails', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+        respondToBackground({ reorderCustomColors: { success: false } });
+
+        byId('reorder-save-btn').click();
+        await flush();
+
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+        expect(byId('reorder-actions').hidden).toBe(false);
+        expect(byId('reorder-save-btn').disabled).toBe(false);
+        expect(byId('reorder-cancel-btn').disabled).toBe(false);
+        expect(moveButtons(colorRows()[0]).down.disabled).toBe(false);
+      });
+
+      it('does not reload the colors over the draft when the window regains focus', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+
+        window.dispatchEvent(new Event('focus'));
+        await flush();
+
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+        expect(colorRows()[0].querySelector('.drag-handle')).not.toBeNull();
+      });
+
+      it('asks before leaving the page with an unsaved order', async () => {
+        await startReordering();
+        moveButtons(colorRows()[0]).down.click();
+
+        const event = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(true);
+      });
+    });
   });
 
   // ===================================================================

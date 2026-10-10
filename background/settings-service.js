@@ -198,7 +198,20 @@ export async function getCurrentShortcuts() {
   return shortcuts;
 }
 
-export async function createOrUpdateContextMenus() {
+// Rebuilds run one at a time. Each removes every item and creates them again
+// with awaits in between; two running together would interleave their items,
+// and the menu could end up with an earlier palette's colours or its order.
+// Each rebuild reads the palette when it starts, so the last one shows the
+// latest.
+let contextMenuRebuildQueue = Promise.resolve();
+
+export function createOrUpdateContextMenus() {
+  const run = contextMenuRebuildQueue.then(rebuildContextMenus);
+  contextMenuRebuildQueue = run.catch(() => {});
+  return run;
+}
+
+async function rebuildContextMenus() {
   if (isMobile() || !browserAPI.contextMenus) return;
   debugLog('Creating/updating context menus...');
 
@@ -252,6 +265,18 @@ export async function createOrUpdateContextMenus() {
   debugLog('Context menus created with shortcuts:', storedShortcuts);
 }
 
+// The defaults, then the custom colours in their stored order. A custom colour
+// whose value is already in the palette is left out.
+function buildPalette(customColors) {
+  const palette = [...COLORS];
+  customColors.forEach((c) => {
+    if (!palette.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
+      palette.push(c);
+    }
+  });
+  return palette;
+}
+
 async function loadCustomColorsFromStorage() {
   let customColors = [];
   try {
@@ -271,12 +296,7 @@ async function loadCustomColorsFromStorage() {
   }
 
   const { needsUpdate } = sanitizeCustomColors(customColors);
-  currentColors = [...COLORS];
-  customColors.forEach((c) => {
-    if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
-      currentColors.push(c);
-    }
-  });
+  currentColors = buildPalette(customColors);
 
   if (needsUpdate) {
     await browserAPI.storage.local.set({ customColors });
@@ -318,6 +338,22 @@ export async function ensureCustomColorsLoaded() {
   await loadCustomColors();
 }
 
+// Palette changes run one at a time. Each reads the stored colours, works out
+// the new list and writes it back, with awaits in between; two running
+// together - two settings pages, or a sync landing during a change - would
+// each write a list built without the other, and a colour one of them added
+// would vanish under the other's write. A change that fails does not hold up
+// the ones queued after it.
+let paletteChangeQueue = Promise.resolve();
+
+function serializePaletteChange(change) {
+  return (...args) => {
+    const run = paletteChangeQueue.then(() => change(...args));
+    paletteChangeQueue = run.catch(() => {});
+    return run;
+  };
+}
+
 // Every change to the palette starts here. A worker that a message woke up is
 // still loading the colours when it handles that message; a change made before
 // the load lands is overwritten by it, and the palette the tabs were sent
@@ -334,7 +370,15 @@ async function settleLoadBeforeChange() {
   }
 }
 
-export async function updateCustomColorName(id, newName) {
+// A change goes out to the context menu and the open tabs before the next one
+// starts. Sent after the queue moved on, an earlier change's palette could reach
+// the tabs after a later one's and leave them showing the older list.
+async function publishPalette() {
+  await createOrUpdateContextMenus();
+  await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
+}
+
+export const updateCustomColorName = serializePaletteChange(async function updateCustomColorName(id, newName) {
   await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = stored.customColors || [];
@@ -360,10 +404,11 @@ export async function updateCustomColorName(id, newName) {
   if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], customName: finalName };
 
   await saveSettingsToSync();
+  await publishPalette();
   return { exists: false, colors: currentColors };
-}
+});
 
-export async function updateCustomColor(id, newColorValue) {
+export const updateCustomColor = serializePaletteChange(async function updateCustomColor(id, newColorValue) {
   await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = stored.customColors || [];
@@ -384,10 +429,11 @@ export async function updateCustomColor(id, newColorValue) {
   if (globalIdx !== -1) currentColors[globalIdx] = { ...currentColors[globalIdx], color: newColorValue };
 
   await saveSettingsToSync();
+  await publishPalette();
   return { exists: false, colors: currentColors };
-}
+});
 
-export async function removeCustomColor(id) {
+export const removeCustomColor = serializePaletteChange(async function removeCustomColor(id) {
   await settleLoadBeforeChange();
   const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   let customColors = stored.customColors || [];
@@ -400,14 +446,52 @@ export async function removeCustomColor(id) {
   currentColors = currentColors.filter(c => c.id !== id);
 
   await saveSettingsToSync();
+  await publishPalette();
   return { colors: currentColors };
-}
+});
+
+/**
+ * Put the custom colours in the given order. The order is the palette's and the
+ * context menu's, and it reaches other devices the way every colour change does:
+ * both sync paths carry the array whole.
+ *
+ * `orderedIds` has to name exactly the stored colours. A settings page that
+ * missed a change made elsewhere would otherwise drop or duplicate one; it gets
+ * the current list back instead, to render and try again from.
+ * @returns {{ mismatch: boolean, colors: object[] }}
+ */
+export const reorderCustomColors = serializePaletteChange(async function reorderCustomColors(orderedIds) {
+  await settleLoadBeforeChange();
+  const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+  const customColors = stored.customColors || [];
+
+  const byId = new Map(customColors.map(c => [c.id, c]));
+  const matches = Array.isArray(orderedIds)
+    && orderedIds.length === customColors.length
+    && new Set(orderedIds).size === orderedIds.length
+    && orderedIds.every(id => byId.has(id));
+  // Answered from storage for the same reason as the reorder below. The palette
+  // in memory is left alone: nothing rebuilds the menu on this path.
+  if (!matches) return { mismatch: true, colors: buildPalette(customColors) };
+
+  const reordered = orderedIds.map(id => byId.get(id));
+  await browserAPI.storage.local.set({ customColors: reordered });
+
+  // Built from what was stored, not filtered from the palette in memory: a
+  // worker whose load failed still holds the defaults alone, and the reorder
+  // would go out to the menu and the tabs with every custom colour missing.
+  currentColors = buildPalette(reordered);
+
+  await saveSettingsToSync();
+  await publishPalette();
+  return { mismatch: false, colors: currentColors };
+});
 
 /**
  * Add a new custom color.
  * @returns {{ exists: boolean, colors: object[] }}
  */
-export async function addCustomColor(newColorValue) {
+export const addCustomColor = serializePaletteChange(async function addCustomColor(newColorValue) {
   if (!newColorValue) return { exists: true, colors: currentColors };
 
   await settleLoadBeforeChange();
@@ -432,14 +516,15 @@ export async function addCustomColor(newColorValue) {
   debugLog('Added custom color:', newColorObj);
 
   await saveSettingsToSync();
+  await publishPalette();
   return { exists: false, colors: currentColors };
-}
+});
 
 /**
  * Clear all custom colors.
  * @returns {{ hadColors: boolean, colors: object[] }}
  */
-export async function clearCustomColors() {
+export const clearCustomColors = serializePaletteChange(async function clearCustomColors() {
   await settleLoadBeforeChange();
   const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
   const customColors = result.customColors || [];
@@ -454,8 +539,9 @@ export async function clearCustomColors() {
   debugLog('Cleared all custom colors');
 
   await saveSettingsToSync();
+  await publishPalette();
   return { hadColors: true, colors: currentColors };
-}
+});
 
 export async function broadcastSettingsToTabs(changedSettings) {
   if (!changedSettings || Object.keys(changedSettings).length === 0) return;
@@ -493,7 +579,7 @@ export async function broadcastSettingsToTabs(changedSettings) {
  * Apply settings received from sync storage on another device.
  * @returns {{ colorsChanged: boolean }}
  */
-export async function applySettingsFromSync(newSettings) {
+export const applySettingsFromSync = serializePaletteChange(async function applySettingsFromSync(newSettings) {
   let colorsChanged = false;
 
   if (newSettings.customColors) {
@@ -501,12 +587,7 @@ export async function applySettingsFromSync(newSettings) {
     const customColors = newSettings.customColors.map(color => ({ ...color }));
     sanitizeCustomColors(customColors);
     await browserAPI.storage.local.set({ customColors });
-    currentColors = [...COLORS];
-    customColors.forEach(c => {
-      if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
-        currentColors.push(c);
-      }
-    });
+    currentColors = buildPalette(customColors);
     await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
     colorsChanged = true;
   }
@@ -547,5 +628,12 @@ export async function applySettingsFromSync(newSettings) {
     shortcutColorMap = newSettings.shortcutColorMap || { ...DEFAULT_SHORTCUT_COLOR_MAP };
   }
 
+  // Rebuilt once everything it shows has been applied: the colours, which of
+  // them are hidden, and the shortcut each one is labelled with. Still inside
+  // the queue, so a palette change made right after cannot be overtaken.
+  if (colorsChanged || newSettings.shortcutColorMap !== undefined) {
+    await createOrUpdateContextMenus();
+  }
+
   return { colorsChanged };
-}
+});

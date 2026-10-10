@@ -368,6 +368,160 @@ describe('message-router', () => {
     });
   });
 
+  describe('reorderCustomColors', () => {
+    const RED = { id: 'custom_red', colorNumber: 1, color: '#ff1111' };
+    const GREEN = { id: 'custom_green', colorNumber: 2, color: '#11ff11', customName: 'Leaf' };
+    const BLUE = { id: 'custom_blue', colorNumber: 3, color: '#1111ff' };
+
+    beforeEach(() => {
+      local.customColors = [RED, GREEN, BLUE];
+    });
+
+    it('refuses a message with no ids', async () => {
+      expect(await send({ action: 'reorderCustomColors' }))
+        .toEqual({ success: false, error: 'Missing ids' });
+    });
+
+    it('stores the new order and keeps each color as it was', async () => {
+      const result = await send({
+        action: 'reorderCustomColors',
+        ids: ['custom_blue', 'custom_red', 'custom_green'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(customColorIds(result.colors)).toEqual(['custom_blue', 'custom_red', 'custom_green']);
+      expect(local.customColors).toEqual([BLUE, RED, GREEN]);
+      expect(customColorIds((await send({ action: 'getColors' })).colors))
+        .toEqual(['custom_blue', 'custom_red', 'custom_green']);
+    });
+
+    it('keeps the built-in colors ahead of the custom ones', async () => {
+      const before = await send({ action: 'getColors' });
+      const builtInIds = before.colors.filter(c => !c.id.startsWith('custom_')).map(c => c.id);
+
+      const result = await send({
+        action: 'reorderCustomColors',
+        ids: ['custom_green', 'custom_blue', 'custom_red'],
+      });
+
+      expect(result.colors.map(c => c.id))
+        .toEqual([...builtInIds, 'custom_green', 'custom_blue', 'custom_red']);
+    });
+
+    // A worker woken by this message whose first load fails still has only the
+    // defaults in memory. The reorder reads storage itself and goes ahead, and
+    // what it sends out has to carry the custom colours all the same.
+    it('sends out the custom colors even when the palette load had failed', async () => {
+      const read = chrome.storage.local.get.getMockImplementation();
+      chrome.storage.local.get.mockImplementationOnce(async () => { throw new Error('storage busy'); });
+      chrome.storage.local.get.mockImplementation(read);
+      openTabs(PAGE);
+
+      const result = await send({
+        action: 'reorderCustomColors',
+        ids: ['custom_blue', 'custom_red', 'custom_green'],
+      });
+
+      expect(customColorIds(result.colors)).toEqual(['custom_blue', 'custom_red', 'custom_green']);
+      expect(customColorIds(tabMessages('colorsUpdated')[0].message.colors))
+        .toEqual(['custom_blue', 'custom_red', 'custom_green']);
+    });
+
+    it('answers a stale order with the stored colors even when the palette load had failed', async () => {
+      const read = chrome.storage.local.get.getMockImplementation();
+      chrome.storage.local.get.mockImplementationOnce(async () => { throw new Error('storage busy'); });
+      chrome.storage.local.get.mockImplementation(read);
+
+      const result = await send({ action: 'reorderCustomColors', ids: ['custom_blue', 'custom_red'] });
+
+      expect(result.mismatch).toBe(true);
+      expect(customColorIds(result.colors)).toEqual(['custom_red', 'custom_green', 'custom_blue']);
+    });
+
+    // Two pages at once: each change reads the stored list, works out its own
+    // and writes it back. Run side by side, the second write would be built
+    // without the first one's change.
+    it.each([
+      ['an add', { action: 'addColor', color: '#abcabc' }, list => expect(list.map(c => c.color)).toContain('#abcabc')],
+      ['a removal', { action: 'removeCustomColor', id: 'custom_green' }, list => expect(list.map(c => c.id)).not.toContain('custom_green')],
+      ['a rename', { action: 'updateCustomColorName', id: 'custom_red', name: 'Ruby' }, list => expect(list.find(c => c.id === 'custom_red').customName).toBe('Ruby')],
+    ])('does not undo %s that lands while it runs', async (_case, other, check) => {
+      await send({ action: 'getColors' }); // the palette is loaded, as on an open settings page
+
+      await Promise.all([
+        send({ action: 'reorderCustomColors', ids: ['custom_blue', 'custom_red', 'custom_green'] }),
+        send(other),
+      ]);
+
+      check(local.customColors);
+      check(sync.settings.customColors);
+      expect(local.customColors.slice(0, 2).map(c => c.id)).toEqual(['custom_blue', 'custom_red']);
+    });
+
+    // The first save's menu rebuild is slow. Were the menu and the tabs updated
+    // after the queue moved on, the second save would go out first and the
+    // first one's older order would land on top of it.
+    it('sends two saves out in the order they were made', async () => {
+      openTabs(PAGE);
+      await send({ action: 'getColors' });
+      chrome.contextMenus.removeAll.mockImplementationOnce(
+        () => new Promise(resolve => setTimeout(resolve, 20))
+      );
+
+      await Promise.all([
+        send({ action: 'reorderCustomColors', ids: ['custom_blue', 'custom_red', 'custom_green'] }),
+        send({ action: 'reorderCustomColors', ids: ['custom_green', 'custom_blue', 'custom_red'] }),
+      ]);
+
+      const updates = tabMessages('colorsUpdated');
+      expect(updates).toHaveLength(2);
+      expect(customColorIds(updates[1].message.colors)).toEqual(['custom_green', 'custom_blue', 'custom_red']);
+      const menuIds = chrome.contextMenus.create.mock.calls
+        .map(([item]) => item.id)
+        .filter(id => id.startsWith('highlight-custom_'));
+      expect(menuIds.slice(-3)).toEqual(['highlight-custom_green', 'highlight-custom_blue', 'highlight-custom_red']);
+    });
+
+    it('rebuilds the menus and tells the tabs', async () => {
+      openTabs(PAGE);
+
+      await send({ action: 'reorderCustomColors', ids: ['custom_green', 'custom_red', 'custom_blue'] });
+
+      expect(chrome.contextMenus.create).toHaveBeenCalled();
+      expect(tabMessages('colorsUpdated')).toHaveLength(1);
+      expect(customColorIds(tabMessages('colorsUpdated')[0].message.colors))
+        .toEqual(['custom_green', 'custom_red', 'custom_blue']);
+    });
+
+    // Both sync paths carry the array whole: storage.sync gets it as it is, and
+    // the cloud blob takes it from local storage when the fresher settings stamp
+    // makes this device's settings win the merge.
+    it('sends the new order to sync and stamps the settings as changed', async () => {
+      await send({ action: 'reorderCustomColors', ids: ['custom_blue', 'custom_green', 'custom_red'] });
+
+      expect(sync.settings.customColors.map(c => c.id))
+        .toEqual(['custom_blue', 'custom_green', 'custom_red']);
+      expect(local[CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT]).toEqual(expect.any(Number));
+    });
+
+    it.each([
+      ['a color is missing', ['custom_blue', 'custom_red']],
+      ['a color is unknown', ['custom_blue', 'custom_red', 'custom_nope']],
+      ['a color is named twice', ['custom_blue', 'custom_red', 'custom_red']],
+    ])('hands back the stored order untouched when %s', async (_case, ids) => {
+      openTabs(PAGE);
+
+      const result = await send({ action: 'reorderCustomColors', ids });
+
+      expect(result.success).toBe(true);
+      expect(result.mismatch).toBe(true);
+      expect(customColorIds(result.colors)).toEqual(['custom_red', 'custom_green', 'custom_blue']);
+      expect(local.customColors).toEqual([RED, GREEN, BLUE]);
+      expect(sync.settings).toBeUndefined();
+      expect(tabMessages('colorsUpdated')).toHaveLength(0);
+    });
+  });
+
   describe('clearCustomColors', () => {
     it('says so when there was nothing to clear, and leaves the tabs alone', async () => {
       openTabs(PAGE);

@@ -743,7 +743,7 @@ const filesToCopy = [
 
 ### 단축키 슬롯 매핑과 컨텍스트 메뉴 일관성
 
-`createOrUpdateContextMenus()`는 `currentColors` 기반으로 메뉴를 생성하므로 사용자 정의 색상 추가/변경/삭제 후 반드시 재호출한다. 매핑 변경(`saveShortcutColorMap`) 시에도 컨텍스트 메뉴 타이틀에 표시되는 단축키가 올바른지 확인이 필요하다.
+`createOrUpdateContextMenus()`는 `currentColors` 기반으로 메뉴를 생성하므로 사용자 정의 색상 추가/변경/삭제 후 반드시 재호출한다. (현재 구현: 색상 변경 함수와 `applySettingsFromSync`가 팔레트 변경 대기열 안에서 메뉴 재생성과 `colorsUpdated` 전송까지 마친다. 핸들러가 대기열 밖에서 하면 먼저 시작한 변경의 예전 팔레트가 나중 변경 뒤에 도착할 수 있다. 메뉴 재생성 자체도 한 번에 하나씩 실행된다.) 매핑 변경(`saveShortcutColorMap`) 시에도 컨텍스트 메뉴 타이틀에 표시되는 단축키가 올바른지 확인이 필요하다.
 
 ### `chrome://extensions/shortcuts` 탭 생성 불가
 

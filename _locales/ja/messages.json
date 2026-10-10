@@ -269,6 +269,36 @@
   "removeColor": {
     "message": "削除"
   },
+  "moveColorUp": {
+    "message": "$NAME$を上へ移動",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "moveColorDown": {
+    "message": "$NAME$を下へ移動",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "reorderColors": {
+    "message": "並べ替え"
+  },
+  "saveColorOrder": {
+    "message": "保存"
+  },
+  "reorderColorsHint": {
+    "message": "ハンドルをドラッグするか矢印ボタンで並べ替えてから保存してください。"
+  },
+  "colorOrderOutdated": {
+    "message": "色が別の場所で変更されたため、新しい順番は保存されませんでした。もう一度並べ替えてください。"
+  },
+  "reorderingColors": {
+    "message": "並べ替え中"
+  },
+  "colorOrderSaved": {
+    "message": "✓ 順番を保存しました。"
+  },
   "removeAllColors": {
     "message": "すべて削除"
   },

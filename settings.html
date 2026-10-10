@@ -279,6 +279,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
         padding: 10px 0;
         border-bottom: 1px solid var(--border);
       }
@@ -290,6 +291,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        min-width: 0;
       }
 
       .color-swatch {
@@ -297,6 +299,7 @@
         height: 20px;
         border-radius: 50%;
         border: 1px solid var(--border);
+        flex-shrink: 0;
       }
 
       .color-name {
@@ -331,11 +334,106 @@
         font-size: 12px;
         color: var(--muted);
         font-family: monospace;
+        white-space: nowrap;
       }
 
       .color-actions {
         display: flex;
+        align-items: center;
+        flex-shrink: 0;
         gap: 6px;
+      }
+      .color-actions button {
+        white-space: nowrap;
+      }
+
+      .section-heading-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .mode-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(139, 92, 246, 0.1);
+      }
+
+      .reorder-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .reorder-actions[hidden] {
+        display: none;
+      }
+      .reorder-actions .btn {
+        flex: 1;
+      }
+      .reorder-actions .btn:disabled {
+        cursor: default;
+        opacity: 0.45;
+      }
+
+      .saved-status:empty {
+        display: none;
+      }
+
+      /* Reorder mode */
+      .reorder-row {
+        position: relative;
+        background: var(--surface);
+      }
+      .drag-handle {
+        flex-shrink: 0;
+        padding: 4px 2px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1;
+        cursor: grab;
+        user-select: none;
+        /* Without this a touch drag scrolls the page instead. */
+        touch-action: none;
+      }
+      .reorder-saving .drag-handle {
+        cursor: default;
+        opacity: 0.35;
+      }
+      .reorder-row.make-way {
+        transition: transform 150ms ease;
+      }
+      .reorder-row.dragging {
+        z-index: 1;
+        border-radius: 8px;
+        border-bottom-color: transparent;
+        background: var(--surface-strong);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+      }
+      .reorder-row.settling {
+        transition: transform 150ms ease;
+      }
+      /* The hand stays closed wherever the pointer goes while a row is held. */
+      .color-row-dragging,
+      .color-row-dragging * {
+        cursor: grabbing !important;
+        user-select: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .reorder-row.make-way,
+        .reorder-row.settling {
+          transition: none;
+        }
+      }
+      /* Names are not editable while reordering. */
+      .reorder-row .color-name {
+        cursor: inherit;
+      }
+      .reorder-row .color-name:hover {
+        background: none;
+        border-color: transparent;
       }
 
       .btn-icon {
@@ -351,6 +449,28 @@
       .btn-icon:hover {
         background: var(--surface-strong);
         color: var(--text);
+      }
+
+
+      .btn-move {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 6px;
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 16px;
+        min-width: 26px;
+        transition: all 0.2s ease;
+      }
+      .btn-move:hover:not(:disabled) {
+        background: var(--surface-strong);
+        color: var(--text);
+      }
+      .btn-move:disabled {
+        cursor: default;
+        opacity: 0.35;
       }
 
       .btn-danger:hover {
@@ -545,14 +665,20 @@
       <section class="section-card">
         <div class="section-heading">
           <h2 class="section-title" data-i18n="customColorsSection">Custom Colors</h2>
-          <button
-            id="clear-custom-colors-btn"
-            class="btn-icon btn-danger"
-            data-i18n="removeAllColors"
-            hidden
-          >
-            Remove All
-          </button>
+          <div class="section-heading-actions">
+            <button id="reorder-custom-colors-btn" class="btn-icon" data-i18n="reorderColors" hidden>
+              Reorder
+            </button>
+            <button
+              id="clear-custom-colors-btn"
+              class="btn-icon btn-danger"
+              data-i18n="removeAllColors"
+              hidden
+            >
+              Remove All
+            </button>
+            <span id="reorder-mode-label" class="mode-label" data-i18n="reorderingColors" hidden>Reordering</span>
+          </div>
         </div>
         <div class="toggle-container" id="hide-default-colors-row">
           <div class="toggle-label">
@@ -574,7 +700,17 @@
         <p class="hint-text" id="hide-default-colors-fallback" data-i18n="hideDefaultColorsFallback" hidden>
           You have no custom colors yet, so the default colors are still shown. Add one to hide them.
         </p>
+        <p class="hint-text" id="reorder-hint" data-i18n="reorderColorsHint" hidden>
+          Drag a color or use its arrows, then save.
+        </p>
         <div id="custom-colors-list"></div>
+        <!-- Below the list, well away from Remove All: the header's buttons
+             come back where Save was, and a second click must not land on it. -->
+        <div id="reorder-actions" class="reorder-actions" hidden>
+          <button id="reorder-cancel-btn" class="btn" data-i18n="cancel">Cancel</button>
+          <button id="reorder-save-btn" class="btn btn-primary" data-i18n="saveColorOrder">Save</button>
+        </div>
+        <p class="hint-text saved-status" id="reorder-saved-status" role="status"></p>
         <button id="add-custom-color-btn" class="btn btn-primary" data-i18n="addCustomColor">+ Add Custom Color</button>
         <input type="color" id="color-picker-hidden" style="display:none" />
       </section>

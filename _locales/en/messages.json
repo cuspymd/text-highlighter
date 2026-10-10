@@ -269,6 +269,36 @@
   "removeColor": {
     "message": "Remove"
   },
+  "moveColorUp": {
+    "message": "Move $NAME$ up",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "moveColorDown": {
+    "message": "Move $NAME$ down",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "reorderColors": {
+    "message": "Reorder"
+  },
+  "saveColorOrder": {
+    "message": "Save"
+  },
+  "reorderColorsHint": {
+    "message": "Drag a color by its handle or use the arrows, then save."
+  },
+  "colorOrderOutdated": {
+    "message": "The colors changed elsewhere, so the new order was not saved. Please reorder them again."
+  },
+  "reorderingColors": {
+    "message": "Reordering"
+  },
+  "colorOrderSaved": {
+    "message": "✓ Color order saved."
+  },
   "removeAllColors": {
     "message": "Remove All"
   },

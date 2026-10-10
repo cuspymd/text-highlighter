@@ -269,6 +269,36 @@
   "removeColor": {
     "message": "Удалить"
   },
+  "moveColorUp": {
+    "message": "Переместить «$NAME$» вверх",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "moveColorDown": {
+    "message": "Переместить «$NAME$» вниз",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "reorderColors": {
+    "message": "Изменить порядок"
+  },
+  "saveColorOrder": {
+    "message": "Сохранить"
+  },
+  "reorderColorsHint": {
+    "message": "Перетащите цвет за маркер или используйте стрелки, затем сохраните."
+  },
+  "colorOrderOutdated": {
+    "message": "Цвета изменились в другом месте, поэтому новый порядок не сохранён. Измените порядок ещё раз."
+  },
+  "reorderingColors": {
+    "message": "Изменение порядка"
+  },
+  "colorOrderSaved": {
+    "message": "✓ Порядок сохранён."
+  },
   "removeAllColors": {
     "message": "Удалить все"
   },

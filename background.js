@@ -24,10 +24,7 @@ initContextMenus();
 
 initSyncListener({
   onSettingsChanged: async (newSettings) => {
-    const { colorsChanged } = await applySettingsFromSync(newSettings);
-    if (colorsChanged) {
-      await createOrUpdateContextMenus();
-    }
+    await applySettingsFromSync(newSettings);
   },
 });
 
@@ -51,8 +48,7 @@ async function adoptSettingsMissingLocally() {
   if (!missing) return;
 
   debugLog('Adopting settings this device had never been told about:', missing);
-  const { colorsChanged } = await applySettingsFromSync(missing);
-  if (colorsChanged) await createOrUpdateContextMenus();
+  await applySettingsFromSync(missing);
 }
 
 // The first-run migration writes what sync holds to local storage, after the
@@ -63,8 +59,7 @@ async function adoptMigratedSettings() {
   const migrated = await migrateLocalToSync();
   if (!migrated) return;
 
-  const { colorsChanged } = await applySettingsFromSync(migrated);
-  if (colorsChanged) await createOrUpdateContextMenus();
+  await applySettingsFromSync(migrated);
 }
 
 (async () => {

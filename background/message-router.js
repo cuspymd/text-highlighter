@@ -1,6 +1,6 @@
 import { browserAPI } from '../shared/browser-api.js';
 import { DEBUG_MODE, debugLog } from '../shared/logger.js';
-import { broadcastToAllTabs, broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
+import { broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
 import { STORAGE_KEYS } from '../constants/storage-keys.js';
 import {
   syncSaveHighlights,
@@ -30,6 +30,7 @@ import {
   updateCustomColor,
   updateCustomColorName,
   removeCustomColor,
+  reorderCustomColors,
   getShortcutColorMap,
   saveShortcutColorMap,
   ensureCustomColorsLoaded,
@@ -102,9 +103,6 @@ async function handleGetHighlights(message) {
 async function handleClearCustomColors(_message) {
   const { hadColors, colors } = await clearCustomColors();
   if (!hadColors) return successResponse({ noCustomColors: true, colors });
-
-  await createOrUpdateContextMenus();
-  await broadcastToAllTabs({ action: 'colorsUpdated', colors });
   return successResponse({ colors });
 }
 
@@ -112,10 +110,6 @@ async function handleAddColor(message) {
   if (!message.color) return errorResponse('No color value provided');
 
   const { exists, colors } = await addCustomColor(message.color);
-  if (!exists) {
-    await createOrUpdateContextMenus();
-    await broadcastToAllTabs({ action: 'colorsUpdated', colors });
-  }
   return successResponse({ exists, colors });
 }
 
@@ -124,8 +118,6 @@ async function handleUpdateCustomColor(message) {
   const result = await updateCustomColor(message.id, message.color);
   if (result.notFound) return errorResponse('Color not found');
   if (result.exists) return successResponse({ exists: true, colors: result.colors });
-  await createOrUpdateContextMenus();
-  await broadcastToAllTabs({ action: 'colorsUpdated', colors: result.colors });
   return successResponse({ colors: result.colors });
 }
 
@@ -135,8 +127,6 @@ async function handleUpdateCustomColorName(message) {
   const result = await updateCustomColorName(message.id, message.name);
   if (result.notFound) return errorResponse('Color not found');
   if (result.exists) return successResponse({ exists: true, colors: result.colors });
-  await createOrUpdateContextMenus();
-  await broadcastToAllTabs({ action: 'colorsUpdated', colors: result.colors });
   return successResponse({ colors: result.colors });
 }
 
@@ -144,8 +134,13 @@ async function handleRemoveCustomColor(message) {
   if (!message.id) return errorResponse('Missing id');
   const result = await removeCustomColor(message.id);
   if (result.notFound) return errorResponse('Color not found');
-  await createOrUpdateContextMenus();
-  await broadcastToAllTabs({ action: 'colorsUpdated', colors: result.colors });
+  return successResponse({ colors: result.colors });
+}
+
+async function handleReorderCustomColors(message) {
+  if (!Array.isArray(message.ids)) return errorResponse('Missing ids');
+  const result = await reorderCustomColors(message.ids);
+  if (result.mismatch) return successResponse({ mismatch: true, colors: result.colors });
   return successResponse({ colors: result.colors });
 }
 
@@ -370,6 +365,7 @@ const ACTION_HANDLERS = {
   updateCustomColor:         handleUpdateCustomColor,
   updateCustomColorName:     handleUpdateCustomColorName,
   removeCustomColor:         handleRemoveCustomColor,
+  reorderCustomColors:       handleReorderCustomColors,
   getShortcutColorMap:       handleGetShortcutColorMap,
   saveShortcutColorMap:      handleSaveShortcutColorMap,
   saveHighlights:            handleSaveHighlights,
