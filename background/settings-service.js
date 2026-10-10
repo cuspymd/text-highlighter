@@ -252,6 +252,18 @@ export async function createOrUpdateContextMenus() {
   debugLog('Context menus created with shortcuts:', storedShortcuts);
 }
 
+// The defaults, then the custom colours in their stored order. A custom colour
+// whose value is already in the palette is left out.
+function buildPalette(customColors) {
+  const palette = [...COLORS];
+  customColors.forEach((c) => {
+    if (!palette.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
+      palette.push(c);
+    }
+  });
+  return palette;
+}
+
 async function loadCustomColorsFromStorage() {
   let customColors = [];
   try {
@@ -271,12 +283,7 @@ async function loadCustomColorsFromStorage() {
   }
 
   const { needsUpdate } = sanitizeCustomColors(customColors);
-  currentColors = [...COLORS];
-  customColors.forEach((c) => {
-    if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
-      currentColors.push(c);
-    }
-  });
+  currentColors = buildPalette(customColors);
 
   if (needsUpdate) {
     await browserAPI.storage.local.set({ customColors });
@@ -428,11 +435,10 @@ export async function reorderCustomColors(orderedIds) {
   const reordered = orderedIds.map(id => byId.get(id));
   await browserAPI.storage.local.set({ customColors: reordered });
 
-  const inPalette = new Set(currentColors.map(c => c.id));
-  currentColors = [
-    ...currentColors.filter(c => !isCustomColor(c)),
-    ...reordered.filter(c => inPalette.has(c.id)),
-  ];
+  // Built from what was stored, not filtered from the palette in memory: a
+  // worker whose load failed still holds the defaults alone, and the reorder
+  // would go out to the menu and the tabs with every custom colour missing.
+  currentColors = buildPalette(reordered);
 
   await saveSettingsToSync();
   return { mismatch: false, colors: currentColors };
@@ -536,12 +542,7 @@ export async function applySettingsFromSync(newSettings) {
     const customColors = newSettings.customColors.map(color => ({ ...color }));
     sanitizeCustomColors(customColors);
     await browserAPI.storage.local.set({ customColors });
-    currentColors = [...COLORS];
-    customColors.forEach(c => {
-      if (!currentColors.some(existing => existing.color.toLowerCase() === c.color.toLowerCase())) {
-        currentColors.push(c);
-      }
-    });
+    currentColors = buildPalette(customColors);
     await broadcastToAllTabs({ action: 'colorsUpdated', colors: currentColors });
     colorsChanged = true;
   }

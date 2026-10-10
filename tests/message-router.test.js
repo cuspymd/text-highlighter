@@ -408,6 +408,25 @@ describe('message-router', () => {
         .toEqual([...builtInIds, 'custom_green', 'custom_blue', 'custom_red']);
     });
 
+    // A worker woken by this message whose first load fails still has only the
+    // defaults in memory. The reorder reads storage itself and goes ahead, and
+    // what it sends out has to carry the custom colours all the same.
+    it('sends out the custom colors even when the palette load had failed', async () => {
+      const read = chrome.storage.local.get.getMockImplementation();
+      chrome.storage.local.get.mockImplementationOnce(async () => { throw new Error('storage busy'); });
+      chrome.storage.local.get.mockImplementation(read);
+      openTabs(PAGE);
+
+      const result = await send({
+        action: 'reorderCustomColors',
+        ids: ['custom_blue', 'custom_red', 'custom_green'],
+      });
+
+      expect(customColorIds(result.colors)).toEqual(['custom_blue', 'custom_red', 'custom_green']);
+      expect(customColorIds(tabMessages('colorsUpdated')[0].message.colors))
+        .toEqual(['custom_blue', 'custom_red', 'custom_green']);
+    });
+
     it('rebuilds the menus and tells the tabs', async () => {
       openTabs(PAGE);
 

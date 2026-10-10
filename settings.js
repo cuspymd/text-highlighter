@@ -378,8 +378,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // so it reads as carrying the row rather than as rows jumping about. On
   // release the row glides into the gap and only then does the draft change.
   //
-  // The drag is heard on the document: once the pointer leaves the handle it
-  // is over some other row, and the move and the release still belong here.
+  // The pointer is captured to the handle, so a release outside the window
+  // still ends the drag; the rows move only by transform, which keeps the
+  // capture. The drag is heard on the document all the same - captured events
+  // bubble there, and it does not depend on capture being available. Losing
+  // the capture any other way ends the drag where it is.
   const DROP_SETTLE_MS = 150;
   let rowDragActive = false;
 
@@ -387,6 +390,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (event.button !== 0 || rowDragActive) return;
     event.preventDefault();
     rowDragActive = true;
+    const handle = event.currentTarget;
+    if (handle.setPointerCapture && event.pointerId !== undefined) {
+      handle.setPointerCapture(event.pointerId);
+    }
 
     const rows = [...customColorsList.querySelectorAll('.reorder-row')];
     const from = rows.indexOf(row);
@@ -445,6 +452,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onEnd);
       document.removeEventListener('pointercancel', onEnd);
+      handle.removeEventListener('lostpointercapture', onEnd);
 
       // Where the row will sit once the list is re-rendered in the new order.
       let finalDy = 0;
@@ -458,6 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onEnd);
     document.addEventListener('pointercancel', onEnd);
+    handle.addEventListener('lostpointercapture', onEnd);
   }
 
   // Saving puts the normal list back without anything else to show it

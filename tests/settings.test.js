@@ -630,6 +630,33 @@ describe('settings', () => {
         expect(backgroundMessages('reorderCustomColors')).toHaveLength(0);
       });
 
+      // A release outside the window never reaches the document; the capture is
+      // what delivers it, and losing the capture has to end the drag too.
+      it('captures the pointer and ends the drag if the capture is lost', async () => {
+        await startReordering();
+        layOutRows();
+
+        const [held, second] = colorRows();
+        const handle = held.querySelector('.drag-handle');
+        handle.setPointerCapture = jest.fn();
+        const down = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, clientY: 20 });
+        Object.defineProperty(down, 'pointerId', { value: 7 });
+        handle.dispatchEvent(down);
+        expect(handle.setPointerCapture).toHaveBeenCalledWith(7);
+
+        pointer(second, 'pointermove', 70);
+        handle.dispatchEvent(new Event('lostpointercapture'));
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+        expect(document.querySelector('.dragging')).toBeNull();
+
+        // The drag is over: a later release elsewhere does nothing more.
+        pointer(document.body, 'pointerup', 400);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect(colorNames()).toEqual(['Ocean', 'customColor 1', 'Mint']);
+      });
+
       it('saves the whole order in one message and leaves reorder mode', async () => {
         await startReordering();
         moveButtons(colorRows()[0]).down.click();
