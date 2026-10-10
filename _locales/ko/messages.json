@@ -269,6 +269,36 @@
   "removeColor": {
     "message": "삭제"
   },
+  "moveColorUp": {
+    "message": "$NAME$ 위로 이동",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "moveColorDown": {
+    "message": "$NAME$ 아래로 이동",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "reorderColors": {
+    "message": "순서 변경"
+  },
+  "saveColorOrder": {
+    "message": "저장"
+  },
+  "reorderColorsHint": {
+    "message": "손잡이를 끌거나 화살표 버튼으로 순서를 바꾼 뒤 저장하세요."
+  },
+  "colorOrderOutdated": {
+    "message": "다른 곳에서 색상이 바뀌어 새 순서를 저장하지 못했습니다. 다시 순서를 바꿔 주세요."
+  },
+  "reorderingColors": {
+    "message": "순서 변경 중"
+  },
+  "colorOrderSaved": {
+    "message": "✓ 순서를 저장했습니다."
+  },
   "removeAllColors": {
     "message": "모두 삭제"
   },

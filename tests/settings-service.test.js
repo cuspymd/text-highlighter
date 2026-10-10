@@ -213,6 +213,23 @@ describe('settings-service', () => {
       );
     });
 
+    // Another device's reorder arrives as the array in its new order; the
+    // palette has to follow it rather than keep this device's order.
+    it('should take the custom color order from sync', async () => {
+      const a = { id: 'custom_a', colorNumber: 1, color: '#A10000' };
+      const b = { id: 'custom_b', colorNumber: 2, color: '#00B200' };
+      const c = { id: 'custom_c', colorNumber: 3, color: '#0000C3' };
+
+      await applySettingsFromSync({ customColors: [a, b, c] });
+      await applySettingsFromSync({ customColors: [c, a, b] });
+
+      const customIds = getCurrentColors().filter(color => color.id.startsWith('custom_')).map(color => color.id);
+      expect(customIds).toEqual(['custom_c', 'custom_a', 'custom_b']);
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(
+        expect.objectContaining({ customColors: [c, a, b] }),
+      );
+    });
+
     it('should persist minimapVisible locally and return colorsChanged: false', async () => {
       const result = await applySettingsFromSync({ minimapVisible: false });
 

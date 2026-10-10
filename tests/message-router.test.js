@@ -368,6 +368,86 @@ describe('message-router', () => {
     });
   });
 
+  describe('reorderCustomColors', () => {
+    const RED = { id: 'custom_red', colorNumber: 1, color: '#ff1111' };
+    const GREEN = { id: 'custom_green', colorNumber: 2, color: '#11ff11', customName: 'Leaf' };
+    const BLUE = { id: 'custom_blue', colorNumber: 3, color: '#1111ff' };
+
+    beforeEach(() => {
+      local.customColors = [RED, GREEN, BLUE];
+    });
+
+    it('refuses a message with no ids', async () => {
+      expect(await send({ action: 'reorderCustomColors' }))
+        .toEqual({ success: false, error: 'Missing ids' });
+    });
+
+    it('stores the new order and keeps each color as it was', async () => {
+      const result = await send({
+        action: 'reorderCustomColors',
+        ids: ['custom_blue', 'custom_red', 'custom_green'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(customColorIds(result.colors)).toEqual(['custom_blue', 'custom_red', 'custom_green']);
+      expect(local.customColors).toEqual([BLUE, RED, GREEN]);
+      expect(customColorIds((await send({ action: 'getColors' })).colors))
+        .toEqual(['custom_blue', 'custom_red', 'custom_green']);
+    });
+
+    it('keeps the built-in colors ahead of the custom ones', async () => {
+      const before = await send({ action: 'getColors' });
+      const builtInIds = before.colors.filter(c => !c.id.startsWith('custom_')).map(c => c.id);
+
+      const result = await send({
+        action: 'reorderCustomColors',
+        ids: ['custom_green', 'custom_blue', 'custom_red'],
+      });
+
+      expect(result.colors.map(c => c.id))
+        .toEqual([...builtInIds, 'custom_green', 'custom_blue', 'custom_red']);
+    });
+
+    it('rebuilds the menus and tells the tabs', async () => {
+      openTabs(PAGE);
+
+      await send({ action: 'reorderCustomColors', ids: ['custom_green', 'custom_red', 'custom_blue'] });
+
+      expect(chrome.contextMenus.create).toHaveBeenCalled();
+      expect(tabMessages('colorsUpdated')).toHaveLength(1);
+      expect(customColorIds(tabMessages('colorsUpdated')[0].message.colors))
+        .toEqual(['custom_green', 'custom_red', 'custom_blue']);
+    });
+
+    // Both sync paths carry the array whole: storage.sync gets it as it is, and
+    // the cloud blob takes it from local storage when the fresher settings stamp
+    // makes this device's settings win the merge.
+    it('sends the new order to sync and stamps the settings as changed', async () => {
+      await send({ action: 'reorderCustomColors', ids: ['custom_blue', 'custom_green', 'custom_red'] });
+
+      expect(sync.settings.customColors.map(c => c.id))
+        .toEqual(['custom_blue', 'custom_green', 'custom_red']);
+      expect(local[CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT]).toEqual(expect.any(Number));
+    });
+
+    it.each([
+      ['a color is missing', ['custom_blue', 'custom_red']],
+      ['a color is unknown', ['custom_blue', 'custom_red', 'custom_nope']],
+      ['a color is named twice', ['custom_blue', 'custom_red', 'custom_red']],
+    ])('hands back the stored order untouched when %s', async (_case, ids) => {
+      openTabs(PAGE);
+
+      const result = await send({ action: 'reorderCustomColors', ids });
+
+      expect(result.success).toBe(true);
+      expect(result.mismatch).toBe(true);
+      expect(customColorIds(result.colors)).toEqual(['custom_red', 'custom_green', 'custom_blue']);
+      expect(local.customColors).toEqual([RED, GREEN, BLUE]);
+      expect(sync.settings).toBeUndefined();
+      expect(tabMessages('colorsUpdated')).toHaveLength(0);
+    });
+  });
+
   describe('clearCustomColors', () => {
     it('says so when there was nothing to clear, and leaves the tabs alone', async () => {
       openTabs(PAGE);

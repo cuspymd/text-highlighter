@@ -30,6 +30,7 @@ import {
   updateCustomColor,
   updateCustomColorName,
   removeCustomColor,
+  reorderCustomColors,
   getShortcutColorMap,
   saveShortcutColorMap,
   ensureCustomColorsLoaded,
@@ -144,6 +145,15 @@ async function handleRemoveCustomColor(message) {
   if (!message.id) return errorResponse('Missing id');
   const result = await removeCustomColor(message.id);
   if (result.notFound) return errorResponse('Color not found');
+  await createOrUpdateContextMenus();
+  await broadcastToAllTabs({ action: 'colorsUpdated', colors: result.colors });
+  return successResponse({ colors: result.colors });
+}
+
+async function handleReorderCustomColors(message) {
+  if (!Array.isArray(message.ids)) return errorResponse('Missing ids');
+  const result = await reorderCustomColors(message.ids);
+  if (result.mismatch) return successResponse({ mismatch: true, colors: result.colors });
   await createOrUpdateContextMenus();
   await broadcastToAllTabs({ action: 'colorsUpdated', colors: result.colors });
   return successResponse({ colors: result.colors });
@@ -370,6 +380,7 @@ const ACTION_HANDLERS = {
   updateCustomColor:         handleUpdateCustomColor,
   updateCustomColorName:     handleUpdateCustomColorName,
   removeCustomColor:         handleRemoveCustomColor,
+  reorderCustomColors:       handleReorderCustomColors,
   getShortcutColorMap:       handleGetShortcutColorMap,
   saveShortcutColorMap:      handleSaveShortcutColorMap,
   saveHighlights:            handleSaveHighlights,

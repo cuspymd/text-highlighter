@@ -404,6 +404,41 @@ export async function removeCustomColor(id) {
 }
 
 /**
+ * Put the custom colours in the given order. The order is the palette's and the
+ * context menu's, and it reaches other devices the way every colour change does:
+ * both sync paths carry the array whole.
+ *
+ * `orderedIds` has to name exactly the stored colours. A settings page that
+ * missed a change made elsewhere would otherwise drop or duplicate one; it gets
+ * the current list back instead, to render and try again from.
+ * @returns {{ mismatch: boolean, colors: object[] }}
+ */
+export async function reorderCustomColors(orderedIds) {
+  await settleLoadBeforeChange();
+  const stored = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+  const customColors = stored.customColors || [];
+
+  const byId = new Map(customColors.map(c => [c.id, c]));
+  const matches = Array.isArray(orderedIds)
+    && orderedIds.length === customColors.length
+    && new Set(orderedIds).size === orderedIds.length
+    && orderedIds.every(id => byId.has(id));
+  if (!matches) return { mismatch: true, colors: currentColors };
+
+  const reordered = orderedIds.map(id => byId.get(id));
+  await browserAPI.storage.local.set({ customColors: reordered });
+
+  const inPalette = new Set(currentColors.map(c => c.id));
+  currentColors = [
+    ...currentColors.filter(c => !isCustomColor(c)),
+    ...reordered.filter(c => inPalette.has(c.id)),
+  ];
+
+  await saveSettingsToSync();
+  return { mismatch: false, colors: currentColors };
+}
+
+/**
  * Add a new custom color.
  * @returns {{ exists: boolean, colors: object[] }}
  */

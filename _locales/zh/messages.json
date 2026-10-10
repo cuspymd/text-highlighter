@@ -269,6 +269,36 @@
   "removeColor": {
     "message": "移除"
   },
+  "moveColorUp": {
+    "message": "将$NAME$上移",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "moveColorDown": {
+    "message": "将$NAME$下移",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "reorderColors": {
+    "message": "调整顺序"
+  },
+  "saveColorOrder": {
+    "message": "保存"
+  },
+  "reorderColorsHint": {
+    "message": "拖动手柄或使用箭头按钮调整顺序，然后保存。"
+  },
+  "colorOrderOutdated": {
+    "message": "颜色已在其他地方更改，新顺序未保存。请重新调整顺序。"
+  },
+  "reorderingColors": {
+    "message": "正在调整顺序"
+  },
+  "colorOrderSaved": {
+    "message": "✓ 已保存顺序。"
+  },
   "removeAllColors": {
     "message": "全部移除"
   },

@@ -269,6 +269,36 @@
   "removeColor": {
     "message": "Eliminar"
   },
+  "moveColorUp": {
+    "message": "Mover $NAME$ hacia arriba",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "moveColorDown": {
+    "message": "Mover $NAME$ hacia abajo",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "reorderColors": {
+    "message": "Reordenar"
+  },
+  "saveColorOrder": {
+    "message": "Guardar"
+  },
+  "reorderColorsHint": {
+    "message": "Arrastra un color por su asa o usa las flechas y luego guarda."
+  },
+  "colorOrderOutdated": {
+    "message": "Los colores cambiaron en otro lugar, así que el nuevo orden no se guardó. Vuelve a ordenarlos."
+  },
+  "reorderingColors": {
+    "message": "Reordenando"
+  },
+  "colorOrderSaved": {
+    "message": "✓ Orden guardado."
+  },
   "removeAllColors": {
     "message": "Eliminar todo"
   },

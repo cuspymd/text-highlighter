@@ -99,10 +99,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const customColorsList = document.getElementById('custom-colors-list');
   const addCustomColorBtn = document.getElementById('add-custom-color-btn');
   const clearCustomColorsBtn = document.getElementById('clear-custom-colors-btn');
+  const reorderColorsBtn = document.getElementById('reorder-custom-colors-btn');
+  const reorderModeLabel = document.getElementById('reorder-mode-label');
+  const reorderActions = document.getElementById('reorder-actions');
+  const reorderCancelBtn = document.getElementById('reorder-cancel-btn');
+  const reorderSaveBtn = document.getElementById('reorder-save-btn');
+  const reorderHint = document.getElementById('reorder-hint');
+  const reorderSavedStatus = document.getElementById('reorder-saved-status');
   const colorPicker = document.getElementById('color-picker-hidden');
   const hideDefaultsToggle = document.getElementById('hide-default-colors-toggle');
   const hideDefaultsFallback = document.getElementById('hide-default-colors-fallback');
   let customColorCount = null;
+  // The custom colours as last rendered, and - while reordering - the order
+  // being put together from them, or null outside reorder mode.
+  let shownCustomColors = [];
+  let reorderDraft = null;
 
   // Hiding the defaults with no custom colour to show instead would leave the
   // palette empty, so the defaults stay - which looks like the switch is not
@@ -232,11 +243,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderCustomColorsList(customColors) {
     customColorsList.innerHTML = '';
     customColorCount = customColors.length;
+    shownCustomColors = customColors;
     syncHideDefaultsFallback();
-
-    // With one colour its own row's Remove is enough; the bulk button is for
-    // the case the rows make tedious.
-    clearCustomColorsBtn.hidden = customColors.length < 2;
+    syncCustomColorControls();
 
     if (customColors.length === 0) {
       const empty = document.createElement('div');
@@ -250,6 +259,265 @@ document.addEventListener('DOMContentLoaded', async () => {
       customColorsList.appendChild(buildColorRow(colorObj));
     });
   }
+
+  function syncCustomColorControls() {
+    const reordering = reorderDraft !== null;
+    // With one colour its own row's Remove is enough, and there is no order to
+    // change; both buttons are for the case the rows make tedious.
+    const several = shownCustomColors.length >= 2;
+    reorderColorsBtn.hidden = reordering || !several;
+    clearCustomColorsBtn.hidden = reordering || !several;
+    reorderModeLabel.hidden = !reordering;
+    reorderActions.hidden = !reordering;
+    reorderSaveBtn.disabled = !reordering || !reorderDraftChanged();
+    reorderHint.hidden = !reordering;
+    addCustomColorBtn.hidden = reordering;
+  }
+
+  // --- Reordering ---
+  // The new order stays a draft until Save: one write, and so one sync, however
+  // many moves it took, and Cancel leaves storage untouched. The rows offer
+  // nothing but moving while it lasts, so nothing else can change the list
+  // under the draft.
+
+  function customColorDisplayName(colorObj) {
+    return colorObj.customName || `${browserAPI.i18n.getMessage('customColor') || 'Custom Color'} ${colorObj.colorNumber}`;
+  }
+
+  function reorderDraftChanged() {
+    return reorderDraft !== null && reorderDraft.some((c, i) => c.id !== shownCustomColors[i].id);
+  }
+
+  function renderReorderList(focus) {
+    customColorsList.innerHTML = '';
+    reorderDraft.forEach((colorObj, index) => {
+      customColorsList.appendChild(buildReorderRow(colorObj, index));
+    });
+    syncCustomColorControls();
+    if (focus) focusMoveButton(focus.colorId, focus.offset);
+  }
+
+  function buildReorderRow(colorObj, index) {
+    const row = document.createElement('div');
+    row.className = 'color-row reorder-row';
+    row.dataset.colorId = colorObj.id;
+
+    const info = document.createElement('div');
+    info.className = 'color-info';
+
+    // Pointer only: the arrows are the keyboard's way to move a colour.
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    handle.setAttribute('aria-hidden', 'true');
+    handle.addEventListener('pointerdown', event => startRowDrag(event, row));
+
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch';
+    swatch.style.backgroundColor = colorObj.color;
+
+    const name = document.createElement('span');
+    name.className = 'color-name';
+    name.textContent = customColorDisplayName(colorObj);
+
+    info.appendChild(handle);
+    info.appendChild(swatch);
+    info.appendChild(name);
+
+    const actions = document.createElement('div');
+    actions.className = 'color-actions';
+    actions.appendChild(buildMoveButton(colorObj, index, -1));
+    actions.appendChild(buildMoveButton(colorObj, index, 1));
+
+    row.appendChild(info);
+    row.appendChild(actions);
+    return row;
+  }
+
+  function buildMoveButton(colorObj, index, offset) {
+    const up = offset < 0;
+    const colorName = customColorDisplayName(colorObj);
+    const label = browserAPI.i18n.getMessage(up ? 'moveColorUp' : 'moveColorDown', [colorName])
+      || `Move ${colorName} ${up ? 'up' : 'down'}`;
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-move';
+    btn.textContent = up ? '▲' : '▼';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+    btn.dataset.colorId = colorObj.id;
+    btn.dataset.offset = String(offset);
+    btn.disabled = up ? index === 0 : index === reorderDraft.length - 1;
+    btn.addEventListener('click', () => moveDraftColor(index, offset));
+    return btn;
+  }
+
+  function moveDraftColor(index, offset) {
+    const target = index + offset;
+    if (target < 0 || target >= reorderDraft.length) return;
+    const [moved] = reorderDraft.splice(index, 1);
+    reorderDraft.splice(target, 0, moved);
+    renderReorderList({ colorId: moved.id, offset });
+  }
+
+  // Keep a keyboard user on the colour they are moving. At the end of the list
+  // the button they pressed is disabled, so the other one takes focus.
+  function focusMoveButton(colorId, offset) {
+    const buttons = [...customColorsList.querySelectorAll('.btn-move')]
+      .filter(btn => btn.dataset.colorId === colorId);
+    const target = buttons.find(btn => btn.dataset.offset === String(offset) && !btn.disabled)
+      || buttons.find(btn => !btn.disabled);
+    if (target) target.focus();
+  }
+
+  // Pointer events rather than HTML5 drag and drop, which never starts from a
+  // touch - and Firefox for Android has this page too.
+  //
+  // Nothing moves in the DOM until the drop. The held row follows the pointer
+  // by transform, and the rows it passes slide out of its way by its height,
+  // so it reads as carrying the row rather than as rows jumping about. On
+  // release the row glides into the gap and only then does the draft change.
+  //
+  // The drag is heard on the document: once the pointer leaves the handle it
+  // is over some other row, and the move and the release still belong here.
+  const DROP_SETTLE_MS = 150;
+  let rowDragActive = false;
+
+  function startRowDrag(event, row) {
+    if (event.button !== 0 || rowDragActive) return;
+    event.preventDefault();
+    rowDragActive = true;
+
+    const rows = [...customColorsList.querySelectorAll('.reorder-row')];
+    const from = rows.indexOf(row);
+    const boxes = rows.map(r => r.getBoundingClientRect());
+    const held = boxes[from];
+    const centers = boxes.map(box => box.top + box.height / 2);
+    // The held row stays within the list: no higher than the first row's top,
+    // no lower than the last row's bottom.
+    const minDy = boxes[0].top - held.top;
+    const maxDy = boxes[boxes.length - 1].bottom - held.bottom;
+    const startY = event.clientY;
+    let target = from;
+
+    document.documentElement.classList.add('color-row-dragging');
+    row.classList.add('dragging');
+    rows.forEach((r) => { if (r !== row) r.classList.add('make-way'); });
+
+    const onMove = (moveEvent) => {
+      const dy = Math.min(maxDy, Math.max(minDy, moveEvent.clientY - startY));
+      row.style.transform = `translateY(${dy}px)`;
+
+      // A row makes way once the held row's leading edge passes its middle.
+      // Edges rather than the held row's own middle: rows differ in height (a
+      // long name wraps, the last has no border), and a middle measured against
+      // a taller or shorter row can stop one slot short of the end.
+      const heldTop = held.top + dy;
+      const heldBottom = held.bottom + dy;
+      target = from;
+      for (let i = 0; i < from; i++) {
+        if (heldTop <= centers[i]) { target = i; break; }
+      }
+      for (let i = rows.length - 1; i > from; i--) {
+        if (heldBottom >= centers[i]) { target = i; break; }
+      }
+
+      rows.forEach((r, i) => {
+        if (i === from) return;
+        let shift = 0;
+        if (from < target && i > from && i <= target) shift = -held.height;
+        if (target < from && i >= target && i < from) shift = held.height;
+        r.style.transform = shift ? `translateY(${shift}px)` : '';
+      });
+    };
+
+    const commit = () => {
+      document.documentElement.classList.remove('color-row-dragging');
+      rowDragActive = false;
+      if (target !== from) {
+        const [moved] = reorderDraft.splice(from, 1);
+        reorderDraft.splice(target, 0, moved);
+      }
+      renderReorderList();
+    };
+
+    const onEnd = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onEnd);
+      document.removeEventListener('pointercancel', onEnd);
+
+      // Where the row will sit once the list is re-rendered in the new order.
+      let finalDy = 0;
+      if (target > from) finalDy = boxes[target].bottom - held.bottom;
+      if (target < from) finalDy = boxes[target].top - held.top;
+      row.classList.add('settling');
+      row.style.transform = `translateY(${finalDy}px)`;
+      setTimeout(commit, DROP_SETTLE_MS);
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onEnd);
+    document.addEventListener('pointercancel', onEnd);
+  }
+
+  // Saving puts the normal list back without anything else to show it
+  // happened, so the page says so for a moment.
+  const SAVED_STATUS_MS = 3000;
+  let savedStatusTimer = null;
+
+  function showSavedStatus(text) {
+    clearTimeout(savedStatusTimer);
+    reorderSavedStatus.textContent = text;
+    savedStatusTimer = text
+      ? setTimeout(() => { reorderSavedStatus.textContent = ''; }, SAVED_STATUS_MS)
+      : null;
+  }
+
+  reorderColorsBtn.addEventListener('click', () => {
+    showSavedStatus('');
+    reorderDraft = [...shownCustomColors];
+    renderReorderList();
+  });
+
+  reorderCancelBtn.addEventListener('click', () => {
+    reorderDraft = null;
+    renderCustomColorsList(shownCustomColors);
+  });
+
+  reorderSaveBtn.addEventListener('click', async () => {
+    if (!reorderDraftChanged()) return;
+    reorderSaveBtn.disabled = true;
+
+    const response = await sendToBackground({
+      action: 'reorderCustomColors',
+      ids: reorderDraft.map(c => c.id),
+    });
+    // Nothing was saved, so the draft stays for another try.
+    if (!response || !response.success) {
+      syncCustomColorControls();
+      return;
+    }
+
+    reorderDraft = null;
+    renderCustomColorsList((response.colors || []).filter(c => c.id.startsWith('custom_')));
+    await loadShortcuts(); // The dropdowns list the colours in palette order
+    // The colours changed somewhere else while this page was reordering them;
+    // what came back is the current list, to reorder again from.
+    if (response.mismatch) {
+      await showAlertModal(
+        browserAPI.i18n.getMessage('colorOrderOutdated')
+          || 'The colors changed elsewhere, so the new order was not saved. Please try again.'
+      );
+      return;
+    }
+    showSavedStatus(browserAPI.i18n.getMessage('colorOrderSaved') || '✓ Color order saved.');
+  });
+
+  window.addEventListener('beforeunload', (event) => {
+    if (!reorderDraftChanged()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
 
   colorPicker.addEventListener('change', async () => {
     const colorValue = colorPicker.value;
@@ -324,6 +592,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadCustomColors() {
+    // The page reloads on focus; coming back from another window must not
+    // throw away an order that is still being put together.
+    if (reorderDraft !== null) return;
     const response = await browserAPI.runtime.sendMessage({ action: 'getColors' });
     if (response && response.colors) {
       const customColors = response.colors.filter(c => c.id.startsWith('custom_'));
