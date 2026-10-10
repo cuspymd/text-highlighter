@@ -178,6 +178,44 @@
   position: relative;
 }
 
+/* Forced colours (Windows high contrast) swap the red fill for the canvas
+   colour but leave the white X image as it is, so on a light canvas it
+   vanishes. There the glyphs are a mask over a system colour instead. */
+@media (forced-colors: active) {
+  .delete-highlight,
+  .add-color-button {
+    background-image: none;
+    position: relative;
+  }
+
+  .delete-highlight::before,
+  .add-color-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    forced-color-adjust: none;
+    background-color: ButtonText;
+    -webkit-mask: var(--th-glyph) center / 16px 16px no-repeat;
+    mask: var(--th-glyph) center / 16px 16px no-repeat;
+    pointer-events: none;
+  }
+
+  .delete-highlight {
+    --th-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  }
+
+  .add-color-button {
+    --th-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 3v10M3 8h10' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  }
+}
+
+@media (forced-colors: active) and (pointer: coarse) {
+  .delete-highlight::before {
+    -webkit-mask-size: 22px 22px;
+    mask-size: 22px 22px;
+  }
+}
+
 /* Mobile: a vertical more button takes the '+' button's place at the end of
    the bar. It reaches the pages list and settings, which Firefox for Android
    otherwise buries behind the popup - and '+' itself, now a menu item. */
