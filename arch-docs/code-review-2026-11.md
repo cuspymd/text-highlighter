@@ -112,6 +112,7 @@ runCloudSync()
 
 - 위치: `background/sync-service.js:286`, `:298-312`, `:345-346`
 - 확인: 이중 계산은 코드 확인. 8KB 초과는 추정(계산 기반).
+- 상태: 수정 (브랜치 `fix/sync-meta-size`). `sync_meta`에서 페이지 목록과 `totalSize`를 없애고, 목록은 `storage.sync.get(null)`로 `hl_*` 항목에서 직접 만든다. `sync_meta`에는 `deletedUrls`만 남기고 7KB 안에 드는 최신 것만 쓴다. 축출 계산은 갱신하는 페이지의 옛 크기와 그 페이지 자신을 빼고 한다. 삭제는 tombstone 쓰기가 실패해도 항목을 지운다. 보통 저장은 sync 쓰기 1번으로 줄었다. 남은 한계: 약 90개를 넘는 페이지를 한 번에 "모두 삭제"하면 넘친 페이지는 다른 기기에 축출로 보여 로컬 데이터가 남는다.
 - **이중 계산**: 루프 조건 `totalSize + dataSize`에 갱신 중인 페이지의 기존 `size`가 아직 들어 있다. 기존 크기는 303행에서야 빠진다. 그래서 기존 페이지를 갱신할 때마다 다른 페이지가 불필요하게 축출된다.
 - **`sync_meta` 크기**: `meta.pages` 항목 하나는 약 140B다. 그래서 약 55개 페이지에서 `QUOTA_BYTES_PER_ITEM`(8192B)을 넘을 수 있다. 이때 meta set이 throw하는데 catch가 삼키므로, 장부와 실제 데이터가 어긋난다. 삭제 경로에서는 meta set이 먼저 실패해 `remove`까지 가지 못한다.
 - 수정안:
