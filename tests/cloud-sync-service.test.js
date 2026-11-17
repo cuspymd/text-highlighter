@@ -9,7 +9,10 @@ import {
   enableCloudSyncWithExistingCode,
   disableCloudSync,
   initCloudSyncAlarm,
+  ensureCloudSyncAlarm,
+  runStartupCloudSync,
 } from '../background/cloud-sync-service.js';
+import { CLOUD_SYNC_ALARM_PERIOD_MINUTES } from '../constants/cloud-sync-config.js';
 
 function emptyBlob(overrides = {}) {
   return {
@@ -704,11 +707,72 @@ describe('cloud-sync-service', () => {
     });
   });
 
-  describe('initCloudSyncAlarm', () => {
-    it('registers the periodic alarm and an onAlarm listener', () => {
+  // The worker restarts on every tab switch and page load, and each start runs
+  // this setup again. None of it may restart the alarm's countdown or sync on
+  // its own account.
+  describe('alarm and startup sync', () => {
+    // runCloudSync reads the status first; counting those reads counts the cycles.
+    const syncStatusReads = () => chrome.storage.local.get.mock.calls
+      .filter(([keys]) => Array.isArray(keys) && keys.includes('cloudSyncEnabled')).length;
+
+    beforeEach(() => {
+      chrome.storage.local.get.mockImplementation(() => Promise.resolve({ cloudSyncEnabled: false }));
+      global.fetch = jest.fn();
+    });
+
+    it('registers the onAlarm and runtime.onStartup listeners without touching the alarm', () => {
       initCloudSyncAlarm();
-      expect(chrome.alarms.create).toHaveBeenCalledWith('cloudSyncAlarm', expect.objectContaining({ periodInMinutes: expect.any(Number) }));
       expect(chrome.alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
+      expect(chrome.runtime.onStartup.addListener).toHaveBeenCalledTimes(1);
+      expect(chrome.alarms.create).not.toHaveBeenCalled();
+    });
+
+    it('creates the alarm when there is none, and says so', async () => {
+      chrome.alarms.get.mockResolvedValueOnce(undefined);
+
+      await expect(ensureCloudSyncAlarm()).resolves.toBe(true);
+      expect(chrome.alarms.create).toHaveBeenCalledWith('cloudSyncAlarm', { periodInMinutes: CLOUD_SYNC_ALARM_PERIOD_MINUTES });
+    });
+
+    it('leaves an existing alarm alone, so its countdown is not restarted', async () => {
+      chrome.alarms.get.mockResolvedValueOnce({ name: 'cloudSyncAlarm', periodInMinutes: CLOUD_SYNC_ALARM_PERIOD_MINUTES });
+
+      await expect(ensureCloudSyncAlarm()).resolves.toBe(false);
+      expect(chrome.alarms.create).not.toHaveBeenCalled();
+    });
+
+    it('replaces an alarm left with a different period by an older version', async () => {
+      chrome.alarms.get.mockResolvedValueOnce({ name: 'cloudSyncAlarm', periodInMinutes: CLOUD_SYNC_ALARM_PERIOD_MINUTES + 5 });
+
+      await expect(ensureCloudSyncAlarm()).resolves.toBe(true);
+      expect(chrome.alarms.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('runs a sync when the alarm fires, and only for its own alarm', async () => {
+      initCloudSyncAlarm();
+      const onAlarm = chrome.alarms.onAlarm.addListener.mock.calls[0][0];
+
+      onAlarm({ name: 'someOtherAlarm' });
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(syncStatusReads()).toBe(0);
+
+      onAlarm({ name: 'cloudSyncAlarm' });
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(syncStatusReads()).toBe(1);
+    });
+
+    // One module instance per test file, so this is the only test that may
+    // call the startup sync: the first call spends the once-per-worker budget.
+    it('runs the startup sync once per worker, however many triggers ask for it', async () => {
+      initCloudSyncAlarm();
+      const onStartup = chrome.runtime.onStartup.addListener.mock.calls[0][0];
+
+      onStartup();
+      runStartupCloudSync();
+      onStartup();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(syncStatusReads()).toBe(1);
     });
   });
 });

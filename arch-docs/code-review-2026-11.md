@@ -121,6 +121,7 @@ runCloudSync()
 
 - 위치: `background/cloud-sync-service.js:488`, `background.js:72`
 - 확인: 코드 확인
+- 상태: 수정 (브랜치 `fix/cloud-sync-alarm-reset`). 알람은 없거나 주기가 다를 때만 만든다. 시작 시 동기화는 `runtime.onStartup`이나 알람을 새로 만들었을 때만, 워커당 한 번 돈다. Firefox 이벤트 페이지에서 `onStartup`이 오는 시점은 실기기로 확인하지 않았다.
 - 문제: 같은 이름으로 `alarms.create`를 호출하면 기존 알람이 교체된다. 자주 쓰는 사용자에게는 알람이 사실상 울리지 않는다. 대신 깨어날 때마다 시작 시점 `runCloudSync`(GET, 경우에 따라 PUT)가 돈다.
 - 수정안:
   - `if (!(await alarms.get(NAME))) alarms.create(...)`로 바꾼다.
