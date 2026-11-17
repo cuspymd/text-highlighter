@@ -624,12 +624,24 @@ describe('pages-list', () => {
     }
 
     // Every import path ends either at a modal - a warning, or the overwrite
-    // question - or at the write itself.
+    // question - or at the import request itself.
     function settled() {
       return waitFor(
-        () => alertText() !== null || chrome.storage.local.set.mock.calls.length > 0,
-        'the import to reach a modal or a write',
+        () => alertText() !== null || importRequests().length > 0,
+        'the import to reach a modal or the background',
       );
+    }
+
+    // The page hands the write to the background; it never writes storage
+    // itself, which would skip the tombstones, storage.sync and the open tabs.
+    function importRequests() {
+      return chrome.runtime.sendMessage.mock.calls
+        .map(([message]) => message)
+        .filter(message => message.action === 'importPages');
+    }
+
+    function importedUrls() {
+      return importRequests()[0].pages.map(page => page.url);
     }
 
     function importablePage(url) {
@@ -648,17 +660,28 @@ describe('pages-list', () => {
       };
     }
 
-    it('writes the imported pages to storage and reloads', async () => {
+    it('hands the imported pages to the background and reports success', async () => {
       await openPagesList();
       await importJson({ pages: [importablePage('https://example.com/imported')] });
+      await waitFor(() => alertText() !== null, 'the import to report');
 
-      expect(chrome.storage.local.set).toHaveBeenCalledTimes(1);
-      const [written] = chrome.storage.local.set.mock.calls[0];
-      expect(Object.keys(written)).toEqual([
-        'https://example.com/imported',
-        'https://example.com/imported_meta',
+      expect(importRequests()).toHaveLength(1);
+      expect(importRequests()[0].pages).toEqual([
+        expect.objectContaining({ url: 'https://example.com/imported', title: 'Imported' }),
       ]);
+      expect(chrome.storage.local.set).not.toHaveBeenCalled();
       expect(alertText()).toBe('importSuccess');
+    });
+
+    it('reports the failure when the background could not write the import', async () => {
+      respondToBackground(message => (message.action === 'importPages'
+        ? { success: false, error: 'quota' }
+        : { success: true, pages: [OLDER, NEWER] }));
+      await openPagesList();
+      await importJson({ pages: [importablePage('https://example.com/imported')] });
+      await waitFor(() => alertText() !== null, 'the import to report');
+
+      expect(alertText()).toBe('importError');
     });
 
     it('rejects a file that is not an export at all', async () => {
@@ -666,7 +689,7 @@ describe('pages-list', () => {
       await importJson({ notPages: true });
 
       expect(alertText()).toBe('importInvalidFormat');
-      expect(chrome.storage.local.set).not.toHaveBeenCalled();
+      expect(importRequests()).toHaveLength(0);
     });
 
     it('skips pages whose url is not safe to open', async () => {
@@ -680,13 +703,9 @@ describe('pages-list', () => {
 
       expect(alertText()).toBe('importUnsafeUrlSkipped');
       await dismissAlert();
-      await waitFor(() => chrome.storage.local.set.mock.calls.length > 0, 'the safe page to be written');
+      await waitFor(() => importRequests().length > 0, 'the safe page to be imported');
 
-      const [written] = chrome.storage.local.set.mock.calls[0];
-      expect(Object.keys(written)).toEqual([
-        'https://example.com/safe',
-        'https://example.com/safe_meta',
-      ]);
+      expect(importedUrls()).toEqual(['https://example.com/safe']);
     });
 
     it('imports nothing when every url is unsafe', async () => {
@@ -697,16 +716,16 @@ describe('pages-list', () => {
       await dismissAlert();
 
       expect(alertText()).toBe('importAllUnsafeUrl');
-      expect(chrome.storage.local.set).not.toHaveBeenCalled();
+      expect(importRequests()).toHaveLength(0);
     });
 
     it('replaces existing highlights only after the overwrite is confirmed', async () => {
       await openPagesList();
       await importJson({ pages: [importablePage(OLDER.url)] });
       await confirmModal(true);
+      await waitFor(() => importRequests().length > 0, 'the import to be sent');
 
-      const [written] = chrome.storage.local.set.mock.calls[0];
-      expect(written[OLDER.url]).toHaveLength(1);
+      expect(importedUrls()).toEqual([OLDER.url]);
     });
 
     it('writes nothing when the overwrite is declined', async () => {
@@ -714,7 +733,7 @@ describe('pages-list', () => {
       await importJson({ pages: [importablePage(OLDER.url)] });
       await confirmModal(false);
 
-      expect(chrome.storage.local.set).not.toHaveBeenCalled();
+      expect(importRequests()).toHaveLength(0);
     });
 
     it('reports a file that is not valid json', async () => {

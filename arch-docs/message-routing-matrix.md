@@ -23,6 +23,7 @@ Source of truth: `background/message-router.js`
 | `clearAllHighlights` | `url`, `notifyRefresh?` | `success`, `error?` | local storage remove, sync remove, tab broadcast (optional) | `handleClearAllHighlights` |
 | `getAllHighlightedPages` | none | `success`, `pages`, `error?` | local storage read | `handleGetAllHighlightedPages` |
 | `deleteAllHighlightedPages` | none | `success`, `deletedCount`, `error?` | local storage remove, sync clear | `handleDeleteAllHighlightedPages` |
+| `importPages` | `pages` (`url`, `title`, `highlights`) | `success`, `importedCount`, `error?` | local storage write (stamped with the import time, replaced groups tombstoned, url tombstones cleared), sync write, tab broadcast | `handleImportPages` |
 | `getCloudSyncStatus` | none | `success`, `enabled`, `code`, `lastSyncedAt`, `lastError`, `lastTrimmedCount` | local storage read | `handleGetCloudSyncStatus` |
 | `enableCloudSync` | none | `success`, `code`, `error?` | local storage write, Cloudflare Worker fetch (pull-merge-push) | `handleEnableCloudSync` |
 | `pairCloudSync` | `code` | `success`, `error?` | local storage write, Cloudflare Worker fetch (pull-merge-push) | `handlePairCloudSync` |
