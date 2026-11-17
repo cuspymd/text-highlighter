@@ -323,6 +323,64 @@ describe('settings-service', () => {
       });
       expect(chrome.storage.sync.set).not.toHaveBeenCalled();
     });
+
+    // storage.sync can lag behind local storage: cloud sync writes the colours
+    // it brings in to local only. Loading from sync first put the stale list
+    // back on every worker start.
+    describe('when storage.sync holds an older palette', () => {
+      const STALE = [{ id: 'custom_1', color: '#111111', colorNumber: 1 }];
+      const CURRENT = [{ id: 'custom_2', color: '#222222', colorNumber: 1 }];
+
+      let syncGet;
+      let localGet;
+
+      beforeEach(() => {
+        syncGet = chrome.storage.sync.get.getMockImplementation();
+        localGet = chrome.storage.local.get.getMockImplementation();
+        chrome.storage.sync.get.mockImplementation(async () => ({ settings: { customColors: STALE } }));
+      });
+
+      afterEach(() => {
+        chrome.storage.sync.get.mockImplementation(syncGet);
+        chrome.storage.local.get.mockImplementation(localGet);
+      });
+
+      async function loadWithLocal(localColors) {
+        chrome.storage.local.get.mockImplementation(async keys => (
+          Array.isArray(keys) && keys.includes('customColors') && localColors !== undefined
+            ? { customColors: localColors }
+            : {}
+        ));
+        let colors;
+        await jest.isolateModulesAsync(async () => {
+          const fresh = await import('../background/settings-service.js');
+          await fresh.loadCustomColors();
+          colors = fresh.getCurrentColors().map(color => color.color);
+        });
+        return colors;
+      }
+
+      it('keeps the colours this device already has', async () => {
+        const colors = await loadWithLocal(CURRENT);
+
+        expect(colors).toContain('#222222');
+        expect(colors).not.toContain('#111111');
+        expect(chrome.storage.local.set).not.toHaveBeenCalledWith({ customColors: STALE });
+      });
+
+      it('keeps a palette the user cleared instead of refilling it from sync', async () => {
+        const colors = await loadWithLocal([]);
+
+        expect(colors).not.toContain('#111111');
+        expect(chrome.storage.local.set).not.toHaveBeenCalled();
+      });
+
+      it('falls back to sync for a profile that has never stored any', async () => {
+        const colors = await loadWithLocal(undefined);
+
+        expect(colors).toContain('#111111');
+      });
+    });
   });
 
   // ===================================================================
