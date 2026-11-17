@@ -959,6 +959,13 @@ describe('message-router', () => {
       expect(merged.pages[PAGE].highlights.map(group => group.groupId)).toEqual(['i1']);
     });
 
+    it('keeps only the last entry when the file lists the same url twice', async () => {
+      await send({ action: 'importPages', pages: [backupPage(PAGE, ['first']), backupPage(PAGE, ['last'])] });
+
+      expect(local[PAGE].map(group => group.groupId)).toEqual(['last']);
+      expect(sync[urlToSyncKey(PAGE)].highlights.map(group => group.groupId)).toEqual(['last']);
+    });
+
     it('refreshes a tab already open on an imported page', async () => {
       openTabs(PAGE);
 

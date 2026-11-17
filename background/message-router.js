@@ -338,9 +338,18 @@ async function handleDeleteAllHighlightedPages(_message) {
  */
 async function handleImportPages(message) {
   if (!Array.isArray(message.pages)) return errorResponse('Missing pages');
-  const pages = message.pages.filter(page =>
-    page && typeof page.url === 'string' && page.url
-    && Array.isArray(page.highlights) && page.highlights.length > 0);
+  // A file that lists a url twice keeps only its last entry, as a single
+  // storage write would. Syncing every entry would merge the earlier one's
+  // groups back into the later one.
+  const byUrl = new Map();
+  message.pages.forEach(page => {
+    if (page && typeof page.url === 'string' && page.url
+      && Array.isArray(page.highlights) && page.highlights.length > 0) {
+      byUrl.delete(page.url);
+      byUrl.set(page.url, page);
+    }
+  });
+  const pages = [...byUrl.values()];
   if (pages.length === 0) return successResponse({ importedCount: 0 });
 
   const metaKey = url => `${url}${STORAGE_KEYS.META_SUFFIX}`;
