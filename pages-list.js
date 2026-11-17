@@ -765,21 +765,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!proceed) return;
           }
 
-          // Prepare operations: delete old, add new
-          const ops = {};
-          overlap.forEach(url => {
-            ops[url] = null;
-            ops[`${url}_meta`] = null;
-          });
-          validatedPages.forEach(page => {
-            ops[page.url] = page.highlights || [];
-            ops[`${page.url}_meta`] = {
-              title: page.title || '',
-              lastUpdated: page.lastUpdated || new Date().toISOString()
-            };
-          });
-
-          await browserAPI.storage.local.set(ops);
+          // The background writes it: replacing a page also means tombstoning
+          // the groups it drops, telling storage.sync and the open tabs.
+          const imported = await sendToBackground({ action: 'importPages', pages: validatedPages });
+          if (!imported || !imported.success) {
+            await showAlertModal(getMessage('importError', 'Import failed.'));
+            return;
+          }
           await showAlertModal(getMessage('importSuccess', 'Import completed.'));
           await loadAllHighlightedPages();
         } catch (err) {

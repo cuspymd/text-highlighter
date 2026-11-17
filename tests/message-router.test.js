@@ -1,6 +1,8 @@
 import { jest } from '@jest/globals';
 import chrome from '../mocks/chrome.js';
 import { STORAGE_KEYS, CLOUD_SYNC_KEYS } from '../constants/storage-keys.js';
+import { urlToSyncKey } from '../background/sync-service.js';
+import { mergeBlobs } from '../background/cloud-sync-service.js';
 
 const PAGE = 'https://example.com/article';
 const OTHER_PAGE = 'https://example.com/other';
@@ -849,6 +851,122 @@ describe('message-router', () => {
       expect(local[PAGE]).toBeUndefined();
       expect(local[OTHER_PAGE]).toBeUndefined();
       expect(local[STORAGE_KEYS.CUSTOM_COLORS]).toBeDefined();
+    });
+  });
+
+  describe('importPages', () => {
+    const BACKUP_TIME = '2026-01-01T00:00:00.000Z';
+    const BACKUP_GROUP_TIME = Date.parse(BACKUP_TIME);
+
+    function backupPage(url, groupIds = ['i1']) {
+      return {
+        url,
+        title: 'Backed up',
+        lastUpdated: BACKUP_TIME,
+        highlights: groupIds.map(groupId => ({
+          groupId,
+          color: '#ffd54f',
+          text: `text of ${groupId}`,
+          spans: [{ text: `text of ${groupId}`, position: 1, spanId: `${groupId}-s` }],
+          updatedAt: BACKUP_GROUP_TIME,
+        })),
+      };
+    }
+
+    it('refuses a message with no pages', async () => {
+      const result = await send({ action: 'importPages' });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('writes each page stamped with the import time, not the backup time', async () => {
+      const before = Date.now();
+
+      const result = await send({ action: 'importPages', pages: [backupPage(PAGE), backupPage(OTHER_PAGE)] });
+
+      expect(result).toEqual({ success: true, importedCount: 2 });
+      expect(local[PAGE].map(group => group.groupId)).toEqual(['i1']);
+      expect(local[PAGE][0].updatedAt).toBeGreaterThanOrEqual(before);
+      expect(meta(PAGE).title).toBe('Backed up');
+      expect(Date.parse(meta(PAGE).lastUpdated)).toBeGreaterThanOrEqual(before);
+      expect(local[OTHER_PAGE]).toHaveLength(1);
+    });
+
+    it('tombstones the groups it replaces and keeps the tombstones already there', async () => {
+      const earlier = Date.now() - 60_000;
+      local[PAGE] = [{ groupId: 'old', color: '#ffff00', updatedAt: earlier }];
+      local[`${PAGE}${STORAGE_KEYS.META_SUFFIX}`] = {
+        title: 'Article title',
+        deletedGroupIds: { gone: earlier, i1: earlier },
+      };
+
+      await send({ action: 'importPages', pages: [backupPage(PAGE)] });
+
+      expect(local[PAGE].map(group => group.groupId)).toEqual(['i1']);
+      expect(meta(PAGE).deletedGroupIds).toEqual({ gone: earlier, old: expect.any(Number) });
+    });
+
+    it('does not let the old storage.sync copy bring a replaced group back', async () => {
+      const earlier = Date.now() - 60_000;
+      const syncKey = urlToSyncKey(PAGE);
+      local[PAGE] = [{ groupId: 'old', color: '#ffff00', updatedAt: earlier }];
+      sync[syncKey] = {
+        url: PAGE,
+        title: 'Article title',
+        lastUpdated: new Date(earlier).toISOString(),
+        highlights: [{ groupId: 'old', color: '#ffff00', updatedAt: earlier }],
+        deletedGroupIds: {},
+      };
+
+      await send({ action: 'importPages', pages: [backupPage(PAGE)] });
+
+      expect(local[PAGE].map(group => group.groupId)).toEqual(['i1']);
+      expect(sync[syncKey].highlights.map(group => group.groupId)).toEqual(['i1']);
+    });
+
+    it('restores a group the user deleted after the backup was taken', async () => {
+      const deletedAfterBackup = Date.now() - 60_000;
+      sync[urlToSyncKey(PAGE)] = {
+        url: PAGE,
+        highlights: [],
+        deletedGroupIds: { i1: deletedAfterBackup },
+      };
+
+      await send({ action: 'importPages', pages: [backupPage(PAGE)] });
+
+      expect(local[PAGE].map(group => group.groupId)).toEqual(['i1']);
+    });
+
+    it('brings back a page deleted after the backup, and keeps it through a cloud merge', async () => {
+      const deletedAfterBackup = Date.now() - 60_000;
+      local[CLOUD_SYNC_KEYS.DELETED_URLS] = { [PAGE]: deletedAfterBackup, [OTHER_PAGE]: deletedAfterBackup };
+
+      await send({ action: 'importPages', pages: [backupPage(PAGE)] });
+
+      expect(local[CLOUD_SYNC_KEYS.DELETED_URLS]).toEqual({ [OTHER_PAGE]: deletedAfterBackup });
+
+      // The cloud copy still carries the deletion; the import has to outlive it.
+      const localPage = {
+        title: meta(PAGE).title,
+        lastUpdated: meta(PAGE).lastUpdated,
+        highlights: local[PAGE],
+        deletedGroupIds: meta(PAGE).deletedGroupIds,
+      };
+      const merged = mergeBlobs(
+        { settings: {}, pages: { [PAGE]: localPage }, deletedUrls: local[CLOUD_SYNC_KEYS.DELETED_URLS] },
+        { settings: {}, pages: {}, deletedUrls: { [PAGE]: deletedAfterBackup } },
+      );
+      expect(merged.pages[PAGE].highlights.map(group => group.groupId)).toEqual(['i1']);
+    });
+
+    it('refreshes a tab already open on an imported page', async () => {
+      openTabs(PAGE);
+
+      await send({ action: 'importPages', pages: [backupPage(PAGE)] });
+
+      const refreshes = tabMessages('refreshHighlights');
+      expect(refreshes).toHaveLength(1);
+      expect(refreshes[0].message.highlights.map(group => group.groupId)).toEqual(['i1']);
     });
   });
 

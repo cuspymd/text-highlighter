@@ -1,7 +1,7 @@
 import { browserAPI } from '../shared/browser-api.js';
 import { DEBUG_MODE, debugLog } from '../shared/logger.js';
 import { broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
-import { STORAGE_KEYS } from '../constants/storage-keys.js';
+import { STORAGE_KEYS, CLOUD_SYNC_KEYS } from '../constants/storage-keys.js';
 import {
   syncSaveHighlights,
   syncRemoveHighlights,
@@ -319,6 +319,84 @@ async function handleDeleteAllHighlightedPages(_message) {
   return successResponse({ deletedCount: keysToDelete.length / 2 });
 }
 
+/**
+ * Write pages from an export file, replacing what is stored for those urls.
+ *
+ * An import is a fresh edit made now, not a replay of the file's past, so every
+ * page and group is stamped with the import time. The file's own timestamps
+ * predate any deletion made since the backup, and every merge - storage.sync,
+ * the cloud blob - lets a deletion win over anything older: the page would be
+ * deleted again by the next cloud sync, and its groups filtered out again.
+ *
+ * Groups that were stored for a url but are not in the file get a tombstone,
+ * so the copies still in storage.sync and the cloud do not merge them back in:
+ * the user was told they would be replaced.
+ *
+ * All pages go into one storage.local.set, together with the url tombstones
+ * they clear, so a cloud sync that runs alongside sees either none of the
+ * import or all of it.
+ */
+async function handleImportPages(message) {
+  if (!Array.isArray(message.pages)) return errorResponse('Missing pages');
+  const pages = message.pages.filter(page =>
+    page && typeof page.url === 'string' && page.url
+    && Array.isArray(page.highlights) && page.highlights.length > 0);
+  if (pages.length === 0) return successResponse({ importedCount: 0 });
+
+  const metaKey = url => `${url}${STORAGE_KEYS.META_SUFFIX}`;
+  const stored = await browserAPI.storage.local.get([
+    ...pages.flatMap(page => [page.url, metaKey(page.url)]),
+    CLOUD_SYNC_KEYS.DELETED_URLS,
+  ]);
+
+  const now = Date.now();
+  const lastUpdated = new Date(now).toISOString();
+  const deletedUrls = { ...(stored[CLOUD_SYNC_KEYS.DELETED_URLS] || {}) };
+  const saveData = {};
+  const written = [];
+
+  for (const page of pages) {
+    const highlights = page.highlights.map(group => ({ ...group, updatedAt: now }));
+    const importedIds = new Set(highlights.map(group => group.groupId));
+    const meta = stored[metaKey(page.url)] || {};
+
+    const deletedGroupIds = { ...(meta.deletedGroupIds || {}) };
+    (stored[page.url] || []).forEach(group => {
+      if (!importedIds.has(group.groupId)) deletedGroupIds[group.groupId] = now;
+    });
+    importedIds.forEach(groupId => { delete deletedGroupIds[groupId]; });
+    cleanupTombstones(deletedGroupIds);
+
+    const title = page.title || meta.title || '';
+    saveData[page.url] = highlights;
+    saveData[metaKey(page.url)] = { ...meta, title, lastUpdated, deletedGroupIds };
+    delete deletedUrls[page.url];
+    written.push({ url: page.url, highlights, title });
+  }
+  saveData[CLOUD_SYNC_KEYS.DELETED_URLS] = deletedUrls;
+
+  await browserAPI.storage.local.set(saveData);
+  debugLog('Imported pages:', written.map(page => page.url));
+
+  // One page at a time: each call reads and rewrites sync_meta, so running
+  // them side by side would lose all but one page's entry.
+  for (const page of written) {
+    await syncSaveHighlights(page.url, page.highlights, page.title, lastUpdated);
+  }
+
+  // A tab already open on an imported url still holds the old list, and its
+  // next save would write that list back over the import.
+  const after = await browserAPI.storage.local.get(written.map(page => page.url));
+  for (const page of written) {
+    await broadcastToTabsByUrl(page.url, {
+      action: 'refreshHighlights',
+      highlights: after[page.url] || page.highlights,
+    });
+  }
+
+  return successResponse({ importedCount: written.length });
+}
+
 async function handleGetCloudSyncStatus(_message) {
   return successResponse(await getCloudSyncStatus());
 }
@@ -373,6 +451,7 @@ const ACTION_HANDLERS = {
   clearAllHighlights:        handleClearAllHighlights,
   getAllHighlightedPages:    handleGetAllHighlightedPages,
   deleteAllHighlightedPages: handleDeleteAllHighlightedPages,
+  importPages:               handleImportPages,
   getCloudSyncStatus:        handleGetCloudSyncStatus,
   enableCloudSync:           handleEnableCloudSync,
   pairCloudSync:             handlePairCloudSync,

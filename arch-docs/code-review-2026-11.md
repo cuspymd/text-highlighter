@@ -80,6 +80,7 @@ runCloudSync()
 
 - 위치: `pages-list.js:768-782`
 - 확인: 코드 확인
+- 상태: 수정 (브랜치 `fix/import-through-background`). background의 `importPages` 액션이 쓰기를 맡는다. 가져온 페이지와 그룹은 가져온 시각으로 찍는다. 그래서 페이지 목록의 날짜도 백업 날짜가 아니라 가져온 시각으로 보인다. 남은 한계: 페이지가 많으면 storage.sync 쓰기 빈도 한도에 걸려 일부 페이지가 sync에 바로 반영되지 않는다(4번과 함께 다룸). 로컬과 클라우드에는 반영된다.
 - 문제: `storage.local.set(ops)`를 직접 호출한다. 그래서 다음이 모두 빠진다.
   - `syncSaveHighlights`
   - 교체되는 그룹의 tombstone 기록
