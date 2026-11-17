@@ -538,6 +538,172 @@ describe('cloud-sync-service', () => {
     });
   });
 
+  // runCloudSync merges a snapshot of storage.local with the remote copy, and
+  // storage.local keeps changing while the remote round trip is in flight.
+  // These tests hold the GET open, make the change a background handler would
+  // make in that time, then let the cycle finish.
+  describe('runCloudSync - writes that land during the remote round trip', () => {
+    const url = 'https://a.test';
+    const metaKey = `${url}_meta`;
+    const longAgo = '2024-01-01T00:00:00.000Z';
+    let code;
+
+    const clone = (value) => (value === undefined ? value : JSON.parse(JSON.stringify(value)));
+
+    function useLocalStore(initial) {
+      const store = { cloudSyncEnabled: true, cloudSyncCode: code, ...initial };
+      chrome.storage.local.get.mockImplementation((keys) => {
+        if (keys === null) return Promise.resolve(clone(store));
+        const list = typeof keys === 'string' ? [keys] : Array.isArray(keys) ? keys : Object.keys(keys);
+        const out = {};
+        list.forEach(k => { if (k in store) out[k] = clone(store[k]); });
+        return Promise.resolve(out);
+      });
+      chrome.storage.local.set.mockImplementation((items) => {
+        Object.assign(store, clone(items));
+        return Promise.resolve();
+      });
+      chrome.storage.local.remove.mockImplementation((keys) => {
+        [].concat(keys).forEach(k => { delete store[k]; });
+        return Promise.resolve();
+      });
+      return store;
+    }
+
+    // GET answers only when the test calls the returned release(); PUT answers at once.
+    async function holdRemoteGet(remoteBlob) {
+      const { encryptionKey } = await deriveSyncKeys(code);
+      const envelope = await encryptBlob(remoteBlob, encryptionKey);
+      const releases = [];
+      global.fetch = jest.fn((_url, init) => {
+        if (init && init.method === 'PUT') return Promise.resolve({ ok: true, status: 204 });
+        return new Promise(resolve => {
+          releases.push(() => resolve({ ok: true, status: 200, json: async () => envelope }));
+        });
+      });
+      return {
+        getCount: () => global.fetch.mock.calls.filter(([, init]) => !init || init.method !== 'PUT').length,
+        release: () => releases.shift()(),
+      };
+    }
+
+    async function waitUntil(condition) {
+      for (let i = 0; i < 200 && !condition(); i++) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      expect(condition()).toBe(true);
+    }
+
+    const groupIds = (store) => (store[url] || []).map(g => g.groupId).sort();
+
+    beforeEach(() => {
+      code = generateSyncCode();
+    });
+
+    it('keeps a highlight saved during the round trip when the remote also changed the page', async () => {
+      const store = useLocalStore({
+        [url]: [{ groupId: 'g1', updatedAt: 1 }],
+        [metaKey]: { title: 'A', lastUpdated: longAgo, deletedGroupIds: {} },
+      });
+      const remote = await holdRemoteGet(emptyBlob({
+        pages: { [url]: { title: 'A', lastUpdated: '2024-01-02T00:00:00.000Z', highlights: [{ groupId: 'g1', updatedAt: 1 }, { groupId: 'gRemote', updatedAt: 2 }], deletedGroupIds: {} } },
+      }));
+
+      const sync = runCloudSync();
+      await waitUntil(() => remote.getCount() === 1);
+      store[url] = [{ groupId: 'g1', updatedAt: 1 }, { groupId: 'gNew', updatedAt: Date.now() }];
+      store[metaKey] = { title: 'A', lastUpdated: new Date().toISOString(), deletedGroupIds: {} };
+      remote.release();
+
+      expect((await sync).success).toBe(true);
+      expect(groupIds(store)).toEqual(['g1', 'gNew', 'gRemote']);
+    });
+
+    it('does not bring back a group deleted during the round trip, nor drop its tombstone', async () => {
+      const store = useLocalStore({
+        [url]: [{ groupId: 'g1', updatedAt: 1 }, { groupId: 'g2', updatedAt: 1 }],
+        [metaKey]: { title: 'A', lastUpdated: longAgo, deletedGroupIds: {} },
+      });
+      const remote = await holdRemoteGet(emptyBlob({
+        pages: { [url]: { title: 'A', lastUpdated: '2024-01-02T00:00:00.000Z', highlights: [{ groupId: 'g1', updatedAt: 1 }, { groupId: 'g2', updatedAt: 1 }, { groupId: 'gRemote', updatedAt: 2 }], deletedGroupIds: {} } },
+      }));
+
+      const sync = runCloudSync();
+      await waitUntil(() => remote.getCount() === 1);
+      const deletedAt = Date.now();
+      store[url] = [{ groupId: 'g1', updatedAt: 1 }];
+      store[metaKey] = { title: 'A', lastUpdated: new Date(deletedAt).toISOString(), deletedGroupIds: { g2: deletedAt } };
+      remote.release();
+
+      expect((await sync).success).toBe(true);
+      expect(groupIds(store)).toEqual(['g1', 'gRemote']);
+      expect(store[metaKey].deletedGroupIds.g2).toBe(deletedAt);
+    });
+
+    it('does not bring back a page cleared during the round trip, nor drop its URL tombstone', async () => {
+      const store = useLocalStore({
+        [url]: [{ groupId: 'g1', updatedAt: 1 }],
+        [metaKey]: { title: 'A', lastUpdated: longAgo, deletedGroupIds: {} },
+      });
+      const remote = await holdRemoteGet(emptyBlob({
+        pages: { [url]: { title: 'A', lastUpdated: '2024-01-02T00:00:00.000Z', highlights: [{ groupId: 'g1', updatedAt: 1 }, { groupId: 'gRemote', updatedAt: 2 }], deletedGroupIds: {} } },
+      }));
+
+      const sync = runCloudSync();
+      await waitUntil(() => remote.getCount() === 1);
+      // What syncRemoveHighlights + cleanupEmptyHighlightData leave behind.
+      const deletedAt = Date.now();
+      store.cloudSyncDeletedUrls = { [url]: deletedAt };
+      delete store[url];
+      delete store[metaKey];
+      remote.release();
+
+      expect((await sync).success).toBe(true);
+      expect(store[url]).toBeUndefined();
+      expect(store[metaKey]).toBeUndefined();
+      expect(store.cloudSyncDeletedUrls[url]).toBe(deletedAt);
+    });
+
+    it('does not rewrite a page the merge leaves unchanged', async () => {
+      useLocalStore({
+        [url]: [{ groupId: 'g1', updatedAt: 1 }],
+        [metaKey]: { title: 'A', lastUpdated: longAgo, deletedGroupIds: {} },
+      });
+      const remote = await holdRemoteGet(emptyBlob({
+        pages: { [url]: { title: 'A', lastUpdated: longAgo, highlights: [{ groupId: 'g1', updatedAt: 1 }], deletedGroupIds: {} } },
+      }));
+
+      const sync = runCloudSync();
+      await waitUntil(() => remote.getCount() === 1);
+      remote.release();
+
+      expect((await sync).success).toBe(true);
+      const pageWrites = chrome.storage.local.set.mock.calls.filter(([items]) => url in items);
+      expect(pageWrites).toHaveLength(0);
+    });
+
+    it('runs one cycle at a time, and calls made during it share one follow-up cycle', async () => {
+      useLocalStore({});
+      const remote = await holdRemoteGet(emptyBlob());
+
+      const first = runCloudSync();
+      await waitUntil(() => remote.getCount() === 1);
+      const second = runCloudSync();
+      const third = runCloudSync();
+      expect(third).toBe(second);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(remote.getCount()).toBe(1);
+
+      remote.release();
+      expect((await first).success).toBe(true);
+      await waitUntil(() => remote.getCount() === 2);
+      remote.release();
+      expect((await second).success).toBe(true);
+      expect(remote.getCount()).toBe(2);
+    });
+  });
+
   describe('initCloudSyncAlarm', () => {
     it('registers the periodic alarm and an onAlarm listener', () => {
       initCloudSyncAlarm();

@@ -55,23 +55,27 @@ function emptyBlob() {
  * Build the full local blob to be encrypted and pushed, mirroring the shape
  * described in arch-docs/cloudflare-kv-based-sync-design.md section 4.
  */
+// One page as storage.local holds it, in blob shape - or null when `all` has no
+// highlight list under that url.
+function readLocalPage(all, url) {
+  if (LOCAL_ONLY_KEYS.has(url) || !Array.isArray(all[url])) return null;
+  const meta = all[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
+  return {
+    title: meta.title || '',
+    lastUpdated: meta.lastUpdated || '',
+    highlights: all[url],
+    deletedGroupIds: meta.deletedGroupIds || {},
+  };
+}
+
 async function buildLocalBlob() {
   const all = await browserAPI.storage.local.get(null);
 
   const pages = {};
   for (const key of Object.keys(all)) {
-    if (LOCAL_ONLY_KEYS.has(key)) continue;
     if (key.endsWith(STORAGE_KEYS.META_SUFFIX)) continue;
-    if (!Array.isArray(all[key])) continue;
-
-    const url = key;
-    const meta = all[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
-    pages[url] = {
-      title: meta.title || '',
-      lastUpdated: meta.lastUpdated || '',
-      highlights: all[url],
-      deletedGroupIds: meta.deletedGroupIds || {},
-    };
+    const page = readLocalPage(all, key);
+    if (page) pages[key] = page;
   }
 
   const deletedUrls = all[CLOUD_SYNC_KEYS.DELETED_URLS] || {};
@@ -236,24 +240,79 @@ export function isBlobContentEqual(a, b) {
   return canonicalize(a) === canonicalize(b);
 }
 
-async function applyMergedPagesToLocal(mergedPages, deletedUrls, localPagesBefore) {
+function isSamePage(a, b) {
+  return JSON.stringify(canonicalPage(a)) === JSON.stringify(canonicalPage(b));
+}
+
+function mergePages(current, incoming) {
+  const merged = mergeHighlights(current, incoming);
+  return {
+    title: current.title || incoming.title || '',
+    lastUpdated: (pageTimestamp(current) >= pageTimestamp(incoming) ? current.lastUpdated : incoming.lastUpdated) || '',
+    highlights: merged.highlights,
+    deletedGroupIds: merged.deletedGroupIds,
+  };
+}
+
+/**
+ * Write the merge result into storage.local.
+ *
+ * The merge was computed from a snapshot taken before the remote round trip,
+ * and storage.local keeps changing during it: a highlight saved, a group
+ * deleted, a page cleared. Writing the merge as it stands would put the
+ * snapshot back over those writes - a save would vanish, and a deletion would
+ * be undone together with its tombstone and then pushed to every device. So
+ * storage.local is read again here, and the merge is laid over what it holds
+ * now rather than over the snapshot:
+ *
+ * - a page the merge leaves as this device already has it is not written;
+ * - a page that changed since the snapshot is merged once more with its
+ *   current state (mergeHighlights is tombstone-based, so this is safe to
+ *   repeat);
+ * - a page that was in the snapshot and is gone now was deleted here, and
+ *   stays deleted;
+ * - the URL tombstones are unioned with the current ones, not replaced.
+ *
+ * What is left is the gap between this read and the write below, with no
+ * await of a network call in it.
+ */
+async function applyMergedPagesToLocal(mergedPages, mergedDeletedUrls, snapshotPages) {
+  const current = await browserAPI.storage.local.get(null);
+  const deletedUrls = mergeTombstonesByMax(current[CLOUD_SYNC_KEYS.DELETED_URLS], mergedDeletedUrls);
+
   const saveData = {};
-  for (const [url, page] of Object.entries(mergedPages)) {
+  const writtenPages = {};
+  const pagesBefore = {};
+  for (const [url, mergedPage] of Object.entries(mergedPages)) {
+    const snapshotPage = snapshotPages[url] || null;
+    const currentPage = readLocalPage(current, url);
+    if (snapshotPage && !currentPage) continue;
+
+    const page = currentPage && !isSamePage(currentPage, snapshotPage)
+      ? mergePages(currentPage, mergedPage)
+      : mergedPage;
+    if (deletedUrls[url] && deletedUrls[url] > pageTimestamp(page)) continue;
+    if (isSamePage(page, currentPage)) continue;
+
     saveData[url] = page.highlights;
     saveData[`${url}${STORAGE_KEYS.META_SUFFIX}`] = {
       title: page.title,
       lastUpdated: page.lastUpdated,
       deletedGroupIds: page.deletedGroupIds,
     };
+    writtenPages[url] = page;
+    pagesBefore[url] = currentPage;
   }
-  if (Object.keys(saveData).length > 0) {
-    await browserAPI.storage.local.set(saveData);
-  }
+  saveData[CLOUD_SYNC_KEYS.DELETED_URLS] = deletedUrls;
+  await browserAPI.storage.local.set(saveData);
 
   const removeKeys = [];
   const removedUrls = [];
-  for (const url of Object.keys(localPagesBefore)) {
-    if (!mergedPages[url] && deletedUrls[url]) {
+  for (const url of Object.keys(snapshotPages)) {
+    if (mergedPages[url]) continue;
+    const currentPage = readLocalPage(current, url);
+    if (!currentPage) continue;
+    if (deletedUrls[url] && deletedUrls[url] > pageTimestamp(currentPage)) {
       removeKeys.push(url, `${url}${STORAGE_KEYS.META_SUFFIX}`);
       removedUrls.push(url);
     }
@@ -262,12 +321,12 @@ async function applyMergedPagesToLocal(mergedPages, deletedUrls, localPagesBefor
     await browserAPI.storage.local.remove(removeKeys);
   }
 
-  return { removedUrls };
+  return { writtenPages, pagesBefore, removedUrls };
 }
 
-async function broadcastMergedPages(mergedPages, localPagesBefore, removedUrls) {
-  for (const [url, page] of Object.entries(mergedPages)) {
-    const before = localPagesBefore[url];
+async function broadcastMergedPages(writtenPages, pagesBefore, removedUrls) {
+  for (const [url, page] of Object.entries(writtenPages)) {
+    const before = pagesBefore[url];
     if (!before || !isSameHighlightState(before.highlights, page.highlights)) {
       await broadcastToTabsByUrl(url, { action: 'refreshHighlights', highlights: page.highlights });
     }
@@ -365,11 +424,51 @@ export async function getCloudSyncStatus() {
   };
 }
 
+// At most one cycle runs at a time. An alarm that wakes the service worker
+// starts one from the top-level startup code and one from onAlarm, and the
+// settings page can ask for one on top of that; two cycles side by side would
+// each write their own merge over the other's.
+//
+// A call that arrives while a cycle is running waits for it and then gets a
+// fresh one, because the running cycle took its snapshot before the caller's
+// change. Every call that arrives in that time shares the one queued cycle,
+// with the strictest of their options.
+let activeRun = null;
+let queuedRun = null;
+
+function startRun(options) {
+  const run = runCloudSyncOnce(options).finally(() => {
+    // With a cycle queued, activeRun stays set until that cycle starts, so a
+    // call in between joins the queue instead of starting a third run beside it.
+    if (activeRun === run && !queuedRun) activeRun = null;
+  });
+  activeRun = run;
+  return run;
+}
+
 /**
  * Pull-merge-push cycle. Safe to call repeatedly (alarm, manual button, startup).
  * No-ops if cloud sync isn't enabled.
  */
-export async function runCloudSync({ allowMissingRemote = true, forcePush = false } = {}) {
+export function runCloudSync(options = {}) {
+  if (!activeRun) return startRun({ ...options });
+
+  if (queuedRun) {
+    if (options.forcePush) queuedRun.options.forcePush = true;
+    if (options.allowMissingRemote === false) queuedRun.options.allowMissingRemote = false;
+    return queuedRun.promise;
+  }
+
+  const queued = { options: { ...options } };
+  queued.promise = activeRun.catch(() => {}).then(() => {
+    queuedRun = null;
+    return startRun(queued.options);
+  });
+  queuedRun = queued;
+  return queued.promise;
+}
+
+async function runCloudSyncOnce({ allowMissingRemote = true, forcePush = false } = {}) {
   const status = await getCloudSyncStatus();
   if (!status.enabled || !status.code) {
     return { success: false, error: 'Cloud sync is not enabled' };
@@ -386,15 +485,14 @@ export async function runCloudSync({ allowMissingRemote = true, forcePush = fals
     // resurrects the trimmed-out pages into `merged`, which would never again equal `remoteBlob`.
     const { blob: fittedBlob, trimmedCount } = trimBlobToFit(merged, CLOUD_SYNC_MAX_BODY_BYTES);
 
-    const { removedUrls } = await applyMergedPagesToLocal(merged.pages, merged.deletedUrls, localBlob.pages);
-    await broadcastMergedPages(merged.pages, localBlob.pages, removedUrls);
+    const { writtenPages, pagesBefore, removedUrls } =
+      await applyMergedPagesToLocal(merged.pages, merged.deletedUrls, localBlob.pages);
+    await broadcastMergedPages(writtenPages, pagesBefore, removedUrls);
 
     if (merged.settings !== localBlob.settings) {
       await applySettingsFromSync(merged.settings);
       await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT]: merged.settings.updatedAt || 0 });
     }
-
-    await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: merged.deletedUrls });
 
     // remoteExisted guards the skip: a 404 (allowMissingRemote) yields the same empty shape as a
     // genuinely-empty remote blob, but skipping here would mean the KV record never gets created —
