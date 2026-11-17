@@ -387,8 +387,9 @@ async function handleImportPages(message) {
   await browserAPI.storage.local.set(saveData);
   debugLog('Imported pages:', written.map(page => page.url));
 
-  // One page at a time: each call reads and rewrites sync_meta, so running
-  // them side by side would lose all but one page's entry.
+  // One page at a time: each call works out the room left in storage.sync
+  // from what is there, so calls running side by side would each count
+  // without the others and overshoot the quota together.
   for (const page of written) {
     await syncSaveHighlights(page.url, page.highlights, page.title, lastUpdated);
   }

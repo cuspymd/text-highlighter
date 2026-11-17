@@ -11,6 +11,10 @@ import {
   getSettingsMissingLocally,
   migrateLocalToSync,
   toSyncHighlightGroup,
+  fitSyncMeta,
+  getSyncedPages,
+  syncSaveHighlights,
+  syncRemoveHighlights,
 } from '../background/sync-service.js';
 
 const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -50,24 +54,17 @@ describe('sync-service', () => {
   describe('normalizeSyncMeta', () => {
     it('should return a default meta object when input is null', () => {
       const meta = normalizeSyncMeta(null);
-      expect(meta).toEqual({ pages: [], totalSize: 0, deletedUrls: {} });
+      expect(meta).toEqual({ deletedUrls: {} });
     });
 
-    it('should preserve existing valid data', () => {
-      const raw = {
+    it('drops the page list an older version kept and keeps the tombstones', () => {
+      const deletedAt = Date.now() - 1000;
+      const meta = normalizeSyncMeta({
         pages: [{ url: 'test.com', syncKey: 'hl_1' }],
         totalSize: 100,
-      };
-      const meta = normalizeSyncMeta(raw);
-      expect(meta.pages).toHaveLength(1);
-      expect(meta.totalSize).toBe(100);
-      expect(meta.deletedUrls).toEqual({});
-    });
-
-    it('should initialize missing pages array', () => {
-      const meta = normalizeSyncMeta({ totalSize: 50 });
-      expect(meta.pages).toEqual([]);
-      expect(meta.totalSize).toBe(50);
+        deletedUrls: { 'https://gone.test': deletedAt },
+      });
+      expect(meta).toEqual({ deletedUrls: { 'https://gone.test': deletedAt } });
     });
 
     it('should cleanup expired tombstones in deletedUrls', () => {
@@ -466,55 +463,215 @@ describe('sync-service', () => {
     });
   });
 
-  describe('clearAllSyncedHighlights', () => {
-    it('should add tombstones only for URLs tracked in sync meta and then clear pages', async () => {
-      const now = 1700000000000;
-      jest.spyOn(Date, 'now').mockReturnValue(now);
+  // ===================================================================
+  // storage.sync quota
+  // ===================================================================
 
-      chrome.storage.sync.get.mockResolvedValueOnce({
-        sync_meta: {
-          pages: [
-            { syncKey: 'hl_1', url: 'https://synced-1.test', size: 10 },
-            { syncKey: 'hl_2', url: 'https://synced-2.test', size: 20 },
-          ],
-          totalSize: 30,
-          deletedUrls: {},
-        },
+  // Backed by real objects that enforce storage.sync's quotas, so a write that
+  // would fail in the browser fails here too instead of being waved through.
+  describe('storage.sync quota', () => {
+    const QUOTA_BYTES = 102400;
+    const QUOTA_BYTES_PER_ITEM = 8192;
+    const encoder = new TextEncoder();
+    const itemBytes = (key, value) => encoder.encode(JSON.stringify({ [key]: value })).byteLength;
+
+    let local;
+    let sync;
+    let saved;
+
+    function select(store, keys) {
+      if (keys === null || keys === undefined) return { ...store };
+      const wanted = Array.isArray(keys) ? keys : [keys];
+      return Object.fromEntries(wanted.filter(key => key in store).map(key => [key, store[key]]));
+    }
+
+    beforeEach(() => {
+      saved = ['get', 'set', 'remove'].flatMap(method => [
+        [chrome.storage.local, method, chrome.storage.local[method].getMockImplementation()],
+        [chrome.storage.sync, method, chrome.storage.sync[method].getMockImplementation()],
+      ]);
+      local = {};
+      sync = {};
+
+      chrome.storage.local.get.mockImplementation(async keys => select(local, keys));
+      chrome.storage.local.set.mockImplementation(async items => { Object.assign(local, items); });
+      chrome.storage.local.remove.mockImplementation(async keys => {
+        (Array.isArray(keys) ? keys : [keys]).forEach(key => { delete local[key]; });
       });
 
-      await clearAllSyncedHighlights();
+      chrome.storage.sync.get.mockImplementation(async keys => select(sync, keys));
+      chrome.storage.sync.set.mockImplementation(async items => {
+        const next = { ...sync, ...items };
+        for (const [key, value] of Object.entries(items)) {
+          if (itemBytes(key, value) > QUOTA_BYTES_PER_ITEM) {
+            throw new Error(`QUOTA_BYTES_PER_ITEM quota exceeded: ${key}`);
+          }
+        }
+        const total = Object.entries(next).reduce((sum, [key, value]) => sum + itemBytes(key, value), 0);
+        if (total > QUOTA_BYTES) throw new Error('QUOTA_BYTES quota exceeded');
+        Object.assign(sync, items);
+      });
+      chrome.storage.sync.remove.mockImplementation(async keys => {
+        (Array.isArray(keys) ? keys : [keys]).forEach(key => { delete sync[key]; });
+      });
+    });
 
-      expect(chrome.storage.sync.remove).toHaveBeenCalledWith(['hl_1', 'hl_2']);
+    afterEach(() => {
+      saved.forEach(([area, method, impl]) => area[method].mockImplementation(impl));
+    });
 
-      expect(chrome.storage.sync.set).toHaveBeenNthCalledWith(
-        1,
-        expect.objectContaining({
-          sync_meta: expect.objectContaining({
-            pages: expect.any(Array),
-            totalSize: 30,
-            deletedUrls: {
-              'https://synced-1.test': now,
-              'https://synced-2.test': now,
-            },
-          }),
-        }),
+    const urlFor = i => `https://www.example.com/blog/2026/11/an-article-title-number-${i}`;
+
+    function highlightsOfSize(textLength, id = 'g') {
+      return [{ groupId: id, color: '#ffd54f', text: 'x'.repeat(textLength), updatedAt: Date.now() }];
+    }
+
+    function savePage(i, textLength = 200, lastUpdated = new Date(Date.UTC(2026, 0, 1, 0, i)).toISOString()) {
+      return syncSaveHighlights(urlFor(i), highlightsOfSize(textLength, `g${i}`), `Title ${i}`, lastUpdated);
+    }
+
+    function syncedUrls() {
+      return Object.entries(sync)
+        .filter(([key]) => key.startsWith('hl_'))
+        .map(([, data]) => data.url);
+    }
+
+    it('keeps syncing pages past the point where a page list in sync_meta outgrew its item', async () => {
+      // About 55 pages filled the old list's 8KB; small pages fit the budget well past that.
+      for (let i = 0; i < 120; i += 1) await savePage(i);
+
+      expect(syncedUrls()).toHaveLength(120);
+      expect(sync.sync_meta).toBeUndefined();
+    });
+
+    it('lists the synced pages from the items themselves, oldest first', async () => {
+      await savePage(2);
+      await savePage(1);
+
+      const pages = await getSyncedPages();
+
+      expect(pages.map(page => page.url)).toEqual([urlFor(1), urlFor(2)]);
+      expect(pages[0].size).toBe(itemBytes(pages[0].syncKey, sync[pages[0].syncKey]));
+    });
+
+    it('does not evict another page to make room for the old copy of the page being updated', async () => {
+      // Twelve pages near 7KB each sit just under the 90KB budget, so counting
+      // the updated page's old copy alongside its new one would push it over.
+      for (let i = 0; i < 12; i += 1) await savePage(i, 6900);
+      expect(syncedUrls()).toHaveLength(12);
+
+      await savePage(5, 6900, new Date(Date.UTC(2026, 5, 1)).toISOString());
+
+      expect(syncedUrls()).toHaveLength(12);
+      expect(chrome.storage.sync.remove).not.toHaveBeenCalled();
+    });
+
+    it('never evicts the page it is saving, even when that page is the oldest', async () => {
+      for (let i = 0; i < 12; i += 1) await savePage(i, 6900);
+
+      await savePage(0, 6900, new Date(Date.UTC(2026, 5, 1)).toISOString());
+
+      expect(chrome.storage.sync.remove).not.toHaveBeenCalled();
+      expect(syncedUrls()).toContain(urlFor(0));
+    });
+
+    it('still evicts the oldest other page when a new page needs the room', async () => {
+      for (let i = 0; i < 12; i += 1) await savePage(i, 6900);
+
+      await savePage(99, 6900, new Date(Date.UTC(2026, 5, 1)).toISOString());
+
+      expect(syncedUrls()).not.toContain(urlFor(0));
+      expect(syncedUrls()).toContain(urlFor(99));
+    });
+
+    it('clears a url tombstone when the page is saved again', async () => {
+      sync.sync_meta = { deletedUrls: { [urlFor(1)]: Date.now() - 1000, [urlFor(2)]: Date.now() - 1000 } };
+
+      await savePage(1);
+
+      expect(Object.keys(sync.sync_meta.deletedUrls)).toEqual([urlFor(2)]);
+    });
+
+    it('works on a sync_meta an older version left with a full page list', async () => {
+      sync.sync_meta = {
+        pages: Array.from({ length: 50 }, (_, i) => ({ syncKey: `hl_old${i}`, url: urlFor(1000 + i), lastUpdated: '', size: 100 })),
+        totalSize: 5000,
+        deletedUrls: { [urlFor(1)]: Date.now() - 1000 },
+      };
+
+      await savePage(1);
+
+      expect(syncedUrls()).toEqual([urlFor(1)]);
+      expect(sync.sync_meta).toEqual({ deletedUrls: {} });
+    });
+
+    it('removes a deleted page and leaves a tombstone for the other devices', async () => {
+      await savePage(1);
+
+      await syncRemoveHighlights(urlFor(1));
+
+      expect(syncedUrls()).toEqual([]);
+      expect(Object.keys(sync.sync_meta.deletedUrls)).toEqual([urlFor(1)]);
+    });
+
+    it('removes a deleted page even when its tombstone cannot be written', async () => {
+      await savePage(1);
+      const set = chrome.storage.sync.set.getMockImplementation();
+      chrome.storage.sync.set.mockImplementation(async items => {
+        if ('sync_meta' in items) throw new Error('QUOTA_BYTES_PER_ITEM quota exceeded');
+        return set(items);
+      });
+
+      await syncRemoveHighlights(urlFor(1));
+
+      expect(syncedUrls()).toEqual([]);
+    });
+
+    it('writes nothing to sync for a page that was never there', async () => {
+      await syncRemoveHighlights(urlFor(1));
+
+      expect(chrome.storage.sync.set).not.toHaveBeenCalled();
+      expect(chrome.storage.sync.remove).not.toHaveBeenCalled();
+    });
+
+    it('keeps the newest tombstones that fit in the meta item', () => {
+      const now = Date.now();
+      const deletedUrls = Object.fromEntries(
+        Array.from({ length: 300 }, (_, i) => [urlFor(i), now - (300 - i) * 1000]),
       );
 
-      expect(chrome.storage.sync.set).toHaveBeenNthCalledWith(
-        2,
-        expect.objectContaining({
-          sync_meta: expect.objectContaining({
-            pages: [],
-            totalSize: 0,
-            deletedUrls: {
-              'https://synced-1.test': now,
-              'https://synced-2.test': now,
-            },
-          }),
-        }),
-      );
+      const fitted = fitSyncMeta({ deletedUrls });
+
+      expect(itemBytes('sync_meta', fitted)).toBeLessThanOrEqual(QUOTA_BYTES_PER_ITEM);
+      expect(Object.keys(fitted.deletedUrls)).toContain(urlFor(299));
+      expect(Object.keys(fitted.deletedUrls)).not.toContain(urlFor(0));
+    });
+
+    it('clears every synced page, however many there are', async () => {
+      const now = 1700000000000;
+      for (let i = 0; i < 120; i += 1) await savePage(i);
+      jest.spyOn(Date, 'now').mockReturnValue(now);
+
+      await clearAllSyncedHighlights(Array.from({ length: 120 }, (_, i) => urlFor(i)));
 
       Date.now.mockRestore();
+      expect(syncedUrls()).toEqual([]);
+      expect(Object.keys(sync.sync_meta.deletedUrls).length).toBeGreaterThan(50);
+      expect(Object.values(sync.sync_meta.deletedUrls).every(deletedAt => deletedAt === now)).toBe(true);
+    });
+
+    it('pulls in every synced page on a new device, with or without a page list in sync_meta', async () => {
+      sync[urlToSyncKey(urlFor(7))] = {
+        url: urlFor(7),
+        title: 'From another device',
+        lastUpdated: '2026-01-01T00:00:00.000Z',
+        highlights: highlightsOfSize(20, 'remote'),
+        deletedGroupIds: {},
+      };
+
+      await migrateLocalToSync();
+
+      expect(local[urlFor(7)].map(group => group.groupId)).toEqual(['remote']);
     });
   });
 
