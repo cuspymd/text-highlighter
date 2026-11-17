@@ -103,6 +103,7 @@ runCloudSync()
 
 - 위치: `background/settings-service.js:283-296`
 - 확인: 코드 확인. 시나리오는 추정.
+- 상태: 수정 (브랜치 `fix/settings-sync-overwrite`). 로드할 때 local을 우선하고, local에 `customColors` 키가 아예 없을 때만 sync 값을 쓴다. 빈 배열은 사용자가 지운 것으로 보고 유지한다. 코드를 다시 따라가 보니 영향이 추정보다 컸다: 되돌아간 local 색상은 `SETTINGS_UPDATED_AT`이 원격과 같아 `mergeBlobs`에서 local이 이기므로, 다음 클라우드 동기화 때 다른 기기로도 퍼진다. 클라우드에서 받은 설정을 storage.sync에도 쓰는 방안은 넣지 않았다. `saveSettingsToSync`가 `SETTINGS_UPDATED_AT`을 지금 시각으로 찍어 이 기기 설정을 최신으로 만들기 때문이다.
 - 문제: sync의 `customColors`가 비어 있지 않으면 무조건 local을 덮어쓴다. 그런데 클라우드 동기화 경로(`applySettingsFromSync`)는 local만 쓰고 storage.sync는 갱신하지 않는다.
 - 시나리오: 클라우드로 받은 색상이 다음 서비스 워커 재시작 때 storage.sync의 옛 값으로 되돌아간다. `sync.set`이 쓰기 빈도 한도에 걸려 실패했을 때도 마찬가지다.
 - 수정안: local을 우선한다. local에 값이 없을 때만 sync 값을 쓴다.

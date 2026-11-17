@@ -277,22 +277,31 @@ function buildPalette(customColors) {
   return palette;
 }
 
+// Local storage is this device's copy and wins whenever it has one, an empty
+// list included - that is a user who cleared their colours. storage.sync is
+// only a fallback for a profile that has never stored any.
+//
+// Not the other way round: cloud sync writes the colours it brings in to local
+// storage only, so storage.sync can lag behind, and so can a sync.set that hit
+// its rate limit. Reading sync first put those stale colours back on every
+// worker start, and the next cloud sync then pushed them out to the other
+// devices as this one's current settings.
 async function loadCustomColorsFromStorage() {
-  let customColors = [];
-  try {
-    const syncResult = await browserAPI.storage.sync.get(SYNC_KEYS.SETTINGS);
-    if (syncResult[SYNC_KEYS.SETTINGS] && syncResult[SYNC_KEYS.SETTINGS].customColors) {
-      customColors = syncResult[SYNC_KEYS.SETTINGS].customColors;
-      await browserAPI.storage.local.set({ customColors });
-      debugLog('Loaded custom colors from storage.sync');
-    }
-  } catch (e) {
-    debugLog('Failed to read sync settings, falling back to local:', e.message);
-  }
+  const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
+  let customColors = result.customColors;
 
-  if (customColors.length === 0) {
-    const result = await browserAPI.storage.local.get([STORAGE_KEYS.CUSTOM_COLORS]);
-    customColors = result.customColors || [];
+  if (!Array.isArray(customColors)) {
+    customColors = [];
+    try {
+      const syncResult = await browserAPI.storage.sync.get(SYNC_KEYS.SETTINGS);
+      if (syncResult[SYNC_KEYS.SETTINGS] && syncResult[SYNC_KEYS.SETTINGS].customColors) {
+        customColors = syncResult[SYNC_KEYS.SETTINGS].customColors;
+        await browserAPI.storage.local.set({ customColors });
+        debugLog('Loaded custom colors from storage.sync');
+      }
+    } catch (e) {
+      debugLog('Failed to read sync settings for custom colors:', e.message);
+    }
   }
 
   const { needsUpdate } = sanitizeCustomColors(customColors);
