@@ -9,7 +9,7 @@ import {
 import { initContextMenus } from './background/context-menu.js';
 import { registerMessageRouter } from './background/message-router.js';
 import { initSyncListener, migrateLocalToSync, getSettingsMissingLocally } from './background/sync-service.js';
-import { initCloudSyncAlarm, runCloudSync } from './background/cloud-sync-service.js';
+import { initCloudSyncAlarm, ensureCloudSyncAlarm, runStartupCloudSync } from './background/cloud-sync-service.js';
 import { openGuideOnInstall } from './background/onboarding.js';
 
 // ===================================================================
@@ -69,8 +69,16 @@ async function adoptMigratedSettings() {
     await createOrUpdateContextMenus();
     await adoptMigratedSettings();
     await adoptSettingsMissingLocally();
-    runCloudSync().catch(e => console.error('Initial cloud sync failed', e));
   } catch (e) {
     console.error('Initialization error in background script', e);
+  }
+
+  // Outside the try above, so a failed settings step cannot leave the worker
+  // without its sync alarm. Not a sync on every worker start - see
+  // ensureCloudSyncAlarm; browser start is covered by runtime.onStartup.
+  try {
+    if (await ensureCloudSyncAlarm()) runStartupCloudSync();
+  } catch (e) {
+    console.error('Cloud sync alarm setup failed', e);
   }
 })();

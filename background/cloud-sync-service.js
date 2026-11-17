@@ -576,14 +576,58 @@ export async function resetCloudSyncCode() {
   });
 }
 
+// The service worker is stopped after ~30s idle and started again by any event
+// it listens to - a tab switch, a page asking for its colours - and every start
+// runs background.js from the top. So "startup" here is not one moment: work
+// done unconditionally at the top level happens dozens of times an hour.
+//
+// The design (arch-docs/cloudflare-kv-based-sync-design.md, "트리거 시점")
+// syncs on browser start, every CLOUD_SYNC_ALARM_PERIOD_MINUTES, and on the
+// manual button, which keeps KV traffic batched. Two things broke that when
+// they ran on every worker start: alarms.create replaces an alarm of the same
+// name and restarts its countdown, so the period never ran out while the
+// browser was in use; and the unconditional startup sync ran instead, once per
+// worker start.
+let startupSyncStarted = false;
+
 /**
- * Register the periodic alarm that drives batched cloud sync. Call once at
- * service worker startup (top-level), alongside initSyncListener.
+ * The startup sync, at most once per worker lifetime. Browser start and a
+ * freshly created alarm usually come together (alarms can be cleared on
+ * browser restart and are on update), and both ask for it.
+ */
+export function runStartupCloudSync() {
+  if (startupSyncStarted) return;
+  startupSyncStarted = true;
+  runCloudSync().catch(e => debugLog('Startup cloud sync failed:', e.message));
+}
+
+/**
+ * Create the periodic alarm unless one with the current period already
+ * exists. Returns true when it had to be created: the alarm was missing, so
+ * whatever it would have synced in the meantime has not been synced.
+ */
+export async function ensureCloudSyncAlarm() {
+  if (!browserAPI.alarms) return false;
+
+  const existing = await browserAPI.alarms.get(CLOUD_SYNC_ALARM_NAME);
+  if (existing && existing.periodInMinutes === CLOUD_SYNC_ALARM_PERIOD_MINUTES) return false;
+
+  await browserAPI.alarms.create(CLOUD_SYNC_ALARM_NAME, { periodInMinutes: CLOUD_SYNC_ALARM_PERIOD_MINUTES });
+  return true;
+}
+
+/**
+ * Register the listeners that drive batched cloud sync. Call once at service
+ * worker startup (top-level, synchronously), alongside initSyncListener, so
+ * the event that woke the worker finds them. Creating the alarm itself is
+ * ensureCloudSyncAlarm, from the async initialization.
  */
 export function initCloudSyncAlarm() {
-  if (!browserAPI.alarms) return;
+  if (browserAPI.runtime.onStartup) {
+    browserAPI.runtime.onStartup.addListener(() => runStartupCloudSync());
+  }
 
-  browserAPI.alarms.create(CLOUD_SYNC_ALARM_NAME, { periodInMinutes: CLOUD_SYNC_ALARM_PERIOD_MINUTES });
+  if (!browserAPI.alarms) return;
   browserAPI.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== CLOUD_SYNC_ALARM_NAME) return;
     runCloudSync().catch(e => debugLog('Cloud sync alarm run failed:', e.message));

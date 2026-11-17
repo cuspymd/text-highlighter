@@ -46,6 +46,9 @@ export default {
     onInstalled: {
       addListener: jest.fn(),
     },
+    onStartup: {
+      addListener: jest.fn(),
+    },
     getPlatformInfo: jest.fn(() => Promise.resolve({ os: 'mac' })),
     getURL: jest.fn(path => `chrome-extension://test/${path}`),
     lastError: null,
@@ -113,7 +116,8 @@ export default {
     },
   },
   alarms: {
-    create: jest.fn(),
+    create: jest.fn(() => Promise.resolve()),
+    get: jest.fn(() => Promise.resolve(undefined)),
     onAlarm: {
       addListener: jest.fn(),
     },
