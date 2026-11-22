@@ -847,11 +847,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     ]);
 
     const colorMap = colorMapResult?.success ? colorMapResult.shortcutColorMap : {};
-    const allColors = colorsResult?.colors || [];
+    const receivedColors = Array.isArray(colorsResult?.colors);
+    const allColors = receivedColors ? colorsResult.colors : [];
 
-    // Auto-cleanup map if a custom color was removed but still assigned
+    // Auto-cleanup map if a custom color was removed but still assigned. Only
+    // against a palette the background actually sent: with no answer, every
+    // assigned color would look removed and the whole map would be cleared.
     let mapChanged = false;
-    for (const key in colorMap) {
+    for (const key in receivedColors ? colorMap : {}) {
       if (colorMap[key] && !allColors.find(c => c.id === colorMap[key])) {
         colorMap[key] = null;
         mapChanged = true;
