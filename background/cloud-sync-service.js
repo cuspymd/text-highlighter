@@ -1,5 +1,5 @@
 import { browserAPI } from '../shared/browser-api.js';
-import { debugLog } from '../shared/logger.js';
+import { debugLog, errorLog } from '../shared/logger.js';
 import { broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
 import { STORAGE_KEYS, CLOUD_SYNC_KEYS, isPageKey } from '../constants/storage-keys.js';
 import {
@@ -518,7 +518,7 @@ async function runCloudSyncOnce({ allowMissingRemote = true, forcePush = false }
     debugLog('Cloud sync completed.');
     return { success: true, trimmedCount };
   } catch (e) {
-    debugLog('Cloud sync failed:', e.message);
+    errorLog('Cloud sync failed:', e.message);
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.LAST_ERROR]: e.message });
     return { success: false, error: e.message };
   }
@@ -598,7 +598,7 @@ let startupSyncStarted = false;
 export function runStartupCloudSync() {
   if (startupSyncStarted) return;
   startupSyncStarted = true;
-  runCloudSync().catch(e => debugLog('Startup cloud sync failed:', e.message));
+  runCloudSync().catch(e => errorLog('Startup cloud sync failed:', e.message));
 }
 
 /**
@@ -630,6 +630,6 @@ export function initCloudSyncAlarm() {
   if (!browserAPI.alarms) return;
   browserAPI.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== CLOUD_SYNC_ALARM_NAME) return;
-    runCloudSync().catch(e => debugLog('Cloud sync alarm run failed:', e.message));
+    runCloudSync().catch(e => errorLog('Cloud sync alarm run failed:', e.message));
   });
 }

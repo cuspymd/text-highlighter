@@ -1,5 +1,5 @@
 import { browserAPI } from '../shared/browser-api.js';
-import { debugLog } from '../shared/logger.js';
+import { debugLog, errorLog } from '../shared/logger.js';
 import { broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
 import { STORAGE_KEYS, SYNC_KEYS, CLOUD_SYNC_KEYS, isPageKey } from '../constants/storage-keys.js';
 
@@ -245,7 +245,7 @@ export async function saveSettingsToSync() {
     await browserAPI.storage.sync.set({ [SYNC_SETTINGS_KEY]: settings });
     debugLog('Settings saved to sync:', settings);
   } catch (e) {
-    debugLog('Failed to save settings to sync:', e.message);
+    errorLog('Failed to save settings to sync:', e.message);
   }
 }
 
@@ -266,7 +266,7 @@ export async function getSettingsMissingLocally() {
     const syncResult = await browserAPI.storage.sync.get(SYNC_SETTINGS_KEY);
     syncSettings = syncResult[SYNC_SETTINGS_KEY] || null;
   } catch (e) {
-    debugLog('Could not read sync settings to catch up with:', e.message);
+    errorLog('Could not read sync settings to catch up with:', e.message);
     return null;
   }
   if (!syncSettings) return null;
@@ -300,7 +300,7 @@ export async function recordCloudSyncTombstones(urls) {
     await browserAPI.storage.local.set({ [CLOUD_SYNC_KEYS.DELETED_URLS]: deletedUrls });
     return true;
   } catch (e) {
-    debugLog('Failed to record cloud sync tombstone(s):', e.message);
+    errorLog('Failed to record cloud sync tombstone(s):', e.message);
     return false;
   }
 }
@@ -348,7 +348,7 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
         totalSize -= oldest.size;
         debugLog('Evicted oldest sync page:', oldest.syncKey, oldest.url);
       } catch (e) {
-        debugLog('Error evicting sync page:', e.message);
+        errorLog('Error evicting sync page:', e.message);
       }
     }
 
@@ -363,7 +363,7 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
     }
     debugLog('Highlights merged and synced for:', url, `(${dataSize}B, total: ${totalSize + dataSize}B)`);
   } catch (e) {
-    debugLog('Failed to sync highlights:', e.message);
+    errorLog('Failed to sync highlights:', e.message);
   }
 }
 
@@ -401,7 +401,7 @@ export async function syncRemoveHighlights(url) {
     await browserAPI.storage.sync.remove(syncKey);
     debugLog('Removed highlights from sync and added tombstone for:', url);
   } catch (e) {
-    debugLog('Failed to remove highlights from sync:', e.message);
+    errorLog('Failed to remove highlights from sync:', e.message);
   }
 
   return tombstoneRecorded;
@@ -414,7 +414,7 @@ export async function cleanupEmptyHighlightData(url) {
     await browserAPI.storage.local.remove([url, `${url}${STORAGE_KEYS.META_SUFFIX}`]);
     debugLog('Successfully removed empty highlight data for URL:', url);
   } catch (error) {
-    debugLog('Error removing empty highlight data:', error);
+    errorLog('Error removing empty highlight data:', error);
   }
 }
 
@@ -460,7 +460,7 @@ export async function clearAllSyncedHighlights(localUrls = []) {
     }
     debugLog('Cleared all synced highlights');
   } catch (e) {
-    debugLog('Failed to clear synced highlights:', e.message);
+    errorLog('Failed to clear synced highlights:', e.message);
   }
 
   return tombstoneRecorded;
@@ -590,7 +590,7 @@ export async function migrateLocalToSync() {
     await browserAPI.storage.local.set({ syncMigrationDone: true });
     debugLog('Initial sync migration and pull completed.');
   } catch (e) {
-    debugLog('Sync migration error:', e.message);
+    errorLog('Sync migration error:', e.message);
   }
 
   return adoptedSettings;
@@ -626,7 +626,7 @@ export function initSyncListener({ onSettingsChanged } = {}) {
 
         debugLog('Sync removal treated as eviction after retries. Keeping local data for:', url);
       } catch (e) {
-        debugLog('Error resolving sync removal for:', url, e.message);
+        errorLog('Error resolving sync removal for:', url, e.message);
       } finally {
         const pending = pendingSyncRemovalResolutions.get(url);
         if (pending && pending.timeoutId === timeoutId) {

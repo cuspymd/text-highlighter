@@ -173,14 +173,14 @@ runCloudSync()
 
 ### 10. 정리 대상
 
-- 상태: `errorLog`를 뺀 나머지를 수정 (브랜치 `fix/group-id-selector`).
+- 상태: 수정 (브랜치 `fix/group-id-selector`).
   - `activeTab` 제거, 죽은 코드 제거(`getDebugMode`는 라우팅 매트릭스 문서와 테스트에서도 뺐다).
   - 페이지 키 판정은 `isPageKey()`(`constants/storage-keys.js`)로 모았다. `STORAGE_KEYS`·`CLOUD_SYNC_KEYS`의 모든 키를 이름으로 제외한다.
   - `style.display` 검사는 `visible` 클래스로 바꾸지 않고 지웠다. `hideHighlightControls`가 `activeHighlightElement`를 비우므로 그것만으로 충분하다. 클래스로 바꾸면 팝 애니메이션 타이머(약 10ms) 동안 두 번째 클릭이 링크를 따라가지 못한다.
   - 미니맵 마커의 `data-highlight-id`를 지웠다.
   - 색상 Apply는 피커의 `getColor()`를 쓴다. 이전에는 프리셋 `#FF6B6B`가 `#ff6b6b`로 저장됐다.
   - 텍스트 노드 필터의 태그 목록은 `content-core.js`의 `isNonTextElement()` 하나로 모았다(5곳).
-  - **남음**: `errorLog`. 실제로 쓰는 곳은 `settings-service.js` 한 곳뿐이고, sync 실패는 모두 `debugLog`로 남긴다. 릴리스에서도 남기려면 `console.error`가 Chrome 확장 관리 화면의 "오류" 목록에 쌓인다는 점(쓰기 빈도 한도 초과 같은 흔한 실패 포함)을 감안해 `console.warn`으로 할지 정해야 한다.
+  - `errorLog`는 릴리스 빌드에서 `console.warn`으로 남긴다(디버그 빌드는 `console.error`). `console.error`는 Chrome 확장 관리 화면의 "오류" 목록에 쌓이는데, 쓰기 빈도 한도 초과나 네트워크 끊김 같은 흔한 실패는 버그가 아니기 때문이다. `sync-service.js`·`cloud-sync-service.js`의 실패 로그 13곳을 `debugLog`에서 `errorLog`로 바꿨다. content script의 `errorLog`(`content-common.js`)는 호스트 페이지 콘솔에 찍히므로 그대로 두었다.
 - `activeTab` 권한을 쓰는 곳이 없다. 두 manifest 모두에서 뺄 수 있다.
 - "어떤 local 키가 페이지 키인가"를 판정하는 코드가 4곳에 따로 있고 서로 다르다(`message-router.js:257, 296`, `sync-service.js:505`, `cloud-sync-service.js:15`). `constants/storage-keys.js`의 `isPageKey()` 하나로 모은다.
 - 죽은 코드:
