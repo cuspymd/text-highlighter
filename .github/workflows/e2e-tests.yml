@@ -1,9 +1,18 @@
 name: Unit & E2E Tests
 
 on:
+  # Branches are tested through their pull request; a push to every branch as
+  # well ran the same commit twice.
   push:
+    branches: [ main ]
   pull_request:
     branches: [ main ]
+
+# A newer push to a pull request supersedes its run in progress. Runs on main
+# are left to finish, so every merge gets a result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   tests:
@@ -11,6 +20,8 @@ jobs:
     # which ubuntu-latest moved to in 2026-11. Unpin with the Playwright upgrade
     # that supports it.
     runs-on: ubuntu-24.04
+    # A hung E2E run would otherwise hold the runner for GitHub's six-hour default.
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -33,6 +44,11 @@ jobs:
 
       - name: Build extension
         run: npm run deploy:chrome
+
+      # The E2E tests below run in Chromium only. This makes a failing Firefox
+      # build (deploy.cjs firefox) fail the pull request too.
+      - name: Build Firefox extension
+        run: npm run deploy:firefox
 
       - name: Run E2E tests
         env:
