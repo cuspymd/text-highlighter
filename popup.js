@@ -2,6 +2,7 @@ import { browserAPI } from './shared/browser-api.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 import { initializeThemeWatcher } from './shared/theme.js';
+import { sendToBackground } from './shared/runtime-message.js';
 import { sendMessageToTab } from './shared/tab-broadcast.js';
 
 const URL_PARAMS  = new URLSearchParams(window.location.search);
@@ -307,7 +308,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Delete highlight (group basis)
   async function deleteHighlight(groupId, url) {
-    const response = await browserAPI.runtime.sendMessage({
+    const response = await sendToBackground({
       action: 'deleteHighlight',
       url: url,
       groupId: groupId, // Delete by groupId
@@ -329,7 +330,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       const currentUrl = tab.url;
       if (!currentUrl) return;
       
-      const response = await browserAPI.runtime.sendMessage({
+      const response = await sendToBackground({
         action: 'clearAllHighlights',
         url: currentUrl,
         notifyRefresh: true
@@ -344,13 +345,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // The pages list is an extension page, not a content script, so
   // tabs.sendMessage never reaches it. A runtime message does. With no listener
-  // left to answer, the promise rejects, which is no reason to fail the open.
+  // left to answer, sendToBackground resolves null, which is no reason to fail
+  // the open.
   async function refreshOpenPagesList() {
-    try {
-      await browserAPI.runtime.sendMessage({ action: 'refreshPagesList' });
-    } catch (error) {
-      debugLog('No pages list answered the refresh:', error);
-    }
+    await sendToBackground({ action: 'refreshPagesList' });
   }
 
   // View list of highlighted pages
