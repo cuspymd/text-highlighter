@@ -421,7 +421,7 @@ function removeHighlight(highlightElement = null) {
   if (highlightElement) {
     const groupId = highlightElement.dataset.groupId;
     // Delete all spans in the group
-    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    const groupSpans = groupId ? findHighlightElementsByGroupId(groupId) : [];
     unwrapHighlightSpans(groupSpans);
     // Remove group from highlights array
     highlights = highlights.filter(g => g.groupId !== groupId);
@@ -477,7 +477,7 @@ function changeHighlightColor(highlightElement, newColor) {
   rememberLastUsedColor(newColor);
   const groupId = highlightElement.dataset.groupId;
   // Change color of all spans in the DOM
-  const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+  const groupSpans = groupId ? findHighlightElementsByGroupId(groupId) : [];
   groupSpans.forEach(span => {
     window.TextHighlighterColorCore.paintHighlight(span, newColor);
   });
@@ -979,7 +979,7 @@ function addHighlightEventListeners(highlightElement) {
   highlightElement.addEventListener('mouseenter', function () {
     const groupId = highlightElement.dataset.groupId;
     if (!groupId) return;
-    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    const groupSpans = findHighlightElementsByGroupId(groupId);
     groupSpans.forEach(span => {
       span.classList.add('group-hover');
     });
@@ -987,7 +987,7 @@ function addHighlightEventListeners(highlightElement) {
   highlightElement.addEventListener('mouseleave', function () {
     const groupId = highlightElement.dataset.groupId;
     if (!groupId) return;
-    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    const groupSpans = findHighlightElementsByGroupId(groupId);
     groupSpans.forEach(span => {
       span.classList.remove('group-hover');
     });

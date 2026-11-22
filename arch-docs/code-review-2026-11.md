@@ -138,6 +138,7 @@ runCloudSync()
 
 - 위치: `content-scripts/content.js:424, 480, 982, 990`, `content-scripts/minimap.js:122`
 - 확인: 코드 확인
+- 상태: 수정 (브랜치 `fix/group-id-selector`). 다섯 곳 모두 `findHighlightElementsByGroupId()`로 바꿨다. 삭제와 색 변경은 groupId가 없으면 이전처럼 아무 span도 건드리지 않는다. `tests/group-id-selector.test.js`가 `'`, `\`, `]`, `"`를 넣은 id로 삭제·색 변경·미니맵 마커를 확인한다. 옛 코드에서는 `'`와 `\` 케이스가 실패했다.
 - 문제: `[data-group-id='${groupId}']` 형태다. import로 들어온 id에 `'`나 `\`가 있으면 `querySelectorAll`이 SyntaxError를 던진다. 그러면 삭제, 색 변경, 미니맵 그리기가 멈춘다. import 스키마(`shared/import-export-schema.js:88`)는 비어 있지 않은 문자열이면 어떤 id든 받는다.
 - 수정안: 이미 있는 `findHighlightElementsByGroupId()`(`content-common.js:28`)를 쓴다.
 

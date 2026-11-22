@@ -119,7 +119,7 @@ class MinimapManager {
 
     const groupId = highlightElement.dataset.groupId;
     const highlightElements = groupId
-      ? Array.from(document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`))
+      ? findHighlightElementsByGroupId(groupId)
       : [highlightElement];
     const snippet = highlightElements
       .map((element) => (element.textContent || '').trim())
