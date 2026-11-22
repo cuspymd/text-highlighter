@@ -421,7 +421,7 @@ function removeHighlight(highlightElement = null) {
   if (highlightElement) {
     const groupId = highlightElement.dataset.groupId;
     // Delete all spans in the group
-    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    const groupSpans = groupId ? findHighlightElementsByGroupId(groupId) : [];
     unwrapHighlightSpans(groupSpans);
     // Remove group from highlights array
     highlights = highlights.filter(g => g.groupId !== groupId);
@@ -477,7 +477,7 @@ function changeHighlightColor(highlightElement, newColor) {
   rememberLastUsedColor(newColor);
   const groupId = highlightElement.dataset.groupId;
   // Change color of all spans in the DOM
-  const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+  const groupSpans = groupId ? findHighlightElementsByGroupId(groupId) : [];
   groupSpans.forEach(span => {
     window.TextHighlighterColorCore.paintHighlight(span, newColor);
   });
@@ -690,16 +690,8 @@ function resolveUnclaimedMatch(model, group, claimed) {
   return restoreCore.resolveUnclaimedMatch(contentCore, model, group, claimed);
 }
 
-function overlapsClaimedRegion(claimed, region) {
-  return restoreCore.overlapsClaimedRegion(claimed, region);
-}
-
 function isRangeInDocument(range) {
   return restoreCore.isRangeInDocument(range);
-}
-
-function maskClaimedRegions(text, claimed) {
-  return restoreCore.maskClaimedRegions(text, claimed);
 }
 
 // Fallback for groups saved without quote selectors, and for quote groups that
@@ -796,10 +788,7 @@ function collectRestorableTextNodes(root) {
         if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
           return NodeFilter.FILTER_REJECT;
         }
-        const parentTagName = parent.tagName && parent.tagName.toUpperCase();
-        if ([
-          'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'
-        ].includes(parentTagName)) {
+        if (contentCore.isNonTextElement(parent)) {
           return NodeFilter.FILTER_REJECT;
         }
         if (!isDisplayed(parent)) {
@@ -952,9 +941,9 @@ function highlightTextInDocument(element, spanInfos, color, groupId, batch = nul
 // Add event listeners to highlighted text elements
 function addHighlightEventListeners(highlightElement) {
   highlightElement.addEventListener('click', function (e) {
-    if (activeHighlightElement === highlightElement &&
-      highlightControlsContainer &&
-      highlightControlsContainer.style.display !== 'none') {
+    // hideHighlightControls clears activeHighlightElement, so this element still
+    // being active means its controls are up (or popping in).
+    if (activeHighlightElement === highlightElement && highlightControlsContainer) {
       hideHighlightControls();
     } else {
       hideHighlightControls();
@@ -979,7 +968,7 @@ function addHighlightEventListeners(highlightElement) {
   highlightElement.addEventListener('mouseenter', function () {
     const groupId = highlightElement.dataset.groupId;
     if (!groupId) return;
-    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    const groupSpans = findHighlightElementsByGroupId(groupId);
     groupSpans.forEach(span => {
       span.classList.add('group-hover');
     });
@@ -987,42 +976,11 @@ function addHighlightEventListeners(highlightElement) {
   highlightElement.addEventListener('mouseleave', function () {
     const groupId = highlightElement.dataset.groupId;
     if (!groupId) return;
-    const groupSpans = document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`);
+    const groupSpans = findHighlightElementsByGroupId(groupId);
     groupSpans.forEach(span => {
       span.classList.remove('group-hover');
     });
   });
-}
-
-// Get position of the first text node in highlight element
-function getFirstTextNodePosition(element) {
-  let firstTextNode = null;
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
-
-  firstTextNode = walker.nextNode();
-
-  if (!firstTextNode && element.childNodes.length > 0) {
-    return element.getBoundingClientRect();
-  }
-
-  if (firstTextNode) {
-    const range = document.createRange();
-    range.setStart(firstTextNode, 0);
-    range.setEnd(firstTextNode, 1);
-
-    const rect = range.getBoundingClientRect();
-    return {
-      top: rect.top,
-      left: rect.left
-    };
-  }
-
-  return element.getBoundingClientRect();
 }
 
 function initMinimap() {

@@ -1,7 +1,7 @@
 import { browserAPI } from '../shared/browser-api.js';
-import { DEBUG_MODE, debugLog } from '../shared/logger.js';
+import { debugLog } from '../shared/logger.js';
 import { broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
-import { STORAGE_KEYS, CLOUD_SYNC_KEYS } from '../constants/storage-keys.js';
+import { STORAGE_KEYS, CLOUD_SYNC_KEYS, isPageKey } from '../constants/storage-keys.js';
 import {
   syncSaveHighlights,
   syncRemoveHighlights,
@@ -43,10 +43,6 @@ function errorResponse(message) { return { success: false, error: message }; }
 // ===================================================================
 // Action handlers
 // ===================================================================
-
-async function handleGetDebugMode(_message) {
-  return { debugMode: DEBUG_MODE };
-}
 
 async function handleGetPlatformInfo(_message) {
   return getPlatformInfo();
@@ -254,17 +250,8 @@ async function handleGetAllHighlightedPages(_message) {
   const result = await browserAPI.storage.local.get(null);
   const pages = [];
 
-  const skipKeys = new Set([
-    STORAGE_KEYS.CUSTOM_COLORS,
-    STORAGE_KEYS.SYNC_MIGRATION_DONE,
-    STORAGE_KEYS.MINIMAP_VISIBLE,
-    STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
-    STORAGE_KEYS.SHORTCUT_COLOR_MAP,
-  ]);
-
   for (const key in result) {
-    if (skipKeys.has(key)) continue;
-    if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith(STORAGE_KEYS.META_SUFFIX)) {
+    if (isPageKey(key, result[key]) && result[key].length > 0) {
       const url = key;
       const metadata = result[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
       pages.push({
@@ -293,17 +280,8 @@ async function handleDeleteAllHighlightedPages(_message) {
   const keysToDelete = [];
   const urls = [];
 
-  const skipKeys = new Set([
-    STORAGE_KEYS.CUSTOM_COLORS,
-    STORAGE_KEYS.SYNC_MIGRATION_DONE,
-    STORAGE_KEYS.MINIMAP_VISIBLE,
-    STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
-    STORAGE_KEYS.SHORTCUT_COLOR_MAP,
-  ]);
-
   for (const key in result) {
-    if (skipKeys.has(key)) continue;
-    if (Array.isArray(result[key]) && result[key].length > 0 && !key.endsWith(STORAGE_KEYS.META_SUFFIX)) {
+    if (isPageKey(key, result[key]) && result[key].length > 0) {
       keysToDelete.push(key, `${key}${STORAGE_KEYS.META_SUFFIX}`);
       urls.push(key);
     }
@@ -442,7 +420,6 @@ async function handleTriggerCloudSync(_message) {
 // ===================================================================
 
 const ACTION_HANDLERS = {
-  getDebugMode:              handleGetDebugMode,
   getPlatformInfo:           handleGetPlatformInfo,
   openExtensionPage:         handleOpenExtensionPage,
   getColors:                 handleGetColors,

@@ -1,3 +1,4 @@
+import fs from 'fs';
 import chrome, { assertNoRuntimeMessageCallback } from '../mocks/chrome.js';
 
 /**
@@ -35,5 +36,18 @@ describe('the runtime.sendMessage promise-form guard', () => {
 
   it('answers the promise form', async () => {
     await expect(chrome.runtime.sendMessage({ action: 'getColors' })).resolves.toEqual({ success: true });
+  });
+});
+
+// Extension pages reach the background through sendToBackground, which turns a
+// background that is not listening into null. A bare runtime.sendMessage rejects
+// there instead, and the click or the page setup that awaited it stops silently.
+// Content scripts are not modules and cannot import it, so they are not listed.
+describe('extension pages', () => {
+  const PAGE_SCRIPTS = ['popup.js', 'settings.js', 'pages-list.js', 'onboarding.js'];
+
+  it.each(PAGE_SCRIPTS)('%s sends to the background through sendToBackground only', file => {
+    const source = fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    expect(source).not.toMatch(/runtime\.sendMessage\s*\(/);
   });
 });

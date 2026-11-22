@@ -1088,6 +1088,26 @@ describe('settings', () => {
       expect(shortcutRows()[0].querySelector('select').value).toBe('');
     });
 
+    // sendToBackground turns a rejected getColors into null. Read as an empty
+    // palette, that cleared every assigned shortcut and saved the cleared map.
+    it.each([
+      ['rejects', () => Promise.reject(new Error('port closed'))],
+      ['answers nothing', () => Promise.resolve(undefined)],
+    ])('keeps shortcut colors when getColors %s', async (_label, answerColors) => {
+      chrome.runtime.sendMessage.mockImplementation(message => {
+        if (message.action === 'getColors') return answerColors();
+        if (message.action === 'getShortcutColorMap') {
+          return Promise.resolve({ success: true, shortcutColorMap: { command_slot_1: CUSTOM_COLOR.id } });
+        }
+        if (message.action === 'getCloudSyncStatus') return Promise.resolve({ success: true, code: null });
+        return Promise.resolve({ success: true });
+      });
+      await openSettings();
+      await flush();
+
+      expect(backgroundMessages('saveShortcutColorMap')).toEqual([]);
+    });
+
     it('hides the section where commands is unavailable', async () => {
       await withoutBrowserApi('commands', async () => {
         await openSettings();

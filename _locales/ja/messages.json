@@ -116,6 +116,15 @@
   "importSchemaInvalidItemsSkipped": {
     "message": "インポート中に無効な項目$1件をスキップしました。"
   },
+  "importError": {
+    "message": "インポートに失敗しました。"
+  },
+  "exportError": {
+    "message": "エクスポートに失敗しました。"
+  },
+  "noHighlightsToExport": {
+    "message": "エクスポートするハイライトがありません。"
+  },
   "importSuccess": {
     "message": "インポートが完了しました。"
   },

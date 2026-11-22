@@ -7,6 +7,14 @@
     'TFOOT', 'FORM', 'FIELDSET', 'ADDRESS',
   ];
 
+  // Elements whose text is not page text to highlight: code, styles, fallback
+  // markup, and form fields, whose value the user is editing.
+  const NON_TEXT_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT']);
+
+  function isNonTextElement(element) {
+    return Boolean(element && element.tagName && NON_TEXT_TAGS.has(element.tagName.toUpperCase()));
+  }
+
   /**
    * @typedef {Object} HighlightSpan
    * @property {string} spanId
@@ -92,10 +100,6 @@
    * @returns {Range}
    */
   function convertSelectionRange(range, logger = () => {}) {
-    function isBlockElement(node) {
-      return node && node.nodeType === Node.ELEMENT_NODE && BLOCK_TAGS.includes(node.tagName);
-    }
-
     function normalizeText(text) {
       return (text || '').replace(/\s+/g, ' ').trim();
     }
@@ -193,8 +197,7 @@
             if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
               return NodeFilter.FILTER_REJECT;
             }
-            const parentTagName = parent.tagName && parent.tagName.toUpperCase();
-            if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
+            if (isNonTextElement(parent)) {
               return NodeFilter.FILTER_REJECT;
             }
             return node.textContent && node.textContent.trim() !== ''
@@ -224,8 +227,7 @@
             if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
               return NodeFilter.FILTER_REJECT;
             }
-            const parentTagName = parent.tagName && parent.tagName.toUpperCase();
-            if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
+            if (isNonTextElement(parent)) {
               return NodeFilter.FILTER_REJECT;
             }
             return node.textContent && node.textContent.trim() !== ''
@@ -370,8 +372,7 @@
 
     function shouldSkipNode(node) {
       if (node.nodeType === Node.ELEMENT_NODE) {
-        const skipTags = ['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'];
-        if (skipTags.includes(node.tagName)) return true;
+        if (isNonTextElement(node)) return true;
         if (node.classList && node.classList.contains('text-highlighter-extension')) {
           return true;
         }
@@ -628,8 +629,7 @@
             && parent.classList.contains('text-highlighter-extension')) {
             return NodeFilter.FILTER_REJECT;
           }
-          const parentTagName = parent.tagName && parent.tagName.toUpperCase();
-          if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parentTagName)) {
+          if (isNonTextElement(parent)) {
             return NodeFilter.FILTER_REJECT;
           }
           if (!isDisplayed(parent)) {
@@ -964,6 +964,7 @@
   }
 
   window.TextHighlighterCore = {
+    isNonTextElement,
     clampRangeToTextNodes,
     convertSelectionRange,
     processSelectionRange,

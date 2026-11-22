@@ -3,7 +3,6 @@ class MinimapManager {
     this.container = null;
     this.markers = [];
     this.resizeObserver = null;
-    this.throttleTimer = null;
     this.visible = true;
     // Default minimap height (used when container is hidden)
     this.defaultMinimapHeight = 300;
@@ -119,7 +118,7 @@ class MinimapManager {
 
     const groupId = highlightElement.dataset.groupId;
     const highlightElements = groupId
-      ? Array.from(document.querySelectorAll(`.text-highlighter-extension[data-group-id='${groupId}']`))
+      ? findHighlightElementsByGroupId(groupId)
       : [highlightElement];
     const snippet = highlightElements
       .map((element) => (element.textContent || '').trim())
@@ -133,7 +132,6 @@ class MinimapManager {
     marker.className = 'text-highlighter-minimap-marker';
     marker.style.backgroundColor = highlightElement.style.backgroundColor;
     marker.style.top = `${markerPosition}px`;
-    marker.dataset.highlightId = highlightElement.dataset.highlightId;
     // Avoid generic `data-tooltip` because some sites attach global tooltip
     // styles to that attribute and override our minimap preview.
     marker.dataset.minimapTooltip = tooltipText || 'Highlight';
@@ -266,55 +264,18 @@ class MinimapManager {
     this.container.classList.remove('touch-expanded');
   }
 
-  // Throttling helper function (performance optimization)
+  // Run callback at most once per delay, at the end of the window, so it reads
+  // the page as it is after the burst. Each throttled function keeps its own
+  // timer: with one shared timer, a scroll that arrived first swallowed the
+  // resize that followed it, and the markers stayed where they were.
   throttle(callback, delay) {
-    return (...args) => {
-      if (this.throttleTimer) return;
-
-      this.throttleTimer = setTimeout(() => {
-        callback.apply(this, args);
-        this.throttleTimer = null;
+    let timer = null;
+    return () => {
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        callback();
       }, delay);
     };
-  }
-
-  // Clean up resources
-  destroy() {
-    // Flash timers live in the shared map in content-common.js
-    highlightFlashTimers.forEach(timerId => {
-      clearTimeout(timerId);
-    });
-    highlightFlashTimers.clear();
-
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-
-    if (this.container && this.container.parentNode) {
-      this.container.parentNode.removeChild(this.container);
-      this.container = null;
-    }
-
-    this.markers = [];
-
-    if (this.throttleTimer) {
-      clearTimeout(this.throttleTimer);
-      this.throttleTimer = null;
-    }
-
-    this.collapseTouchMinimap();
-
-    // Clean up remaining highlight effects
-    const highlightedElements = document.querySelectorAll('[data-highlighted="true"]');
-    highlightedElements.forEach(element => {
-      element.style.boxShadow = element.dataset.originalBoxShadow || '';
-      element.style.transition = element.dataset.originalTransition || '';
-      element.style.zIndex = element.dataset.originalZIndex || '';
-      element.removeAttribute('data-highlighted');
-      delete element.dataset.originalBoxShadow;
-      delete element.dataset.originalTransition;
-      delete element.dataset.originalZIndex;
-    });
   }
 }

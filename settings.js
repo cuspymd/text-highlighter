@@ -1,4 +1,5 @@
 import { browserAPI } from './shared/browser-api.js';
+import { setDocumentLanguage } from './shared/document-language.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 import { sendToBackground } from './shared/runtime-message.js';
@@ -6,6 +7,7 @@ import { initializeThemeWatcher } from './shared/theme.js';
 import { copyTextToClipboard } from './shared/clipboard.js';
 
 function initializeI18n() {
+  setDocumentLanguage();
   const elements = document.querySelectorAll('[data-i18n]');
   elements.forEach(element => {
     const key = element.getAttribute('data-i18n');
@@ -252,13 +254,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const newName = input.value.trim();
         if (newName && newName !== (colorObj.customName || `${browserAPI.i18n.getMessage('customColor') || 'Custom Color'} ${colorObj.colorNumber}`)) {
-          const response = await browserAPI.runtime.sendMessage({
+          const response = await sendToBackground({
             action: 'updateCustomColorName',
             id: colorObj.id,
             name: newName
           });
 
-          if (response.success) {
+          if (response?.success) {
             if (response.exists) {
               await showAlertModal(browserAPI.i18n.getMessage('nameAlreadyExists') || 'Name already exists.');
               name.textContent = colorObj.customName || `${browserAPI.i18n.getMessage('customColor') || 'Custom Color'} ${colorObj.colorNumber}`;
@@ -643,13 +645,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (colorIdToUpdate) {
       // Update
-      const response = await browserAPI.runtime.sendMessage({
+      const response = await sendToBackground({
         action: 'updateCustomColor',
         id: colorIdToUpdate,
         color: colorValue
       });
 
-      if (response.success) {
+      if (response?.success) {
         if (response.exists) {
           await showAlertModal(browserAPI.i18n.getMessage('colorAlreadyExists') || 'Color already exists.');
         } else {
@@ -660,11 +662,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } else {
       // Add
-      const response = await browserAPI.runtime.sendMessage({
+      const response = await sendToBackground({
         action: 'addColor',
         color: colorValue
       });
-      if (response.success) {
+      if (response?.success) {
         if (response.exists) {
           await showAlertModal(browserAPI.i18n.getMessage('colorAlreadyExists') || 'Color already exists.');
         } else {
@@ -696,11 +698,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   async function handleRemoveColor(colorObj) {
-    const response = await browserAPI.runtime.sendMessage({
+    const response = await sendToBackground({
       action: 'removeCustomColor',
       id: colorObj.id
     });
-    if (response.success) {
+    if (response?.success) {
       const customColors = response.colors.filter(c => c.id.startsWith('custom_'));
       renderCustomColorsList(customColors);
       await loadShortcuts(); // Refresh options and remove from map if assigned
@@ -711,7 +713,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // The page reloads on focus; coming back from another window must not
     // throw away an order that is still being put together.
     if (reorderDraft !== null) return;
-    const response = await browserAPI.runtime.sendMessage({ action: 'getColors' });
+    const response = await sendToBackground({ action: 'getColors' });
     if (response && response.colors) {
       const customColors = response.colors.filter(c => c.id.startsWith('custom_'));
       renderCustomColorsList(customColors);
@@ -813,7 +815,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newColorId = select.value || null;
         colorMap[cmdName] = newColorId;
 
-        await browserAPI.runtime.sendMessage({
+        await sendToBackground({
           action: 'saveShortcutColorMap',
           shortcutColorMap: colorMap
         });
@@ -840,23 +842,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const [commandsResult, colorMapResult, colorsResult] = await Promise.all([
       browserAPI.commands.getAll(),
-      browserAPI.runtime.sendMessage({ action: 'getShortcutColorMap' }),
-      browserAPI.runtime.sendMessage({ action: 'getColors' })
+      sendToBackground({ action: 'getShortcutColorMap' }),
+      sendToBackground({ action: 'getColors' })
     ]);
 
-    const colorMap = colorMapResult.success ? colorMapResult.shortcutColorMap : {};
-    const allColors = colorsResult.colors || [];
+    const colorMap = colorMapResult?.success ? colorMapResult.shortcutColorMap : {};
+    const receivedColors = Array.isArray(colorsResult?.colors);
+    const allColors = receivedColors ? colorsResult.colors : [];
 
-    // Auto-cleanup map if a custom color was removed but still assigned
+    // Auto-cleanup map if a custom color was removed but still assigned. Only
+    // against a palette the background actually sent: with no answer, every
+    // assigned color would look removed and the whole map would be cleared.
     let mapChanged = false;
-    for (const key in colorMap) {
+    for (const key in receivedColors ? colorMap : {}) {
       if (colorMap[key] && !allColors.find(c => c.id === colorMap[key])) {
         colorMap[key] = null;
         mapChanged = true;
       }
     }
     if (mapChanged) {
-      await browserAPI.runtime.sendMessage({
+      await sendToBackground({
         action: 'saveShortcutColorMap',
         shortcutColorMap: colorMap
       });
@@ -943,7 +948,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadCloudSyncStatus() {
-    const response = await browserAPI.runtime.sendMessage({ action: 'getCloudSyncStatus' });
+    const response = await sendToBackground({ action: 'getCloudSyncStatus' });
     if (response && response.success) {
       renderCloudSyncView(response);
     }
@@ -952,7 +957,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   cloudSyncGenerateBtn.addEventListener('click', async () => {
     cloudSyncGenerateBtn.disabled = true;
     try {
-      const response = await browserAPI.runtime.sendMessage({ action: 'enableCloudSync' });
+      const response = await sendToBackground({ action: 'enableCloudSync' });
       if (response && response.success) {
         await loadCloudSyncStatus();
       }
@@ -967,7 +972,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     cloudSyncPairBtn.disabled = true;
     try {
-      const response = await browserAPI.runtime.sendMessage({ action: 'pairCloudSync', code });
+      const response = await sendToBackground({ action: 'pairCloudSync', code });
       if (response && response.success) {
         cloudSyncPairInput.value = '';
         await loadCloudSyncStatus();
@@ -982,10 +987,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   cloudSyncToggle.addEventListener('change', async () => {
     if (cloudSyncToggle.checked) {
       if (currentSyncCode) {
-        await browserAPI.runtime.sendMessage({ action: 'pairCloudSync', code: currentSyncCode });
+        await sendToBackground({ action: 'pairCloudSync', code: currentSyncCode });
       }
     } else {
-      await browserAPI.runtime.sendMessage({ action: 'disableCloudSync' });
+      await sendToBackground({ action: 'disableCloudSync' });
     }
     await loadCloudSyncStatus();
   });
@@ -1017,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const originalText = cloudSyncNowBtn.textContent;
     cloudSyncNowBtn.textContent = browserAPI.i18n.getMessage('cloudSyncSyncing') || 'Syncing...';
     try {
-      await browserAPI.runtime.sendMessage({ action: 'triggerCloudSync' });
+      await sendToBackground({ action: 'triggerCloudSync' });
       await loadCloudSyncStatus();
     } finally {
       cloudSyncNowBtn.disabled = false;
@@ -1032,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
     if (!confirmed) return;
 
-    await browserAPI.runtime.sendMessage({ action: 'resetCloudSyncCode' });
+    await sendToBackground({ action: 'resetCloudSyncCode' });
     await loadCloudSyncStatus();
   });
 

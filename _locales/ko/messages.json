@@ -116,6 +116,15 @@
   "importSchemaInvalidItemsSkipped": {
     "message": "가져오기 중 유효하지 않은 항목 $1개를 건너뛰었습니다."
   },
+  "importError": {
+    "message": "가져오기에 실패했습니다."
+  },
+  "exportError": {
+    "message": "내보내기에 실패했습니다."
+  },
+  "noHighlightsToExport": {
+    "message": "내보낼 하이라이트가 없습니다."
+  },
   "importSuccess": {
     "message": "가져오기가 완료되었습니다."
   },

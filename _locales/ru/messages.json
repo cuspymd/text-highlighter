@@ -116,6 +116,15 @@
   "importSchemaInvalidItemsSkipped": {
     "message": "При импорте пропущено некорректных элементов: $1."
   },
+  "importError": {
+    "message": "Не удалось импортировать."
+  },
+  "exportError": {
+    "message": "Не удалось экспортировать."
+  },
+  "noHighlightsToExport": {
+    "message": "Нет выделений для экспорта."
+  },
   "importSuccess": {
     "message": "Импорт завершён."
   },
