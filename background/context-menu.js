@@ -4,9 +4,8 @@ import { sendMessageToTab } from '../shared/tab-broadcast.js';
 import {
   isMobile,
   getCurrentColors,
-  getCurrentShortcuts,
-  getStoredShortcuts,
   createOrUpdateContextMenus,
+  ensureCustomColorsLoaded,
   getShortcutColorMap,
 } from './settings-service.js';
 
@@ -78,33 +77,20 @@ export function initContextMenus() {
     });
   }
 
-  // Shortcut change detection on tab activation
+  // A shortcut changed on the browser's shortcut page fires no event, so the
+  // menu's shortcut labels are brought up to date on tab activation. The
+  // rebuild compares what it would build with what it last built, and does
+  // nothing when they match - which is nearly always.
   browserAPI.tabs.onActivated.addListener(async () => {
     if (isMobile() || !browserAPI.commands) return;
-
-    const currentShortcuts = await getCurrentShortcuts();
-    const stored = getStoredShortcuts();
-    let hasChanged = false;
-
-    for (const commandName in currentShortcuts) {
-      if (stored[commandName] !== currentShortcuts[commandName]) {
-        hasChanged = true;
-        break;
-      }
+    // A background this tab switch woke has not loaded the custom colours yet.
+    // Built from the defaults it starts with, the menu would differ from the
+    // last one and be rebuilt - twice, once more when the load lands.
+    try {
+      await ensureCustomColorsLoaded();
+    } catch (error) {
+      debugLog('Custom colours could not be loaded before checking the menu:', error);
     }
-
-    if (!hasChanged) {
-      for (const commandName in stored) {
-        if (!currentShortcuts[commandName]) {
-          hasChanged = true;
-          break;
-        }
-      }
-    }
-
-    if (hasChanged) {
-      debugLog('Shortcut changes detected, updating context menus');
-      await createOrUpdateContextMenus();
-    }
+    await createOrUpdateContextMenus();
   });
 }

@@ -1,7 +1,7 @@
 import { browserAPI } from '../shared/browser-api.js';
 import { debugLog, errorLog } from '../shared/logger.js';
 import { broadcastToAllTabs, sendMessageToTab } from '../shared/tab-broadcast.js';
-import { STORAGE_KEYS, SYNC_KEYS } from '../constants/storage-keys.js';
+import { STORAGE_KEYS, SYNC_KEYS, SESSION_KEYS } from '../constants/storage-keys.js';
 import { saveSettingsToSync } from './sync-service.js';
 
 const COLORS = [
@@ -22,7 +22,6 @@ const DEFAULT_SHORTCUT_COLOR_MAP = {
 
 let currentColors = [...COLORS];
 let platformInfo = { os: 'unknown' };
-let storedShortcuts = {};
 let shortcutColorMap = { ...DEFAULT_SHORTCUT_COLOR_MAP };
 let hideDefaultColors = false;
 let hasLoadedCustomColors = false;
@@ -162,10 +161,6 @@ export function setHideDefaultColors(hidden) {
   hideDefaultColors = hidden === true;
 }
 
-export function getStoredShortcuts() {
-  return storedShortcuts;
-}
-
 export function getShortcutColorMap() {
   return shortcutColorMap;
 }
@@ -211,9 +206,87 @@ export function createOrUpdateContextMenus() {
   return run;
 }
 
+// What the menu was last built from, so a rebuild that would produce the same
+// items can be skipped. The background is stopped after ~30s idle and started
+// again by a tab switch or a page load, and every start used to remove and
+// recreate the whole menu - twice, since the tab switch that woke it compared
+// the shortcuts against a list the restart had just emptied. Both browsers keep
+// the menu items across those restarts (Firefox for event pages since 106), so
+// the work bought nothing.
+//
+// The copy in memory covers repeat calls within one background lifetime; the
+// one in storage.session survives a restart, and is cleared together with the
+// menu when the extension is reloaded, updated or disabled.
+let lastBuiltMenuSignature = null;
+
+async function readStoredMenuSignature() {
+  if (!browserAPI.storage.session) return null;
+  try {
+    const result = await browserAPI.storage.session.get(SESSION_KEYS.CONTEXT_MENU_SIGNATURE);
+    return result[SESSION_KEYS.CONTEXT_MENU_SIGNATURE] || null;
+  } catch (error) {
+    debugLog('Could not read the context menu signature:', error);
+    return null;
+  }
+}
+
+async function storeMenuSignature(signature) {
+  lastBuiltMenuSignature = signature;
+  if (!browserAPI.storage.session) return;
+  try {
+    if (signature) {
+      await browserAPI.storage.session.set({ [SESSION_KEYS.CONTEXT_MENU_SIGNATURE]: signature });
+    } else {
+      await browserAPI.storage.session.remove(SESSION_KEYS.CONTEXT_MENU_SIGNATURE);
+    }
+  } catch (error) {
+    debugLog('Could not store the context menu signature:', error);
+  }
+}
+
+function buildContextMenuItems(commandShortcuts) {
+  const items = [{
+    id: 'highlight-text',
+    title: getMessage('highlightText'),
+    contexts: ['selection'],
+  }];
+
+  for (const color of getVisibleColors()) {
+    const slotName = Object.keys(shortcutColorMap).find(key => shortcutColorMap[key] === color.id);
+    const shortcutDisplay = (slotName && commandShortcuts[slotName]) || '';
+    const name = color.customName || getColorDisplayName(color);
+
+    items.push({
+      id: `highlight-${color.id}`,
+      parentId: 'highlight-text',
+      title: `${name}${shortcutDisplay}`,
+      contexts: ['selection'],
+    });
+  }
+
+  return items;
+}
+
 async function rebuildContextMenus() {
   if (isMobile() || !browserAPI.contextMenus) return;
+
+  const commandShortcuts = await getCurrentShortcuts();
+  const items = buildContextMenuItems(commandShortcuts);
+  const signature = JSON.stringify(items);
+
+  if (signature === lastBuiltMenuSignature) return;
+  if (signature === await readStoredMenuSignature()) {
+    lastBuiltMenuSignature = signature;
+    debugLog('Context menus already match; not rebuilding.');
+    return;
+  }
+
   debugLog('Creating/updating context menus...');
+
+  // Forgotten before anything is removed: a background stopped halfway through
+  // would otherwise leave a signature describing items that are gone, and a
+  // later build with that same content would skip and leave the menu empty.
+  await storeMenuSignature(null);
 
   try {
     await browserAPI.contextMenus.removeAll();
@@ -222,47 +295,21 @@ async function rebuildContextMenus() {
     return;
   }
 
-  try {
-    await browserAPI.contextMenus.create({
-      id: 'highlight-text',
-      title: getMessage('highlightText'),
-      contexts: ['selection'],
-    });
-  } catch (error) {
-    if (!error.message.includes('duplicate id')) {
-      debugLog('Error creating main context menu:', error);
-    }
-  }
-
-  const commandShortcuts = await getCurrentShortcuts();
-  storedShortcuts = { ...commandShortcuts };
-
-  for (const color of getVisibleColors()) {
-    const slotName = Object.keys(shortcutColorMap).find(key => shortcutColorMap[key] === color.id);
-    const shortcutDisplay = (slotName && commandShortcuts[slotName]) || '';
-
-    let title;
-    if (color.customName) {
-      title = `${color.customName}${shortcutDisplay}`;
-    } else {
-      title = `${getColorDisplayName(color)}${shortcutDisplay}`;
-    }
-
+  let complete = true;
+  for (const item of items) {
     try {
-      await browserAPI.contextMenus.create({
-        id: `highlight-${color.id}`,
-        parentId: 'highlight-text',
-        title,
-        contexts: ['selection'],
-      });
+      await browserAPI.contextMenus.create(item);
     } catch (error) {
       if (!error.message.includes('duplicate id')) {
-        debugLog('Error creating color context menu:', error);
+        complete = false;
+        debugLog('Error creating context menu item:', item.id, error);
       }
     }
   }
 
-  debugLog('Context menus created with shortcuts:', storedShortcuts);
+  // Only a menu that was built in full may be skipped next time.
+  if (complete) await storeMenuSignature(signature);
+  debugLog('Context menus created with shortcuts:', commandShortcuts);
 }
 
 // The defaults, then the custom colours in their stored order. A custom colour

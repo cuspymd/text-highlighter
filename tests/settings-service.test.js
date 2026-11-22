@@ -454,6 +454,10 @@ describe('settings-service', () => {
       return chrome.contextMenus.create.mock.calls.map(([item]) => item.id);
     }
 
+    function menuIds() {
+      return chrome.contextMenus.items.map(item => item.id);
+    }
+
     beforeEach(async () => {
       chrome.runtime.getPlatformInfo.mockResolvedValue({ os: 'win' });
       await initializePlatform();
@@ -482,7 +486,7 @@ describe('settings-service', () => {
     it('lists only the visible colours in the context menu', async () => {
       await createOrUpdateContextMenus();
 
-      expect(createdMenuIds()).toEqual(['highlight-text', 'highlight-custom_hide']);
+      expect(menuIds()).toEqual(['highlight-text', 'highlight-custom_hide']);
     });
 
     it('still paints with a default colour from its shortcut slot', async () => {

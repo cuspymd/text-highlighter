@@ -25,3 +25,9 @@ export const CLOUD_SYNC_KEYS = {
   DELETED_URLS: 'cloudSyncDeletedUrls',
   SETTINGS_UPDATED_AT: 'cloudSyncSettingsUpdatedAt',
 };
+
+// storage.session: kept across background restarts, cleared when the browser
+// or the extension restarts.
+export const SESSION_KEYS = {
+  CONTEXT_MENU_SIGNATURE: 'contextMenuSignature',
+};
