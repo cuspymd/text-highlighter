@@ -4,7 +4,6 @@ Source of truth: `background/message-router.js`
 
 | action | request fields | response fields | side effects | handler |
 |---|---|---|---|---|
-| `getDebugMode` | none | `debugMode` | none | `handleGetDebugMode` |
 | `getPlatformInfo` | none | `platform`, `isMobile` | none | `handleGetPlatformInfo` |
 | `openExtensionPage` | `page` (`pagesList` \| `settings`) | `success`, `opened?`, `error?` | focuses the tab already showing the page, or creates one (refreshes an existing pages list) | `handleOpenExtensionPage` |
 | `getColors` | none | `colors` | none | `handleGetColors` |

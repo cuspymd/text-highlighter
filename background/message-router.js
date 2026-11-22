@@ -1,5 +1,5 @@
 import { browserAPI } from '../shared/browser-api.js';
-import { DEBUG_MODE, debugLog } from '../shared/logger.js';
+import { debugLog } from '../shared/logger.js';
 import { broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
 import { STORAGE_KEYS, CLOUD_SYNC_KEYS, isPageKey } from '../constants/storage-keys.js';
 import {
@@ -43,10 +43,6 @@ function errorResponse(message) { return { success: false, error: message }; }
 // ===================================================================
 // Action handlers
 // ===================================================================
-
-async function handleGetDebugMode(_message) {
-  return { debugMode: DEBUG_MODE };
-}
 
 async function handleGetPlatformInfo(_message) {
   return getPlatformInfo();
@@ -424,7 +420,6 @@ async function handleTriggerCloudSync(_message) {
 // ===================================================================
 
 const ACTION_HANDLERS = {
-  getDebugMode:              handleGetDebugMode,
   getPlatformInfo:           handleGetPlatformInfo,
   openExtensionPage:         handleOpenExtensionPage,
   getColors:                 handleGetColors,

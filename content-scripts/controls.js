@@ -630,10 +630,15 @@ function positionPopoverNearControls(popover, triggerButton) {
 // Variable to track the currently active closeHandler
 let currentCloseHandler = null;
 
+// Apply takes the colour the picker holds. Reading it back off the preview's
+// inline style went through the browser's rgb() form, so a preset such as
+// #FF6B6B came back as #ff6b6b rather than the code that was picked.
+const pickerColorGetters = new WeakMap();
+
 // The picker itself is color-picker.js, shared with the settings page. What is
 // particular to a picker over a web page is added here.
 function createColorPickerUI() {
-  const { element } = window.TextHighlighterColorPicker.createColorPicker({
+  const { element, getColor } = window.TextHighlighterColorPicker.createColorPicker({
     getMessage: key => browserAPI.i18n.getMessage(key),
   });
 
@@ -649,6 +654,7 @@ function createColorPickerUI() {
     e.preventDefault();
   });
 
+  pickerColorGetters.set(element, getColor);
   return element;
 }
 
@@ -666,8 +672,7 @@ function setupColorPickerEvents(customColorPicker, triggerButton, onColorSelect,
       onClose();
     } else if (e.target.classList.contains('color-picker-apply')) {
       e.stopPropagation();
-      const preview = customColorPicker.querySelector('.color-preview');
-      const color = rgbToHex(preview.style.backgroundColor);
+      const color = pickerColorGetters.get(customColorPicker)();
       onColorSelect(color);
       onClose();
     }
@@ -744,12 +749,6 @@ function addCustomColor(color) {
 function addCustomColorAndHighlight(color) {
   createHighlightWithColor(color);
   return addCustomColor(color);
-}
-
-// Colour maths lives in color-core.js, which the manifest loads first. This
-// stays as a name the rest of this file already calls.
-function rgbToHex(rgb) {
-  return colorCore.rgbToHex(rgb);
 }
 
 function appendColorSeparator(container) {

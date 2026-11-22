@@ -690,16 +690,8 @@ function resolveUnclaimedMatch(model, group, claimed) {
   return restoreCore.resolveUnclaimedMatch(contentCore, model, group, claimed);
 }
 
-function overlapsClaimedRegion(claimed, region) {
-  return restoreCore.overlapsClaimedRegion(claimed, region);
-}
-
 function isRangeInDocument(range) {
   return restoreCore.isRangeInDocument(range);
-}
-
-function maskClaimedRegions(text, claimed) {
-  return restoreCore.maskClaimedRegions(text, claimed);
 }
 
 // Fallback for groups saved without quote selectors, and for quote groups that
@@ -952,9 +944,9 @@ function highlightTextInDocument(element, spanInfos, color, groupId, batch = nul
 // Add event listeners to highlighted text elements
 function addHighlightEventListeners(highlightElement) {
   highlightElement.addEventListener('click', function (e) {
-    if (activeHighlightElement === highlightElement &&
-      highlightControlsContainer &&
-      highlightControlsContainer.style.display !== 'none') {
+    // hideHighlightControls clears activeHighlightElement, so this element still
+    // being active means its controls are up (or popping in).
+    if (activeHighlightElement === highlightElement && highlightControlsContainer) {
       hideHighlightControls();
     } else {
       hideHighlightControls();
@@ -992,37 +984,6 @@ function addHighlightEventListeners(highlightElement) {
       span.classList.remove('group-hover');
     });
   });
-}
-
-// Get position of the first text node in highlight element
-function getFirstTextNodePosition(element) {
-  let firstTextNode = null;
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
-
-  firstTextNode = walker.nextNode();
-
-  if (!firstTextNode && element.childNodes.length > 0) {
-    return element.getBoundingClientRect();
-  }
-
-  if (firstTextNode) {
-    const range = document.createRange();
-    range.setStart(firstTextNode, 0);
-    range.setEnd(firstTextNode, 1);
-
-    const rect = range.getBoundingClientRect();
-    return {
-      top: rect.top,
-      left: rect.left
-    };
-  }
-
-  return element.getBoundingClientRect();
 }
 
 function initMinimap() {

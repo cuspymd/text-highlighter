@@ -122,14 +122,6 @@ describe('message-router', () => {
   // Read-only handlers
   // ===================================================================
 
-  describe('getDebugMode', () => {
-    it('returns a debugMode boolean', async () => {
-      const result = await send({ action: 'getDebugMode' });
-
-      expect(typeof result.debugMode).toBe('boolean');
-    });
-  });
-
   describe('getPlatformInfo', () => {
     it('returns platform and isMobile fields', async () => {
       const result = await send({ action: 'getPlatformInfo' });

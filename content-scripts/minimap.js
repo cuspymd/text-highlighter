@@ -132,7 +132,6 @@ class MinimapManager {
     marker.className = 'text-highlighter-minimap-marker';
     marker.style.backgroundColor = highlightElement.style.backgroundColor;
     marker.style.top = `${markerPosition}px`;
-    marker.dataset.highlightId = highlightElement.dataset.highlightId;
     // Avoid generic `data-tooltip` because some sites attach global tooltip
     // styles to that attribute and override our minimap preview.
     marker.dataset.minimapTooltip = tooltipText || 'Highlight';
@@ -278,40 +277,5 @@ class MinimapManager {
         callback();
       }, delay);
     };
-  }
-
-  // Clean up resources
-  destroy() {
-    // Flash timers live in the shared map in content-common.js
-    highlightFlashTimers.forEach(timerId => {
-      clearTimeout(timerId);
-    });
-    highlightFlashTimers.clear();
-
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-
-    if (this.container && this.container.parentNode) {
-      this.container.parentNode.removeChild(this.container);
-      this.container = null;
-    }
-
-    this.markers = [];
-
-    this.collapseTouchMinimap();
-
-    // Clean up remaining highlight effects
-    const highlightedElements = document.querySelectorAll('[data-highlighted="true"]');
-    highlightedElements.forEach(element => {
-      element.style.boxShadow = element.dataset.originalBoxShadow || '';
-      element.style.transition = element.dataset.originalTransition || '';
-      element.style.zIndex = element.dataset.originalZIndex || '';
-      element.removeAttribute('data-highlighted');
-      delete element.dataset.originalBoxShadow;
-      delete element.dataset.originalTransition;
-      delete element.dataset.originalZIndex;
-    });
   }
 }

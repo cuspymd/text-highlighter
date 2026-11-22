@@ -92,10 +92,6 @@
    * @returns {Range}
    */
   function convertSelectionRange(range, logger = () => {}) {
-    function isBlockElement(node) {
-      return node && node.nodeType === Node.ELEMENT_NODE && BLOCK_TAGS.includes(node.tagName);
-    }
-
     function normalizeText(text) {
       return (text || '').replace(/\s+/g, ' ').trim();
     }
