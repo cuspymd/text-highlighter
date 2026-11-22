@@ -248,5 +248,7 @@ runCloudSync()
 ## 테스트·CI
 
 - CI는 Firefox 빌드(`deploy:firefox`)를 실행하지 않는다. 두 manifest의 `content_scripts` 목록이 같은지 확인하는 테스트도 없다. 현재는 일치한다.
+  - 상태: 수정 (브랜치 `ci/firefox-build-and-triggers`). CI가 Firefox도 빌드한다. `tests/manifest-parity.test.js`가 두 manifest의 공통 항목(버전, 권한, content script, 리소스, action, 아이콘, 명령 이름)이 같은지, 각 manifest가 가리키는 파일이 모두 있는지 확인한다. 명령의 단축키는 일부러 다르므로 비교하지 않는다.
 - 워크플로가 `push`(모든 브랜치)와 `pull_request`에 함께 걸려 있어 PR 브랜치에서 두 번 돈다. `concurrency`와 `timeout-minutes`도 없다.
+  - 상태: 수정 (브랜치 `ci/firefox-build-and-triggers`). `push`는 main에만 건다. PR에서는 새 push가 진행 중인 실행을 취소하고, main 실행은 끝까지 둔다. `timeout-minutes: 20`.
 - lint 단계가 없다. 7번 같은 규칙 위반은 ESLint `no-restricted-syntax`로 잡을 수 있다.
