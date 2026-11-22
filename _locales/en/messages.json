@@ -116,6 +116,15 @@
   "importSchemaInvalidItemsSkipped": {
     "message": "$1 invalid item(s) were skipped during import."
   },
+  "importError": {
+    "message": "Import failed."
+  },
+  "exportError": {
+    "message": "Export failed."
+  },
+  "noHighlightsToExport": {
+    "message": "No highlights to export."
+  },
   "importSuccess": {
     "message": "Import completed."
   },

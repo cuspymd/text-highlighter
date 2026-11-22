@@ -116,6 +116,15 @@
   "importSchemaInvalidItemsSkipped": {
     "message": "$1 item(ns) inválido(s) foram ignorados durante a importação."
   },
+  "importError": {
+    "message": "Falha na importação."
+  },
+  "exportError": {
+    "message": "Falha na exportação."
+  },
+  "noHighlightsToExport": {
+    "message": "Não há destaques para exportar."
+  },
   "importSuccess": {
     "message": "Importação concluída."
   },

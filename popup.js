@@ -1,4 +1,5 @@
 import { browserAPI } from './shared/browser-api.js';
+import { setDocumentLanguage } from './shared/document-language.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 import { initializeThemeWatcher } from './shared/theme.js';
@@ -31,6 +32,8 @@ async function getActiveTab() {
 
 // Internationalization helper
 function initializeI18n() {
+  setDocumentLanguage();
+
   // Get all elements with data-i18n attribute
   const elements = document.querySelectorAll('[data-i18n]');
 

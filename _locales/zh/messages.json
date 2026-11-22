@@ -116,6 +116,15 @@
   "importSchemaInvalidItemsSkipped": {
     "message": "导入时已跳过$1个无效项。"
   },
+  "importError": {
+    "message": "导入失败。"
+  },
+  "exportError": {
+    "message": "导出失败。"
+  },
+  "noHighlightsToExport": {
+    "message": "没有可导出的高亮。"
+  },
   "importSuccess": {
     "message": "导入完成。"
   },

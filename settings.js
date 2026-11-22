@@ -1,4 +1,5 @@
 import { browserAPI } from './shared/browser-api.js';
+import { setDocumentLanguage } from './shared/document-language.js';
 import { debugLog } from './shared/logger.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
 import { sendToBackground } from './shared/runtime-message.js';
@@ -6,6 +7,7 @@ import { initializeThemeWatcher } from './shared/theme.js';
 import { copyTextToClipboard } from './shared/clipboard.js';
 
 function initializeI18n() {
+  setDocumentLanguage();
   const elements = document.querySelectorAll('[data-i18n]');
   elements.forEach(element => {
     const key = element.getAttribute('data-i18n');

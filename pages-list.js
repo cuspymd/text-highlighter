@@ -1,4 +1,5 @@
 import { browserAPI } from './shared/browser-api.js';
+import { setDocumentLanguage } from './shared/document-language.js';
 import { debugLog } from './shared/logger.js';
 import { validateImportPayload } from './shared/import-export-schema.js';
 import { createLocalizedModalHelpers } from './shared/modal.js';
@@ -165,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Change text of HTML elements to multi-language
   function localizeStaticElements() {
+    setDocumentLanguage();
     const elementsToLocalize = document.querySelectorAll('[data-i18n]');
     elementsToLocalize.forEach(element => {
       const key = element.getAttribute('data-i18n');
@@ -752,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function () {
           // Get all current storage to check for overlap
           const existing = await sendToBackground({ action: 'getAllHighlightedPages' });
           if (!existing || !existing.success) {
-            await showAlertModal(getMessage('importError', 'Error checking existing highlights.'));
+            await showAlertModal(getMessage('importError', 'Import failed.'));
             return;
           }
 
@@ -852,7 +854,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const response = await sendToBackground({ action: 'getAllHighlightedPages' });
 
       if (!response || !response.success) {
-        await showAlertModal(getMessage('exportError', 'Error exporting highlights.'));
+        await showAlertModal(getMessage('exportError', 'Export failed.'));
         return;
       }
 
