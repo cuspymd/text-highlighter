@@ -32,6 +32,8 @@ export function assertNoRuntimeMessageCallback(optionalArgs) {
   }
 }
 
+const contextMenuItems = [];
+
 export default {
   runtime: {
     // A mock that only returns a promise stays silent about the callback form,
@@ -81,9 +83,18 @@ export default {
       addListener: jest.fn(),
     }
   },
+  // Holds the items like the browser does, across calls and across a module
+  // reload - the browser keeps the menu when the background restarts.
   contextMenus: {
-    create: jest.fn(),
-    removeAll: jest.fn(() => Promise.resolve()),
+    items: contextMenuItems,
+    create: jest.fn((item) => {
+      contextMenuItems.push({ ...item });
+      return item.id;
+    }),
+    removeAll: jest.fn(() => {
+      contextMenuItems.length = 0;
+      return Promise.resolve();
+    }),
     onClicked: {
       addListener: jest.fn(),
     },
