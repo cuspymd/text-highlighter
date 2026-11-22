@@ -364,29 +364,49 @@ async function fetchRemoteBlob(keyId, encryptionKey, { allowMissingRemote = true
  * oldest page once its own quota is exceeded (see syncSaveHighlights in sync-service.js).
  * Sizing uses estimateEncryptedEnvelopeBytes so this loop never touches crypto.subtle —
  * pushRemoteBlob does the one real encrypt call, on whatever this function returns.
+ *
+ * The size after each drop is worked out rather than measured. Serialising the
+ * whole blob again after every drop made the loop quadratic in the page count:
+ * an over-limit profile with thousands of pages re-encoded up to the full blob
+ * once per dropped page, every sync cycle. JSON.stringify writes `pages` as
+ * `{"url":page,...}`, and dropping one entry leaves every other entry's text
+ * as it was, so the blob shrinks by exactly that entry - its key, the colon, its
+ * value - and the comma that separated it, if any entry is left. The figure has
+ * to be exact, not an estimate: pushRemoteBlob refuses anything over the limit.
  */
-function trimBlobToFit(blob, maxBytes) {
+export function trimBlobToFit(blob, maxBytes) {
   let plaintextBytes = byteLength(JSON.stringify(blob));
   if (estimateEncryptedEnvelopeBytes(plaintextBytes) <= maxBytes) {
     return { blob, trimmedCount: 0 };
   }
 
-  const trimmedPages = { ...blob.pages };
-  const oldestFirst = Object.keys(trimmedPages).sort(
-    (a, b) => pageTimestamp(trimmedPages[a]) - pageTimestamp(trimmedPages[b])
+  const pages = blob.pages || {};
+  const oldestFirst = Object.keys(pages).sort(
+    (a, b) => pageTimestamp(pages[a]) - pageTimestamp(pages[b])
   );
 
+  const encoder = new TextEncoder();
+  let remainingEntries = oldestFirst.length;
   let trimmedCount = 0;
-  let candidateBlob = blob;
   for (const url of oldestFirst) {
     if (estimateEncryptedEnvelopeBytes(plaintextBytes) <= maxBytes) break;
-    delete trimmedPages[url];
+    const entryBytes = encoder.encode(JSON.stringify(url)).byteLength + 1
+      + encoder.encode(JSON.stringify(pages[url])).byteLength;
+    remainingEntries--;
+    plaintextBytes -= entryBytes + (remainingEntries > 0 ? 1 : 0);
     trimmedCount++;
-    candidateBlob = { ...blob, pages: trimmedPages };
-    plaintextBytes = byteLength(JSON.stringify(candidateBlob));
   }
 
-  return { blob: candidateBlob, trimmedCount };
+  if (trimmedCount === 0) return { blob, trimmedCount };
+
+  // Built once, from the pages that survived, in their original order.
+  const dropped = new Set(oldestFirst.slice(0, trimmedCount));
+  const trimmedPages = {};
+  for (const url of Object.keys(pages)) {
+    if (!dropped.has(url)) trimmedPages[url] = pages[url];
+  }
+
+  return { blob: { ...blob, pages: trimmedPages }, trimmedCount };
 }
 
 async function pushRemoteBlob(keyId, encryptionKey, blob) {

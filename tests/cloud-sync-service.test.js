@@ -1,5 +1,5 @@
 import chrome from '../mocks/chrome.js';
-import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob } from '../shared/crypto-utils.js';
+import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob, estimateEncryptedEnvelopeBytes } from '../shared/crypto-utils.js';
 import {
   mergeBlobs,
   isBlobContentEqual,
@@ -11,6 +11,7 @@ import {
   initCloudSyncAlarm,
   ensureCloudSyncAlarm,
   runStartupCloudSync,
+  trimBlobToFit,
 } from '../background/cloud-sync-service.js';
 import { CLOUD_SYNC_ALARM_PERIOD_MINUTES } from '../constants/cloud-sync-config.js';
 
@@ -773,6 +774,130 @@ describe('cloud-sync-service', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(syncStatusReads()).toBe(1);
+    });
+  });
+
+  describe('trimBlobToFit', () => {
+    const plaintextBytesOf = (blob) => new TextEncoder().encode(JSON.stringify(blob)).byteLength;
+    const envelopeBytesOf = (blob) => estimateEncryptedEnvelopeBytes(plaintextBytesOf(blob));
+
+    // The implementation before the size was worked out arithmetically: it
+    // re-serialised the whole blob after every drop. Slow, but plainly right,
+    // so the new one has to agree with it exactly.
+    function referenceTrim(blob, maxBytes) {
+      let plaintextBytes = plaintextBytesOf(blob);
+      if (estimateEncryptedEnvelopeBytes(plaintextBytes) <= maxBytes) return { blob, trimmedCount: 0 };
+      const stamp = (page) => {
+        const t = page && page.lastUpdated ? new Date(page.lastUpdated).getTime() : 0;
+        return Number.isNaN(t) ? 0 : t;
+      };
+      const trimmedPages = { ...blob.pages };
+      const oldestFirst = Object.keys(trimmedPages).sort((a, b) => stamp(trimmedPages[a]) - stamp(trimmedPages[b]));
+      let trimmedCount = 0;
+      let candidate = blob;
+      for (const url of oldestFirst) {
+        if (estimateEncryptedEnvelopeBytes(plaintextBytes) <= maxBytes) break;
+        delete trimmedPages[url];
+        trimmedCount++;
+        candidate = { ...blob, pages: trimmedPages };
+        plaintextBytes = plaintextBytesOf(candidate);
+      }
+      return { blob: candidate, trimmedCount };
+    }
+
+    // Deterministic, so a failure reproduces.
+    function makeRandom(seed) {
+      let state = seed >>> 0;
+      return () => {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        return state / 2 ** 32;
+      };
+    }
+
+    // Multi-byte text on purpose: a byte count that confused characters with
+    // bytes, or missed an escaped quote, would drift from the real length.
+    const SAMPLES = ['plain ascii', '한글 하이라이트', '絵文字 😀🎉', 'quote " and \ backslash', 'line\nbreak\ttab', 'ß ü é'];
+
+    function makeBlob(random, pageCount) {
+      const pages = {};
+      for (let i = 0; i < pageCount; i++) {
+        const sample = SAMPLES[Math.floor(random() * SAMPLES.length)];
+        const url = `https://example.test/${i}/${encodeURIComponent(sample)}?q=${sample}`;
+        const highlights = [];
+        const groups = 1 + Math.floor(random() * 4);
+        for (let g = 0; g < groups; g++) {
+          highlights.push({ groupId: `g${i}-${g}`, text: sample.repeat(1 + Math.floor(random() * 20)), updatedAt: i * 10 + g });
+        }
+        pages[url] = {
+          title: `${sample} ${i}`,
+          // Ties on purpose: the sort is stable, so equal timestamps must keep their order.
+          lastUpdated: new Date(Date.UTC(2024, 0, 1) + Math.floor(random() * 50) * 86400000).toISOString(),
+          highlights,
+          deletedGroupIds: random() < 0.3 ? { [`old-${i}`]: i } : {},
+        };
+      }
+      return emptyBlob({
+        updatedAt: 123,
+        settings: { customColors: [{ id: 'c1', color: '#abcdef', customName: '내 색' }], minimapVisible: true, selectionControlsVisible: true, shortcutColorMap: null, updatedAt: 5 },
+        pages,
+        deletedUrls: { 'https://gone.test/한글': 99 },
+      });
+    }
+
+    it('returns the blob itself when it already fits', () => {
+      const blob = makeBlob(makeRandom(1), 5);
+      const result = trimBlobToFit(blob, envelopeBytesOf(blob));
+      expect(result.trimmedCount).toBe(0);
+      expect(result.blob).toBe(blob);
+    });
+
+    it.each([2, 7, 42, 1234])('agrees with re-serialising after every drop, at every limit (seed %i)', (seed) => {
+      const blob = makeBlob(makeRandom(seed), 60);
+      const full = envelopeBytesOf(blob);
+      const random = makeRandom(seed * 31);
+      for (let n = 0; n < 25; n++) {
+        const maxBytes = Math.floor(full * random());
+        const expected = referenceTrim(blob, maxBytes);
+        const actual = trimBlobToFit(blob, maxBytes);
+        expect(actual.trimmedCount).toBe(expected.trimmedCount);
+        expect(JSON.stringify(actual.blob)).toBe(JSON.stringify(expected.blob));
+      }
+    });
+
+    it('stops exactly at a limit that equals the size after dropping k pages', () => {
+      const blob = makeBlob(makeRandom(99), 30);
+      const reference = { ...blob.pages };
+      const oldestFirst = Object.keys(reference).sort(
+        (a, b) => new Date(reference[a].lastUpdated) - new Date(reference[b].lastUpdated)
+      );
+      for (const k of [1, 2, 15, 29]) {
+        const kept = {};
+        for (const url of Object.keys(reference)) if (!oldestFirst.slice(0, k).includes(url)) kept[url] = reference[url];
+        const limit = envelopeBytesOf({ ...blob, pages: kept });
+
+        const atLimit = trimBlobToFit(blob, limit);
+        expect(atLimit.trimmedCount).toBe(k);
+        expect(envelopeBytesOf(atLimit.blob)).toBe(limit);
+
+        // One byte less and that same state no longer fits, so one more page goes.
+        expect(trimBlobToFit(blob, limit - 1).trimmedCount).toBe(k + 1);
+      }
+    });
+
+    it('drops every page and returns an empty page map when even that does not fit', () => {
+      const blob = makeBlob(makeRandom(5), 10);
+      const result = trimBlobToFit(blob, 10);
+      expect(result.trimmedCount).toBe(10);
+      expect(result.blob.pages).toEqual({});
+      expect(result.blob.settings).toBe(blob.settings);
+      expect(JSON.stringify(result.blob)).toBe(JSON.stringify(referenceTrim(blob, 10).blob));
+    });
+
+    it('does not change the blob it was given', () => {
+      const blob = makeBlob(makeRandom(8), 20);
+      const before = JSON.stringify(blob);
+      trimBlobToFit(blob, Math.floor(envelopeBytesOf(blob) / 2));
+      expect(JSON.stringify(blob)).toBe(before);
     });
   });
 });
