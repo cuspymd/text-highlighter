@@ -788,10 +788,7 @@ function collectRestorableTextNodes(root) {
         if (parent.classList && parent.classList.contains('text-highlighter-extension')) {
           return NodeFilter.FILTER_REJECT;
         }
-        const parentTagName = parent.tagName && parent.tagName.toUpperCase();
-        if ([
-          'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'
-        ].includes(parentTagName)) {
+        if (contentCore.isNonTextElement(parent)) {
           return NodeFilter.FILTER_REJECT;
         }
         if (!isDisplayed(parent)) {
