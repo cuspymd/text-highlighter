@@ -31,3 +31,26 @@ export const CLOUD_SYNC_KEYS = {
 export const SESSION_KEYS = {
   CONTEXT_MENU_SIGNATURE: 'contextMenuSignature',
 };
+
+// Every storage.local key that is not a page: settings, the cloud sync state,
+// and 'settings', which is storage.sync's settings item and never local, but
+// costs nothing to rule out.
+const NON_PAGE_KEYS = new Set([
+  ...Object.values(STORAGE_KEYS).filter(key => key !== STORAGE_KEYS.META_SUFFIX),
+  ...Object.values(CLOUD_SYNC_KEYS),
+  SYNC_KEYS.SETTINGS,
+]);
+
+/**
+ * Whether a storage.local entry is a page's highlight list: keyed by the page
+ * url, holding an array, and not the page's `_meta` companion.
+ *
+ * customColors is an array too, which is why the settings keys are ruled out
+ * by name rather than by shape. A new array-valued setting has to be added to
+ * STORAGE_KEYS, or it is read as a page.
+ */
+export function isPageKey(key, value) {
+  return !NON_PAGE_KEYS.has(key)
+    && !key.endsWith(STORAGE_KEYS.META_SUFFIX)
+    && Array.isArray(value);
+}

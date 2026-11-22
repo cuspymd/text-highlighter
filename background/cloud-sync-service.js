@@ -1,7 +1,7 @@
 import { browserAPI } from '../shared/browser-api.js';
 import { debugLog } from '../shared/logger.js';
 import { broadcastToTabsByUrl } from '../shared/tab-broadcast.js';
-import { STORAGE_KEYS, CLOUD_SYNC_KEYS } from '../constants/storage-keys.js';
+import { STORAGE_KEYS, CLOUD_SYNC_KEYS, isPageKey } from '../constants/storage-keys.js';
 import {
   CLOUD_SYNC_ENDPOINT_BASE,
   CLOUD_SYNC_ALARM_NAME,
@@ -11,25 +11,6 @@ import {
 import { generateSyncCode, deriveSyncKeys, encryptBlob, decryptBlob, estimateEncryptedEnvelopeBytes } from '../shared/crypto-utils.js';
 import { mergeHighlights, cleanupTombstones, mergeTombstonesByMax } from './sync-service.js';
 import { applySettingsFromSync } from './settings-service.js';
-
-const LOCAL_ONLY_KEYS = new Set([
-  STORAGE_KEYS.CUSTOM_COLORS,
-  STORAGE_KEYS.SYNC_MIGRATION_DONE,
-  STORAGE_KEYS.MINIMAP_VISIBLE,
-  STORAGE_KEYS.SELECTION_CONTROLS_VISIBLE,
-  STORAGE_KEYS.ONE_CLICK_HIGHLIGHT,
-  STORAGE_KEYS.HIDE_DEFAULT_COLORS,
-  STORAGE_KEYS.LAST_USED_COLOR,
-  STORAGE_KEYS.SHORTCUT_COLOR_MAP,
-  CLOUD_SYNC_KEYS.ENABLED,
-  CLOUD_SYNC_KEYS.CODE,
-  CLOUD_SYNC_KEYS.LAST_SYNCED_AT,
-  CLOUD_SYNC_KEYS.LAST_ERROR,
-  CLOUD_SYNC_KEYS.LAST_TRIMMED_COUNT,
-  CLOUD_SYNC_KEYS.DELETED_URLS,
-  CLOUD_SYNC_KEYS.SETTINGS_UPDATED_AT,
-  'settings', // storage.sync settings payload key, never present in storage.local but guard anyway
-]);
 
 function byteLength(text) {
   return new TextEncoder().encode(text).byteLength;
@@ -58,7 +39,7 @@ function emptyBlob() {
 // One page as storage.local holds it, in blob shape - or null when `all` has no
 // highlight list under that url.
 function readLocalPage(all, url) {
-  if (LOCAL_ONLY_KEYS.has(url) || !Array.isArray(all[url])) return null;
+  if (!isPageKey(url, all[url])) return null;
   const meta = all[`${url}${STORAGE_KEYS.META_SUFFIX}`] || {};
   return {
     title: meta.title || '',
@@ -73,7 +54,6 @@ async function buildLocalBlob() {
 
   const pages = {};
   for (const key of Object.keys(all)) {
-    if (key.endsWith(STORAGE_KEYS.META_SUFFIX)) continue;
     const page = readLocalPage(all, key);
     if (page) pages[key] = page;
   }
