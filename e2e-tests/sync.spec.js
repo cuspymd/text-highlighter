@@ -453,13 +453,15 @@ test.describe('Sync scenarios', () => {
     expect(response.success).toBeTruthy();
 
     const [syncState, localState] = await Promise.all([
-      background.evaluate(async () => await chrome.storage.sync.get(['sync_meta'])),
+      background.evaluate(async ({ syncKey1, syncKey2 }) => await chrome.storage.sync.get(['sync_meta', syncKey1, syncKey2]), { syncKey1, syncKey2 }),
       background.evaluate(async ({ url1, url2 }) => await chrome.storage.local.get([url1, `${url1}_meta`, url2, `${url2}_meta`]), { url1, url2 })
     ]);
 
     const meta = syncState.sync_meta;
-    expect(meta.pages).toHaveLength(0);
-    expect(meta.totalSize).toBe(0);
+    // sync_meta keeps only the tombstones; the page list it used to carry is gone.
+    expect(meta.pages).toBeUndefined();
+    expect(syncState[syncKey1]).toBeUndefined();
+    expect(syncState[syncKey2]).toBeUndefined();
     expect(meta.deletedUrls[url1]).toBeTruthy();
     expect(meta.deletedUrls[url2]).toBeTruthy();
 

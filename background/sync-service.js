@@ -6,6 +6,9 @@ import { STORAGE_KEYS, SYNC_KEYS, CLOUD_SYNC_KEYS } from '../constants/storage-k
 const SYNC_QUOTA_BYTES_PER_ITEM = 8192;
 // Reserve space for settings and sync_meta
 const SYNC_HIGHLIGHT_BUDGET = 90000;
+// sync_meta is one item, so it shares the per-item quota. Kept below it with
+// room to spare for the key and the JSON around the tombstones.
+const SYNC_META_BUDGET = 7000;
 // Keep tombstones for 30 days
 const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const SYNC_REMOVAL_RECHECK_DELAY_MS = 500;
@@ -52,13 +55,71 @@ export function mergeTombstonesByMax(localDeleted = {}, remoteDeleted = {}) {
   return mergedDeleted;
 }
 
+/**
+ * sync_meta holds only the url tombstones: which removals of a highlight item
+ * were the user deleting the page rather than a device making room.
+ *
+ * It used to list every synced page too, and that list is what outgrew the
+ * 8KB per-item quota at around 55 pages - after which every meta write failed
+ * and storage.sync quietly stopped tracking new pages and deletions. The list
+ * is read from the items themselves now (getSyncedPages). A `pages` or
+ * `totalSize` an older version wrote is dropped here and on the next write.
+ */
 export function normalizeSyncMeta(rawMeta) {
-  const meta = rawMeta || {};
-  if (!Array.isArray(meta.pages)) meta.pages = [];
-  if (typeof meta.totalSize !== 'number') meta.totalSize = 0;
-  if (!meta.deletedUrls || typeof meta.deletedUrls !== 'object') meta.deletedUrls = {};
-  cleanupTombstones(meta.deletedUrls);
-  return meta;
+  const deletedUrls = rawMeta && rawMeta.deletedUrls && typeof rawMeta.deletedUrls === 'object'
+    ? { ...rawMeta.deletedUrls }
+    : {};
+  cleanupTombstones(deletedUrls);
+  return { deletedUrls };
+}
+
+function syncItemSize(syncKey, data) {
+  return new TextEncoder().encode(JSON.stringify({ [syncKey]: data })).byteLength;
+}
+
+/**
+ * Keep the newest tombstones that fit in the meta item. A url tombstone only
+ * has to outlive the few seconds another device takes to tell a deletion from
+ * an eviction, and cloud sync keeps tombstones of its own, so the oldest are
+ * the ones to give up.
+ */
+export function fitSyncMeta(meta) {
+  const encoder = new TextEncoder();
+  const entries = Object.entries(normalizeSyncMeta(meta).deletedUrls)
+    .sort((a, b) => b[1] - a[1]);
+  const deletedUrls = {};
+  let size = encoder.encode(JSON.stringify({ [SYNC_META_KEY]: { deletedUrls: {} } })).byteLength;
+  for (const [url, deletedAt] of entries) {
+    const entrySize = encoder.encode(`${JSON.stringify(url)}:${deletedAt},`).byteLength;
+    if (size + entrySize > SYNC_META_BUDGET) break;
+    deletedUrls[url] = deletedAt;
+    size += entrySize;
+  }
+  return { deletedUrls };
+}
+
+async function setSyncMeta(meta) {
+  await browserAPI.storage.sync.set({ [SYNC_META_KEY]: fitSyncMeta(meta) });
+}
+
+/**
+ * The highlight items in storage.sync, oldest first, each with its size as it
+ * counts against the quota. Read from storage.sync itself, so the list cannot
+ * drift from what is really there. storage.sync holds at most ~100KB and reads
+ * are not rate limited, so reading it whole on every save is cheap.
+ */
+export async function getSyncedPages() {
+  const all = await browserAPI.storage.sync.get(null);
+  return Object.entries(all || {})
+    .filter(([key, data]) => key.startsWith(SYNC_HIGHLIGHT_PREFIX) && data && typeof data === 'object')
+    .map(([syncKey, data]) => ({
+      syncKey,
+      url: data.url,
+      lastUpdated: data.lastUpdated || '',
+      size: syncItemSize(syncKey, data),
+      data,
+    }))
+    .sort((a, b) => a.lastUpdated.localeCompare(b.lastUpdated));
 }
 
 export function toSyncHighlightGroup(group) {
@@ -263,8 +324,7 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
     const syncHighlights = merged.highlights.map(toSyncHighlightGroup);
 
     const data = { url, title, lastUpdated, highlights: syncHighlights, deletedGroupIds: merged.deletedGroupIds };
-    const dataStr = JSON.stringify({ [syncKey]: data });
-    const dataSize = new TextEncoder().encode(dataStr).byteLength;
+    const dataSize = syncItemSize(syncKey, data);
 
     if (dataSize > SYNC_QUOTA_BYTES_PER_ITEM) {
       debugLog('Highlight data exceeds 8KB per-item limit, sync skipped for:', url, `(${dataSize}B)`);
@@ -276,19 +336,16 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
     localData[`${url}${STORAGE_KEYS.META_SUFFIX}`] = { ...localMeta, title, lastUpdated, deletedGroupIds: merged.deletedGroupIds };
     await browserAPI.storage.local.set(localData);
 
-    const meta = await getSyncMeta();
-    let totalSize = meta.totalSize || 0;
-    cleanupTombstones(meta.deletedUrls);
-    if (meta.deletedUrls && meta.deletedUrls[url]) {
-      delete meta.deletedUrls[url];
-    }
+    // This page's own item is about to be replaced, so neither its old size
+    // nor the item itself is part of the room to make.
+    const others = (await getSyncedPages()).filter(page => page.syncKey !== syncKey);
+    let totalSize = others.reduce((sum, page) => sum + page.size, 0);
 
-    while (totalSize + dataSize > SYNC_HIGHLIGHT_BUDGET && meta.pages.length > 0) {
-      meta.pages.sort((a, b) => (a.lastUpdated || '').localeCompare(b.lastUpdated || ''));
-      const oldest = meta.pages.shift();
+    while (totalSize + dataSize > SYNC_HIGHLIGHT_BUDGET && others.length > 0) {
+      const oldest = others.shift();
       try {
         await browserAPI.storage.sync.remove(oldest.syncKey);
-        totalSize -= (oldest.size || 0);
+        totalSize -= oldest.size;
         debugLog('Evicted oldest sync page:', oldest.syncKey, oldest.url);
       } catch (e) {
         debugLog('Error evicting sync page:', e.message);
@@ -297,18 +354,14 @@ export async function syncSaveHighlights(url, highlights, title, lastUpdated) {
 
     await browserAPI.storage.sync.set({ [syncKey]: data });
 
-    const existingIdx = meta.pages.findIndex(p => p.syncKey === syncKey);
-    const pageEntry = { syncKey, url, lastUpdated, size: dataSize };
-    if (existingIdx >= 0) {
-      totalSize -= (meta.pages[existingIdx].size || 0);
-      meta.pages[existingIdx] = pageEntry;
-    } else {
-      meta.pages.push(pageEntry);
+    // Only written when there is a tombstone to clear, so an ordinary save
+    // costs one sync write rather than two.
+    const meta = await getSyncMeta();
+    if (meta.deletedUrls[url]) {
+      delete meta.deletedUrls[url];
+      await setSyncMeta(meta);
     }
-    meta.totalSize = totalSize + dataSize;
-
-    await browserAPI.storage.sync.set({ [SYNC_META_KEY]: meta });
-    debugLog('Highlights merged and synced for:', url, `(${dataSize}B, total: ${meta.totalSize}B)`);
+    debugLog('Highlights merged and synced for:', url, `(${dataSize}B, total: ${totalSize + dataSize}B)`);
   } catch (e) {
     debugLog('Failed to sync highlights:', e.message);
   }
@@ -330,19 +383,21 @@ export async function syncRemoveHighlights(url) {
 
   const syncKey = urlToSyncKey(url);
   try {
+    const existing = await browserAPI.storage.sync.get(syncKey);
+    if (!existing[syncKey]) return tombstoneRecorded;
+
+    // The tombstone goes first, so another device that sees the item go
+    // already finds it and treats the removal as a deletion. A tombstone that
+    // cannot be written does not keep the item: the other devices then take
+    // the removal for an eviction and keep their copy, which is still better
+    // than storage.sync holding the deleted page for good.
     const meta = await getSyncMeta();
-    const idx = meta.pages.findIndex(p => p.syncKey === syncKey);
-
-    if (!meta.deletedUrls) meta.deletedUrls = {};
     meta.deletedUrls[url] = Date.now();
-    cleanupTombstones(meta.deletedUrls);
-
-    if (idx >= 0) {
-      meta.totalSize = (meta.totalSize || 0) - (meta.pages[idx].size || 0);
-      meta.pages.splice(idx, 1);
+    try {
+      await setSyncMeta(meta);
+    } catch (e) {
+      debugLog('Failed to record sync tombstone:', e.message);
     }
-
-    await browserAPI.storage.sync.set({ [SYNC_META_KEY]: meta });
     await browserAPI.storage.sync.remove(syncKey);
     debugLog('Removed highlights from sync and added tombstone for:', url);
   } catch (e) {
@@ -370,11 +425,11 @@ async function applyUserDeletionFromSync(url) {
 
 /**
  * Clear all synced highlights and mark synced URLs as user-deleted.
- * Tombstones are written only for URLs currently tracked in sync_meta.pages
- * to keep the sync_meta item within per-item quota.
+ * Sync tombstones are written only for the pages that have an item in
+ * storage.sync, and only as many as fit in the sync_meta item.
  *
  * @param {string[]} localUrls - All locally known highlighted page URLs at the time of
- *   clearing (may be a superset of sync_meta.pages, e.g. pages that never fit the 8KB
+ *   clearing (may be a superset of the synced pages, e.g. pages that never fit the 8KB
  *   per-item browser sync limit). Used to record cloud sync tombstones for every page,
  *   since the Cloudflare KV blob has no per-item size limit of its own.
  * @returns {Promise<boolean>} whether the cloud sync tombstone write succeeded.
@@ -387,21 +442,22 @@ export async function clearAllSyncedHighlights(localUrls = []) {
   const tombstoneRecorded = await recordCloudSyncTombstones(localUrls);
 
   try {
-    const meta = await getSyncMeta();
-    const syncKeysToRemove = meta.pages.map(p => p.syncKey);
-
-    const now = Date.now();
-    for (const page of meta.pages) {
-      if (page.url) meta.deletedUrls[page.url] = now;
+    const pages = await getSyncedPages();
+    if (pages.length > 0) {
+      const meta = await getSyncMeta();
+      const now = Date.now();
+      for (const page of pages) {
+        if (page.url) meta.deletedUrls[page.url] = now;
+      }
+      // fitSyncMeta keeps as many as the item holds; past roughly ninety
+      // pages the rest reach the other devices as evictions, not deletions.
+      try {
+        await setSyncMeta(meta);
+      } catch (e) {
+        debugLog('Failed to record sync tombstones:', e.message);
+      }
+      await browserAPI.storage.sync.remove(pages.map(page => page.syncKey));
     }
-
-    await browserAPI.storage.sync.set({ [SYNC_META_KEY]: meta });
-
-    if (syncKeysToRemove.length > 0) {
-      await browserAPI.storage.sync.remove(syncKeysToRemove);
-    }
-
-    await browserAPI.storage.sync.set({ [SYNC_META_KEY]: { ...meta, pages: [], totalSize: 0 } });
     debugLog('Cleared all synced highlights');
   } catch (e) {
     debugLog('Failed to clear synced highlights:', e.message);
@@ -494,13 +550,11 @@ export async function migrateLocalToSync() {
     }
 
     const syncMeta = await getSyncMeta();
+    const syncedPages = await getSyncedPages();
     const allLocal = await browserAPI.storage.local.get(null);
 
-    let syncData = {};
-    if (syncMeta.pages.length > 0) {
-      const keys = syncMeta.pages.map(p => p.syncKey);
-      syncData = await browserAPI.storage.sync.get(keys);
-    }
+    const syncData = {};
+    syncedPages.forEach(page => { syncData[page.syncKey] = page.data; });
 
     const skipKeys = [
       STORAGE_KEYS.CUSTOM_COLORS,
@@ -520,7 +574,7 @@ export async function migrateLocalToSync() {
       Array.isArray(allLocal[k])
     );
 
-    const allUrls = new Set([...localUrls, ...syncMeta.pages.map(p => p.url)]);
+    const allUrls = new Set([...localUrls, ...syncedPages.map(page => page.url).filter(Boolean)]);
 
     for (const url of allUrls) {
       const syncKey = urlToSyncKey(url);
