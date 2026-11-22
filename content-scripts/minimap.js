@@ -3,7 +3,6 @@ class MinimapManager {
     this.container = null;
     this.markers = [];
     this.resizeObserver = null;
-    this.throttleTimer = null;
     this.visible = true;
     // Default minimap height (used when container is hidden)
     this.defaultMinimapHeight = 300;
@@ -266,14 +265,17 @@ class MinimapManager {
     this.container.classList.remove('touch-expanded');
   }
 
-  // Throttling helper function (performance optimization)
+  // Run callback at most once per delay, at the end of the window, so it reads
+  // the page as it is after the burst. Each throttled function keeps its own
+  // timer: with one shared timer, a scroll that arrived first swallowed the
+  // resize that followed it, and the markers stayed where they were.
   throttle(callback, delay) {
-    return (...args) => {
-      if (this.throttleTimer) return;
-
-      this.throttleTimer = setTimeout(() => {
-        callback.apply(this, args);
-        this.throttleTimer = null;
+    let timer = null;
+    return () => {
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        callback();
       }, delay);
     };
   }
@@ -297,11 +299,6 @@ class MinimapManager {
     }
 
     this.markers = [];
-
-    if (this.throttleTimer) {
-      clearTimeout(this.throttleTimer);
-      this.throttleTimer = null;
-    }
 
     this.collapseTouchMinimap();
 
