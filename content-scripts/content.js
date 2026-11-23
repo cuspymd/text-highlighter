@@ -100,9 +100,35 @@ function injectNavigationBridge() {
   (document.documentElement || document.head || document.body).appendChild(script);
 }
 
+// `#/inbox` and `#!/post/1` are how hash-routed apps name a screen; anything
+// else after `#` is a place on the same page.
+function isHashRoute(url) {
+  const hashIndex = url.indexOf('#');
+  return hashIndex !== -1 && /^#[/!]/.test(url.slice(hashIndex));
+}
+
+function withoutHash(url) {
+  const hashIndex = url.indexOf('#');
+  return hashIndex === -1 ? url : url.slice(0, hashIndex);
+}
+
+// Following a table-of-contents link or going back from one moves within the
+// page that is already loaded. Treating it as a new page would clear the
+// highlights and look them up under a key nothing was saved to. The page keeps
+// the URL it was loaded with, so saves still go where the highlights came from.
+function isInPageAnchorMove(fromUrl, toUrl) {
+  return withoutHash(fromUrl) === withoutHash(toUrl)
+    && !isHashRoute(fromUrl)
+    && !isHashRoute(toUrl);
+}
+
 function handleUrlChange(nextUrl, trigger = 'unknown') {
   const normalizedUrl = nextUrl ? nextUrl.replace(/#selection-[\d.]+-[\d.]+$/, '') : nextUrl;
   if (!normalizedUrl || normalizedUrl === currentUrl) return;
+  if (isInPageAnchorMove(currentUrl, normalizedUrl)) {
+    debugLog('Ignoring an in-page anchor move:', { trigger, from: currentUrl, to: normalizedUrl });
+    return;
+  }
 
   debugLog('Detected URL change:', {
     trigger,

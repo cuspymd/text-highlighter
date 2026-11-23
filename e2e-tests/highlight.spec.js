@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { test, expect, sendHighlightMessage, expectHighlightSpan, selectTextInElement } from './fixtures';
@@ -27,6 +28,47 @@ test.describe('Chrome Extension Tests', () => {
     await verifyHighlight(); // Immediately after highlight
     await page.reload();
     await verifyHighlight(); // After refresh
+  });
+
+  test('Highlights stay when a link jumps to an anchor on the same page', async ({ page, background }) => {
+    // Served over http: on a file:// page the navigation bridge cannot post to
+    // its own origin ("null"), so no move would be reported at all.
+    await page.route('http://anchor.test/**', route => route.fulfill({
+      contentType: 'text/html',
+      body: fs.readFileSync(path.join(__dirname, 'test-page.html'), 'utf8'),
+    }));
+    await page.goto('http://anchor.test/article.html');
+
+    const paragraph = page.locator('p:has-text("This is a sample paragraph")');
+    const textToSelect = "This is a sample paragraph";
+    await selectTextInElement(paragraph, textToSelect);
+    await sendHighlightMessage(background, 'yellow');
+
+    const highlightedSpan = page.locator(`span.text-highlighter-extension:has-text("${textToSelect}")`);
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: textToSelect });
+
+    // A table-of-contents link, the way an article page has one.
+    await page.evaluate(() => {
+      const link = document.createElement('a');
+      link.id = 'toc-link';
+      link.href = '#later-section';
+      link.textContent = 'Jump to the later section';
+      const target = document.createElement('h2');
+      target.id = 'later-section';
+      target.textContent = 'Later section';
+      document.body.prepend(link);
+      document.body.append(target);
+    });
+    await page.click('#toc-link');
+    expect(page.url()).toMatch(/#later-section$/);
+
+    // A navigation would clear the page at once and reload after a second.
+    await page.waitForTimeout(1500);
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: textToSelect });
+
+    await page.goBack();
+    await page.waitForTimeout(1500);
+    await expectHighlightSpan(highlightedSpan, { color: 'rgb(255, 255, 0)', text: textToSelect });
   });
 
   test('Dark highlight colour gets white text, light one keeps black', async ({ page, background }) => {

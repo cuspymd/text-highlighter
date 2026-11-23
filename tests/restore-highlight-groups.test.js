@@ -516,8 +516,9 @@ describe('restoring highlight groups', () => {
       restore([lateGroup('late', 'Late content')]);
 
       // The retry is queued against the previous URL's groups, so navigating
-      // away has to cancel it rather than let it apply here.
-      window.location.hash = '#next';
+      // away has to cancel it rather than let it apply here. A hash route,
+      // since a plain anchor is a move within the same page.
+      window.location.hash = '#/next';
       window.dispatchEvent(new MessageEvent('message', {
         source: window,
         data: {
