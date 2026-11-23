@@ -1,3 +1,5 @@
+// Shared with the other content scripts, which the manifest runs in one scope.
+/* exported MinimapManager */
 class MinimapManager {
   constructor() {
     this.container = null;
