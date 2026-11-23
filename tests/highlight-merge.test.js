@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import chrome from '../mocks/chrome.js';
+import '../mocks/chrome.js';
 import '../content-scripts/content-core.js';
 import {
   loadContentScripts,
@@ -13,7 +13,6 @@ import {
 // replacement for the old "overlap aborts" rule, which forced the user to
 // delete a highlight before they could extend or recolour it.
 describe('highlighting over existing highlights', () => {
-  let page = null;
   let sent = [];
 
   async function loadContentScript() {
@@ -31,7 +30,7 @@ describe('highlighting over existing highlights', () => {
     window.activeHighlightElement = null;
     window.highlightControlsContainer = null;
 
-    page = loadContentScripts(['common', 'content']);
+    loadContentScripts(['common', 'content']);
     await jest.advanceTimersByTimeAsync(600);
   }
 

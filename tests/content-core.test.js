@@ -242,7 +242,7 @@ describe('content-core', () => {
   describe('buildNormalizedTextModel and rangeToTextPosition', () => {
     it('should build a text model and map range to offsets', () => {
       document.body.innerHTML = '<div>Hello <span>World</span>!</div>';
-      const model = TextHighlighterCore.buildNormalizedTextModel(document.body);
+      const model = core.buildNormalizedTextModel(document.body);
       expect(model.text).toBe('Hello World!');
 
       const textNode = document.querySelector('span').firstChild;
@@ -250,7 +250,7 @@ describe('content-core', () => {
       range.setStart(textNode, 0);
       range.setEnd(textNode, 5);
 
-      const pos = TextHighlighterCore.rangeToTextPosition(model, range);
+      const pos = core.rangeToTextPosition(model, range);
       expect(pos).toEqual({ start: 6, end: 11 }); // 'World'
     });
 
@@ -260,7 +260,7 @@ describe('content-core', () => {
         '<div style="display: none"><section><p>Hidden</p></section></div>' +
         '<div>tail</div>';
 
-      const model = TextHighlighterCore.buildNormalizedTextModel(document.body);
+      const model = core.buildNormalizedTextModel(document.body);
 
       expect(model.text).toBe('Visible tail');
     });
@@ -273,7 +273,7 @@ describe('content-core', () => {
       const spy = jest.spyOn(window, 'getComputedStyle');
 
       try {
-        TextHighlighterCore.buildNormalizedTextModel(document.body);
+        core.buildNormalizedTextModel(document.body);
 
         const resolved = spy.mock.calls.map(call => call[0]);
         // 20 <p> ancestors plus the three shared wrappers, each resolved once.
@@ -288,13 +288,13 @@ describe('content-core', () => {
       document.body.innerHTML =
         '<p>alpha <span class="text-highlighter-extension">beta</span> gamma</p>';
 
-      expect(TextHighlighterCore.buildNormalizedTextModel(document.body).text)
+      expect(core.buildNormalizedTextModel(document.body).text)
         .toBe('alpha  gamma');
     });
 
     it('reads a highlighted page as the same text as the page before highlighting', () => {
       document.body.innerHTML = '<p>alpha beta gamma</p>';
-      const clean = TextHighlighterCore.buildNormalizedTextModel(document.body).text;
+      const clean = core.buildNormalizedTextModel(document.body).text;
 
       // What the document looks like once a restore has applied one group. A
       // later pass has to resolve its own selectors against the text above, not
@@ -302,7 +302,7 @@ describe('content-core', () => {
       document.body.innerHTML =
         '<p>alpha <span class="text-highlighter-extension">beta</span> gamma</p>';
 
-      const model = TextHighlighterCore.buildNormalizedTextModel(
+      const model = core.buildNormalizedTextModel(
         document.body, { includeHighlightedText: true });
 
       expect(model.text).toBe(clean);
@@ -311,25 +311,25 @@ describe('content-core', () => {
     it('does not reuse visibility results across separate builds', () => {
       document.body.innerHTML = '<div id="wrapper"><p>Toggle</p></div>';
 
-      expect(TextHighlighterCore.buildNormalizedTextModel(document.body).text).toBe('Toggle');
+      expect(core.buildNormalizedTextModel(document.body).text).toBe('Toggle');
 
       document.getElementById('wrapper').style.display = 'none';
 
-      expect(TextHighlighterCore.buildNormalizedTextModel(document.body).text).toBe('');
+      expect(core.buildNormalizedTextModel(document.body).text).toBe('');
     });
   });
 
   describe('buildQuoteSelector', () => {
     it('should build a quote selector from a range', () => {
       document.body.innerHTML = '<div>The quick brown fox jumps over the lazy dog</div>';
-      const model = TextHighlighterCore.buildNormalizedTextModel(document.body);
+      const model = core.buildNormalizedTextModel(document.body);
 
       const textNode = document.querySelector('div').firstChild;
       const range = document.createRange();
       range.setStart(textNode, 10); // 'brown'
       range.setEnd(textNode, 15);
 
-      const quote = TextHighlighterCore.buildQuoteSelector(model, range, { prefixLen: 10, suffixLen: 10 });
+      const quote = core.buildQuoteSelector(model, range, { prefixLen: 10, suffixLen: 10 });
       expect(quote).toEqual({
         exact: 'brown',
         prefix: 'The quick ',
@@ -341,7 +341,7 @@ describe('content-core', () => {
   describe('resolveQuoteSelector and normalizedOffsetsToRange', () => {
     it('should resolve quote selector and restore range', () => {
       document.body.innerHTML = '<div>The quick brown fox jumps over the lazy dog</div>';
-      const model = TextHighlighterCore.buildNormalizedTextModel(document.body);
+      const model = core.buildNormalizedTextModel(document.body);
 
       const selector = {
         exact: 'brown',
@@ -349,10 +349,10 @@ describe('content-core', () => {
         suffix: ' fox jumps'
       };
 
-      const match = TextHighlighterCore.resolveQuoteSelector(model, selector, 'brown');
+      const match = core.resolveQuoteSelector(model, selector, 'brown');
       expect(match).toEqual({ start: 10, end: 15 });
 
-      const range = TextHighlighterCore.normalizedOffsetsToRange(model, match.start, match.end);
+      const range = core.normalizedOffsetsToRange(model, match.start, match.end);
       expect(range.toString()).toBe('brown');
       expect(range.startContainer.nodeValue).toBe('The quick brown fox jumps over the lazy dog');
       expect(range.startOffset).toBe(10);

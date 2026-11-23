@@ -297,7 +297,6 @@ test.describe('Chrome Extension Tests', () => {
     await page.goto(`file:///${path.join(__dirname, 'test-page.html')}`);
 
     const h1 = page.locator('h1');
-    const firstParagraph = page.locator('p').first();
 
     await h1.click({ clickCount: 3 });
     await sendHighlightMessage(background, 'yellow');
@@ -415,7 +414,6 @@ test.describe('Chrome Extension Tests', () => {
 
     // Verify highlight is maintained after page refresh
     await page.reload();
-    const highlightedSpansAfterReload = paragraph.locator('span.text-highlighter-extension');
     await verifyHighlight();
   });
 
@@ -454,7 +452,6 @@ test.describe('Chrome Extension Tests', () => {
 
     // Verify highlight is maintained after page refresh
     await page.reload();
-    const highlightedSpansAfterReload = page.locator('p span.text-highlighter-extension');
     await verifyHighlight();
   });
 

@@ -75,9 +75,9 @@ export default {
       }),
     },
     sync: {
-      get: jest.fn((keys) => Promise.resolve({})),
-      set: jest.fn((items) => Promise.resolve()),
-      remove: jest.fn((keys) => Promise.resolve()),
+      get: jest.fn(() => Promise.resolve({})),
+      set: jest.fn(() => Promise.resolve()),
+      remove: jest.fn(() => Promise.resolve()),
     },
     onChanged: {
       addListener: jest.fn(),

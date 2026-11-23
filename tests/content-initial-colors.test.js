@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import chrome from '../mocks/chrome.js';
+import '../mocks/chrome.js';
 import {
   loadContentScripts,
   respondToBackground,

@@ -9,7 +9,6 @@ import {
   clearCustomColors,
   applySettingsFromSync,
   broadcastSettingsToTabs,
-  loadCustomColors,
   getShortcutColorMap,
   getVisibleColors,
   setHideDefaultColors,

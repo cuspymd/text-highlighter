@@ -474,7 +474,7 @@ export const updateCustomColor = serializePaletteChange(async function updateCus
 
   // Check for duplicates
   const duplicate = [...COLORS, ...customColors].some(
-    (c, i) => c.color.toLowerCase() === newColorValue.toLowerCase() && c.id !== id
+    c => c.color.toLowerCase() === newColorValue.toLowerCase() && c.id !== id
   );
   if (duplicate) return { exists: true, colors: currentColors };
 
