@@ -161,6 +161,13 @@
         transform: translateX(18px);
       }
 
+      /* The checkbox itself is invisible, so its keyboard focus is drawn on
+         the track. */
+      .toggle-switch input:focus-visible + .toggle-slider {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
       /* One-click highlighting needs the selection icon to exist, so its row
          goes dim while the icon is turned off rather than sitting there
          looking live. */
@@ -543,6 +550,11 @@
         cursor: pointer;
       }
 
+      .shortcut-select:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+
       .hint-text {
         font-size: 12px;
         color: var(--muted);
@@ -583,6 +595,12 @@
         font-size: 13px;
         font-family: monospace;
         outline: none;
+      }
+
+      /* A text field shows focus however it got it: that is where typing goes. */
+      .cloud-sync-code-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent);
       }
 
       .cloud-sync-code-row {
