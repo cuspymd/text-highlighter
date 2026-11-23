@@ -90,6 +90,14 @@ describe('settings', () => {
     return colorRows().map(row => row.querySelector('.color-name').textContent);
   }
 
+  // The accessible name an aria-labelledby list produces: the referenced
+  // elements' text, in order, joined by spaces.
+  function labelledByName(element) {
+    return element.getAttribute('aria-labelledby').split(' ')
+      .map(id => document.getElementById(id).textContent)
+      .join(' ');
+  }
+
   function shortcutRows() {
     return [...document.querySelectorAll('#shortcuts-list .shortcut-row')];
   }
@@ -608,6 +616,58 @@ describe('settings', () => {
       expect(colorNames()).toEqual(['customColor 1', 'Ocean']);
     });
 
+    it('opens the name for editing as a keyboard-reachable button', async () => {
+      await openSettings();
+      const name = colorRows()[0].querySelector('.color-name');
+
+      expect(name.tagName).toBe('BUTTON');
+      expect(name.type).toBe('button');
+    });
+
+    it('gives focus back to the name when the rename is abandoned', async () => {
+      await openSettings();
+
+      colorRows()[0].querySelector('.color-name').click();
+      document.querySelector('.color-name-input')
+        .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+      expect(document.activeElement).toBe(colorRows()[0].querySelector('.color-name'));
+    });
+
+    it('gives focus to the renamed color after the list is redrawn', async () => {
+      await openSettings();
+      const renamed = { ...CUSTOM_COLOR, customName: 'Coral' };
+      const afterRename = { success: true, colors: [BUILT_IN_COLOR, renamed, NAMED_CUSTOM_COLOR] };
+      respondToBackground({ updateCustomColorName: afterRename, getColors: afterRename });
+
+      // jsdom fires a window focus when focus leaves <body>, and the page
+      // reloads its lists on that, so look at what received focus rather than
+      // at where focus sits once the reload has redrawn the rows.
+      const focused = [];
+      document.addEventListener('focusin', event => focused.push(event.target));
+
+      colorRows()[0].querySelector('.color-name').click();
+      const input = document.querySelector('.color-name-input');
+      input.value = 'Coral';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await flush();
+
+      const last = focused[focused.length - 1];
+      expect(last.className).toBe('color-name');
+      expect(last.textContent).toBe('Coral');
+    });
+
+    it('names each Edit and Remove button after its color', async () => {
+      await openSettings();
+
+      const names = colorRows().map(row =>
+        [...row.querySelectorAll('.color-actions .btn-icon')].map(labelledByName));
+      expect(names).toEqual([
+        ['editColor customColor 1', 'removeColor customColor 1'],
+        ['editColor Ocean', 'removeColor Ocean'],
+      ]);
+    });
+
     it('warns and restores the old name when the new one is taken', async () => {
       await openSettings();
       respondToBackground({ updateCustomColorName: { success: true, exists: true } });
@@ -1032,6 +1092,17 @@ describe('settings', () => {
       expect(rows.map(row => row.querySelector('.key-badge').textContent))
         .toEqual(['Ctrl+Shift+Down', 'notAssigned']);
       expect(rows.some(row => row.querySelector('select'))).toBe(false);
+    });
+
+    it('labels each color select with its slot and key', async () => {
+      chrome.commands.getAll.mockResolvedValue([
+        { name: 'command_slot_1', shortcut: 'Alt+1' },
+      ]);
+      await openSettings();
+
+      const selects = shortcutRows().map(row => row.querySelector('select')).filter(Boolean);
+      expect(labelledByName(selects[0])).toBe('shortcutSlot 1 Alt+1');
+      expect(labelledByName(selects[1])).toBe('shortcutSlot 2 notAssigned');
     });
 
     it('shows the assigned key, and says so when there is none', async () => {

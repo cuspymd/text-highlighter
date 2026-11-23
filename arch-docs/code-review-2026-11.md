@@ -228,6 +228,16 @@ runCloudSync()
 
 ### 15. 접근성
 
+- 상태: 수정 (브랜치 `fix/a11y-settings-pages-list`).
+  - 설정 화면:
+    - 색 이름은 `<button>`이어서 키보드로 이동해 Enter/Space로 편집할 수 있다. Enter나 Escape로 편집을 끝내면 포커스가 이름으로 돌아온다. 이름을 바꿔 목록을 다시 그린 경우에도 그렇다.
+    - Edit/Remove 버튼은 `aria-labelledby`로 "Edit Ocean"처럼 색 이름까지 읽힌다. 새 번역 키는 필요 없다.
+    - 단축키 `<select>`는 슬롯 이름과 키("Slot 1 Alt+1")로 읽힌다.
+    - 토글, 단축키 `<select>`, 클라우드 동기화 코드 입력란은 `outline: none`만 있고 다른 표시가 없어서 키보드 포커스가 보이지 않았다. 토글과 `<select>`는 `:focus-visible`일 때 accent 색 외곽선을, 입력란은 `:focus`일 때 accent 테두리를 그린다.
+  - 페이지 목록:
+    - "more" 메뉴는 WAI-ARIA 메뉴 버튼 패턴을 따른다. 버튼에서 ArrowDown/ArrowUp을 누르거나 키보드로 누르면 메뉴가 열리고 첫(마지막) 항목으로 포커스가 간다. 메뉴 안에서는 화살표(양 끝에서 순환), Home, End로 이동한다. 항목은 Tab 순서에서 빠지고(`tabindex="-1"`), Tab을 누르면 메뉴가 닫힌다. 항목을 눌러 메뉴가 닫히면 포커스가 버튼으로 돌아온다. 마우스로 열 때는 첫 항목에 포커스 링이 생기지 않도록 포커스를 옮기지 않는다.
+    - "Show Details" 버튼에 `aria-expanded`와 `aria-controls`를 달았다.
+  - 남은 한계: 스크린 리더와 실제 브라우저에서는 확인하지 않았다(jsdom 테스트만).
 - 설정 화면:
   - 색 이름 편집은 `<span>`의 click으로만 열린다(`settings.js:232`).
   - 단축키 `<select>`에 라벨이 없다(`:796`).
