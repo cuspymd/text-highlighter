@@ -403,6 +403,22 @@ describe('pages-list', () => {
       expect(highlightTextsIn(pageItems()[0])).toEqual(['noHighlights']);
     });
 
+    it('reports on the details button whether its highlights are shown', async () => {
+      await openPagesList();
+      const item = itemFor(OLDER.url);
+      const details = item.querySelector('.btn-details');
+
+      expect(details.getAttribute('aria-expanded')).toBe('false');
+      expect(document.getElementById(details.getAttribute('aria-controls')))
+        .toBe(item.querySelector('.page-highlights'));
+
+      details.click();
+      expect(details.getAttribute('aria-expanded')).toBe('true');
+
+      details.click();
+      expect(details.getAttribute('aria-expanded')).toBe('false');
+    });
+
     it('collapses again on a second press', async () => {
       await openPagesList();
       const item = itemFor(OLDER.url);
@@ -896,6 +912,94 @@ describe('pages-list', () => {
 
       expect(menu.hidden).toBe(true);
       expect(button.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    function menuItems() {
+      return [...document.querySelectorAll('#more-menu [role="menuitem"]')];
+    }
+
+    function press(target, key) {
+      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    }
+
+    it('keeps its items out of the Tab order', async () => {
+      await openPagesList();
+
+      expect(menuItems().map(item => item.tabIndex)).toEqual([-1, -1]);
+    });
+
+    it('moves focus to the first item when opened from the keyboard', async () => {
+      await openPagesList();
+      const button = document.getElementById('more-menu-btn');
+
+      // A keyboard press on a button fires click with detail 0.
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
+
+      expect(document.activeElement).toBe(menuItems()[0]);
+    });
+
+    it('leaves focus alone when opened with the mouse', async () => {
+      await openPagesList();
+      const button = document.getElementById('more-menu-btn');
+      button.focus();
+
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+
+      expect(document.getElementById('more-menu').hidden).toBe(false);
+      expect(document.activeElement).toBe(button);
+    });
+
+    it('opens on ArrowDown and ArrowUp at the first and last item', async () => {
+      await openPagesList();
+      const button = document.getElementById('more-menu-btn');
+
+      press(button, 'ArrowDown');
+      expect(document.activeElement).toBe(menuItems()[0]);
+
+      press(document.activeElement, 'Escape');
+      press(button, 'ArrowUp');
+      expect(document.activeElement).toBe(menuItems()[1]);
+    });
+
+    it('moves between items with the arrow, Home and End keys, wrapping at the ends', async () => {
+      await openPagesList();
+      press(document.getElementById('more-menu-btn'), 'ArrowDown');
+      const [first, last] = menuItems();
+
+      press(document.activeElement, 'ArrowDown');
+      expect(document.activeElement).toBe(last);
+      press(document.activeElement, 'ArrowDown');
+      expect(document.activeElement).toBe(first);
+      press(document.activeElement, 'ArrowUp');
+      expect(document.activeElement).toBe(last);
+      press(document.activeElement, 'Home');
+      expect(document.activeElement).toBe(first);
+      press(document.activeElement, 'End');
+      expect(document.activeElement).toBe(last);
+    });
+
+    it('closes when Tab leaves it', async () => {
+      await openPagesList();
+      document.getElementById('more-menu-btn').click();
+      expect(document.getElementById('more-menu').hidden).toBe(false);
+
+      press(document.activeElement, 'Tab');
+      // The menu hides on the next task, once the browser has moved focus.
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(document.getElementById('more-menu').hidden).toBe(true);
+      expect(document.getElementById('more-menu-btn').getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('gives focus back to its button when an item closes it', async () => {
+      await openPagesList();
+      press(document.getElementById('more-menu-btn'), 'ArrowUp');
+
+      // Import: it only opens the file chooser, which jsdom ignores.
+      menuItems()[1].click();
+
+      expect(document.getElementById('more-menu').hidden).toBe(true);
+      expect(document.activeElement).toBe(document.getElementById('more-menu-btn'));
     });
 
     it('closes when a click lands outside it', async () => {

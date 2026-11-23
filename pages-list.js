@@ -320,12 +320,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!expand) {
       highlightsContainer.style.display = 'none';
       detailsButton.textContent = getMessage('showDetails', 'Show Details');
+      detailsButton.setAttribute('aria-expanded', 'false');
       return;
     }
 
     renderPageHighlights(page, highlightsContainer, searchTerm, showAll);
     highlightsContainer.style.display = 'block';
     detailsButton.textContent = getMessage('hideDetails', 'Hide');
+    detailsButton.setAttribute('aria-expanded', 'true');
   }
 
   // Search functionality
@@ -551,6 +553,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const detailsBtn = document.createElement('button');
         detailsBtn.className = 'btn btn-details';
         detailsBtn.textContent = getMessage('showDetails', 'Show Details');
+        detailsBtn.setAttribute('aria-expanded', 'false');
         actionsDiv.appendChild(detailsBtn);
 
         const viewBtn = document.createElement('button');
@@ -565,7 +568,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const highlightsDiv = document.createElement('div');
         highlightsDiv.className = 'page-highlights';
+        highlightsDiv.id = `page-highlights-${++pageHighlightsIdCounter}`;
         highlightsDiv.style.display = 'none';
+        detailsBtn.setAttribute('aria-controls', highlightsDiv.id);
 
         pageItem.appendChild(infoContainer);
         pageItem.appendChild(actionsDiv);
@@ -662,22 +667,76 @@ document.addEventListener('DOMContentLoaded', function () {
   let currentSortMode = 'timeDesc'; // 'timeDesc' or 'timeAsc'
   let currentSearchTerm = '';
   let expandAllActive = false;
+  let pageHighlightsIdCounter = 0;
 
-  function setMoreMenuOpen(open) {
+  function getMoreMenuItems() {
+    return moreMenu ? Array.from(moreMenu.querySelectorAll('[role="menuitem"]')) : [];
+  }
+
+  function focusMoreMenuItem(index) {
+    const items = getMoreMenuItems();
+    if (items.length === 0) return;
+    items[(index + items.length) % items.length].focus();
+  }
+
+  // `focusIndex` moves focus into the opened menu (-1 = last item), following
+  // the WAI-ARIA menu button pattern.
+  function setMoreMenuOpen(open, focusIndex = null) {
     if (!moreMenu || !moreMenuBtn) return;
 
     moreMenu.hidden = !open;
     moreMenuBtn.setAttribute('aria-expanded', String(open));
+    if (open && focusIndex !== null) focusMoreMenuItem(focusIndex);
   }
 
   function closeMoreMenu() {
+    // Hiding the menu would drop focus to <body>; give it back to the button.
+    const focusWasInMenu = moreMenu?.contains(document.activeElement);
     setMoreMenuOpen(false);
+    if (focusWasInMenu) moreMenuBtn?.focus();
   }
 
   if (moreMenuBtn) {
     moreMenuBtn.addEventListener('click', function (event) {
       event.stopPropagation();
-      setMoreMenuOpen(moreMenu ? moreMenu.hidden : false);
+      // Only a keyboard activation (detail 0) moves focus into the menu, so a
+      // mouse click does not paint a focus ring on the first item.
+      setMoreMenuOpen(moreMenu ? moreMenu.hidden : false, event.detail === 0 ? 0 : null);
+    });
+
+    moreMenuBtn.addEventListener('keydown', function (event) {
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      event.preventDefault();
+      setMoreMenuOpen(true, event.key === 'ArrowDown' ? 0 : -1);
+    });
+  }
+
+  if (moreMenu) {
+    moreMenu.addEventListener('keydown', function (event) {
+      const items = getMoreMenuItems();
+      const current = items.indexOf(document.activeElement);
+      switch (event.key) {
+        case 'ArrowDown':
+          focusMoreMenuItem(current + 1);
+          break;
+        case 'ArrowUp':
+          focusMoreMenuItem(current < 0 ? -1 : current - 1);
+          break;
+        case 'Home':
+          focusMoreMenuItem(0);
+          break;
+        case 'End':
+          focusMoreMenuItem(-1);
+          break;
+        case 'Tab':
+          // Tab leaves the menu like any other control. Hide it after the
+          // browser has moved focus, so the move starts from the menu item.
+          setTimeout(() => setMoreMenuOpen(false), 0);
+          return;
+        default:
+          return;
+      }
+      event.preventDefault();
     });
   }
 
