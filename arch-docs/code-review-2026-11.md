@@ -262,3 +262,7 @@ runCloudSync()
 - 워크플로가 `push`(모든 브랜치)와 `pull_request`에 함께 걸려 있어 PR 브랜치에서 두 번 돈다. `concurrency`와 `timeout-minutes`도 없다.
   - 상태: 수정 (브랜치 `ci/firefox-build-and-triggers`). `push`는 main에만 건다. PR에서는 새 push가 진행 중인 실행을 취소하고, main 실행은 끝까지 둔다. `timeout-minutes: 20`.
 - lint 단계가 없다. 7번 같은 규칙 위반은 ESLint `no-restricted-syntax`로 잡을 수 있다.
+  - 상태: 수정 (브랜치 `ci/eslint-minimal`). 버그와 죽은 코드를 가리키는 규칙만 건다: `no-undef`, `no-unused-vars`, 확장 페이지의 `runtime.sendMessage` 호출을 막는 `no-restricted-syntax`. 스타일 규칙은 넣지 않았다. CI는 단위 테스트 전에 `npm run lint`를 돌린다. 7번의 Jest 문자열 검사는 lint 규칙으로 옮겼다.
+  - content script는 각 파일 맨 위 `/* exported */` 주석에 다른 스크립트와 공유하는 이름을 적는다. `eslint.config.js`가 이 주석을 읽어 content script 전체의 전역으로 선언한다. 목록에 있는 이름을 파일이 선언하지 않으면 설정이 오류를 낸다.
+  - 처음 돌렸을 때 나온 위반은 같은 브랜치에서 고쳤다. 실제 코드에서는 쓰지 않는 import·매개변수·변수와 content script의 `errorLog`(어디서도 호출하지 않음)를 지웠고, 나머지는 테스트와 E2E의 쓰지 않는 변수였다.
+  - 남은 한계: `exported`에 적었지만 어느 스크립트도 쓰지 않는 이름은 잡지 못한다. 메시지 API에 콜백을 넘기지 않는다는 규칙은 지금처럼 `mocks/chrome.js`의 가드가 단위 테스트에서 잡는다.
