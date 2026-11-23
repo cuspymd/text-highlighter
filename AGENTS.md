@@ -10,6 +10,7 @@ extension.
 ## Essential Commands
 
 ### Testing
+- `npm run lint` - Run ESLint (`eslint.config.js`); CI runs it before the unit tests
 - `npm test` - Run Jest unit/integration tests (`tests/`)
 - `npx playwright test` - Run Playwright E2E tests (`e2e-tests/`)
 - `npm run test:e2e:firefox` - Run the Firefox smoke suite (`e2e-tests-firefox/`) by hand before a Firefox release
@@ -79,7 +80,8 @@ so a caller's `if (!response || !response.success)` already handled it; `await`
 without a catch turns the same case into an unhandled rejection, and the click
 that triggered it silently does nothing. `sendToBackground(message)` from
 `shared/runtime-message.js` awaits and returns `null` there, which lands on that
-same branch. Page scripts should use it.
+same branch. Page scripts should use it; ESLint (`no-restricted-syntax` in
+`eslint.config.js`) rejects a bare `runtime.sendMessage` call in them.
 
 Both mocks in `mocks/chrome.js` throw when a callback is passed, so either form
 fails the unit suite by name. `tests/runtime-message-guard.test.js` and the
@@ -126,6 +128,14 @@ directly and the coverage instrumenter sees them - the evaluated scripts report
 `content.js`, and add the file to `content_scripts.js` in **both** manifests,
 before the scripts that read it. The build copies the whole directory, so
 nothing else needs changing.
+
+The scripts share one scope, so they call each other's top-level names without
+imports. Each one lists what it shares in a `/* exported a, b */` comment at its
+top. `eslint.config.js` reads those comments and declares the names as globals
+for every content script, so a call to a name nobody exports fails `no-undef`
+the way it would fail at runtime. When a function starts or stops being used
+from another script, update the list; the config throws if it names something
+the file no longer declares.
 
 ## Testing content scripts
 

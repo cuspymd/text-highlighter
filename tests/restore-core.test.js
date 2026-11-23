@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import '../content-scripts/content-core.js';
 import '../content-scripts/restore-core.js';
 

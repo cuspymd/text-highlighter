@@ -1,3 +1,5 @@
+// Shared with the other content scripts, which the manifest runs in one scope.
+/* exported activeHighlightElement, highlightControlsContainer, createHighlightControls, hideHighlightControls, refreshHighlightControlsColors, setHideDefaultColors, setOneClickHighlightEnabled, setSelectionControlsVisibility, showControlUi */
 const colorCore = window.TextHighlighterColorCore;
 
 // Highlight controller UI container

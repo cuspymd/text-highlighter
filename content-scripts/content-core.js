@@ -700,7 +700,7 @@
     let endPos = -1;
 
     // Helper to find normalized offset for a node and raw offset
-    function findNormalizedOffset(node, offset, isEnd) {
+    function findNormalizedOffset(node, offset) {
       for (const segment of model.segments) {
         if (segment.node === node) {
           if (offset === 0) return segment.normalizedStart;
@@ -723,8 +723,8 @@
       return -1;
     }
 
-    startPos = findNormalizedOffset(range.startContainer, range.startOffset, false);
-    endPos = findNormalizedOffset(range.endContainer, range.endOffset, true);
+    startPos = findNormalizedOffset(range.startContainer, range.startOffset);
+    endPos = findNormalizedOffset(range.endContainer, range.endOffset);
 
     if (startPos !== -1 && endPos !== -1 && endPos >= startPos) {
       return { start: startPos, end: endPos };

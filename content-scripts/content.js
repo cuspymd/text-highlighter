@@ -1,3 +1,5 @@
+// Shared with the other content scripts, which the manifest runs in one scope.
+/* exported currentColors, changeHighlightColor, highlightSelectedText, removeHighlight */
 let highlights = [];
 let currentUrl = window.location.href.replace(/#selection-[\d.]+-[\d.]+$/, '');
 

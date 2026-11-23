@@ -11,7 +11,6 @@ import {
 // model that includes every other highlight on the page. It has to be built
 // against that same text, or its context has holes where the neighbours sit.
 describe('selectors built next to other highlights', () => {
-  let page = null;
 
   async function loadContentScript() {
     respondToBackground(message => {
@@ -23,7 +22,7 @@ describe('selectors built next to other highlights', () => {
     window.activeHighlightElement = null;
     window.highlightControlsContainer = null;
 
-    page = loadContentScripts(['common', 'content']);
+    loadContentScripts(['common', 'content']);
     await jest.advanceTimersByTimeAsync(600);
   }
 

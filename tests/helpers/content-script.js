@@ -59,7 +59,6 @@ function readSource(name) {
 const NEIGHBOUR_GLOBALS = {
   common: [
     'debugLog',
-    'errorLog',
     'getMessage',
     'findHighlightElementsByGroupId',
     'scrollToHighlightElement',
