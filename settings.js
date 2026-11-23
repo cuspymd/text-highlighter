@@ -220,6 +220,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  let colorRowIdCounter = 0;
+
   function buildColorRow(colorObj) {
     const row = document.createElement('div');
     row.className = 'color-row';
@@ -231,12 +233,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     swatch.className = 'color-swatch';
     swatch.style.backgroundColor = colorObj.color;
 
-    const name = document.createElement('span');
+    // A real button so the name can be reached and renamed from the keyboard.
+    const name = document.createElement('button');
+    name.type = 'button';
     name.className = 'color-name';
+    name.id = `color-name-${++colorRowIdCounter}`;
     name.textContent = colorObj.customName || `${browserAPI.i18n.getMessage('customColor') || 'Custom Color'} ${colorObj.colorNumber}`;
     name.title = browserAPI.i18n.getMessage('editNameTooltip') || 'Click to edit name';
 
     let isEditingName = false;
+    // Enter and Escape hand focus back to the name; a click elsewhere keeps it there.
+    let returnFocusToName = false;
 
     name.addEventListener('click', () => {
       if (isEditingName) return;
@@ -267,25 +274,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
               const customColors = response.colors.filter(c => c.id.startsWith('custom_'));
               renderCustomColorsList(customColors);
+              if (returnFocusToName) {
+                const rows = Array.from(customColorsList.querySelectorAll('.color-row'));
+                const index = customColors.findIndex(c => c.id === colorObj.id);
+                rows[index]?.querySelector('.color-name')?.focus();
+              }
               await loadShortcuts(); // Refresh names in dropdown
-              return; // re-rendering handles putting the span back
+              return; // re-rendering handles putting the name back
             }
           }
         }
 
         info.replaceChild(name, input);
+        if (returnFocusToName) name.focus();
       };
 
       input.addEventListener('blur', finishEditing);
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
+          returnFocusToName = true;
           input.blur();
         } else if (e.key === 'Escape') {
           isEditingName = false;
           info.replaceChild(name, input);
+          name.focus();
         }
       });
 
+      returnFocusToName = false;
       info.replaceChild(input, name);
       input.focus();
       input.select();
@@ -303,16 +319,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actions = document.createElement('div');
     actions.className = 'color-actions';
 
+    // Every row has the same "Edit"/"Remove" text, so each button's accessible
+    // name also reads out the colour it acts on ("Edit Ocean").
     const editBtn = document.createElement('button');
     editBtn.className = 'btn-icon';
+    editBtn.id = `${name.id}-edit`;
     editBtn.textContent = browserAPI.i18n.getMessage('editColor') || 'Edit';
+    editBtn.setAttribute('aria-labelledby', `${editBtn.id} ${name.id}`);
     editBtn.addEventListener('click', () => {
       chooseCustomColor(colorObj.id, colorObj.color);
     });
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'btn-icon btn-danger';
+    removeBtn.id = `${name.id}-remove`;
     removeBtn.textContent = browserAPI.i18n.getMessage('removeColor') || 'Remove';
+    removeBtn.setAttribute('aria-labelledby', `${removeBtn.id} ${name.id}`);
     removeBtn.addEventListener('click', async () => {
       await handleRemoveColor(colorObj);
     });
@@ -773,10 +795,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const slotLabel = document.createElement('span');
       slotLabel.className = 'shortcut-slot';
+      slotLabel.id = `shortcut-slot-${cmdName}`;
       slotLabel.textContent = label;
 
       const keyBadge = document.createElement('span');
       keyBadge.className = 'key-badge';
+      keyBadge.id = `shortcut-key-${cmdName}`;
       keyBadge.textContent = shortcutLabel;
 
       info.appendChild(slotLabel);
@@ -797,6 +821,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const select = document.createElement('select');
       select.className = 'shortcut-select';
+      // Named by the slot and its key, e.g. "Slot 1 Alt+1".
+      select.setAttribute('aria-labelledby', `shortcut-slot-${cmdName} shortcut-key-${cmdName}`);
 
       const noneOption = document.createElement('option');
       noneOption.value = '';
